@@ -1,0 +1,25 @@
+/*!
+\author		Shun Moriya
+\copyright	2023 Shun Moriya
+*/
+
+#pragma once
+#include <algorithm>
+
+namespace dungeon
+{
+	namespace math
+	{
+		template<typename T = double>
+		inline T Square(const T value)
+		{
+			return value * value;
+		}
+
+		template<typename T = double>
+		T Clamp(const T value, const T min, const T max)
+		{
+			return std::max(min, std::min(value, max));
+		}
+	}
+}

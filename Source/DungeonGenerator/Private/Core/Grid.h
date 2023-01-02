@@ -1,0 +1,325 @@
+/*!
+ボクセルなどに利用するグリッド情報のヘッダーファイル
+
+\author		Shun Moriya
+\copyright	2023 Shun Moriya
+*/
+
+#pragma once
+#include "Core/Math/Random.h"
+#include "Direction.h"
+
+namespace dungeon
+{
+	/*!
+	グリッドクラス
+	*/
+	class Grid final
+	{
+	public:
+		/*!
+		グリッド内のセルの種類
+		*/
+		enum class Type : uint8_t
+		{
+			Floor,			//!< 平らな地面（壁の生成判定なし）
+			Deck,			//!< Floorの周辺または部屋の一階部分（壁の生成判定あり）
+			Gate,			//!< 門
+			Aisle,			//!< 通路
+			Slope,			//!< 斜面
+			Atrium,			//!< 吹き抜け（斜面の空白）
+			Empty,			//!< 空白
+			OutOfBounds		//!< 範囲外（必ず最後に定義して下さい）
+		};
+		static constexpr size_t TypeSize = static_cast<size_t>(Type::OutOfBounds) + 1;
+
+		/*!
+		グリッド内のセルにある小物
+		*/
+		enum class Props : uint8_t
+		{
+			None,			//!< 何も無い
+			Lock,			//!< 鍵
+			UniqueLock,		//!< ユニークな鍵
+		};
+		static constexpr size_t PropsSize = static_cast<size_t>(Props::UniqueLock) + 1;
+
+	public:
+		/*!
+		コンストラクタ
+		*/
+		Grid();
+
+		/*!
+		コンストラクタ
+		\param[in]	type	グリッドの種類
+		*/
+		explicit Grid(const Type type);
+
+		/*!
+		コンストラクタ
+		\param[in]	type		グリッドの種類
+		\param[in]	direction	グリッドの方向
+		*/
+		Grid(const Type type, const Direction direction);
+
+		/*!
+		コンストラクタ
+		\param[in]	type		グリッドの種類
+		\param[in]	direction	グリッドの方向
+		\param[in]	identifier	識別子
+		*/
+		Grid(const Type type, const Direction direction, const uint16_t identifier);
+
+		/*!
+		デストラクタ
+		*/
+		~Grid() = default;
+
+		/*!
+		グリッドの種類を取得します
+		*/
+		Type GetType() const;
+
+		/*!
+		グリッドの種類を設定します
+		*/
+		void SetType(const Type type);
+
+		/*!
+		グリッドの方向を取得します
+		*/
+		Direction GetDirection() const;
+
+		/*!
+		グリッドの方向を設定します
+		*/
+		void SetDirection(const Direction direction);
+
+		/*!
+		識別子を取得します
+		*/
+		uint16_t GetIdentifier() const;
+
+		/*!
+		識別子を設定します
+		*/
+		void SetIdentifier(const uint16_t identifier);
+
+		/*!
+		小道具を取得します
+		*/
+		Props GetProps() const;
+
+		/*!
+		小道具を設定します
+		*/
+		void SetProps(const Props props);
+
+		/*!
+		部屋系のグリッド？
+		\warning	門は部屋系のグリッドでもあります
+		\return		trueならば部屋系のグリッド
+		*/
+		bool IsKindOfRoomType() const noexcept;
+
+		/*!
+		門以外の部屋系のグリッド？
+		\warning	門は部屋系のグリッドでもあります
+		\return		trueならば門以外の部屋系のグリッド
+		*/
+		bool IsKindOfRoomTypeWithoutGate() const noexcept;
+
+		/*!
+		門系のグリッド？
+		\warning	門は部屋系のグリッドでもあります
+		\return		trueならば門系のグリッド
+		*/
+		bool IsKindOfGateType() const noexcept;
+
+		/*!
+		通路系のグリッド？
+		\return		trueならば通路系のグリッド
+		*/
+		bool IsKindOfAisleType() const noexcept;
+
+		/*!
+		斜面系のグリッド？
+		\return		trueならば斜面系のグリッド
+		*/
+		bool IsKindOfSlopeType() const noexcept;
+
+		/*!
+		空間系のグリッド？
+		\return		trueならば空間系のグリッド
+		*/
+		bool IsKindOfSpatialType() const noexcept;
+
+		/*!
+		水平方向に通行可能なセルか判定します
+		*/
+		bool IsHorizontallyPassable() const;
+
+		/*!
+		水平方向に通行不可能なセルか判定します
+		*/
+		bool IsHorizontallyNotPassable() const;
+
+		/*!
+		垂直方向に通行可能なセルか判定します
+		*/
+		bool IsVerticallyPassable() const;
+
+		/*!
+		垂直方向に通行不可能なセルか判定します
+		*/
+		bool IsVerticallyNotPassable() const;
+
+		/*!
+		床（部屋）グリッドを生成します
+		*/
+		static Grid CreateFloor(Random& random, const uint16_t identifier);
+
+		/*!
+		デッキ（部屋の周辺）グリッドを生成します
+		*/
+		static Grid CreateDeck(Random& random, const uint16_t identifier);
+
+		// 判定補助関数
+		/*!
+		自身からtoGridを見た時に床が生成されるか判定します
+		\param[in]	toGrid		参照先グリッド（通常は一つ下のグリッド）
+		\return		trueならば床の生成が可能
+		*/
+		bool CanBuildFloor(const Grid& toGrid) const;
+
+		/*!
+		斜面が生成されるか判定します
+		\return		trueならば斜面の生成が可能
+		*/
+		bool CanBuildSlope() const;
+
+		/*!
+		自身からtoGridを見た時に屋根が生成されるか判定します
+		\param[in]	toGrid		参照先グリッド（通常は一つ上のグリッド）
+		\return		trueならば屋根の生成が可能
+		*/
+		bool CanBuildRoof(const Grid& toGrid) const;
+
+		/*!
+		自身からtoGridを見た時に壁が生成されるか判定します
+		\param[in]	toGrid		参照先グリッド
+		\param[in]	direction	自身からtoGridの方向
+		\param[in]	mergeRooms	部屋と部屋を結合する
+		\return		trueならば壁の生成が可能
+		*/
+		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const;
+
+		/*!
+		自身からtoGridを見た時に柱が生成されるか判定します
+		\param[in]	toGrid		参照先グリッド
+		\param[in]	direction	自身からtoGridの方向
+		\return		trueならば柱の生成が可能
+		*/
+		bool CanBuildPillar(const Grid& toGrid) const;
+
+		/*!
+		自身からtoGridを見た時に扉が生成されるか判定します
+		\param[in]	toGrid		参照先グリッド
+		\param[in]	direction	自身からtoGridの方向
+		\return		trueならば扉の生成が可能
+		*/
+		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction) const;
+
+
+		/*!
+		グリッドの種類の色を取得します
+		*/
+		const FColor& GetTypeColor() const;
+
+	private:
+		Type mType;					//!< グリッドの種類
+		Props mProps;
+		Direction mDirection;		//!< グリッドの方向
+		uint16_t mIdentifier = ~0;
+	};
+
+	inline Grid::Grid()
+		: mType(Type::Empty)
+		, mProps(Props::None)
+		, mDirection(Direction(Direction::North))
+	{
+	}
+
+	inline Grid::Grid(const Type type)
+		: mType(type)
+		, mProps(Props::None)
+		, mDirection(Direction(Direction::North))
+	{
+	}
+
+	inline Grid::Grid(const Type type, const Direction direction)
+		: mType(type)
+		, mProps(Props::None)
+		, mDirection(direction)
+	{
+	}
+
+	inline Grid::Grid(const Type type, const Direction direction, const uint16_t identifier)
+		: mType(type)
+		, mProps(Props::None)
+		, mDirection(direction)
+		, mIdentifier(identifier)
+	{
+	}
+
+	inline Grid Grid::CreateFloor(Random& random, const uint16_t identifier)
+	{
+		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier);
+	}
+
+	inline Grid Grid::CreateDeck(Random& random, const uint16_t identifier)
+	{
+		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier);
+	}
+
+	inline Grid::Type Grid::GetType() const
+	{
+		return mType;
+	}
+
+	inline void Grid::SetType(const Type type)
+	{
+		mType = type;
+	}
+
+	inline Direction Grid::GetDirection() const
+	{
+		return mDirection;
+	}
+
+	inline void Grid::SetDirection(const Direction direction)
+	{
+		mDirection = direction;
+	}
+
+	inline uint16_t Grid::GetIdentifier() const
+	{
+		return mIdentifier;
+	}
+
+	inline void Grid::SetIdentifier(const uint16_t identifier)
+	{
+		mIdentifier = identifier;
+	}
+
+	inline Grid::Props Grid::GetProps() const
+	{
+		return mProps;
+	}
+
+	inline void Grid::SetProps(const Props props)
+	{
+		mProps = props;
+	}
+}

@@ -1,0 +1,16 @@
+name: analysis
+on: [push]
+jobs:
+  cppcheck:
+    name: cppcheck-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: cppcheck
+        uses: deep5050/cppcheck-action@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          inconclusive : disable
+          inline_suppression: enable
+          std: c++17
+          output_file:
