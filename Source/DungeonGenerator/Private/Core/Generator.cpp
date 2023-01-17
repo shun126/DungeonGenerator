@@ -47,18 +47,18 @@ namespace dungeon
 	}
 #endif
 
-	Generator::Generator()
+	Generator::Generator() noexcept
 	{
 		std::srand(std::time(nullptr));
 	}
 
-	Generator::~Generator()
+	Generator::~Generator() noexcept
 	{
 		if (mGenerateThread.joinable())
 			mGenerateThread.join();
 	}
 
-	void Generator::Generate(const GenerateParameter& parameter)
+	void Generator::Generate(const GenerateParameter& parameter) noexcept
 	{
 		if (mGenerateThread.joinable())
 			mGenerateThread.join();
@@ -80,7 +80,7 @@ namespace dungeon
 		);
 	}
 
-	void Generator::GenerateImpl()
+	void Generator::GenerateImpl() noexcept
 	{
 		mRooms.clear();
 
@@ -139,7 +139,7 @@ namespace dungeon
 	/*!
 	部屋の生成
 	*/
-	void Generator::GenerateRooms(const GenerateParameter& parameter)
+	void Generator::GenerateRooms(const GenerateParameter& parameter) noexcept
 	{
 		DUNGEON_GENERATOR_LOG(TEXT("Generate Rooms"));
 
@@ -192,7 +192,7 @@ namespace dungeon
 	/*!
 	部屋の重なりを解消します
 	*/
-	void Generator::SeparateRooms(const GenerateParameter& parameter)
+	void Generator::SeparateRooms(const GenerateParameter& parameter) noexcept
 	{
 		DUNGEON_GENERATOR_LOG(TEXT("Separate Rooms"));
 
@@ -204,7 +204,7 @@ namespace dungeon
 		do {
 			retry = false;
 
-			for (auto room0 : mRooms)
+			for (const std::shared_ptr<Room>& room0 : mRooms)
 			{
 				std::vector<std::shared_ptr<Room>> intersectedRooms;
 
@@ -214,6 +214,7 @@ namespace dungeon
 					if (room0 != room1 && room0->Intersect(*room1, parameter.GetRoomMargin()))
 					{
 						// 交差した部屋を記録
+						// cppcheck-suppress [useStlAlgorithm]
 						intersectedRooms.emplace_back(room1);
 					}
 				}
@@ -348,7 +349,7 @@ namespace dungeon
 		}
 	}
 
-	void Generator::ExpandSpace(GenerateParameter& parameter)
+	void Generator::ExpandSpace(GenerateParameter& parameter) noexcept
 	{
 		DUNGEON_GENERATOR_LOG(TEXT("ExpandSpace"));
 
@@ -397,7 +398,7 @@ namespace dungeon
 	/*!
 	重複した部屋や範囲外の部屋を除去をします
 	*/
-	void Generator::RemoveInvalidRooms(const GenerateParameter& parameter)
+	void Generator::RemoveInvalidRooms(const GenerateParameter& parameter) noexcept
 	{
 		DUNGEON_GENERATOR_LOG(TEXT("Remove duplicate rooms and out-of-range rooms"));
 
@@ -450,7 +451,7 @@ namespace dungeon
 	}
 
 	// ドロネー三角形分割した辺を最小スパニングツリーにて抽出
-	void Generator::ExtractionAisles(const GenerateParameter& parameter)
+	void Generator::ExtractionAisles(const GenerateParameter& parameter) noexcept
 	{
 		DUNGEON_GENERATOR_LOG(TEXT("Extract Aisles"));
 		DUNGEON_GENERATOR_LOG(TEXT("%d rooms detected"), mRooms.size());
@@ -461,6 +462,7 @@ namespace dungeon
 		for (const std::shared_ptr<Room>& room : mRooms)
 		{
 			// Room::GetFloorCenterリストを作成
+			// cppcheck-suppress [useStlAlgorithm]
 			points.emplace_back(std::make_shared<const Point>(room));
 		}
 
@@ -520,15 +522,11 @@ namespace dungeon
 			}
 			else
 			{
-				bool isLeaf = false;
-				for (auto& point : mLeafPoints)
-				{
-					if (room->Contain(*point))
+				const bool isLeaf = std::any_of(mLeafPoints.begin(), mLeafPoints.end(), [room](const std::shared_ptr<const Point>& point)
 					{
-						isLeaf = true;
-						break;
+						return room->Contain(*point);
 					}
-				}
+				);
 				if (isLeaf)
 				{
 					color = leafColor;
@@ -553,7 +551,7 @@ namespace dungeon
 #endif
 
 		// TODO:Branch
-		for (const auto& room : mRooms)
+		for (const std::shared_ptr<Room>& room : mRooms)
 		{
 			if (room->Contain(*mStartPoint))
 			{
@@ -565,15 +563,11 @@ namespace dungeon
 			}
 			else
 			{
-				bool isLeaf = false;
-				for (auto& point : mLeafPoints)
-				{
-					if (room->Contain(*point))
+				const bool isLeaf = std::any_of(mLeafPoints.begin(), mLeafPoints.end(), [room](const std::shared_ptr<const Point>& point)
 					{
-						isLeaf = true;
-						break;
+						return room->Contain(*point);
 					}
-				}
+				);
 				if (isLeaf)
 				{
 					room->SetParts(Room::Parts::Hanare);
@@ -591,7 +585,7 @@ namespace dungeon
 		}
 	}
 
-	float Generator::GetDistanceCenterToContact(const float width, const float depth, const FVector& direction, const float margin) const
+	float Generator::GetDistanceCenterToContact(const float width, const float depth, const FVector& direction, const float margin) const noexcept
 	{
 		const float halfWidth = (width + margin) * 0.5f;
 		const float halfDepth = (depth + margin) * 0.5f;
@@ -612,7 +606,7 @@ namespace dungeon
 		return 0.f;
 	}
 
-	void Generator::GenerateAisle(const MinimumSpanningTree& minimumSpanningTree)
+	void Generator::GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept
 	{
 		minimumSpanningTree.ForEach([this](const Aisle& edge)
 			{
@@ -657,7 +651,7 @@ namespace dungeon
 		);
 	}
 
-	void Generator::GenerateVoxel(const GenerateParameter& parameter)
+	void Generator::GenerateVoxel(const GenerateParameter& parameter) noexcept
 	{
 		mVoxel = std::make_shared<Voxel>(parameter);
 
@@ -714,12 +708,12 @@ namespace dungeon
 		}
 	}
 
-	bool Generator::IsGenerated() const
+	bool Generator::IsGenerated() const noexcept
 	{
 		return mGenerated;
 	}
 
-	void Generator::WaitGenerate() const
+	void Generator::WaitGenerate() const noexcept
 	{
 		if (mGenerateThread.get_id() != std::this_thread::get_id())
 		{
@@ -731,37 +725,42 @@ namespace dungeon
 	// 以下は生成完了後に操作する関数です。
 	// 必ず mGenerateFuture を使って生成の完了を待ってから処理して下さい。
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	std::shared_ptr<Room> Generator::Find(const Point& point) const
+	std::shared_ptr<Room> Generator::Find(const Point& point) const noexcept
 	{
 		WaitGenerate();
 
 		for (const auto& room : mRooms)
 		{
+			// cppcheck-suppress [useStlAlgorithm]
 			if (room->Contain(point))
 				return room;
 		}
 		return nullptr;
 	}
 
-	std::vector<std::shared_ptr<Room>> Generator::FindAll(const Point& point) const
+	std::vector<std::shared_ptr<Room>> Generator::FindAll(const Point& point) const noexcept
 	{
 		WaitGenerate();
 
 		std::vector<std::shared_ptr<Room>> result;
+		result.reserve(mRooms.size());
 		for (const auto& room : mRooms)
 		{
 			if (room->Contain(point))
+			{
+				// cppcheck-suppress [useStlAlgorithm]
 				result.emplace_back(room);
+			}
 		}
 		return result;
 	}
 
-	const GenerateParameter& Generator::GetGenerateParameter() const
+	const GenerateParameter& Generator::GetGenerateParameter() const noexcept
 	{
 		return mGenerateParameter;
 	}
 
-	const std::shared_ptr<Voxel>& Generator::GetVoxel() const
+	const std::shared_ptr<Voxel>& Generator::GetVoxel() const noexcept
 	{
 		return mVoxel;
 	}
@@ -771,7 +770,7 @@ namespace dungeon
 		return mRooms.size();
 	}
 
-	std::vector<std::shared_ptr<Room>> Generator::FindByDepth(const uint8_t depth) const
+	std::vector<std::shared_ptr<Room>> Generator::FindByDepth(const uint8_t depth) const noexcept
 	{
 		std::vector<std::shared_ptr<Room>> result;
 		result.reserve(mRooms.size());
@@ -779,14 +778,14 @@ namespace dungeon
 		{
 			if (room->GetDepthFromStart() == depth)
 			{
-				result.push_back(room);
+				// cppcheck-suppress [useStlAlgorithm]
+				result.emplace_back(room);
 			}
 		}
-		result.shrink_to_fit();
 		return result;
 	}
 
-	std::vector<std::shared_ptr<Room>> Generator::FindByBranch(const uint8_t branchId) const
+	std::vector<std::shared_ptr<Room>> Generator::FindByBranch(const uint8_t branchId) const noexcept
 	{
 		std::vector<std::shared_ptr<Room>> result;
 		result.reserve(mRooms.size());
@@ -794,14 +793,14 @@ namespace dungeon
 		{
 			if (room->GetBranchId() == branchId)
 			{
-				result.push_back(room);
+				// cppcheck-suppress [useStlAlgorithm]
+				result.emplace_back(room);
 			}
 		}
-		result.shrink_to_fit();
 		return result;
 	}
 
-	std::vector<std::shared_ptr<Room>> Generator::FindByRoute(const std::shared_ptr<Room>& startRoom) const
+	std::vector<std::shared_ptr<Room>> Generator::FindByRoute(const std::shared_ptr<Room>& startRoom) const noexcept
 	{
 		std::vector<std::shared_ptr<Room>> result;
 		result.reserve(mRooms.size());
@@ -820,7 +819,7 @@ namespace dungeon
 		return result;
 	}
 
-	void Generator::FindByRoute(std::vector<std::shared_ptr<Room>>& result, std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<const Room>& room) const
+	void Generator::FindByRoute(std::vector<std::shared_ptr<Room>>& result, std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<const Room>& room) const noexcept
 	{
 		for (const auto& aisle : mAisles)
 		{
@@ -864,7 +863,7 @@ namespace dungeon
 
 
 
-	void Generator::DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<const Room>& room) const
+	void Generator::DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<const Room>& room) const noexcept
 	{
 		for (const auto& aisle : mAisles)
 		{
@@ -894,7 +893,7 @@ namespace dungeon
 		}
 	}
 
-	void Generator::DumpRoomDiagram(const std::string& path) const
+	void Generator::DumpRoomDiagram(const std::string& path) const noexcept
 	{
 		std::ofstream stream(path);
 		if (stream.is_open())
@@ -918,7 +917,7 @@ namespace dungeon
 		}
 	}
 
-	void Generator::DumpAisle(const std::string& path) const
+	void Generator::DumpAisle(const std::string& path) const noexcept
 	{
 		std::ofstream stream(path);
 		if (stream.is_open())
@@ -930,7 +929,7 @@ namespace dungeon
 		}
 	}
 
-	void Generator::Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId)
+	void Generator::Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept
 	{
 		room->SetBranchId(branchId);
 
@@ -971,7 +970,7 @@ namespace dungeon
 		}
 	}
 
-	void Generator::Branch()
+	void Generator::Branch() noexcept
 	{
 		if (mStartPoint)
 		{

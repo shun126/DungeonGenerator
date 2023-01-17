@@ -10,7 +10,8 @@ jobs:
         uses: deep5050/cppcheck-action@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          enable : warning, style, performance, portability, information
           inconclusive : disable
           inline_suppression: enable
+          output_file: 
           std: c++17
-          output_file:

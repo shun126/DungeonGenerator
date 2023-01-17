@@ -51,7 +51,7 @@ namespace dungeon
 			mType == Type::OutOfBounds;
 	}
 	
-	bool Grid::IsHorizontallyPassable() const
+	bool Grid::IsHorizontallyPassable() const noexcept
 	{
 		return
 			mType == Type::Floor ||
@@ -62,12 +62,12 @@ namespace dungeon
 			mType == Type::Atrium;
 	}
 
-	bool Grid::IsHorizontallyNotPassable() const
+	bool Grid::IsHorizontallyNotPassable() const noexcept
 	{
 		return IsHorizontallyPassable() == false;
 	}
 
-	bool Grid::IsVerticallyPassable() const
+	bool Grid::IsVerticallyPassable() const noexcept
 	{
 		return
 			mType == Type::Floor ||
@@ -78,7 +78,7 @@ namespace dungeon
 			mType == Type::Atrium;
 	}
 
-	bool Grid::IsVerticallyNotPassable() const
+	bool Grid::IsVerticallyNotPassable() const noexcept
 	{
 		return IsVerticallyPassable() == false;
 	}
@@ -86,7 +86,7 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に床が生成されるか判定します
 	*/
-	bool Grid::CanBuildFloor(const Grid& toGrid) const
+	bool Grid::CanBuildFloor(const Grid& toGrid) const noexcept
 	{
 		if (IsKindOfRoomType() || IsKindOfAisleType())
 		{
@@ -107,7 +107,7 @@ namespace dungeon
 	/*
 	斜面が生成されるか判定します
 	*/
-	bool Grid::CanBuildSlope() const
+	bool Grid::CanBuildSlope() const noexcept
 	{
 		return mType == Type::Slope;
 	}
@@ -115,7 +115,7 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に屋根が生成されるか判定します
 	*/
-	bool Grid::CanBuildRoof(const Grid& toGrid) const
+	bool Grid::CanBuildRoof(const Grid& toGrid) const noexcept
 	{
 		if (IsKindOfRoomType())
 		{
@@ -152,7 +152,7 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に壁が生成されるか判定します
 	*/
-	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const
+	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
 	{
 		// 部屋と部屋の間に壁を生成する？
 		if (!mergeRooms)
@@ -224,7 +224,7 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に柱が生成されるか判定します
 	*/
-	bool Grid::CanBuildPillar(const Grid& toGrid) const
+	bool Grid::CanBuildPillar(const Grid& toGrid) const noexcept
 	{
 		/*
 		判定が怪しいので見直してください
@@ -242,7 +242,7 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に扉が生成されるか判定します
 	*/
-	bool Grid::CanBuildGate(const Grid& toGrid, const Direction::Index direction) const
+	bool Grid::CanBuildGate(const Grid& toGrid, const Direction::Index direction) const noexcept
 	{
 		if (mType == Type::Gate)
 		{
@@ -270,7 +270,7 @@ namespace dungeon
 		return false;
 	}
 
-	const FColor& Grid::GetTypeColor() const
+	const FColor& Grid::GetTypeColor() const noexcept
 	{
 		static const FColor colors[] = {
 			FColor::Blue,		// Floor

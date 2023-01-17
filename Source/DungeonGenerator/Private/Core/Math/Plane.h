@@ -16,44 +16,47 @@ namespace dungeon
 	class Plane final
 	{
 	public:
-		Plane();
-		Plane(const Plane& plane);
-		Plane(const FVector& normal, const double distance);
-		Plane(const FVector& normal, const FVector& point);
-		Plane(const double a, const double b, const double c, const double d = 1.f);
+		Plane() noexcept;
+		Plane(const FVector& normal, const double distance) noexcept;
+		Plane(const FVector& normal, const FVector& point) noexcept;
+		Plane(const double a, const double b, const double c, const double d = 1) noexcept;
+		Plane(const Plane& plane) noexcept;
+		Plane(Plane&& plane) noexcept;
 		virtual ~Plane() = default;
 
-		void Identity();
-		void Set(const double a, const double b, const double c, const double d = 1.f);
-		void Set(const FVector& normal, const double distance);
-		void Set(const FVector& normal, const FVector& point);
-		void Set(const FVector& a, const FVector& b, const FVector& c);
-		void Negate();
-		double Length() const;
-		double Dot(const Plane& plane) const;
-		double Dot(const FVector& point) const;
+		void Identity() noexcept;
+		void Set(const double a, const double b, const double c, const double d = 1) noexcept;
+		void Set(const FVector& normal, const double distance) noexcept;
+		void Set(const FVector& normal, const FVector& point) noexcept;
+		void Set(const FVector& a, const FVector& b, const FVector& c) noexcept;
+		void Negate() noexcept;
+		double Length() const noexcept;
+		double Dot(const Plane& plane) const noexcept;
+		double Dot(const FVector& point) const noexcept;
 
-		double Distance(const FVector& point) const;
-		double Distance(const Plane& plane) const;
+		double Distance(const FVector& point) const noexcept;
+		double Distance(const Plane& plane) const noexcept;
 
-		bool Intersect(const FVector& rayOrigin, const FVector& rayDirection, FVector& q) const;
+		bool Intersect(const FVector& rayOrigin, const FVector& rayDirection, FVector& q) const noexcept;
 
-		void Normalize();
+		void Normalize() noexcept;
 
-		void CalcLerp(const Plane&, const Plane&, const double);
+		void CalcLerp(const Plane&, const Plane&, const double) noexcept;
 
-		bool Compare(const Plane& plane, const double epsilon) const;
+		bool Compare(const Plane& plane, const double epsilon) const noexcept;
 
-		Plane& operator=(const Plane&);
-		Plane& operator=(const FVector&);
-		Plane& operator*=(const double);
-		Plane operator*(const double) const;
-		bool operator==(const Plane&) const;
-		bool operator!=(const Plane&) const;
+
+		Plane& operator=(const Plane&) noexcept;
+		Plane& operator=(Plane&&) noexcept;
+		Plane& operator=(const FVector&) noexcept;
+		Plane& operator*=(const double) noexcept;
+		Plane operator*(const double) const noexcept;
+		bool operator==(const Plane&) const noexcept;
+		bool operator!=(const Plane&) const noexcept;
 
 	private:
-		static void MakeUpVector(FVector& up, const FVector& a, const FVector& b);
-		static void MakeNormal(FVector& normal, const FVector& a, const FVector& b, const FVector& c);
+		static void MakeUpVector(FVector& up, const FVector& a, const FVector& b) noexcept;
+		static void MakeNormal(FVector& normal, const FVector& a, const FVector& b, const FVector& c) noexcept;
 
 	public:
 		FVector mNormal;
@@ -65,39 +68,45 @@ namespace dungeon
 
 namespace dungeon
 {
-	inline Plane::Plane()
+	inline Plane::Plane() noexcept
 	{
 		Identity();
 	}
 
-	inline Plane::Plane(const Plane& plane)
-		: mNormal(plane.mNormal)
-		, mD(plane.mD)
-	{
-	}
-
-	inline Plane::Plane(const FVector& normal, const double distance)
+	inline Plane::Plane(const FVector& normal, const double distance) noexcept
 		: mNormal(normal)
 		, mD(distance)
 	{
 	}
 
-	inline Plane::Plane(const double ina, const double inb, const double inc, const double ind)
+	inline Plane::Plane(const double ina, const double inb, const double inc, const double ind) noexcept
 	{
 		Set(ina, inb, inc, ind);
 	}
 
-	inline Plane::Plane(const FVector& normal, const FVector& point)
+	inline Plane::Plane(const FVector& normal, const FVector& point) noexcept
 	{
 		Set(normal, point);
 	}
+	
+	inline Plane::Plane(const Plane& plane) noexcept
+		: mNormal(plane.mNormal)
+		, mD(plane.mD)
+	{
+	}
 
-	inline void Plane::Identity()
+	inline Plane::Plane(Plane&& plane) noexcept
+		: mNormal(std::move(plane.mNormal))
+		, mD(std::move(plane.mD))
+	{
+	}
+
+	inline void Plane::Identity() noexcept
 	{
 		Set(0, 0, 0, 0);
 	}
 
-	inline void Plane::Set(const double ina, const double inb, const double inc, const double ind)
+	inline void Plane::Set(const double ina, const double inb, const double inc, const double ind) noexcept
 	{
 		mNormal.X = ina;
 		mNormal.Y = inb;
@@ -105,26 +114,26 @@ namespace dungeon
 		mD = ind;
 	}
 
-	inline void Plane::Set(const FVector& normal, const double distance)
+	inline void Plane::Set(const FVector& normal, const double distance) noexcept
 	{
 		mNormal = normal;
 		mD = distance;
 	}
 
-	inline void Plane::Set(const FVector& normal, const FVector& point)
+	inline void Plane::Set(const FVector& normal, const FVector& point) noexcept
 	{
 		mNormal = normal;
 		mD = FVector::DotProduct(normal, point);
 	}
 
-	inline void Plane::Set(const FVector& a, const FVector& b, const FVector& c)
+	inline void Plane::Set(const FVector& a, const FVector& b, const FVector& c) noexcept
 	{
 		FVector normal;
 		MakeNormal(normal, a, b, c);
 		Set(normal, a);
 	}
 
-	inline void Plane::Negate()
+	inline void Plane::Negate() noexcept
 	{
 		mNormal.X = -mNormal.X;
 		mNormal.Y = -mNormal.Y;
@@ -132,32 +141,32 @@ namespace dungeon
 		mD = -mD;
 	}
 
-	inline double Plane::Length() const
+	inline double Plane::Length() const noexcept
 	{
-		return sqrt(math::Square(mNormal.X) + math::Square(mNormal.Y) + math::Square(mNormal.Z) + math::Square(mD));
+		return std::sqrt(math::Square(mNormal.X) + math::Square(mNormal.Y) + math::Square(mNormal.Z) + math::Square(mD));
 	}
 
-	inline double Plane::Dot(const FVector& vector) const
+	inline double Plane::Dot(const FVector& vector) const noexcept
 	{
 		return mNormal.X * vector.X + mNormal.Y * vector.Y + mNormal.Z * vector.Z;
 	}
 
-	inline double Plane::Dot(const Plane& plane) const
+	inline double Plane::Dot(const Plane& plane) const noexcept
 	{
 		return mNormal.X * plane.mNormal.X + mNormal.Y * plane.mNormal.Y + mNormal.Z * plane.mNormal.Z + mD * plane.mD;
 	}
 
-	inline double Plane::Distance(const Plane& plane) const
+	inline double Plane::Distance(const Plane& plane) const noexcept
 	{
 		return sqrt(math::Square(mNormal.X - plane.mNormal.X) + math::Square(mNormal.Y - plane.mNormal.Y) + math::Square(mNormal.Z - plane.mNormal.Z) + math::Square(mD - plane.mD));
 	}
 
-	inline double Plane::Distance(const FVector& vector) const
+	inline double Plane::Distance(const FVector& vector) const noexcept
 	{
 		return mD + FVector::DotProduct(mNormal, vector);
 	}
 
-	inline bool Plane::Intersect(const FVector& rayOrigin, const FVector& rayDirection, FVector& q) const
+	inline bool Plane::Intersect(const FVector& rayOrigin, const FVector& rayDirection, FVector& q) const noexcept
 	{
 		const double denom = FVector::DotProduct(rayDirection, mNormal);
 		if (denom != 0.f)
@@ -174,12 +183,12 @@ namespace dungeon
 		return false;
 	}
 
-	inline void Plane::Normalize()
+	inline void Plane::Normalize() noexcept
 	{
 		mNormal.Normalize();
 	}
 
-	inline void Plane::CalcLerp(const Plane& start, const Plane& end, const double f)
+	inline void Plane::CalcLerp(const Plane& start, const Plane& end, const double f) noexcept
 	{
 		mNormal.X = start.mNormal.X + f * (end.mNormal.X - start.mNormal.X);
 		mNormal.Y = start.mNormal.Y + f * (end.mNormal.Y - start.mNormal.Y);
@@ -187,31 +196,37 @@ namespace dungeon
 		mD = start.mD + f * (end.mD - start.mD);
 	}
 
-	inline bool Plane::Compare(const Plane& plane, const double epsilon) const
+	inline bool Plane::Compare(const Plane& plane, const double epsilon) const noexcept
 	{
 		return (FVector::Distance(mNormal, plane.mNormal) < epsilon) && (std::abs(mD - plane.mD) < epsilon);
 	}
 
-	inline Plane& Plane::operator=(const Plane& plane)
+	inline Plane& Plane::operator=(const Plane& plane) noexcept
 	{
 		Set(plane.mNormal.X, plane.mNormal.Y, plane.mNormal.Z, plane.mD);
 		return *this;
 	}
 
-	inline Plane& Plane::operator=(const FVector& vector)
+	inline Plane& Plane::operator=(Plane&& other) noexcept
+	{
+		Set(other.mNormal.X, other.mNormal.Y, other.mNormal.Z, other.mD);
+		return *this;
+	}
+
+	inline Plane& Plane::operator=(const FVector& vector) noexcept
 	{
 		Set(vector.X, vector.Y, vector.Z, 1);
 		return *this;
 	}
 
-	inline Plane& Plane::operator*=(const double value)
+	inline Plane& Plane::operator*=(const double value) noexcept
 	{
 		mNormal *= value;
 		mD *= value;
 		return *this;
 	}
 
-	inline Plane Plane::operator*(const double value) const
+	inline Plane Plane::operator*(const double value) const noexcept
 	{
 		Plane plane;
 		plane.mNormal = mNormal * value;
@@ -219,23 +234,23 @@ namespace dungeon
 		return plane;
 	}
 
-	inline bool Plane::operator==(const Plane& plane) const
+	inline bool Plane::operator==(const Plane& plane) const noexcept
 	{
 		return(mNormal.X == plane.mNormal.X && mNormal.Y == plane.mNormal.Y && mNormal.Z == plane.mNormal.Z && mD == plane.mD);
 	}
 
-	inline bool Plane::operator!=(const Plane& plane) const
+	inline bool Plane::operator!=(const Plane& plane) const noexcept
 	{
 		return(mNormal.X != plane.mNormal.X || mNormal.Y != plane.mNormal.Y || mNormal.Z != plane.mNormal.Z || mD != plane.mD);
 	}
 
-	inline void Plane::MakeUpVector(FVector& up, const FVector& a, const FVector& b)
+	inline void Plane::MakeUpVector(FVector& up, const FVector& a, const FVector& b) noexcept
 	{
 		up = FVector::CrossProduct(a, b);
 		up.Normalize();
 	}
 
-	inline void Plane::MakeNormal(FVector& normal, const FVector& a, const FVector& b, const FVector& c)
+	inline void Plane::MakeNormal(FVector& normal, const FVector& a, const FVector& b, const FVector& c) noexcept
 	{
 		FVector ab;
 		FVector ac;

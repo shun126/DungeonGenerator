@@ -10,14 +10,14 @@ A*によるパス検索 ソースファイル
 
 namespace dungeon
 {
-	PathFinder::BaseNode::BaseNode(const NodeType nodeType, const FIntVector& location, const Direction direction)
+	PathFinder::BaseNode::BaseNode(const NodeType nodeType, const FIntVector& location, const Direction direction) noexcept
 		: mLocation(location)
 		, mNodeType(nodeType)
 		, mDirection(direction)
 	{
 	}
 
-	PathFinder::BaseNode::BaseNode(const BaseNode& other)
+	PathFinder::BaseNode::BaseNode(const BaseNode& other) noexcept
 		: mLocation(other.mLocation)
 		, mNodeType(other.mNodeType)
 		, mDirection(other.mDirection)
@@ -31,7 +31,7 @@ namespace dungeon
 	{
 	}
 
-	PathFinder::OpenNode::OpenNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction direction, const SearchDirection searchDirection, const uint32_t cost)
+	PathFinder::OpenNode::OpenNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction direction, const SearchDirection searchDirection, const uint32_t cost) noexcept
 		: BaseNode(nodeType, location, direction)
 		, mParentKey(parentKey)
 		, mCost(cost)
@@ -39,7 +39,7 @@ namespace dungeon
 	{
 	}
 
-	PathFinder::OpenNode::OpenNode(const OpenNode& other)
+	PathFinder::OpenNode::OpenNode(const OpenNode& other) noexcept
 		: BaseNode(other)
 		, mParentKey(other.mParentKey)
 		, mCost(other.mCost)
@@ -55,14 +55,14 @@ namespace dungeon
 	{
 	}
 
-	PathFinder::CloseNode::CloseNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction direction, const uint32_t cost)
+	PathFinder::CloseNode::CloseNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction direction, const uint32_t cost) noexcept
 		: BaseNode(nodeType, location, direction)
 		, mParentKey(parentKey)
 		, mCost(cost)
 	{
 	}
 
-	PathFinder::CloseNode::CloseNode(const CloseNode& other)
+	PathFinder::CloseNode::CloseNode(const CloseNode& other) noexcept
 		: BaseNode(other)
 		, mParentKey(other.mParentKey)
 		, mCost(other.mCost)
@@ -76,7 +76,7 @@ namespace dungeon
 	{
 	}
 
-	uint64_t PathFinder::Start(const NodeType nodeType, const FIntVector& location, const FIntVector& goal, const SearchDirection searchDirection)
+	uint64_t PathFinder::Start(const NodeType nodeType, const FIntVector& location, const FIntVector& goal, const SearchDirection searchDirection) noexcept
 	{
 		// キーを生成
 		const uint64_t parentKey = Hash(location);
@@ -85,7 +85,7 @@ namespace dungeon
 		return Open(parentKey, nodeType, 0, location, goal, Direction(), searchDirection);
 	}
 
-	uint64_t PathFinder::Open(const uint64_t parentKey, const NodeType nodeType, const uint32_t cost, const FIntVector& location, const FIntVector& goal, const Direction direction, const SearchDirection searchDirection)
+	uint64_t PathFinder::Open(const uint64_t parentKey, const NodeType nodeType, const uint32_t cost, const FIntVector& location, const FIntVector& goal, const Direction direction, const SearchDirection searchDirection) noexcept
 	{
 		// キーを生成
 		const uint64_t key = Hash(location);
@@ -136,12 +136,12 @@ namespace dungeon
 		return key;
 	}
 
-	bool PathFinder::Empty() const
+	bool PathFinder::Empty() const noexcept
 	{
 		return mOpen.empty();
 	}
 
-	bool PathFinder::Pop(uint64_t& key, NodeType& nodeType, uint32_t& cost, FIntVector& location, Direction& direction, SearchDirection& searchDirection)
+	bool PathFinder::Pop(uint64_t& key, NodeType& nodeType, uint32_t& cost, FIntVector& location, Direction& direction, SearchDirection& searchDirection) noexcept
 	{
 		if (mOpen.empty())
 			return false;
@@ -186,7 +186,7 @@ namespace dungeon
 
 //#define CHECK_ROUTE
 
-	bool PathFinder::Commit(const FIntVector& goal)
+	bool PathFinder::Commit(const FIntVector& goal) noexcept
 	{
 		if (!mRoute.empty())
 			return false;
@@ -263,12 +263,12 @@ namespace dungeon
 		return true;
 	}
 
-	bool PathFinder::IsValidPath() const
+	bool PathFinder::IsValidPath() const noexcept
 	{
 		return mRoute.empty() == false;
 	}
 
-	uint64_t PathFinder::Hash(const FIntVector& location)
+	uint64_t PathFinder::Hash(const FIntVector& location) noexcept
 	{
 		return
 			static_cast<uint64_t>(location.Z) << 32 |
@@ -276,17 +276,17 @@ namespace dungeon
 			static_cast<uint64_t>(location.X);
 	}
 
-	uint32_t PathFinder::TotalCost(const uint32_t cost, const FIntVector& location, const FIntVector& goal)
+	uint32_t PathFinder::TotalCost(const uint32_t cost, const FIntVector& location, const FIntVector& goal) noexcept
 	{
 		return TotalCost(cost, Heuristics(location, goal));
 	}
 
-	uint32_t PathFinder::TotalCost(const uint32_t cost, const uint32_t heuristics)
+	uint32_t PathFinder::TotalCost(const uint32_t cost, const uint32_t heuristics) noexcept
 	{
 		return cost + heuristics;
 	}
 
-	uint32_t PathFinder::Heuristics(const FIntVector& location, const FIntVector& goal)
+	uint32_t PathFinder::Heuristics(const FIntVector& location, const FIntVector& goal) noexcept
 	{
 #if 1
 		// マンハッタン距離
@@ -302,7 +302,7 @@ namespace dungeon
 		return heuristics;
 	}
 
-	Direction PathFinder::Cast(const SearchDirection direction)
+	Direction PathFinder::Cast(const SearchDirection direction) noexcept
 	{
 		check(static_cast<uint8_t>(SearchDirection::North) == static_cast<uint8_t>(Direction::North));
 		check(static_cast<uint8_t>(SearchDirection::East) == static_cast<uint8_t>(Direction::East));
@@ -312,7 +312,7 @@ namespace dungeon
 		return Direction(static_cast<Direction::Index>(direction));
 	}
 
-	PathFinder::SearchDirection PathFinder::Cast(const Direction direction)
+	PathFinder::SearchDirection PathFinder::Cast(const Direction direction) noexcept
 	{
 		check(static_cast<uint8_t>(SearchDirection::North) == static_cast<uint8_t>(Direction::North));
 		check(static_cast<uint8_t>(SearchDirection::East) == static_cast<uint8_t>(Direction::East));

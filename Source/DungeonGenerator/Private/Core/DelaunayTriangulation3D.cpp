@@ -12,7 +12,7 @@
 
 namespace dungeon
 {
-	DelaunayTriangulation3D::DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList)
+	DelaunayTriangulation3D::DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept
 	{
 		std::list<Tetrahedron> tetrahedrons;
 		
@@ -99,7 +99,7 @@ namespace dungeon
 		}
 	}
 
-	Tetrahedron DelaunayTriangulation3D::MakeHugeTetrahedron(const std::vector<std::shared_ptr<const Point>>& pointList)
+	Tetrahedron DelaunayTriangulation3D::MakeHugeTetrahedron(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept
 	{
 		FVector max(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
 		FVector min(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
@@ -141,7 +141,7 @@ namespace dungeon
 		return Tetrahedron(v0, v1, v2, v3);
 	}
 
-	void DelaunayTriangulation3D::AddElementToRedundanciesMap(DelaunayTriangulation3D::TetraMap& tetraMap, const Tetrahedron& t)
+	void DelaunayTriangulation3D::AddElementToRedundanciesMap(DelaunayTriangulation3D::TetraMap& tetraMap, const Tetrahedron& t) noexcept
 	{
 		auto i = tetraMap.find(t);
 		if (i != tetraMap.end())

@@ -23,18 +23,18 @@ namespace dungeon
 		コンストラクタ
 		3頂点を与えて三角形をつくる
 		*/
-		Triangle(const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3);
+		Triangle(const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3) noexcept;
 
 		/*!
 		コンストラクタ
 		3頂点を与えて三角形をつくる
 		*/
-		Triangle(const FVector& p1, const FVector& p2, const FVector& p3);
+		Triangle(const FVector& p1, const FVector& p2, const FVector& p3) noexcept;
 
 		/*!
 		コピーコンストラクタ
 		*/
-		Triangle(const Triangle& other);
+		Triangle(const Triangle& other) noexcept;
 
 		/*!
 		ムーブコンストラクタ
@@ -51,47 +51,47 @@ namespace dungeon
 		\param[in]	other	比較する三角形
 		\return		trueならば共通の頂点を持っている
 		*/
-		bool HasCommonPoints(const Triangle& other) const;
+		bool HasCommonPoints(const Triangle& other) const noexcept;
 
 		/*!
 		頂点を取得します
 		\param[in]	index	頂点番号
 		\return		頂点
 		*/
-		const std::shared_ptr<const Point>& GetPoint(const size_t index) const;
+		const std::shared_ptr<const Point>& GetPoint(const size_t index) const noexcept;
 
 		/*!
 		面積を取得します
 		\return		面積
 		*/
-		double Area() const;
+		double Area() const noexcept;
 
 		/*!
 		右回りの面か取得します
 		\return		trueならば右回りの辺
 		*/
-		bool IsCW() const;
+		bool IsCW() const noexcept;
 
 		/*!
 		左回りの面か取得します
 		\return		trueならば左回りの辺
 		*/
-		bool IsCCW() const;
+		bool IsCCW() const noexcept;
 
 		/*!
 		右回りの面に変換します
 		*/
-		void CW();
+		void CW() noexcept;
 
 		/*!
 		左回りの面に変換します
 		*/
-		void CCW();
+		void CCW() noexcept;
 
 		/*!
 		コピー代入
 		*/
-		Triangle& operator=(const Triangle& other);
+		Triangle& operator=(const Triangle& other) noexcept;
 
 		/*!
 		ムーブ代入
@@ -103,19 +103,19 @@ namespace dungeon
 		\param[in]	other	比較する三角形
 		\return		trueならば同じ
 		*/
-		bool operator==(const Triangle& other) const;
+		bool operator==(const Triangle& other) const noexcept;
 
 		/*!
 		異値判定
 		\param[in]	other	比較する三角形
 		\return		trueならば異なる
 		*/
-		bool operator!=(const Triangle& other) const;
+		bool operator!=(const Triangle& other) const noexcept;
 
 		/*!
 		頂点を取得します
 		*/
-		FVector operator[](const size_t index) const;
+		FVector operator[](const size_t index) const noexcept;
 
 	private:
 		//! 頂点
@@ -127,12 +127,12 @@ namespace dungeon
 
 namespace dungeon
 {
-	inline Triangle::Triangle(const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3)
+	inline Triangle::Triangle(const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3) noexcept
 		: mPoints{ { p1, p2, p3 } }
 	{
 	}
 
-	inline Triangle::Triangle(const FVector& p1, const FVector& p2, const FVector& p3)
+	inline Triangle::Triangle(const FVector& p1, const FVector& p2, const FVector& p3) noexcept
 		: mPoints{ {
 				std::make_shared<const Point>(p1),
 				std::make_shared<const Point>(p2),
@@ -141,7 +141,7 @@ namespace dungeon
 	{
 	}
 
-	inline Triangle::Triangle(const Triangle& other)
+	inline Triangle::Triangle(const Triangle& other) noexcept
 		: mPoints(other.mPoints)
 	{
 	}
@@ -151,7 +151,7 @@ namespace dungeon
 	{
 	}
 
-	inline Triangle& Triangle::operator=(const Triangle& other)
+	inline Triangle& Triangle::operator=(const Triangle& other) noexcept
 	{
 		mPoints = other.mPoints;
 		return *this;
@@ -163,7 +163,7 @@ namespace dungeon
 		return *this;
 	}
 
-	inline bool Triangle::HasCommonPoints(const Triangle& other) const
+	inline bool Triangle::HasCommonPoints(const Triangle& other) const noexcept
 	{
 		return
 			mPoints[0] == other.mPoints[0] || mPoints[0] == other.mPoints[1] || mPoints[0] == other.mPoints[2] ||
@@ -171,12 +171,12 @@ namespace dungeon
 			mPoints[2] == other.mPoints[0] || mPoints[2] == other.mPoints[1] || mPoints[2] == other.mPoints[2];
 	}
 
-	inline const std::shared_ptr<const Point>& Triangle::GetPoint(const size_t index) const
+	inline const std::shared_ptr<const Point>& Triangle::GetPoint(const size_t index) const noexcept
 	{
 		return mPoints.at(index);
 	}
 
-	inline double Triangle::Area() const
+	inline double Triangle::Area() const noexcept
 	{
 		const double dx1 = mPoints[1]->X - mPoints[0]->X;
 		const double dy1 = mPoints[1]->Y - mPoints[0]->Y;
@@ -186,7 +186,7 @@ namespace dungeon
 		return s;
 	}
 
-	inline bool Triangle::IsCW() const
+	inline bool Triangle::IsCW() const noexcept
 	{
 		const FVector e2(*mPoints[1] - *mPoints[0]);
 		const FVector e3(*mPoints[2] - *mPoints[0]);
@@ -194,12 +194,12 @@ namespace dungeon
 		return crossProduct < 0.f;
 	}
 
-	inline bool Triangle::IsCCW() const
+	inline bool Triangle::IsCCW() const noexcept
 	{
 		return !IsCW();
 	}
 
-	inline void Triangle::CW()
+	inline void Triangle::CW() noexcept
 	{
 		if (!IsCW())
 		{
@@ -207,7 +207,7 @@ namespace dungeon
 		}
 	}
 
-	inline void Triangle::CCW()
+	inline void Triangle::CCW() noexcept
 	{
 		if (!IsCCW())
 		{
@@ -215,7 +215,7 @@ namespace dungeon
 		}
 	}
 
-	inline bool Triangle::operator==(const Triangle& other) const
+	inline bool Triangle::operator==(const Triangle& other) const noexcept
 	{
 		/*
 		同値判定に頂点を用いると三角形の頂点の順番を網羅的に考慮する分条件判定が多くなるので、
@@ -231,12 +231,12 @@ namespace dungeon
 			(mPoints[0] == other.mPoints[0] && mPoints[1] == other.mPoints[2] && mPoints[2] == other.mPoints[1]);
 	}
 
-	inline bool Triangle::operator!=(const Triangle& other) const
+	inline bool Triangle::operator!=(const Triangle& other) const noexcept
 	{
 		return !(*this == other);
 	}
 
-	inline FVector Triangle::operator[](const size_t index) const
+	inline FVector Triangle::operator[](const size_t index) const noexcept
 	{
 		return *mPoints.at(index);
 	}

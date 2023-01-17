@@ -29,7 +29,7 @@ namespace
 
 namespace dungeon
 {
-	Room::Room(const GenerateParameter& parameter)
+	Room::Room(const GenerateParameter& parameter) noexcept
 	{
 		mWidth = randSize(parameter.GetRandom(), parameter.GetMinRoomWidth(), parameter.GetMaxRoomWidth());
 		mDepth = randSize(parameter.GetRandom(), parameter.GetMinRoomDepth(), parameter.GetMaxRoomDepth());
@@ -56,7 +56,7 @@ namespace dungeon
 		}
 	}
 
-	Room::Room(const Room& other)
+	Room::Room(const Room& other) noexcept
 		: mX(other.mX)
 		, mY(other.mY)
 		, mZ(other.mZ)
@@ -88,102 +88,102 @@ namespace dungeon
 	{
 	}
 
-	const Identifier& Room::GetIdentifier() const
+	const Identifier& Room::GetIdentifier() const noexcept
 	{
 		return mIdentifier;
 	}
 
-	int32_t Room::GetX() const
+	int32_t Room::GetX() const noexcept
 	{
 		return mX;
 	}
 
-	int32_t Room::GetY() const
+	int32_t Room::GetY() const noexcept
 	{
 		return mY;
 	}
 
-	int32_t Room::GetZ() const
+	int32_t Room::GetZ() const noexcept
 	{
 		return mZ;
 	}
 
-	void Room::SetX(const int32_t x)
+	void Room::SetX(const int32_t x) noexcept
 	{
 		mX = x;
 	}
 
-	void Room::SetY(const int32_t y)
+	void Room::SetY(const int32_t y) noexcept
 	{
 		mY = y;
 	}
 
-	void Room::SetZ(const int32_t z)
+	void Room::SetZ(const int32_t z) noexcept
 	{
 		mZ = z;
 	}
 
-	int32_t Room::GetWidth() const
+	int32_t Room::GetWidth() const noexcept
 	{
 		return mWidth;
 	}
 
-	int32_t Room::GetDepth() const
+	int32_t Room::GetDepth() const noexcept
 	{
 		return mDepth;
 	}
 
-	int32_t Room::GetHeight() const
+	int32_t Room::GetHeight() const noexcept
 	{
 		return mHeight;
 	}
 
-	uint16_t Room::GetUnderfloorHeight() const
+	uint16_t Room::GetUnderfloorHeight() const noexcept
 	{
 		return mUnderfloorHeight;
 	}
 
-	void Room::SetWidth(const int32_t width)
+	void Room::SetWidth(const int32_t width) noexcept
 	{
 		mWidth = width;
 	}
 
-	void Room::SetDepth(const int32_t depth)
+	void Room::SetDepth(const int32_t depth) noexcept
 	{
 		mDepth = depth;
 	}
 
-	void Room::SetHeight(const int32_t height)
+	void Room::SetHeight(const int32_t height) noexcept
 	{
 		mHeight = height;
 	}
 
-	void Room::SetUnderfloorHeight(const uint16_t underfloorHeight)
+	void Room::SetUnderfloorHeight(const uint16_t underfloorHeight) noexcept
 	{
 		mUnderfloorHeight = underfloorHeight;
 	}
 
-	int32_t Room::GetLeft() const
+	int32_t Room::GetLeft() const noexcept
 	{
 		return mX;
 	}
 
-	int32_t Room::GetRight() const
+	int32_t Room::GetRight() const noexcept
 	{
 		return mX + mWidth;
 	}
 
-	int32_t Room::GetTop() const
+	int32_t Room::GetTop() const noexcept
 	{
 		return mY;
 	}
 
-	int32_t Room::GetBottom() const
+	int32_t Room::GetBottom() const noexcept
 	{
 		return mY + mDepth;
 	}
 
-	FIntRect Room::GetRect() const
+	FIntRect Room::GetRect() const noexcept
 	{
 		const int32_t l = GetLeft();
 		const int32_t t = GetTop();
@@ -192,17 +192,17 @@ namespace dungeon
 		return FIntRect(l, t, r, b);
 	}
 
-	int32_t Room::GetForeground() const
+	int32_t Room::GetForeground() const noexcept
 	{
 		return mZ + mHeight;
 	}
 
-	int32_t Room::GetBackground() const
+	int32_t Room::GetBackground() const noexcept
 	{
 		return mZ;
 	}
 
-	Point Room::GetCenter() const
+	Point Room::GetCenter() const noexcept
 	{
 		const float x = static_cast<float>(GetX()) + static_cast<float>(GetWidth()) * 0.5f;
 		const float y = static_cast<float>(GetY()) + static_cast<float>(GetDepth()) * 0.5f;
@@ -210,7 +210,7 @@ namespace dungeon
 		return Point(x, y, z);
 	}
 
-	FVector Room::GetExtent() const
+	FVector Room::GetExtent() const noexcept
 	{
 		const float x = static_cast<float>(GetWidth()) * 0.5f;
 		const float y = static_cast<float>(GetDepth()) * 0.5f;
@@ -218,7 +218,7 @@ namespace dungeon
 		return FVector(x, y, z);
 	}
 
-	Point Room::GetFloorCenter() const
+	Point Room::GetFloorCenter() const noexcept
 	{
 		const float x = static_cast<float>(GetX()) + static_cast<float>(GetWidth()) * 0.5f;
 		const float y = static_cast<float>(GetY()) + static_cast<float>(GetDepth()) * 0.5f;
@@ -226,7 +226,7 @@ namespace dungeon
 		return Point(x, y, z);
 	}
 
-	Point Room::GetGroundCenter() const
+	Point Room::GetGroundCenter() const noexcept
 	{
 		const float x = static_cast<float>(GetX()) + static_cast<float>(GetWidth()) * 0.5f;
 		const float y = static_cast<float>(GetY()) + static_cast<float>(GetDepth()) * 0.5f;
@@ -234,7 +234,7 @@ namespace dungeon
 		return Point(x, y, z);
 	}
 
-	bool Room::Intersect(const Room& other) const
+	bool Room::Intersect(const Room& other) const noexcept
 	{
 		return
 			(GetLeft() < other.GetRight() && GetRight() > other.GetLeft()) &&
@@ -242,7 +242,7 @@ namespace dungeon
 			(GetBackground() < other.GetForeground() && GetForeground() > other.GetBackground());
 	}
 
-	bool Room::Intersect(const Room& other, const uint32_t margin) const
+	bool Room::Intersect(const Room& other, const uint32_t margin) const noexcept
 	{
 		const int32_t left = GetLeft() - margin;
 		const int32_t right = GetRight() + margin;
@@ -256,12 +256,12 @@ namespace dungeon
 			(background < other.GetForeground() && foreground > other.GetBackground());
 	}
 
-	bool Room::Contain(const Point& point) const
+	bool Room::Contain(const Point& point) const noexcept
 	{
 		return Contain(point.X, point.Y, point.Z);
 	}
 
-	bool Room::Contain(const int32_t x, const int32_t y, const int32_t z) const
+	bool Room::Contain(const int32_t x, const int32_t y, const int32_t z) const noexcept
 	{
 		return
 			(GetLeft() <= x && x <= GetRight()) &&
@@ -269,48 +269,47 @@ namespace dungeon
 			(GetBackground() <= z && z <= GetForeground());
 	}
 
-	Room::Parts Room::GetParts() const
+	Room::Parts Room::GetParts() const noexcept
 	{
 		return mParts;
 	}
 
-	void Room::SetParts(const Parts parts)
+	void Room::SetParts(const Parts parts) noexcept
 	{
 		mParts = parts;
 	}
 
-	Room::Item Room::GetItem() const
+	Room::Item Room::GetItem() const noexcept
 	{
 		return mItem;
 	}
 
-	void Room::SetItem(const Item item)
+	void Room::SetItem(const Item item) noexcept
 	{
 		mItem = item;
 	}
 
-	uint8_t Room::GetDepthFromStart() const
+	uint8_t Room::GetDepthFromStart() const noexcept
 	{
 		return mDepthFromStart;
 	}
 
-	void Room::SetDepthFromStart(const uint8_t depthFrcomStart)
+	void Room::SetDepthFromStart(const uint8_t depthFrcomStart) noexcept
 	{
 		mDepthFromStart = depthFrcomStart;
 	}
 
-	uint8_t Room::GetBranchId() const
+	uint8_t Room::GetBranchId() const noexcept
 	{
 		return mBranchId;
 	}
 
-	void Room::SetBranchId(const uint8_t branchId)
+	void Room::SetBranchId(const uint8_t branchId) noexcept
 	{
 		mBranchId = branchId;
 	}
 
-
-	std::string Room::GetName() const
+	std::string Room::GetName() const noexcept
 	{
 		return std::to_string(mX) + "_" + std::to_string(mY) + "_" + std::to_string(mZ);
 	}

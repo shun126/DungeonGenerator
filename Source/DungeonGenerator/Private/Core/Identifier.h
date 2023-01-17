@@ -55,7 +55,6 @@ namespace dungeon
 		static constexpr uint8_t bitCount = 2;
 		static constexpr uint8_t shift = sizeof(mIdentifier) * 8 - bitCount;
 		static constexpr IdentifierType maskCounter = static_cast<IdentifierType>(~0) >> bitCount;
-		static constexpr IdentifierType maskType = (~0) << shift;
 		static IdentifierType mCounter;
 	};
 
@@ -77,11 +76,13 @@ namespace dungeon
 	inline Identifier& Identifier::operator=(const Identifier& other) noexcept
 	{
 		mIdentifier = other.mIdentifier;
+		return *this;
 	}
 
 	inline Identifier& Identifier::operator=(Identifier&& other) noexcept
 	{
 		mIdentifier = std::move(other.mIdentifier);
+		return *this;
 	}
 
 	inline bool Identifier::operator==(const Identifier& other) const noexcept

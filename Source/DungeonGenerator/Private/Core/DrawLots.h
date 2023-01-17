@@ -14,11 +14,10 @@ namespace dungeon
 	重み付き抽選
 	*/
 	template <class InputIterator, class Predicate>
-	InputIterator DrawLots(InputIterator first, InputIterator last, Predicate pred)
+	InputIterator DrawLots(InputIterator first, InputIterator last, Predicate pred) noexcept
 	{
 		std::random_device random;
 		std::size_t totalWeight = 0;
-		std::size_t pick = 0;
 
 		struct Entry final
 		{

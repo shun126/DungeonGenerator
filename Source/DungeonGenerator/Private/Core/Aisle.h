@@ -24,13 +24,13 @@ namespace dungeon
 		\param[in]  p0  辺の頂点
 		\param[in]  p1  辺の頂点
 		*/
-		Aisle(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1);
+		Aisle(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1) noexcept;
 
 		/*!
 		コピーコンストラクタ
 		\param[in]  other	Aisle
 		*/
-		Aisle(const Aisle& other);
+		Aisle(const Aisle& other) noexcept;
 
 		/*!
 		ムーブコンストラクタ
@@ -48,20 +48,20 @@ namespace dungeon
 		\param[in]	point	比較する点
 		\return		trueならば等しい
 		*/
-		bool Contain(const std::shared_ptr<const Point>& point) const;
+		bool Contain(const std::shared_ptr<const Point>& point) const noexcept;
 
 		/*!
 		頂点を取得します
 		\param[in]	index	頂点番号（０～１）
 		\return		頂点
 		*/
-		const std::shared_ptr<const Point>& GetPoint(const size_t index) const;
+		const std::shared_ptr<const Point>& GetPoint(const size_t index) const noexcept;
 
 		/*!
 		辺の長さを取得します
 		\return		辺の長さ
 		*/
-		double GetLength() const;
+		double GetLength() const noexcept;
 
 		/*!
 		識別子を取得
@@ -93,7 +93,7 @@ namespace dungeon
 		コピー代入
 		\param[in]  other	Aisle
 		*/
-		Aisle& operator=(const Aisle& other);
+		Aisle& operator=(const Aisle& other) noexcept;
 
 		/*!
 		ムーブ代入
@@ -106,17 +106,17 @@ namespace dungeon
 		\param[in]	other	比較する辺
 		\return		trueならば等しい
 		*/
-		bool operator==(const Aisle& other) const;
+		bool operator==(const Aisle& other) const noexcept;
 
 		/*!
 		辺が等しくないか判定します
 		\param[in]	other	比較する辺
 		\return		trueならば等しくない
 		*/
-		bool operator!=(const Aisle& other) const;
+		bool operator!=(const Aisle& other) const noexcept;
 
 
-		void Dump(std::ofstream& stream) const;
+		void Dump(std::ofstream& stream) const noexcept;
 
 	private:
 		std::array<std::shared_ptr<const Point>, 2> mPoints;
@@ -131,14 +131,14 @@ namespace dungeon
 
 namespace dungeon
 {
-	inline Aisle::Aisle(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1)
+	inline Aisle::Aisle(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1) noexcept
 	{
 		mPoints[0] = p0;
 		mPoints[1] = p1;
 		mLength = Point::Dist(*p0, *p1);
 	}
 
-	inline Aisle::Aisle(const Aisle& other)
+	inline Aisle::Aisle(const Aisle& other) noexcept
 		: mPoints(other.mPoints)
 		, mLength(other.mLength)
 		, mIdentifier(other.mIdentifier)
@@ -156,7 +156,7 @@ namespace dungeon
 	{
 	}
 
-	inline Aisle& Aisle::operator=(const Aisle& other)
+	inline Aisle& Aisle::operator=(const Aisle& other) noexcept
 	{
 		mPoints = other.mPoints;
 		mLength = other.mLength;
@@ -176,17 +176,17 @@ namespace dungeon
 		return *this;
 	}
 
-	inline bool Aisle::Contain(const std::shared_ptr<const Point>& point) const
+	inline bool Aisle::Contain(const std::shared_ptr<const Point>& point) const noexcept
 	{
 		return mPoints[0] == point || mPoints[1] == point;
 	}
 
-	inline const std::shared_ptr<const Point>& Aisle::GetPoint(const size_t index) const
+	inline const std::shared_ptr<const Point>& Aisle::GetPoint(const size_t index) const noexcept
 	{
 		return mPoints.at(index);
 	}
 
-	inline double Aisle::GetLength() const
+	inline double Aisle::GetLength() const noexcept
 	{
 		return mLength;
 	}
@@ -219,7 +219,7 @@ namespace dungeon
 		mLocked = mUniqueLocked = lock;
 	}
 
-	inline bool Aisle::operator==(const Aisle& other) const
+	inline bool Aisle::operator==(const Aisle& other) const noexcept
 	{
 		return
 			(mPoints[0] == other.mPoints[0] && mPoints[1] == other.mPoints[1]) ||
@@ -227,12 +227,12 @@ namespace dungeon
 		// mLockedを考慮していない
 	}
 
-	inline bool Aisle::operator!=(const Aisle& other) const
+	inline bool Aisle::operator!=(const Aisle& other) const noexcept
 	{
 		return !(*this == other);
 	}
 
-	inline void Aisle::Dump(std::ofstream& stream) const
+	inline void Aisle::Dump(std::ofstream& stream) const noexcept
 	{
 		mPoints[0]->Dump(stream);
 		mPoints[1]->Dump(stream);

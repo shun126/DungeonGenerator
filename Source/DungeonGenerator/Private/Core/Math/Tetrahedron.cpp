@@ -15,24 +15,24 @@ namespace dungeon
 	/*!
 	他の四面体と共有点を持つか
 	*/
-	bool Tetrahedron::HasCommonPoints(const Tetrahedron& t) const
+	bool Tetrahedron::HasCommonPoints(const Tetrahedron& t) const noexcept
 	{
-		for (const auto& sp : mPoints)
-		{
-			for (const auto& op : t.mPoints)
+		return std::any_of(mPoints.begin(), mPoints.end(), [&t](const auto& sp)
 			{
-				if (sp == op)
-					return true;
+				return std::any_of(t.mPoints.begin(), t.mPoints.end(), [&sp](const auto& op)
+					{
+						return sp == op;
+					}
+				);
 			}
-		}
-		return false;
+		);
 	}
 
 	/*
 	外接球の中心点と半径を計算
 	https://mathworld.wolfram.com/Circumsphere.html
 	*/
-	Circle Tetrahedron::GetCircumscribedSphere() const
+	Circle Tetrahedron::GetCircumscribedSphere() const noexcept
 	{
 		const double a[4][4] = {
 			{ mPoints[0]->X, mPoints[0]->Y, mPoints[0]->Z, 1 },
@@ -78,7 +78,7 @@ namespace dungeon
 	/*
 	二次元行列の計算
 	*/
-	double Tetrahedron::dit_2(const double (&dit)[2][2])
+	double Tetrahedron::dit_2(const double (&dit)[2][2]) noexcept
 	{
 		return (dit[0][0] * dit[1][1]) - (dit[0][1] * dit[1][0]);
 	}
@@ -86,7 +86,7 @@ namespace dungeon
 	/*
 	三次行列の計算
 	*/
-	double Tetrahedron::dit_3(const double (&dit)[3][3])
+	double Tetrahedron::dit_3(const double (&dit)[3][3]) noexcept
 	{
 		const double a[2][2] = {
 			{ dit[1][1], dit[1][2] },
@@ -109,7 +109,7 @@ namespace dungeon
 	/*
 	4次元の行列
 	*/
-	double Tetrahedron::dit_4(const double (&dit)[4][4])
+	double Tetrahedron::dit_4(const double (&dit)[4][4]) noexcept
 	{
 		const double a[3][3] = {
 			{ dit[1][1], dit[1][2], dit[1][3] },
@@ -138,36 +138,32 @@ namespace dungeon
 		return (dit[0][0] * dit_3(a)) - (dit[1][0] * dit_3(b)) + (dit[2][0] * dit_3(c)) - (dit[3][0] * dit_3(d));
 	}
 
-	uint32_t Tetrahedron::GetHash() const
+	uint32_t Tetrahedron::GetHash() const noexcept
 	{
 		return FCrc::MemCrc32(&mPoints, sizeof(mPoints), 19800722);
 	}
 
-	bool Tetrahedron::operator==(const Tetrahedron& t) const
+	bool Tetrahedron::operator==(const Tetrahedron& t) const noexcept
 	{
 		for (const auto& sp : mPoints)
 		{
-			bool found = false;
-			for (const auto& op : t.mPoints)
-			{
-				if (sp == op)
+			const bool found = std::any_of(t.mPoints.begin(), t.mPoints.end(), [&sp](const auto& op)
 				{
-					found = true;
-					break;
+					return sp == op;
 				}
-			}
+			);
 			if (!found)
 				return false;
 		}
 		return true;
 	}
 
-	bool Tetrahedron::operator!=(const Tetrahedron& other) const
+	bool Tetrahedron::operator!=(const Tetrahedron& other) const noexcept
 	{
 		return !(*this == other);
 	}
 
-	const std::shared_ptr<const Point>& Tetrahedron::operator[](const size_t index) const
+	const std::shared_ptr<const Point>& Tetrahedron::operator[](const size_t index) const noexcept
 	{
 		return mPoints.at(index);
 	}
