@@ -25,17 +25,17 @@ namespace dungeon
 		};
 	}
 
-	const FIntVector& Direction::GetVector(const Direction::Index index)
+	const FIntVector& Direction::GetVector(const Direction::Index index) noexcept
 	{
 		return detail::offsets[static_cast<size_t>(index)];
 	}
 
-	std::array<FIntVector, 4>::const_iterator Direction::Begin()
+	std::array<FIntVector, 4>::const_iterator Direction::Begin() noexcept
 	{
 		return detail::offsets.cbegin();
 	}
 
-	std::array<FIntVector, 4>::const_iterator Direction::End()
+	std::array<FIntVector, 4>::const_iterator Direction::End() noexcept
 	{
 		return detail::offsets.cend();
 	}

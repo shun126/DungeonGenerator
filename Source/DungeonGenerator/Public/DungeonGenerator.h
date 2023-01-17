@@ -34,6 +34,9 @@ public:
 	using ResetRoomSensorEvent = std::function<void(AActor*, const FBox&)>;	// TODO:正式採用しない可能性あり
 
 public:
+	static const FName& GetDungeonGeneratorTag();
+
+public:
 	CDungeonGenerator();
 	virtual ~CDungeonGenerator() = default;
 
@@ -135,7 +138,7 @@ inline T* CDungeonGenerator::SpawnActorDeferred(UClass* actorClass, const FName&
 	actor->SetFolderPath(folderPath);
 #endif
 
-	actor->Tags.Add(DungeonGeneratorName);
+	actor->Tags.Add(GetDungeonGeneratorTag());
 
 	return actor;
 }

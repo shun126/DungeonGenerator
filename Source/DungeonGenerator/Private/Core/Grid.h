@@ -48,20 +48,20 @@ namespace dungeon
 		/*!
 		コンストラクタ
 		*/
-		Grid();
+		Grid() noexcept;
 
 		/*!
 		コンストラクタ
 		\param[in]	type	グリッドの種類
 		*/
-		explicit Grid(const Type type);
+		explicit Grid(const Type type) noexcept;
 
 		/*!
 		コンストラクタ
 		\param[in]	type		グリッドの種類
 		\param[in]	direction	グリッドの方向
 		*/
-		Grid(const Type type, const Direction direction);
+		Grid(const Type type, const Direction direction) noexcept;
 
 		/*!
 		コンストラクタ
@@ -69,7 +69,7 @@ namespace dungeon
 		\param[in]	direction	グリッドの方向
 		\param[in]	identifier	識別子
 		*/
-		Grid(const Type type, const Direction direction, const uint16_t identifier);
+		Grid(const Type type, const Direction direction, const uint16_t identifier) noexcept;
 
 		/*!
 		デストラクタ
@@ -79,42 +79,42 @@ namespace dungeon
 		/*!
 		グリッドの種類を取得します
 		*/
-		Type GetType() const;
+		Type GetType() const noexcept;
 
 		/*!
 		グリッドの種類を設定します
 		*/
-		void SetType(const Type type);
+		void SetType(const Type type) noexcept;
 
 		/*!
 		グリッドの方向を取得します
 		*/
-		Direction GetDirection() const;
+		Direction GetDirection() const noexcept;
 
 		/*!
 		グリッドの方向を設定します
 		*/
-		void SetDirection(const Direction direction);
+		void SetDirection(const Direction direction) noexcept;
 
 		/*!
 		識別子を取得します
 		*/
-		uint16_t GetIdentifier() const;
+		uint16_t GetIdentifier() const noexcept;
 
 		/*!
 		識別子を設定します
 		*/
-		void SetIdentifier(const uint16_t identifier);
+		void SetIdentifier(const uint16_t identifier) noexcept;
 
 		/*!
 		小道具を取得します
 		*/
-		Props GetProps() const;
+		Props GetProps() const noexcept;
 
 		/*!
 		小道具を設定します
 		*/
-		void SetProps(const Props props);
+		void SetProps(const Props props) noexcept;
 
 		/*!
 		部屋系のグリッド？
@@ -158,32 +158,32 @@ namespace dungeon
 		/*!
 		水平方向に通行可能なセルか判定します
 		*/
-		bool IsHorizontallyPassable() const;
+		bool IsHorizontallyPassable() const noexcept;
 
 		/*!
 		水平方向に通行不可能なセルか判定します
 		*/
-		bool IsHorizontallyNotPassable() const;
+		bool IsHorizontallyNotPassable() const noexcept;
 
 		/*!
 		垂直方向に通行可能なセルか判定します
 		*/
-		bool IsVerticallyPassable() const;
+		bool IsVerticallyPassable() const noexcept;
 
 		/*!
 		垂直方向に通行不可能なセルか判定します
 		*/
-		bool IsVerticallyNotPassable() const;
+		bool IsVerticallyNotPassable() const noexcept;
 
 		/*!
 		床（部屋）グリッドを生成します
 		*/
-		static Grid CreateFloor(Random& random, const uint16_t identifier);
+		static Grid CreateFloor(Random& random, const uint16_t identifier) noexcept;
 
 		/*!
 		デッキ（部屋の周辺）グリッドを生成します
 		*/
-		static Grid CreateDeck(Random& random, const uint16_t identifier);
+		static Grid CreateDeck(Random& random, const uint16_t identifier) noexcept;
 
 		// 判定補助関数
 		/*!
@@ -191,20 +191,20 @@ namespace dungeon
 		\param[in]	toGrid		参照先グリッド（通常は一つ下のグリッド）
 		\return		trueならば床の生成が可能
 		*/
-		bool CanBuildFloor(const Grid& toGrid) const;
+		bool CanBuildFloor(const Grid& toGrid) const noexcept;
 
 		/*!
 		斜面が生成されるか判定します
 		\return		trueならば斜面の生成が可能
 		*/
-		bool CanBuildSlope() const;
+		bool CanBuildSlope() const noexcept;
 
 		/*!
 		自身からtoGridを見た時に屋根が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド（通常は一つ上のグリッド）
 		\return		trueならば屋根の生成が可能
 		*/
-		bool CanBuildRoof(const Grid& toGrid) const;
+		bool CanBuildRoof(const Grid& toGrid) const noexcept;
 
 		/*!
 		自身からtoGridを見た時に壁が生成されるか判定します
@@ -213,7 +213,7 @@ namespace dungeon
 		\param[in]	mergeRooms	部屋と部屋を結合する
 		\return		trueならば壁の生成が可能
 		*/
-		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const;
+		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
 
 		/*!
 		自身からtoGridを見た時に柱が生成されるか判定します
@@ -221,7 +221,7 @@ namespace dungeon
 		\param[in]	direction	自身からtoGridの方向
 		\return		trueならば柱の生成が可能
 		*/
-		bool CanBuildPillar(const Grid& toGrid) const;
+		bool CanBuildPillar(const Grid& toGrid) const noexcept;
 
 		/*!
 		自身からtoGridを見た時に扉が生成されるか判定します
@@ -229,13 +229,13 @@ namespace dungeon
 		\param[in]	direction	自身からtoGridの方向
 		\return		trueならば扉の生成が可能
 		*/
-		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction) const;
+		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction) const noexcept;
 
 
 		/*!
 		グリッドの種類の色を取得します
 		*/
-		const FColor& GetTypeColor() const;
+		const FColor& GetTypeColor() const noexcept;
 
 	private:
 		Type mType;					//!< グリッドの種類
@@ -244,28 +244,28 @@ namespace dungeon
 		uint16_t mIdentifier = ~0;
 	};
 
-	inline Grid::Grid()
+	inline Grid::Grid() noexcept
 		: mType(Type::Empty)
 		, mProps(Props::None)
 		, mDirection(Direction(Direction::North))
 	{
 	}
 
-	inline Grid::Grid(const Type type)
+	inline Grid::Grid(const Type type) noexcept
 		: mType(type)
 		, mProps(Props::None)
 		, mDirection(Direction(Direction::North))
 	{
 	}
 
-	inline Grid::Grid(const Type type, const Direction direction)
+	inline Grid::Grid(const Type type, const Direction direction) noexcept
 		: mType(type)
 		, mProps(Props::None)
 		, mDirection(direction)
 	{
 	}
 
-	inline Grid::Grid(const Type type, const Direction direction, const uint16_t identifier)
+	inline Grid::Grid(const Type type, const Direction direction, const uint16_t identifier) noexcept
 		: mType(type)
 		, mProps(Props::None)
 		, mDirection(direction)
@@ -273,52 +273,52 @@ namespace dungeon
 	{
 	}
 
-	inline Grid Grid::CreateFloor(Random& random, const uint16_t identifier)
+	inline Grid Grid::CreateFloor(Random& random, const uint16_t identifier) noexcept
 	{
 		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier);
 	}
 
-	inline Grid Grid::CreateDeck(Random& random, const uint16_t identifier)
+	inline Grid Grid::CreateDeck(Random& random, const uint16_t identifier) noexcept
 	{
 		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier);
 	}
 
-	inline Grid::Type Grid::GetType() const
+	inline Grid::Type Grid::GetType() const noexcept
 	{
 		return mType;
 	}
 
-	inline void Grid::SetType(const Type type)
+	inline void Grid::SetType(const Type type) noexcept
 	{
 		mType = type;
 	}
 
-	inline Direction Grid::GetDirection() const
+	inline Direction Grid::GetDirection() const noexcept
 	{
 		return mDirection;
 	}
 
-	inline void Grid::SetDirection(const Direction direction)
+	inline void Grid::SetDirection(const Direction direction) noexcept
 	{
 		mDirection = direction;
 	}
 
-	inline uint16_t Grid::GetIdentifier() const
+	inline uint16_t Grid::GetIdentifier() const noexcept
 	{
 		return mIdentifier;
 	}
 
-	inline void Grid::SetIdentifier(const uint16_t identifier)
+	inline void Grid::SetIdentifier(const uint16_t identifier) noexcept
 	{
 		mIdentifier = identifier;
 	}
 
-	inline Grid::Props Grid::GetProps() const
+	inline Grid::Props Grid::GetProps() const noexcept
 	{
 		return mProps;
 	}
 
-	inline void Grid::SetProps(const Props props)
+	inline void Grid::SetProps(const Props props) noexcept
 	{
 		mProps = props;
 	}

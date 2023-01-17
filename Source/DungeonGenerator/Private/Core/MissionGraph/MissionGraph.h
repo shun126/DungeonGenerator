@@ -30,13 +30,13 @@ namespace dungeon
 	class MissionGraph
 	{
 	public:
-		MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<const Point>& goal);
+		MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<const Point>& goal) noexcept;
 		virtual ~MissionGraph() = default;
 
 	private:
-		void Generate(const std::shared_ptr<const Room>& room, const uint8_t count = 0);
-		Aisle* SelectAisle(const std::shared_ptr<const Room>& room) const;
-		Aisle* SelectAisle(const std::shared_ptr<const Point>& point) const;
+		void Generate(const std::shared_ptr<const Room>& room, const uint8_t count = 0) noexcept;
+		Aisle* SelectAisle(const std::shared_ptr<const Room>& room) const noexcept;
+		Aisle* SelectAisle(const std::shared_ptr<const Point>& point) const noexcept;
 
 	private:
 		std::shared_ptr<Generator> mGenerator;

@@ -24,7 +24,7 @@
 #include <Builders/CubeBuilder.h>
 #endif
 
-static const FName DungeonGeneratorName("CDungeonGenerator");
+static const FName DungeonGeneratorTag("DungeonGenerator");
 
 namespace
 {
@@ -32,6 +32,11 @@ namespace
 	{
 		return FTransform(FRotator(0.f, yaw, 0.f).Quaternion(), position);
 	}
+}
+
+const FName& CDungeonGenerator::GetDungeonGeneratorTag()
+{
+	return DungeonGeneratorTag;
 }
 
 CDungeonGenerator::CDungeonGenerator()
@@ -482,7 +487,7 @@ void CDungeonGenerator::AddTerraine()
 			if (IsValid(actorClass))
 			{
 				TArray<AActor*> actors;
-				UGameplayStatics::GetAllActorsOfClassWithTag(world, ADungeonRoomSensor::StaticClass(), DungeonGeneratorName, actors);
+				UGameplayStatics::GetAllActorsOfClassWithTag(world, ADungeonRoomSensor::StaticClass(), DungeonGeneratorTag, actors);
 				for (AActor* actor : actors)
 				{
 					ADungeonRoomSensor* dungeonRoomSensor = Cast<ADungeonRoomSensor>(actor);
@@ -766,11 +771,17 @@ void CDungeonGenerator::DestorySpawnedActors()
 	if (IsValid(world))
 	{
 		TArray<AActor*> actors;
-		UGameplayStatics::GetAllActorsWithTag(world, DungeonGeneratorName, actors);
+		UGameplayStatics::GetAllActorsWithTag(world, DungeonGeneratorTag, actors);
 		for (AActor* actor : actors)
 		{
 			if (IsValid(actor))
+			{
+				if (ADungeonRoomSensor* dungeonRoomSensor = Cast<ADungeonRoomSensor>(actor))
+				{
+					dungeonRoomSensor->Finalize();
+				}
 				actor->Destroy();
+			}
 		}
 	}
 }
@@ -790,8 +801,6 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 
 	const size_t totalBufferSize = textureWidth * textureWidth;
 	auto pixels = std::make_unique<uint8_t[]>(totalBufferSize);
-	if (pixels == nullptr)
-		return nullptr;
 
 	horizontalScale = 0;
 	{

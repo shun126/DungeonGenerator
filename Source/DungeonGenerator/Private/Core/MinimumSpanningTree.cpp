@@ -15,7 +15,7 @@
 namespace dungeon
 {
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	size_t MinimumSpanningTree::Verteces::Index(const std::shared_ptr<const Point>& point)
+	size_t MinimumSpanningTree::Verteces::Index(const std::shared_ptr<const Point>& point) noexcept
 	{
 		const auto i = std::find_if(mVerteces.begin(), mVerteces.end(), [point](const std::shared_ptr<const Point>& p) { return p == point; });
 		if (i == mVerteces.end())
@@ -30,31 +30,35 @@ namespace dungeon
 		}
 	}
 
-	const std::shared_ptr<const Point>& MinimumSpanningTree::Verteces::Get(const size_t index) const
+	const std::shared_ptr<const Point>& MinimumSpanningTree::Verteces::Get(const size_t index) const noexcept
 	{
 		return mVerteces.at(index);
 	}
 
-	size_t MinimumSpanningTree::Verteces::Find(const std::shared_ptr<const Point>& point) const
+	size_t MinimumSpanningTree::Verteces::Find(const std::shared_ptr<const Point>& point) const noexcept
 	{
-		const auto i = std::find_if(mVerteces.begin(), mVerteces.end(), [&point](const std::shared_ptr<const Point>& p) { return p == point; });
-		return i != mVerteces.end() ? std::distance(mVerteces.begin(), i) : ~0;
+		const auto i = std::find_if(mVerteces.begin(), mVerteces.end(), [&point](const std::shared_ptr<const Point>& p)
+			{
+				return p == point;
+			}
+		);
+		return i == mVerteces.end() ? ~0 : std::distance(mVerteces.begin(), i);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	MinimumSpanningTree::IndexedEdge::IndexedEdge(const size_t e0, const size_t e1, const float length)
+	MinimumSpanningTree::IndexedEdge::IndexedEdge(const size_t e0, const size_t e1, const float length) noexcept
 		: mLength(length)
 	{
 		mEdges[0] = e0;
 		mEdges[1] = e1;
 	}
 
-	size_t MinimumSpanningTree::IndexedEdge::GetEdge(const size_t index) const
+	size_t MinimumSpanningTree::IndexedEdge::GetEdge(const size_t index) const noexcept
 	{
 		return mEdges.at(index);
 	}
 
-	float MinimumSpanningTree::IndexedEdge::GetLength() const
+	float MinimumSpanningTree::IndexedEdge::GetLength() const noexcept
 	{
 		return mLength;
 	}
@@ -72,7 +76,7 @@ namespace dungeon
 		コンストラクタ
 		\param[in]	edgeSize	edgeの数
 		*/
-		explicit UnionFind(const size_t edgeSize)
+		explicit UnionFind(const size_t edgeSize) noexcept
 		{
 			mRank.resize(edgeSize, 0);
 			mParents.resize(edgeSize, 0);
@@ -88,7 +92,7 @@ namespace dungeon
 		\param[in]	y	頂点番号	
 		\return		trueならば同じ集合にいるか調べます
 		*/
-		bool IsSame(const size_t x, const size_t y)
+		bool IsSame(const size_t x, const size_t y) noexcept
 		{
 			return FindRoot(x) == FindRoot(y);
 		}
@@ -98,7 +102,7 @@ namespace dungeon
 		\param[in]	x	頂点番号
 		\param[in]	y	頂点番号
 		*/
-		void Unite(size_t x, size_t y)
+		void Unite(size_t x, size_t y) noexcept
 		{
 			x = FindRoot(x);
 			y = FindRoot(y);
@@ -121,7 +125,7 @@ namespace dungeon
 		木の生成
 		\param[in]	index	頂点番号
 		*/
-		void MakeTree(const size_t index)
+		void MakeTree(const size_t index) noexcept
 		{
 			mParents[index] = index;
 			mRank[index] = 0;
@@ -132,7 +136,7 @@ namespace dungeon
 		\param[in]	index	頂点番号
 		\return		親の頂点番号
 		*/
-		size_t FindRoot(size_t index)
+		size_t FindRoot(size_t index) noexcept
 		{
 			if (index != mParents[index])
 				mParents[index] = FindRoot(mParents[index]);
@@ -145,7 +149,7 @@ namespace dungeon
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	MinimumSpanningTree::MinimumSpanningTree(const DelaunayTriangulation3D& delaunayTriangulation)
+	MinimumSpanningTree::MinimumSpanningTree(const DelaunayTriangulation3D& delaunayTriangulation) noexcept
 	{
 		Verteces verteces;
 		std::vector<IndexedEdge> indexedEdges;
@@ -166,7 +170,7 @@ namespace dungeon
 		Initialize(verteces, indexedEdges);
 	}
 
-	MinimumSpanningTree::MinimumSpanningTree(const std::vector<std::shared_ptr<const Point>>& points)
+	MinimumSpanningTree::MinimumSpanningTree(const std::vector<std::shared_ptr<const Point>>& points) noexcept
 	{
 		Verteces verteces;
 		std::vector<IndexedEdge> edges;
@@ -188,7 +192,7 @@ namespace dungeon
 	/*
 	クラスカル法
 	*/
-	void MinimumSpanningTree::Initialize(const Verteces& verteces, std::vector<IndexedEdge>& edges)
+	void MinimumSpanningTree::Initialize(const Verteces& verteces, std::vector<IndexedEdge>& edges) noexcept
 	{
 		// コストが少ない順に整列
 		std::sort(edges.begin(), edges.end(), [](const IndexedEdge& l, const IndexedEdge& r)
@@ -225,10 +229,11 @@ namespace dungeon
 		mStartPoint = FindStartPoint();
 
 		size_t startPointIndex = verteces.Find(mStartPoint);
+		// cppcheck-suppress [knownConditionTrueFalse]
 		if (startPointIndex != ~0)
 		{
 			// スタートから各部屋の深さ（部屋の数）を設定
-			hohoho(verteces, edges, startPointIndex, 0);
+			SetDistanceFromStartToRoom(verteces, edges, startPointIndex, 0);
 
 			// ゴールを記録
 			{
@@ -270,7 +275,7 @@ namespace dungeon
 	}
 
 	// スタートから各部屋の深さ（部屋の数）を設定
-	void MinimumSpanningTree::hohoho(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth)
+	void MinimumSpanningTree::SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept
 	{
 		for (auto& edge : edges)
 		{
@@ -290,14 +295,14 @@ namespace dungeon
 					if (const std::shared_ptr<const Room>& otherRoom = verteces.Get(otherIndex)->GetOwnerRoom())
 					{
 						if (otherRoom->GetDepthFromStart() > depth)
-							hohoho(verteces, edges, otherIndex, depth + 1);
+							SetDistanceFromStartToRoom(verteces, edges, otherIndex, depth + 1);
 					}
 				}
 			}
 		}
 	}
 
-	void MinimumSpanningTree::Cost(std::vector<RouteNode>& result, std::vector<IndexedEdge>& edges, const size_t vertexIndex, const float cost)
+	void MinimumSpanningTree::Cost(std::vector<RouteNode>& result, std::vector<IndexedEdge>& edges, const size_t vertexIndex, const float cost) noexcept
 	{
 		std::vector<std::pair<size_t, float>> routes;
 
@@ -347,7 +352,7 @@ namespace dungeon
 		}
 	}
 
-	std::shared_ptr<const Point> MinimumSpanningTree::FindStartPoint() const
+	std::shared_ptr<const Point> MinimumSpanningTree::FindStartPoint() const noexcept
 	{
 		/*
 		全ての辺の中央の位置と

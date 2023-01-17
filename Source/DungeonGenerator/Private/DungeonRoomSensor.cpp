@@ -4,7 +4,21 @@
 */
 
 #include "DungeonRoomSensor.h"
+#include "DungeonGenerator.h"
 #include <Components/BoxComponent.h>
+
+const FName& ADungeonRoomSensor::GetDungeonGeneratorTag()
+{
+	return CDungeonGenerator::GetDungeonGeneratorTag();
+}
+
+const TArray<FName>& ADungeonRoomSensor::GetDungeonGeneratorTags()
+{
+	static const TArray<FName> tags = {
+		GetDungeonGeneratorTag()
+	};
+	return tags;
+}
 
 ADungeonRoomSensor::ADungeonRoomSensor(const FObjectInitializer& initializer)
 	: Super(initializer)
@@ -18,8 +32,16 @@ ADungeonRoomSensor::ADungeonRoomSensor(const FObjectInitializer& initializer)
 	SetRootComponent(Bounding);
 }
 
+void ADungeonRoomSensor::BeginDestroy()
+{
+	Super::BeginDestroy();
+	Finalize();
+}
+
 void ADungeonRoomSensor::Initialize(const int32 identifier, const FVector& extents, const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 branchId)
 {
+	Finalize();
+	
 	Identifier = identifier;
 	//Bounding->InitBoxExtent(extents);
 	Bounding->SetBoxExtent(extents);
@@ -28,9 +50,24 @@ void ADungeonRoomSensor::Initialize(const int32 identifier, const FVector& exten
 	BranchId = branchId;
 
 	OnInitialize();
+
+	mState = State::Initialized;
 }
 
 void ADungeonRoomSensor::OnInitialize_Implementation()
+{
+}
+
+void ADungeonRoomSensor::Finalize()
+{
+	if (mState == State::Initialized)
+	{
+		OnFinalize();
+		mState = State::Finalized;
+	}
+}
+
+void ADungeonRoomSensor::OnFinalize_Implementation()
 {
 }
 

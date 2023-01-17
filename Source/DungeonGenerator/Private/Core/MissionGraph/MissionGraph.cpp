@@ -24,7 +24,7 @@ MissionGraph
 
 namespace dungeon
 {
-	MissionGraph::MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<const Point>& goal)
+	MissionGraph::MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<const Point>& goal) noexcept
 		: mGenerator(generator)
 	{
 		Generate(goal->GetOwnerRoom());
@@ -33,7 +33,7 @@ namespace dungeon
 	/*
 	TODO:乱数を共通化して下さい
 	*/
-	void MissionGraph::Generate(const std::shared_ptr<const Room>& room, const uint8_t count)
+	void MissionGraph::Generate(const std::shared_ptr<const Room>& room, const uint8_t count) noexcept
 	{
 #if 0
 		{
@@ -100,7 +100,7 @@ namespace dungeon
 		}
 	}
 
-	Aisle* MissionGraph::SelectAisle(const std::shared_ptr<const Room>& room) const
+	Aisle* MissionGraph::SelectAisle(const std::shared_ptr<const Room>& room) const noexcept
 	{
 		const uint8_t roomDepth = room->GetDepthFromStart();
 
@@ -119,13 +119,10 @@ namespace dungeon
 		);
 
 		const size_t size = aisles.size();
-		if (size <= 0)
-			return nullptr;
-
-		return aisles[0 % size];
+		return size > 0 ? aisles[0 % size] : nullptr;
 	}
 
-	Aisle* MissionGraph::SelectAisle(const std::shared_ptr<const Point>& point) const
+	Aisle* MissionGraph::SelectAisle(const std::shared_ptr<const Point>& point) const noexcept
 	{
 		return SelectAisle(point->GetOwnerRoom());
 	}

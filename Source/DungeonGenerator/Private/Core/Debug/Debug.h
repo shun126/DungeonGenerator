@@ -22,8 +22,7 @@ DECLARE_LOG_CATEGORY_EXTERN(DungeonGenerator, Log, All);
 #define DUNGEON_GENERATOR_DISPLAY(Format, ...)		UE_LOG(DungeonGenerator, Display, Format, ##__VA_ARGS__);
 #define DUNGEON_GENERATOR_LOG(Format, ...)			UE_LOG(DungeonGenerator, Log, Format, ##__VA_ARGS__)
 #define DUNGEON_GENERATOR_VERBOSE(Format, ...)		UE_LOG(DungeonGenerator, Verbose, Format, ##__VA_ARGS__);
-#else
-#if defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
+#elif defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
 #define DUNGEON_GENERATOR_ERROR(Format, ...)		dungeon::OutputDebugStringWithArgument(Format, ##__VA_ARGS__)
 #define DUNGEON_GENERATOR_WARNING(Format, ...)		dungeon::OutputDebugStringWithArgument(Format, ##__VA_ARGS__)
 #define DUNGEON_GENERATOR_DISPLAY(Format, ...)		dungeon::OutputDebugStringWithArgument(Format, ##__VA_ARGS__)
@@ -36,12 +35,7 @@ DECLARE_LOG_CATEGORY_EXTERN(DungeonGenerator, Log, All);
 #define DUNGEON_GENERATOR_LOG(Format, ...)			std::pritf(Format, ##__VA_ARGS__)
 #define DUNGEON_GENERATOR_VERBOSE(Format, ...)		std::pritf(Format, ##__VA_ARGS__)
 #endif
-#endif
-/*
-#if !defined(TEXT)
-#define TEXT(text)									text
-#endif
-*/
+
 namespace dungeon
 {
 	/*!
@@ -92,12 +86,12 @@ namespace dungeon
 		{
 		public:
 			// コントラクタ
-			Canvas();
+			Canvas() noexcept;
 
 			/*!
 			コンストラクタ
 			*/
-			Canvas(const uint32_t width, const uint32_t height);
+			Canvas(const uint32_t width, const uint32_t height) noexcept;
 
 			// デストラクタ
 			virtual ~Canvas() = default;
@@ -105,22 +99,22 @@ namespace dungeon
 			/*!
 			画像データの生成
 			*/
-			void Create(const uint32_t width, const uint32_t height);
+			void Create(const uint32_t width, const uint32_t height) noexcept;
 
 			/*
 			画像データの吐き出し
 			*/
-			int Write(const std::string& filename);
+			int Write(const std::string& filename) noexcept;
 
 			/*!
 			矩形の描画
 			*/
-			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color);
+			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;
 
 			/*!
 			フレームの描画
 			*/
-			void Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color);
+			void Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;
 
 		private:
 			BMPFILEHEADER mBmpHeader;

@@ -30,7 +30,7 @@ namespace dungeon
 		コンストラクタ
 		与えられた点のリストをもとにDelaunay分割を行う
 		*/
-		explicit DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList);
+		explicit DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept;
 
 		/*!
 		デストラクタ
@@ -40,42 +40,51 @@ namespace dungeon
 		/*!
 		三角形を更新します
 		*/
-		void ForEach(std::function<void(const Triangle&)> func)
-		{
-			for (auto& triangle : mTriangles)
-			{
-				func(triangle);
-			}
-		}
+		void ForEach(std::function<void(const Triangle&)> func) noexcept;
 
 		/*!
 		三角形を更新します
 		*/
-		void ForEach(std::function<void(const Triangle&)> func) const
-		{
-			for (auto& triangle : mTriangles)
-			{
-				func(triangle);
-			}
-		}
+		void ForEach(std::function<void(const Triangle&)> func) const noexcept;
 
 		/*!
 		有効な分割か調べます
 		\return		有効ならばtrue
 		*/
-		bool IsValid() const
-		{
-			return mTriangles.empty() == false;
-		}
+		bool IsValid() const noexcept;
 
 	private:
 		// 外接する四面体を生成
-		Tetrahedron MakeHugeTetrahedron(const std::vector<std::shared_ptr<const Point>>& pointList);
+		Tetrahedron MakeHugeTetrahedron(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept;
 
 		// 四面体の重複管理
-		static void AddElementToRedundanciesMap(TetraMap& tetraMap, const Tetrahedron& t);
+		static void AddElementToRedundanciesMap(TetraMap& tetraMap, const Tetrahedron& t) noexcept;
 
 	private:
 		std::vector<Triangle> mTriangles;
 	};
+}
+
+namespace dungeon
+{
+	inline void DelaunayTriangulation3D::ForEach(std::function<void(const Triangle&)> func) noexcept
+	{
+		for (auto& triangle : mTriangles)
+		{
+			func(triangle);
+		}
+	}
+
+	inline void DelaunayTriangulation3D::ForEach(std::function<void(const Triangle&)> func) const noexcept
+	{
+		for (auto& triangle : mTriangles)
+		{
+			func(triangle);
+		}
+	}
+
+	inline bool DelaunayTriangulation3D::IsValid() const noexcept
+	{
+		return mTriangles.empty() == false;
+	}
 }

@@ -13,28 +13,28 @@
 
 namespace dungeon
 {
-	Point::Point()
+	Point::Point() noexcept
 		: super()
 	{
 	}
 
-	Point::Point(const double x, const double y, const double z)
+	Point::Point(const double x, const double y, const double z) noexcept
 		: super(x, y, z)
 	{
 	}
 
-	Point::Point(const FVector& vector)
+	Point::Point(const FVector& vector) noexcept
 		: super(vector)
 	{
 	}
 
-	Point::Point(const std::shared_ptr<Room>& room)
+	Point::Point(const std::shared_ptr<Room>& room) noexcept
 		: super(room->GetFloorCenter())
 		, mRoom(room)
 	{
 	}
 
-	Point::Point(const Point& other)
+	Point::Point(const Point& other) noexcept
 		: super(other)
 		, mRoom(other.mRoom)
 	{
@@ -46,7 +46,7 @@ namespace dungeon
 	{
 	}
 
-	Point& Point::operator=(const Point& other)
+	Point& Point::operator=(const Point& other) noexcept
 	{
 		super::operator=(other);
 		mRoom = other.mRoom;
@@ -60,33 +60,33 @@ namespace dungeon
 		return *this;
 	}
 
-	bool Point::operator==(const Point& other) const
+	bool Point::operator==(const Point& other) const noexcept
 	{
 		return super::operator==(other);
 	}
 
-	double Point::Dist(const Point& v0, const Point& v1)
+	double Point::Dist(const Point& v0, const Point& v1) noexcept
 	{
 		return std::sqrt(Point::DistSquared(v0, v1));
 	}
 
-	double Point::DistSquared(const Point& v0, const Point& v1)
+	double Point::DistSquared(const Point& v0, const Point& v1) noexcept
 	{
 		return math::Square(v0.X - v1.X) + math::Square(v0.Y - v1.Y);
 	}
 
-	const std::shared_ptr<Room>& Point::GetOwnerRoom() const
+	const std::shared_ptr<Room>& Point::GetOwnerRoom() const noexcept
 	{
 		return mRoom;
 	}
 
-	void Point::SetOwnerRoom(const std::shared_ptr<Room>& room)
+	void Point::SetOwnerRoom(const std::shared_ptr<Room>& room) noexcept
 	{
 		mRoom = room;
 	}
 
 
-	void Point::Dump(std::ofstream& stream) const
+	void Point::Dump(std::ofstream& stream) const noexcept
 	{
 		stream
 			<< std::to_string(X) << ","
@@ -98,13 +98,13 @@ namespace dungeon
 			<< std::endl;
 	}
 #if 0
-	void Point::DumpRoomDiagram(std::ofstream& stream) const
+	void Point::DumpRoomDiagram(std::ofstream& stream) const noexcept
 	{
 		std::unordered_set<const Point*> points;
 		DumpRoomDiagram(stream, points);
 	}
 
-	void Point::DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Point*>& points) const
+	void Point::DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Point*>& points) const noexcept
 	{
 		for (const Aisle* edge : mEdges)
 		{

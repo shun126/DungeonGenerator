@@ -8,6 +8,7 @@
 #include "DungeonGeneratorCommands.h"
 #include "DungeonGenerateParameterTypeActions.h"
 #include "DungeonRoomAssetTypeActions.h"
+#include "BuildInfomation.h"
 #include "../../DungeonGenerator/Public/DungeonGenerateParameter.h"
 #include "../../DungeonGenerator/Public/DungeonGenerator.h"
 #include <EngineUtils.h>
@@ -151,6 +152,30 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 			SNew(SButton)
 			.Text(LOCTEXT("GenerateDungeonButton", "Clear dungeon"))
 		.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedClearButton)
+		]
+
+
+
+	+SVerticalBox::Slot()
+		.VAlign(VAlign_Center)
+		.FillHeight(1.f)
+		.Padding(2.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+		.VAlign(VAlign_Center)
+		.AutoWidth()
+		.Padding(2.f)
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("JenkinsBuildTagLabel", "Build tag"))
+		]
+	+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("JenkinsBuildTagValue", JENKINS_JOB_TAG))
+		]
 		]
 		];
 

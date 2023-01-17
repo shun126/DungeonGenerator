@@ -34,14 +34,26 @@ public:
 	*/
 	void Initialize(const int32 identifier, const FVector& extents, const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 branchId);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor)
 		void OnInitialize();
 	virtual void OnInitialize_Implementation();
 
+	/*!
+	Finalize
+	*/
+	void Finalize();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor)
+		void OnFinalize();
+	virtual void OnFinalize_Implementation();
+
+	/*!
+	Reset
+	*/
 	UFUNCTION(BlueprintCallable)
 		void Reset();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor)
 		void OnReset();
 	virtual void OnReset_Implementation();
 
@@ -79,6 +91,21 @@ public:
 	UFUNCTION(BlueprintCallable)
 		bool GetFloorHeightPosition(FVector& result, FVector startPosition, const float offsetHeight = 0.f) const;
 
+	// overrides
+	virtual void BeginDestroy() override;
+
+	/*
+	Get the DungeonGenerator tag name.
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+		static const FName& GetDungeonGeneratorTag();
+
+	/*
+	Get the DungeonGenerator tag name.
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+		static const TArray<FName>& GetDungeonGeneratorTags();
+
 private:
 	 bool FindFloorHeightPosition(FVector& result, const FVector& startPosition, const FVector& endPosition, const float offsetHeight) const;
 
@@ -98,4 +125,13 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		uint8 BranchId = 0;
+
+private:
+	enum class State : uint8_t
+	{
+		Invalid,
+		Initialized,
+		Finalized,
+	};
+	State mState = State::Invalid;
 };

@@ -28,68 +28,68 @@ namespace dungeon
 		/*!
 		ダンジョンの幅
 		*/
-		uint32_t GetWidth() const { return mWidth; }
+		uint32_t GetWidth() const noexcept { return mWidth; }
 
 		/*!
 		ダンジョンの奥行き
 		*/
-		uint32_t GetDepth() const { return mDepth; }
+		uint32_t GetDepth() const noexcept { return mDepth; }
 
 		/*!
 		ダンジョンの高さ
 		*/
-		uint32_t GetHeight() const { return mHeight; }
+		uint32_t GetHeight() const noexcept { return mHeight; }
 
 		/*!
 		生成する部屋の数の候補
 		部屋の初期生成数であり、最終的に生成される部屋の数ではありません。
 		*/
-		uint32_t GetNumberOfCandidateRooms() const { return mNumberOfCandidateRooms; }
+		uint32_t GetNumberOfCandidateRooms() const noexcept { return mNumberOfCandidateRooms; }
 
 		/*!
 		部屋の最小の幅
 		*/
-		uint32_t GetMinRoomWidth() const { return mMinRoomWidth; }
+		uint32_t GetMinRoomWidth() const noexcept { return mMinRoomWidth; }
 
 		/*!
 		部屋の最大の幅
 		*/
-		uint32_t GetMaxRoomWidth() const { return mMaxRoomWidth; }
+		uint32_t GetMaxRoomWidth() const noexcept { return mMaxRoomWidth; }
 
 		/*!
 		部屋の最小の奥行き
 		*/
-		uint32_t GetMinRoomDepth() const { return mMinRoomDepth; }
+		uint32_t GetMinRoomDepth() const noexcept { return mMinRoomDepth; }
 
 		/*!
 		部屋の最大の奥行き
 		*/
-		uint32_t GetMaxRoomDepth() const { return mMaxRoomDepth; }
+		uint32_t GetMaxRoomDepth() const noexcept { return mMaxRoomDepth; }
 
 		/*!
 		部屋の最小の高さ
 		*/
-		uint32_t GetMinRoomHeight() const { return mMinRoomHeight; }
+		uint32_t GetMinRoomHeight() const noexcept { return mMinRoomHeight; }
 
 		/*!
 		部屋の最大の高さ
 		*/
-		uint32_t GetMaxRoomHeight() const { return mMaxRoomHeight; }
+		uint32_t GetMaxRoomHeight() const noexcept { return mMaxRoomHeight; }
 
 		/*!
 		床下の高さ
 		*/
-		uint16_t GetUnderfloorHeight() const { return mUnderfloorHeight; }
+		uint16_t GetUnderfloorHeight() const noexcept { return mUnderfloorHeight; }
 
 		/*!
 		部屋と部屋の余白
 		*/
-		uint32_t GetRoomMargin() const { return mRoomMargin; };
+		uint32_t GetRoomMargin() const noexcept { return mRoomMargin; };
 
 		/*!
 		乱数発生
 		*/
-		Random& GetRandom() const { return const_cast<GenerateParameter*>(this)->mRandom; }
+		Random& GetRandom() const noexcept { return const_cast<GenerateParameter*>(this)->mRandom; }
 
 
 

@@ -11,13 +11,13 @@ namespace dungeon
 	namespace math
 	{
 		template<typename T = double>
-		inline T Square(const T value)
+		inline T Square(const T value) noexcept
 		{
 			return value * value;
 		}
 
 		template<typename T = double>
-		T Clamp(const T value, const T min, const T max)
+		T Clamp(const T value, const T min, const T max) noexcept
 		{
 			return std::max(min, std::min(value, max));
 		}

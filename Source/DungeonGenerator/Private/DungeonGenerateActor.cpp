@@ -8,6 +8,7 @@
 #include "DungeonGenerator.h"
 #include "DungeonMiniMapTexture.h"
 #include "TransactionalHierarchicalInstancedStaticMeshComponent.h"
+#include "BuildInfomation.h"
 #include "Core/Grid.h"
 #include "Core/Generator.h"
 #include "Core/Room.h"
@@ -30,6 +31,9 @@
 
 ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializer)
 	: Super(initializer)
+	, BuildJobTag(TEXT(JENKINS_JOB_TAG))
+	, LicenseTag(TEXT(JENKINS_LICENSE))
+	, LicenseId(TEXT(JENKINS_UUID))
 {
 	// ティック有効化
 	PrimaryActorTick.bCanEverTick = PrimaryActorTick.bStartWithTickEnabled = true;

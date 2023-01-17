@@ -44,7 +44,7 @@ namespace dungeon
 	*/
 	namespace bmp
 	{
-		Canvas::Canvas()
+		Canvas::Canvas() noexcept
 			: mWidth(0)
 			, mHeight(0)
 		{
@@ -52,12 +52,12 @@ namespace dungeon
 			memset(&mBmpInfo, 0, sizeof(BMPINFOHEADER));
 		};
 
-		Canvas::Canvas(const uint32_t width, const uint32_t height)
+		Canvas::Canvas(const uint32_t width, const uint32_t height) noexcept
 		{
 			Create(width, height);
 		}
 
-		void Canvas::Create(const uint32_t width, const uint32_t height)
+		void Canvas::Create(const uint32_t width, const uint32_t height) noexcept
 		{
 			mRgbImage = std::make_unique<RGBCOLOR[]>(width * height);
 			memset(mRgbImage.get(), 0, sizeof(RGBCOLOR) * width * height);
@@ -88,7 +88,7 @@ namespace dungeon
 			mBmpInfo.biClrImportant = 0;
 		}
 
-		int Canvas::Write(const std::string& filename)
+		int Canvas::Write(const std::string& filename) noexcept
 		{
 #if defined(_WINDOWS) || defined(_WIN32)
 			FILE* fp;
@@ -119,7 +119,7 @@ namespace dungeon
 			return 1;
 		}
 
-		void Canvas::Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color)
+		void Canvas::Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept
 		{
 			left = std::max(0, std::min(left, static_cast<int32_t>(mWidth - 1)));
 			top = std::max(0, std::min(top, static_cast<int32_t>(mHeight - 1)));
@@ -139,7 +139,7 @@ namespace dungeon
 			}
 		}
 
-		void Canvas::Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color)
+		void Canvas::Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept
 		{
 			left = std::max(0, std::min(left, static_cast<int32_t>(mWidth - 1)));
 			top = std::max(0, std::min(top, static_cast<int32_t>(mHeight - 1)));
@@ -165,7 +165,7 @@ namespace dungeon
 			// left
 			for (int32_t y = top; y <= bottom; ++y)
 			{
-				auto& pixel = mRgbImage.get()[y * mWidth + left];
+				mRgbImage.get()[y * mWidth + left];
 			}
 
 			// right

@@ -27,7 +27,7 @@ namespace dungeon
 		/*!
 		コンストラクタ
 		*/
-		Point();
+		Point() noexcept;
 
 		/*!
 		コンストラクタ
@@ -36,25 +36,25 @@ namespace dungeon
 		\param[in]	y	 Y座標
 		\param[in]	z	 Z座標
 		*/
-		Point(const double x, const double y, const double z);
+		Point(const double x, const double y, const double z) noexcept;
 
 		/*!
 		コンストラクタ
 		\param[in]	vector	三次元ベクター
 		*/
-		explicit Point(const FVector& vector);
+		explicit Point(const FVector& vector) noexcept;
 
 		/*!
 		コンストラクタ
 		\param[in]	room	所属する部屋
 		*/
-		Point(const std::shared_ptr<Room>& room);
+		explicit Point(const std::shared_ptr<Room>& room) noexcept;
 
 		/*!
 		コピーコンストラクタ
 		\param[in]	other	Point
 		*/
-		Point(const Point& other);
+		explicit Point(const Point& other) noexcept;
 
 		/*!
 		ムーブコンストラクタ
@@ -71,7 +71,7 @@ namespace dungeon
 		コピー代入
 		\param[in]	other	代入する点
 		*/
-		Point& operator=(const Point& other);
+		Point& operator=(const Point& other) noexcept;
 
 		/*!
 		ムーブ代入
@@ -84,7 +84,7 @@ namespace dungeon
 		\param[in]	other	比較する点
 		\return		trueならば等しい
 		*/
-		bool operator==(const Point& other) const;
+		bool operator==(const Point& other) const noexcept;
 
 		/*!
 		2点間の距離を求めます
@@ -92,7 +92,7 @@ namespace dungeon
 		\param[in]	v1		点1
 		\return		2点間の距離
 		*/
-		static double Dist(const Point& v0, const Point& v1);
+		static double Dist(const Point& v0, const Point& v1) noexcept;
 
 		/*!
 		2点間の距離の二乗を求めます
@@ -100,23 +100,28 @@ namespace dungeon
 		\param[in]	v1		点1
 		\return		2点間の距離の二乗
 		*/
-		static double DistSquared(const Point& v0, const Point& v1);
+		static double DistSquared(const Point& v0, const Point& v1) noexcept;
 
 		/*!
 		所属する部屋オブジェクトを取得します
 		*/
-		const std::shared_ptr<Room>& GetOwnerRoom() const;
+		const std::shared_ptr<Room>& GetOwnerRoom() const noexcept;
 
 		/*!
 		所属する部屋オブジェクトを取得します
 		*/
-		void SetOwnerRoom(const std::shared_ptr<Room>& room);
+		void SetOwnerRoom(const std::shared_ptr<Room>& room) noexcept;
 
 
 
 
 
-		void Dump(std::ofstream& stream) const;
+		void Dump(std::ofstream& stream) const noexcept;
+
+#if 0
+		void DumpRoomDiagram(std::ofstream& stream) const noexcept;
+		void DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Point*>& points) const noexcept;
+#endif
 
 	private:
 		std::shared_ptr<Room> mRoom;

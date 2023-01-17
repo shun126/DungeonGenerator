@@ -144,6 +144,18 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 		FDungeonGeneratorDelegete OnRoomCreated;
 
+	// ビルドジョブタグ
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+		FString BuildJobTag;
+
+	// ライセンスタグ
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+		FString LicenseTag;
+
+	// ライセンスID
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+		FString LicenseId;
+
 #if WITH_EDITORONLY_DATA
 	// 部屋と接続情報のデバッグ情報を表示します
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient)
