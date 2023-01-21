@@ -7,7 +7,7 @@
 #include "DungeonGenerateParameter.h"
 #include "DungeonGenerator.h"
 #include "DungeonMiniMapTexture.h"
-#include "TransactionalHierarchicalInstancedStaticMeshComponent.h"
+#include "DungeonTransactionalHierarchicalInstancedStaticMeshComponent.h"
 #include "BuildInfomation.h"
 #include "Core/Grid.h"
 #include "Core/Generator.h"
@@ -61,7 +61,7 @@ void ADungeonGenerateActor::ReleaseHierarchicalInstancedStaticMeshComponents()
 	PillarMeshs.Empty();
 }
 
-void ADungeonGenerateActor::StartAddInstance(TArray<UTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs)
+void ADungeonGenerateActor::StartAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs)
 {
 	for (auto mesh : meshs)
 	{
@@ -72,7 +72,7 @@ void ADungeonGenerateActor::StartAddInstance(TArray<UTransactionalHierarchicalIn
 	}
 }
 
-void ADungeonGenerateActor::AddInstance(TArray<UTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs, const UStaticMesh* staticMesh, const FTransform& transform)
+void ADungeonGenerateActor::AddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs, const UStaticMesh* staticMesh, const FTransform& transform)
 {
 	for (auto mesh : meshs)
 	{
@@ -87,7 +87,7 @@ void ADungeonGenerateActor::AddInstance(TArray<UTransactionalHierarchicalInstanc
 	}
 }
 
-void ADungeonGenerateActor::EndAddInstance(TArray<UTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs)
+void ADungeonGenerateActor::EndAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs)
 {
 	for (auto mesh : meshs)
 	{
@@ -152,7 +152,7 @@ void ADungeonGenerateActor::PreInitializeComponents()
 
 			DungeonGenerateParameter->EachFloorParts([this](const FDungeonMeshParts& meshParts)
 				{
-					auto component = NewObject<UTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+					auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 					if (IsValid(component))
 					{
 						AddInstanceComponent(component);
@@ -164,7 +164,7 @@ void ADungeonGenerateActor::PreInitializeComponents()
 			);
 			DungeonGenerateParameter->EachSlopeParts([this](const FDungeonMeshParts& meshParts)
 				{
-					auto component = NewObject<UTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+					auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 					if (IsValid(component))
 					{
 						AddInstanceComponent(component);
@@ -176,7 +176,7 @@ void ADungeonGenerateActor::PreInitializeComponents()
 			);
 			DungeonGenerateParameter->EachWallParts([this](const FDungeonMeshParts& meshParts)
 				{
-					auto component = NewObject<UTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+					auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 					if (IsValid(component))
 					{
 						AddInstanceComponent(component);
@@ -188,7 +188,7 @@ void ADungeonGenerateActor::PreInitializeComponents()
 			);
 			DungeonGenerateParameter->EachRoomRoofParts([this](const FDungeonMeshParts& meshParts)
 				{
-					auto component = NewObject<UTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+					auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 					if (IsValid(component))
 					{
 						AddInstanceComponent(component);
@@ -200,7 +200,7 @@ void ADungeonGenerateActor::PreInitializeComponents()
 			);
 			DungeonGenerateParameter->EachAisleRoofParts([this](const FDungeonMeshParts& meshParts)
 				{
-					auto component = NewObject<UTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+					auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 					if (IsValid(component))
 					{
 						AddInstanceComponent(component);
@@ -212,7 +212,7 @@ void ADungeonGenerateActor::PreInitializeComponents()
 			);
 			DungeonGenerateParameter->EachPillarParts([this](const FDungeonMeshParts& meshParts)
 				{
-					auto component = NewObject<UTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+					auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 					if (IsValid(component))
 					{
 						AddInstanceComponent(component);

@@ -5,6 +5,7 @@
 
 #include "DungeonRoomSensor.h"
 #include "DungeonGenerator.h"
+#include "Core/Identifier.h"
 #include <Components/BoxComponent.h>
 
 const FName& ADungeonRoomSensor::GetDungeonGeneratorTag()
@@ -38,11 +39,11 @@ void ADungeonRoomSensor::BeginDestroy()
 	Finalize();
 }
 
-void ADungeonRoomSensor::Initialize(const int32 identifier, const FVector& extents, const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 branchId)
+void ADungeonRoomSensor::Initialize(const dungeon::Identifier& identifier, const FVector& extents, const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 branchId)
 {
 	Finalize();
 	
-	Identifier = identifier;
+	Identifier = identifier.Get();
 	//Bounding->InitBoxExtent(extents);
 	Bounding->SetBoxExtent(extents);
 	Parts = parts;

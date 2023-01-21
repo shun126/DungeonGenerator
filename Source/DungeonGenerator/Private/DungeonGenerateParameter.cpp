@@ -5,48 +5,83 @@
 
 #include "DungeonGenerateParameter.h"
 #include "DungeonRoomAsset.h"
+#include "../Private/Core/Direction.h"
+#include "../Private/Core/Math/Random.h"
 
 namespace
 {
-	static FTransform GetWorldTransform_(const FTransform& toWorldTransform, const FTransform& relativeTransform)
+	static FTransform CalculateWorldTransform_(const FTransform& toWorldTransform, const FTransform& relativeTransform)
 	{
 		return relativeTransform * toWorldTransform;
 	}
 }
 
-FTransform FDungeonMeshParts::GetWorldTransform(const FTransform& toWorldTransform) const
+////////////////////////////////////////////////////////////////////////////////////////////////////
+FTransform FDungeonParts::CalculateWorldTransform(const FTransform& transform) const noexcept
 {
-	return GetWorldTransform_(toWorldTransform, RelativeTransform);
+	return CalculateWorldTransform_(transform, RelativeTransform);
 }
 
-FTransform FDungeonMeshParts::GetWorldTransform(const float yaw, const FVector& position) const
+FTransform FDungeonParts::CalculateWorldTransform(const FVector& position, const FRotator& rotator) const noexcept
 {
-	const FTransform toWorldTransform(FRotator(0.f, yaw, 0.f).Quaternion(), position);
-	return GetWorldTransform(toWorldTransform);
+	const FTransform transform(rotator, position);
+	return CalculateWorldTransform(transform);
 }
 
-FTransform FDungeonActorParts::GetWorldTransform(const FTransform& toWorldTransform) const
+FTransform FDungeonParts::CalculateWorldTransform(const FVector& position, const float yaw) const noexcept
 {
-	return GetWorldTransform_(toWorldTransform, RelativeTransform);
+	const FRotator rotator(0, yaw, 0);
+	return CalculateWorldTransform(position, rotator);
 }
 
-FTransform FDungeonActorParts::GetWorldTransform(const float yaw, const FVector& position) const
+FTransform FDungeonParts::CalculateWorldTransform(const FVector& position, const dungeon::Direction& direction) const noexcept
 {
-	const FTransform toWorldTransform(FRotator(0.f, yaw, 0.f).Quaternion(), position);
-	return GetWorldTransform(toWorldTransform);
+	return CalculateWorldTransform(position, direction.ToDegree());
 }
 
-FTransform FDungeonObjectParts::GetWorldTransform(const FTransform& toWorldTransform) const
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FTransform& transform, const EPlacementDirection placementDirection) const noexcept
 {
-	return GetWorldTransform_(toWorldTransform, RelativeTransform);
+	if (static_cast<uint8>(placementDirection) < static_cast<uint8>(EPlacementDirection::West))
+	{
+		const FRotator rotator(0, static_cast<int32>(placementDirection) * 90, 0);
+		FTransform result(transform);
+		result.SetRotation(rotator.Quaternion());
+		return CalculateWorldTransform_(result, RelativeTransform);
+	}
+	else if (placementDirection == EPlacementDirection::RandomDirection)
+	{
+		const FRotator rotator(0, random.Get<double>(-180, 180), 0);
+		FTransform result(transform);
+		result.SetRotation(rotator.Quaternion());
+		return CalculateWorldTransform_(result, RelativeTransform);
+	}
+	else if (placementDirection == EPlacementDirection::FollowGridDirection)
+	{
+		return CalculateWorldTransform_(transform, RelativeTransform);
+	}
+
+	// ここまで来ていたらエラー
+	return transform;
 }
 
-FTransform FDungeonObjectParts::GetWorldTransform(const float yaw, const FVector& position) const
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator, const EPlacementDirection placementDirection) const noexcept
 {
-	const FTransform toWorldTransform(FRotator(0.f, yaw, 0.f).Quaternion(), position);
-	return GetWorldTransform(toWorldTransform);
+	const FTransform transform(rotator, position);
+	return CalculateWorldTransform(random, transform, placementDirection);
 }
 
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw, const EPlacementDirection placementDirection) const noexcept
+{
+	const FRotator rotator(0, yaw, 0);
+	return CalculateWorldTransform(random, position, rotator, placementDirection);
+}
+
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction, const EPlacementDirection placementDirection) const noexcept
+{
+	return CalculateWorldTransform(random, position, direction.ToDegree(), placementDirection);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 UClass* FDungeonObjectParts::GetActorClass()
 {
 	if (IsValid(ActorClass) == false && ActorPath.IsValid() == true)
@@ -56,27 +91,52 @@ UClass* FDungeonObjectParts::GetActorClass()
 	return ActorClass;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+FTransform FDungeonMeshPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FTransform& transform) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, transform, PlacementDirection);
+}
 
+FTransform FDungeonMeshPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, position, rotator, PlacementDirection);
+}
+
+FTransform FDungeonMeshPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, position, yaw, PlacementDirection);
+}
+
+FTransform FDungeonMeshPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, position, direction, PlacementDirection);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+FTransform FDungeonActorPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FTransform& transform) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, transform, PlacementDirection);
+}
+
+FTransform FDungeonActorPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, position, rotator, PlacementDirection);
+}
+
+FTransform FDungeonActorPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, position, yaw, PlacementDirection);
+}
+
+FTransform FDungeonActorPartsWithDirection::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction) const noexcept
+{
+	return FDungeonParts::CalculateWorldTransform(random, position, direction, PlacementDirection);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 UDungeonGenerateParameter::UDungeonGenerateParameter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-}
-
-FDungeonMeshParts* UDungeonGenerateParameter::SelectDungeonMeshParts(dungeon::Random& random, const TArray<FDungeonMeshParts>& parts) const
-{
-	const int32 size = parts.Num();
-	if (size <= 0)
-		return nullptr;
-	const int32 index = random.Get<uint32_t>() % size;
-	return const_cast<FDungeonMeshParts*>(&parts[index]);
-}
-
-void UDungeonGenerateParameter::EachMeshParts(const TArray<FDungeonMeshParts>& parts, std::function<void(const FDungeonMeshParts&)> func) const
-{
-	for (const FDungeonMeshParts& part : parts)
-	{
-		func(part);
-	}
 }
 
 FDungeonObjectParts* UDungeonGenerateParameter::SelectDungeonObjectParts(dungeon::Random& random, const TArray<FDungeonObjectParts>& parts) const
@@ -156,12 +216,12 @@ float UDungeonGenerateParameter::GetGridSize() const
 	return GridSize;
 }
 
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectFloorParts(dungeon::Random& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(dungeon::Random& random) const
 {
 	return SelectDungeonMeshParts(random, FloorParts);
 }
 
-void UDungeonGenerateParameter::EachFloorParts(std::function<void(const FDungeonMeshParts&)> func) const
+void UDungeonGenerateParameter::EachFloorParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const
 {
 	EachMeshParts(FloorParts, func);
 }
@@ -186,22 +246,22 @@ void UDungeonGenerateParameter::EachWallParts(std::function<void(const FDungeonM
 	EachMeshParts(WallParts, func);
 }
 
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectRoomRoofParts(dungeon::Random& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoomRoofParts(dungeon::Random& random) const
 {
 	return SelectDungeonMeshParts(random, RoomRoofParts);
 }
 
-void UDungeonGenerateParameter::EachRoomRoofParts(std::function<void(const FDungeonMeshParts&)> func) const
+void UDungeonGenerateParameter::EachRoomRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const
 {
 	EachMeshParts(RoomRoofParts, func);
 }
 
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectAisleRoofParts(dungeon::Random& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectAisleRoofParts(dungeon::Random& random) const
 {
 	return SelectDungeonMeshParts(random, AisleRoofParts);
 }
 
-void UDungeonGenerateParameter::EachAisleRoofParts(std::function<void(const FDungeonMeshParts&)> func) const
+void UDungeonGenerateParameter::EachAisleRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const
 {
 	EachMeshParts(AisleRoofParts, func);
 }
@@ -231,12 +291,12 @@ const FDungeonObjectParts* UDungeonGenerateParameter::SelectDoorParts(dungeon::R
 	return SelectDungeonObjectParts(random, DoorParts);
 }
 
-const FDungeonActorParts& UDungeonGenerateParameter::GetStartParts() const
+const FDungeonActorPartsWithDirection& UDungeonGenerateParameter::GetStartParts() const
 {
 	return StartParts;
 }
 
-const FDungeonActorParts& UDungeonGenerateParameter::GetGoalParts() const
+const FDungeonActorPartsWithDirection& UDungeonGenerateParameter::GetGoalParts() const
 {
 	return GoalParts;
 }

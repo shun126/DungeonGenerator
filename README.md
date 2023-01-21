@@ -18,6 +18,8 @@ We had a try to use Unreal Engine 5 to create the demo, which can be used with a
 * A mini-map of the dungeon can be generated.
 * Generates actors for doors and keys by MissionGraph.
 
+![DungeonGeneratorStatus](Document/DungeonGenerator04.gif)
+
 This is the screenshot of our sample game.
 
 ![DungeonGeneratorSampleGame](Document/DungeonGenerator02.gif)
