@@ -10,6 +10,11 @@
 
 class UBoxComponent;
 
+namespace dungeon
+{
+	class Identifier;
+}
+
 /*
 Room Bounding Box Sensor Actor Class
 */
@@ -32,7 +37,7 @@ public:
 	/*
 	Initialize
 	*/
-	void Initialize(const int32 identifier, const FVector& extents, const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 branchId);
+	void Initialize(const dungeon::Identifier& identifier, const FVector& extents, const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 branchId);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor)
 		void OnInitialize();
@@ -53,7 +58,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void Reset();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 		void OnReset();
 	virtual void OnReset_Implementation();
 

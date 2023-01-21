@@ -9,7 +9,7 @@
 class CDungeonGenerator;
 class UDungeonGenerateParameter;
 class UDungeonMiniMapTexture;
-class UTransactionalHierarchicalInstancedStaticMeshComponent;
+class UDungeonTransactionalHierarchicalInstancedStaticMeshComponent;
 
 namespace dungeon
 {
@@ -58,9 +58,9 @@ public:
 
 private:
 	void ReleaseHierarchicalInstancedStaticMeshComponents();
-	static void StartAddInstance(TArray<UTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
-	static void AddInstance(TArray<UTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs, const UStaticMesh* staticMesh, const FTransform& transform);
-	static void EndAddInstance(TArray<UTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
+	static void StartAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
+	static void AddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs, const UStaticMesh* staticMesh, const FTransform& transform);
+	static void EndAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
 
 	static inline FBox ToWorldBoundingBox(const std::shared_ptr<const dungeon::Room>& room, const float gridSize);
 
@@ -84,22 +84,22 @@ protected:
 		bool InstancedStaticMesh = true;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-		TArray<TObjectPtr<UTransactionalHierarchicalInstancedStaticMeshComponent>> FloorMeshs;
+		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> FloorMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-		TArray<TObjectPtr<UTransactionalHierarchicalInstancedStaticMeshComponent>> SlopeMeshs;
+		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> SlopeMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-		TArray<TObjectPtr<UTransactionalHierarchicalInstancedStaticMeshComponent>> WallMeshs;
+		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> WallMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-		TArray<TObjectPtr<UTransactionalHierarchicalInstancedStaticMeshComponent>> RoomRoofMeshs;
+		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> RoomRoofMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-		TArray<TObjectPtr<UTransactionalHierarchicalInstancedStaticMeshComponent>> AisleRoofMeshs;
+		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> AisleRoofMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly)
-		TArray<TObjectPtr<UTransactionalHierarchicalInstancedStaticMeshComponent>> PillarMeshs;
+		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> PillarMeshs;
 
 	// event
 	UPROPERTY(BlueprintAssignable, Category = "Event")

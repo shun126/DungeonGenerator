@@ -6,52 +6,140 @@
 #pragma once
 #include "DungeonRoomAsset.h"
 #include "DungeonRoomSensor.h"
-#include "Core/Math/Random.h"
 #include <functional>
 #include "DungeonGenerateParameter.generated.h"
 
 // 前方宣言
 class UDungeonRoomAsset;
 
+namespace dungeon
+{
+	class Direction;
+	class Random;
+}
+
+/*!
+配置方向
+*/
+UENUM(BlueprintType)
+enum class EPlacementDirection : uint8
+{
+	North,
+	East,
+	South,
+	West,
+	FollowGridDirection,
+	RandomDirection
+};
+
 /*
 メッシュパーツ構造体
 */
 USTRUCT(BlueprintType)
-struct DUNGEONGENERATOR_API FDungeonMeshParts
+struct DUNGEONGENERATOR_API FDungeonParts
+{
+	GENERATED_BODY()
+
+	// 相対的なトランスフォーム
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FTransform RelativeTransform;
+
+	FTransform CalculateWorldTransform(const FTransform& transform) const noexcept;
+	FTransform CalculateWorldTransform(const FVector& position, const FRotator& rotator) const noexcept;
+	FTransform CalculateWorldTransform(const FVector& position, const float yaw) const noexcept;
+	FTransform CalculateWorldTransform(const FVector& position, const dungeon::Direction& direction) const noexcept;
+
+protected:
+	/*!
+	パーツのトランスフォームを計算します
+	\param[in]	random				dungeon::Random&
+	\param[in]	transform			FTransform
+	\param[in]	placementDirection	EPlacementDirection 
+	\return		EPlacementDirectionに応じたトランスフォーム
+	*/
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FTransform& transform, const EPlacementDirection placementDirection) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator, const EPlacementDirection placementDirection) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw, const EPlacementDirection placementDirection) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction, const EPlacementDirection placementDirection) const noexcept;
+};
+
+/*
+メッシュパーツ構造体
+*/
+USTRUCT(BlueprintType)
+struct DUNGEONGENERATOR_API FDungeonMeshParts : public FDungeonParts
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UStaticMesh* StaticMesh = nullptr;
+};
+
+/*
+方向指定付きメッシュパーツ構造体
+*/
+USTRUCT(BlueprintType)
+struct DUNGEONGENERATOR_API FDungeonMeshPartsWithDirection : public FDungeonMeshParts
+{
+	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FTransform RelativeTransform;
-	FTransform GetWorldTransform(const FTransform& toWorldTransform) const;
-	FTransform GetWorldTransform(const float yaw, const FVector& position) const;
+		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
+
+	/*!
+	パーツのトランスフォームを計算します
+	\param[in]	random				dungeon::Random&
+	\param[in]	transform			FTransform
+	\param[in]	placementDirection	EPlacementDirection
+	\return		EPlacementDirectionに応じたトランスフォーム
+	*/
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FTransform& transform) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction) const noexcept;
 };
 
 /*
 アクターパーツ構造体
 */
 USTRUCT(BlueprintType)
-struct DUNGEONGENERATOR_API FDungeonActorParts
+struct DUNGEONGENERATOR_API FDungeonActorParts : public FDungeonParts
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowedClasses = "Actor"))
 		UClass* ActorClass = nullptr;
+};
+
+/*
+方向指定付きアクターパーツ構造体
+*/
+USTRUCT(BlueprintType)
+struct DUNGEONGENERATOR_API FDungeonActorPartsWithDirection : public FDungeonActorParts
+{
+	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FTransform RelativeTransform;
-	FTransform GetWorldTransform(const FTransform& toWorldTransform) const;
-	FTransform GetWorldTransform(const float yaw, const FVector& position) const;
+		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
+
+	/*!
+	パーツのトランスフォームを計算します
+	\param[in]	random				dungeon::Random&
+	\param[in]	transform			FTransform
+	\param[in]	placementDirection	EPlacementDirection
+	\return		EPlacementDirectionに応じたトランスフォーム
+	*/
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FTransform& transform) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction) const noexcept;
 };
 
 /*
 アクターおよびブループリント構造体
 */
 USTRUCT(BlueprintType)
-struct DUNGEONGENERATOR_API FDungeonObjectParts
+struct DUNGEONGENERATOR_API FDungeonObjectParts : public FDungeonParts
 {
 	GENERATED_BODY()
 
@@ -63,9 +151,7 @@ struct DUNGEONGENERATOR_API FDungeonObjectParts
 	UClass* GetActorClass();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FTransform RelativeTransform;
-	FTransform GetWorldTransform(const FTransform& toWorldTransform) const;
-	FTransform GetWorldTransform(const float yaw, const FVector& position) const;
+		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
 };
 
 /*
@@ -116,8 +202,8 @@ public:
 
 	float GetGridSize() const;
 
-	const FDungeonMeshParts* SelectFloorParts(dungeon::Random& random) const;
-	void EachFloorParts(std::function<void(const FDungeonMeshParts&)> func) const;
+	const FDungeonMeshPartsWithDirection* SelectFloorParts(dungeon::Random& random) const;
+	void EachFloorParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const;
 
 	const FDungeonMeshParts* SelectSlopeParts(dungeon::Random& random) const;
 	void EachSlopeParts(std::function<void(const FDungeonMeshParts&)> func) const;
@@ -125,11 +211,11 @@ public:
 	const FDungeonMeshParts* SelectWallParts(dungeon::Random& random) const;
 	void EachWallParts(std::function<void(const FDungeonMeshParts&)> func) const;
 
-	const FDungeonMeshParts* SelectRoomRoofParts(dungeon::Random& random) const;
-	void EachRoomRoofParts(std::function<void(const FDungeonMeshParts&)> func) const;
+	const FDungeonMeshPartsWithDirection* SelectRoomRoofParts(dungeon::Random& random) const;
+	void EachRoomRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const;
 
-	const FDungeonMeshParts* SelectAisleRoofParts(dungeon::Random& random) const;
-	void EachAisleRoofParts(std::function<void(const FDungeonMeshParts&)> func) const;
+	const FDungeonMeshPartsWithDirection* SelectAisleRoofParts(dungeon::Random& random) const;
+	void EachAisleRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const;
 
 	const FDungeonMeshParts* SelectPillarParts(dungeon::Random& random) const;
 	void EachPillarParts(std::function<void(const FDungeonMeshParts&)> func) const;
@@ -139,9 +225,9 @@ public:
 
 	const FDungeonObjectParts* SelectDoorParts(dungeon::Random& random) const;
 
-	const FDungeonActorParts& GetStartParts() const;
+	const FDungeonActorPartsWithDirection& GetStartParts() const;
 
-	const FDungeonActorParts& GetGoalParts() const;
+	const FDungeonActorPartsWithDirection& GetGoalParts() const;
 
 	void EachDungeonRoomAsset(std::function<void(const UDungeonRoomAsset*)> func) const;
 
@@ -162,9 +248,11 @@ public:
 	FVector ToWorld(const uint32_t x, const uint32_t y, const uint32_t z) const;
 
 private:
-	FDungeonMeshParts* SelectDungeonMeshParts(dungeon::Random& random, const TArray<FDungeonMeshParts>& parts) const;
+	template<typename T = FDungeonMeshParts>
+	T* SelectDungeonMeshParts(dungeon::Random& random, const TArray<T>& parts) const;
 
-	void EachMeshParts(const TArray<FDungeonMeshParts>& parts, std::function<void(const FDungeonMeshParts&)> func) const;
+	template<typename T = FDungeonMeshParts>
+	void EachMeshParts(const TArray<T>& parts, std::function<void(const T&)> func) const;
 
 	FDungeonObjectParts* SelectDungeonObjectParts(dungeon::Random& random, const TArray<FDungeonObjectParts>& parts) const;
 
@@ -216,7 +304,7 @@ protected:
 
 	//! 床のパーツ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TArray<FDungeonMeshParts> FloorParts;
+		TArray<FDungeonMeshPartsWithDirection> FloorParts;
 
 	//! 階段やスロープのパーツ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -228,11 +316,11 @@ protected:
 
 	//! 部屋の屋根のパーツ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TArray<FDungeonMeshParts> RoomRoofParts;
+		TArray<FDungeonMeshPartsWithDirection> RoomRoofParts;
 
 	//! 通路の屋根のパーツ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TArray<FDungeonMeshParts> AisleRoofParts;
+		TArray<FDungeonMeshPartsWithDirection> AisleRoofParts;
 
 	//! 柱のパーツ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -254,11 +342,11 @@ protected:
 
 	// スタート地点
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FDungeonActorParts StartParts;
+		FDungeonActorPartsWithDirection StartParts;
 
 	// ゴール位置
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FDungeonActorParts GoalParts;
+		FDungeonActorPartsWithDirection GoalParts;
 
 	// 部屋のセンサークラス
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowedClasses = "DungeonRoomSensor"))
@@ -278,3 +366,22 @@ protected:
 
 	friend class CDungeonGenerator;
 };
+
+template <typename T>
+inline T* UDungeonGenerateParameter::SelectDungeonMeshParts(dungeon::Random& random, const TArray<T>& parts) const
+{
+	const int32 size = parts.Num();
+	if (size <= 0)
+		return nullptr;
+	const int32 index = random.Get<uint32_t>(size);
+	return const_cast<T*>(&parts[index]);
+}
+
+template <typename T>
+inline void UDungeonGenerateParameter::EachMeshParts(const TArray<T>& parts, std::function<void(const T&)> func) const
+{
+	for (const auto& part : parts)
+	{
+		func(part);
+	}
+}

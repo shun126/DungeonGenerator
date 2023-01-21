@@ -8,6 +8,7 @@
 #include "DungeonDoorInterface.h"
 #include "DungeonRoomProps.h"
 #include "DungeonRoomSensor.h"
+#include "Core/Identifier.h"
 #include "Core/Generator.h"
 #include "Core/Voxel.h"
 #include "Core/Math/Math.h"
@@ -237,8 +238,7 @@ void CDungeonGenerator::AddTerraine()
 			*/
 			if (const FDungeonMeshParts* parts = parameter->SelectSlopeParts(dungeon::Random::Instance()))
 			{
-				const float yawAngle = grid.GetDirection().ToDegree();
-				mOnAddSlope(parts->StaticMesh, parts->GetWorldTransform(yawAngle, centerPosition));
+				mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(centerPosition, grid.GetDirection()));
 			}
 		}
 		else if (mOnAddFloor && grid.CanBuildFloor(mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z - 1)))
@@ -249,9 +249,7 @@ void CDungeonGenerator::AddTerraine()
 			*/
 			if (const FDungeonMeshParts* parts = parameter->SelectFloorParts(dungeon::Random::Instance()))
 			{
-				//const float yawAngle = 0;// static_cast<float>(grid.mDirection) * 90.f;
-				const float yawAngle = grid.GetDirection().ToDegree();
-				mOnAddFloor(parts->StaticMesh, parts->GetWorldTransform(yawAngle, centerPosition));
+				mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(centerPosition, grid.GetDirection()));
 			}
 		}
 
@@ -268,28 +266,28 @@ void CDungeonGenerator::AddTerraine()
 					// 北側の壁
 					FVector wallPosition = centerPosition;
 					wallPosition.Y -= halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->GetWorldTransform(0.f, wallPosition));
+					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 0.f));
 				}
 				if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y + 1, location.Z), dungeon::Direction::South, parameter->MergeRooms))
 				{
 					// 南側の壁
 					FVector wallPosition = centerPosition;
 					wallPosition.Y += halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->GetWorldTransform(180.f, wallPosition));
+					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 180.f));
 				}
 				if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X + 1, location.Y, location.Z), dungeon::Direction::East, parameter->MergeRooms))
 				{
 					// 東側の壁
 					FVector wallPosition = centerPosition;
 					wallPosition.X += halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->GetWorldTransform(90.f, wallPosition));
+					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 90.f));
 				}
 				if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X - 1, location.Y, location.Z), dungeon::Direction::West, parameter->MergeRooms))
 				{
 					// 西側の壁
 					FVector wallPosition = centerPosition;
 					wallPosition.X -= halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->GetWorldTransform(-90.f, wallPosition));
+					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, -90.f));
 				}
 			}
 		}
@@ -346,7 +344,7 @@ void CDungeonGenerator::AddTerraine()
 				const FTransform transform(wallVector.Rotation(), position);
 				if (const FDungeonMeshParts* parts = parameter->SelectPillarParts(dungeon::Random::Instance()))
 				{
-					mOnResetPillar(pillarGridHeight, parts->StaticMesh, parts->GetWorldTransform(transform));
+					mOnResetPillar(pillarGridHeight, parts->StaticMesh, parts->CalculateWorldTransform(transform));
 				}
 
 				// 水平以外に対応が必要？
@@ -385,7 +383,7 @@ void CDungeonGenerator::AddTerraine()
 				// 北側の扉
 				FVector doorPosition = position;
 				doorPosition.X += parameter->GridSize * 0.5f;
-				SpawnDoorActor(parts->ActorClass, parts->GetWorldTransform(-90.f, doorPosition), props);
+				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, -90.f), props);
 			}
 			if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X, location.Y + 1, location.Z), dungeon::Direction::South))
 			{
@@ -393,7 +391,7 @@ void CDungeonGenerator::AddTerraine()
 				FVector doorPosition = position;
 				doorPosition.X += parameter->GridSize * 0.5f;
 				doorPosition.Y += parameter->GridSize;
-				SpawnDoorActor(parts->ActorClass, parts->GetWorldTransform(-90.f, doorPosition), props);
+				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, -90.f), props);
 			}
 			if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X + 1, location.Y, location.Z), dungeon::Direction::East))
 			{
@@ -401,14 +399,14 @@ void CDungeonGenerator::AddTerraine()
 				FVector doorPosition = position;
 				doorPosition.X += parameter->GridSize;
 				doorPosition.Y += parameter->GridSize * 0.5f;
-				SpawnDoorActor(parts->ActorClass, parts->GetWorldTransform(0.f, doorPosition), props);
+				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), props);
 			}
 			if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X - 1, location.Y, location.Z), dungeon::Direction::West))
 			{
 				// 西側の扉
 				FVector doorPosition = position;
 				doorPosition.Y += parameter->GridSize * 0.5f;
-				SpawnDoorActor(parts->ActorClass, parts->GetWorldTransform(0.f, doorPosition), props);
+				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), props);
 			}
 		}
 		
@@ -425,10 +423,12 @@ void CDungeonGenerator::AddTerraine()
 			{
 				if (mOnAddRoomRoof)
 				{
-					if (const FDungeonMeshParts* parts = parameter->SelectRoomRoofParts(dungeon::Random::Instance()))
+					if (const FDungeonMeshPartsWithDirection* parts = parameter->SelectRoomRoofParts(dungeon::Random::Instance()))
 					{
-						const FTransform worldTransform = parts->GetWorldTransform(transform);
-						mOnAddRoomRoof(parts->StaticMesh, worldTransform);
+						mOnAddRoomRoof(
+							parts->StaticMesh,
+							parts->CalculateWorldTransform(dungeon::Random::Instance(), transform)
+						);
 					}
 				}
 			}
@@ -436,9 +436,12 @@ void CDungeonGenerator::AddTerraine()
 			{
 				if (mOnAddAisleRoof)
 				{
-					if (const FDungeonMeshParts* parts = parameter->SelectAisleRoofParts(dungeon::Random::Instance()))
+					if (const FDungeonMeshPartsWithDirection* parts = parameter->SelectAisleRoofParts(dungeon::Random::Instance()))
 					{
-						mOnAddAisleRoof(parts->StaticMesh, parts->GetWorldTransform(transform));
+						mOnAddAisleRoof(
+							parts->StaticMesh,
+							parts->CalculateWorldTransform(dungeon::Random::Instance(), transform)
+						);
 					}
 				}
 			}
@@ -464,7 +467,7 @@ void CDungeonGenerator::AddTerraine()
 			const FVector extent = room->GetExtent() * parameter->GetGridSize();
 			SpawnRoomSensorActor(
 				parameter->GetRoomSensorClass(),
-				room->GetIdentifier().Get(),
+				room->GetIdentifier(),
 				center,
 				extent,
 				static_cast<EDungeonRoomParts>(room->GetParts()),
@@ -597,6 +600,9 @@ void CDungeonGenerator::AddObject()
 
 	if (parameter->GetStartParts().ActorClass)
 	{
+		/*!
+		TODO:パーツによる回転指定 PlacementDirection に対応して下さい
+		*/
 		const FTransform wallTransform(*mGenerator->GetStartPoint() * parameter->GetGridSize());
 		const FTransform worldTransform = wallTransform * parameter->GetStartParts().RelativeTransform;
 		SpawnActorOnFloor(parameter->GetStartParts().ActorClass, worldTransform);
@@ -604,6 +610,9 @@ void CDungeonGenerator::AddObject()
 
 	if (parameter->GetGoalParts().ActorClass)
 	{
+		/*!
+		TODO:パーツによる回転指定 PlacementDirection に対応して下さい
+		*/
 		const FTransform wallTransform(*mGenerator->GetGoalPoint() * parameter->GetGridSize());
 		const FTransform worldTransform = wallTransform * parameter->GetGoalParts().RelativeTransform;
 		SpawnActorOnFloor(parameter->GetGoalParts().ActorClass, worldTransform);
@@ -747,7 +756,7 @@ void CDungeonGenerator::SpawnDoorActor(UClass* actorClass, const FTransform& tra
 	}
 }
 
-void CDungeonGenerator::SpawnRoomSensorActor(UClass* actorClass, const int32 identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId) const
+void CDungeonGenerator::SpawnRoomSensorActor(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId) const
 {
 	const FTransform transform(center);
 	ADungeonRoomSensor* actor = SpawnActorDeferred<ADungeonRoomSensor>(actorClass, TEXT("Dungeon/Sensors"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);

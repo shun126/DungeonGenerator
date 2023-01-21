@@ -17,6 +17,7 @@ class AStaticMeshActor;
 
 namespace dungeon
 {
+	class Identifier;
 	class Generator;
 	class Room;
 }
@@ -87,17 +88,16 @@ private:
 	static AActor* SpawnActor(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	static AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	static void SpawnActorOnFloor(UClass* actorClass, const FTransform& transform);
+	template<typename T = AActor>
+	static T* SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod);
 	void SpawnDoorActor(UClass* actorClass, const FTransform& transform, EDungeonRoomProps props) const;
-	void SpawnRoomSensorActor(UClass* actorClass, const int32 identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId) const;
+	void SpawnRoomSensorActor(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId) const;
 	static void DestorySpawnedActors();
 
 #if WITH_EDITOR
 	void DrawRoomAisleInfomation() const;
 	void DrawVoxelGridType() const;
 #endif
-
-	template<typename T = AActor>
-	static T* SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod);
 
 private:
 	std::shared_ptr<dungeon::Generator> mGenerator;
