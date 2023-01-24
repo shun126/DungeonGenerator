@@ -497,6 +497,8 @@ namespace dungeon
 			// 最小スパニングツリー
 			MinimumSpanningTree minimumSpanningTree(delaunayTriangulation);
 			GenerateAisle(minimumSpanningTree);
+			// TODO:関数名を適切にして下さい
+			mDistance = minimumSpanningTree.GetDistance();
 #endif
 		}
 		else
@@ -504,6 +506,8 @@ namespace dungeon
 			// 最小スパニングツリー
 			MinimumSpanningTree minimumSpanningTree(points);
 			GenerateAisle(minimumSpanningTree);
+			// TODO:関数名を適切にして下さい
+			mDistance = minimumSpanningTree.GetDistance();
 		}
 
 #if defined(DEBUG_GENERATE_BITMAP_FILE) | defined(DEBUG_GENERATE_RESULT_BITMAP_FILE)
@@ -688,6 +692,8 @@ namespace dungeon
 
 			const std::shared_ptr<Room>& startRoom = s->GetOwnerRoom();
 			const std::shared_ptr<Room>& goalRoom = e->GetOwnerRoom();
+			check(startRoom);
+			check(goalRoom);
 			const PathGoalCondition goalCondition(goalRoom->GetRect());
 
 			// Aisle generation by A*.

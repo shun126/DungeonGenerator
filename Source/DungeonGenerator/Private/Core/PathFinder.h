@@ -250,3 +250,5 @@ namespace dungeon
 		std::vector<BaseNode> mRoute;
 	};
 }
+
+#include "PathFinder.inl"

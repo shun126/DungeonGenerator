@@ -96,6 +96,15 @@ namespace dungeon
 			}
 		}
 
+		/*!
+		スタート地点から最も深い距離を取得します
+		\return		最も遠い距離
+		*/
+		uint8_t GetDistance() const noexcept
+		{
+			return mDistance;
+		}
+
 	private:
 		/*!
 		頂点配列 クラス
@@ -198,8 +207,9 @@ namespace dungeon
 		\param[in]	edges		辺
 		\param[in]	index		辺の番号
 		\param[in]	depth		距離
+		\return		最も遠い距離
 		*/
-		void SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept;
+		uint8_t SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept;
 
 	private:
 		std::vector<Aisle> mEdges;
@@ -207,5 +217,9 @@ namespace dungeon
 		std::vector<std::shared_ptr<const Point>> mLeafPoints;
 		std::shared_ptr<const Point> mStartPoint;
 		std::shared_ptr<const Point> mGoalPoint;
+
+		uint8_t mDistance = 0;
 	};
 }
+
+#include "MinimumSpanningTree.inl"

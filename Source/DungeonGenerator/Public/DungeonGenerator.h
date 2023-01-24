@@ -32,13 +32,19 @@ public:
 	using AddPillarStaticMeshEvent = std::function<void(uint32_t, UStaticMesh*, const FTransform&)>;
 	using ResetActorEvent = std::function<void(UClass*, const FTransform&)>;
 	using ResetDoorEvent = std::function<void(AActor*, EDungeonRoomProps)>;
-	using ResetRoomSensorEvent = std::function<void(AActor*, const FBox&)>;	// TODO:正式採用しない可能性あり
 
 public:
 	static const FName& GetDungeonGeneratorTag();
 
 public:
+	/*!
+	コンストラクタ
+	*/
 	CDungeonGenerator();
+
+	/*!
+	デストラクタ
+	*/
 	virtual ~CDungeonGenerator() = default;
 
 	void OnQueryParts(std::function<void(const std::shared_ptr<const dungeon::Room>&)> func);
@@ -52,10 +58,7 @@ public:
 
 	void OnResetTorch(const ResetActorEvent& func);
 	//void OnAddChandelier(const ResetActorEvent& func);
-	void OnResetStart(const ResetActorEvent& func);				// TODO:正式採用しない可能性あり
-	void OnResetGoal(const ResetActorEvent& func);				// TODO:正式採用しない可能性あり
 	void OnResetDoor(const ResetDoorEvent& func);
-	void OnResetRoomSensor(const ResetRoomSensorEvent& func);	// TODO:正式採用しない可能性あり
 
 	void Create(const UDungeonGenerateParameter* asset);
 	void AddTerraine();
@@ -91,7 +94,16 @@ private:
 	template<typename T = AActor>
 	static T* SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod);
 	void SpawnDoorActor(UClass* actorClass, const FTransform& transform, EDungeonRoomProps props) const;
-	void SpawnRoomSensorActor(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId) const;
+	void SpawnRoomSensorActor(
+		UClass* actorClass,
+		const dungeon::Identifier& identifier,
+		const FVector& center,
+		const FVector& extent,
+		EDungeonRoomParts parts,
+		EDungeonRoomItem item,
+		uint8 branchId,
+		const uint8 depthFromStart,
+		const uint8 deepestDepthFromStart) const;
 	static void DestorySpawnedActors();
 
 #if WITH_EDITOR
@@ -112,11 +124,8 @@ private:
 
 	ResetActorEvent mOnResetTorch;
 	//ResetActorEvent mOnResetChandelier;
-	ResetActorEvent mOnResetStart;				// TODO:廃止の可能性あり
-	ResetActorEvent mOnResetGoal;				// TODO:廃止の可能性あり
 
 	ResetDoorEvent mOnResetDoor;
-	ResetRoomSensorEvent mOnResetRoomSensor;	// TODO:廃止の可能性あり
 
 	// friend class
 	friend class ADungeonGenerateActor;

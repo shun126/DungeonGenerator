@@ -39,16 +39,25 @@ void ADungeonRoomSensor::BeginDestroy()
 	Finalize();
 }
 
-void ADungeonRoomSensor::Initialize(const dungeon::Identifier& identifier, const FVector& extents, const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 branchId)
+void ADungeonRoomSensor::Initialize(
+	const int32 identifier,
+	const FVector& extents,
+	const EDungeonRoomParts parts,
+	const EDungeonRoomItem item,
+	const uint8 branchId,
+	const uint8 depthFromStart,
+	const uint8 deepestDepthFromStart)
 {
 	Finalize();
 	
-	Identifier = identifier.Get();
+	Identifier = identifier;
 	//Bounding->InitBoxExtent(extents);
 	Bounding->SetBoxExtent(extents);
 	Parts = parts;
 	Item = item;
 	BranchId = branchId;
+	DepthFromStart = depthFromStart;
+	DeepestDepthFromStart = deepestDepthFromStart;
 
 	OnInitialize();
 
@@ -162,4 +171,11 @@ bool ADungeonRoomSensor::FindFloorHeightPosition(FVector& result, const FVector&
 	result = hitResult.ImpactPoint;
 	result.Z += offsetHeight;
 	return true;
+}
+
+float ADungeonRoomSensor::GetDepthRatioFromStart() const
+{
+	if (DeepestDepthFromStart <= 0.f)
+		return 0.f;
+	return static_cast<float>(DepthFromStart) / static_cast<float>(DeepestDepthFromStart);
 }

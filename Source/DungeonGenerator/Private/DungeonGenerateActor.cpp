@@ -324,7 +324,7 @@ void ADungeonGenerateActor::Tick(float DeltaSeconds)
 #endif
 	}
 
-#if WITH_EDITOR
+#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	DrawDebugInfomation();
 #endif
 }
@@ -383,7 +383,9 @@ bool ADungeonGenerateActor::ShouldTickIfViewportsOnly() const
 {
 	return true;
 }
+#endif
 
+#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 void ADungeonGenerateActor::DrawDebugInfomation()
 {
 	if (!IsValid(DungeonGenerateParameter))
@@ -395,9 +397,8 @@ void ADungeonGenerateActor::DrawDebugInfomation()
 	std::shared_ptr<const dungeon::Generator> generator = mDungeonGenerator->GetGenerator();
 	if (generator == nullptr)
 		return;
-		
+	
 	const float gridSize = DungeonGenerateParameter->GetGridSize();
-	const FVector halfGridSize(gridSize / 2.f, gridSize / 2.f, gridSize / 2.f);
 
 	// 部屋と接続情報のデバッグ情報を表示します
 	if (ShowRoomAisleInfomation)
@@ -441,7 +442,7 @@ void ADungeonGenerateActor::DrawDebugInfomation()
 				const FVector goal(static_cast<int32>(edge.GetPoint(1)->X), static_cast<int32>(edge.GetPoint(1)->Y), static_cast<int32>(edge.GetPoint(1)->Z));
 				UKismetSystemLibrary::DrawDebugSphere(
 					GetWorld(),
-					start * gridSize + FVector(gridSize / 2.f, gridSize / 2.f, gridSize / 2.f),
+					start * gridSize + FVector(gridSize / 2., gridSize / 2., gridSize / 2.),
 					10.f,
 					12,
 					FColor::Green,
@@ -450,7 +451,7 @@ void ADungeonGenerateActor::DrawDebugInfomation()
 				);
 				UKismetSystemLibrary::DrawDebugSphere(
 					GetWorld(),
-					goal * gridSize + FVector(gridSize / 2.f, gridSize / 2.f, gridSize / 2.f),
+					goal * gridSize + FVector(gridSize / 2., gridSize / 2., gridSize / 2.),
 					10.f,
 					12,
 					FColor::Red,
@@ -482,7 +483,7 @@ void ADungeonGenerateActor::DrawDebugInfomation()
 				//if (grid.mType == dungeon::Grid::Type::Aisle || grid.mType == dungeon::Grid::Type::Slope)
 				if (grid.GetType() != dungeon::Grid::Type::Empty && grid.GetType() != dungeon::Grid::Type::OutOfBounds)
 				{
-					const float halfGridSize = gridSize / 2.f;
+					const double halfGridSize = gridSize / 2.;
 					const FVector halfGrid(halfGridSize, halfGridSize, halfGridSize);
 					const FVector center = dungeon::ToVector(location) * gridSize + halfGrid;
 

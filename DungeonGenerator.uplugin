@@ -7,9 +7,9 @@
 	"Category": "Other",
 	"CreatedBy": "Shun Moriya",
 	"CreatedByURL": "https://mnu.sakura.ne.jp/",
-	"DocsURL": "",
-	"MarketplaceURL": "",
-	"SupportURL": "",
+	"DocsURL": "https://github.com/shun126/DungeonGenerator/wiki/",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/36a8b87d859f44439cfe1515975d7197",
+	"SupportURL": "https://github.com/shun126/DungeonGenerator/issues/",
 	"CanContainContent": false,
 	"IsBetaVersion": true,
 	"IsExperimentalVersion": false,
@@ -18,12 +18,18 @@
 		{
 			"Name": "DungeonGenerator",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64"
+			]
 		},
 		{
 			"Name": "DungeonGeneratorEditor",
 			"Type": "UncookedOnly",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64"
+			]
 		}
 	]
 }

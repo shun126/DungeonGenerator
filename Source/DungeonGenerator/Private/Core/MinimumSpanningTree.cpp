@@ -233,7 +233,7 @@ namespace dungeon
 		if (startPointIndex != ~0)
 		{
 			// スタートから各部屋の深さ（部屋の数）を設定
-			SetDistanceFromStartToRoom(verteces, edges, startPointIndex, 0);
+			mDistance = SetDistanceFromStartToRoom(verteces, edges, startPointIndex, 0);
 
 			// ゴールを記録
 			{
@@ -275,8 +275,9 @@ namespace dungeon
 	}
 
 	// スタートから各部屋の深さ（部屋の数）を設定
-	void MinimumSpanningTree::SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept
+	uint8_t MinimumSpanningTree::SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept
 	{
+		uint8_t distanceFromStart = 0;
 		for (auto& edge : edges)
 		{
 			for (size_t i = 0; i < 2; ++i)
@@ -295,11 +296,16 @@ namespace dungeon
 					if (const std::shared_ptr<const Room>& otherRoom = verteces.Get(otherIndex)->GetOwnerRoom())
 					{
 						if (otherRoom->GetDepthFromStart() > depth)
-							SetDistanceFromStartToRoom(verteces, edges, otherIndex, depth + 1);
+						{
+							uint8_t distance = SetDistanceFromStartToRoom(verteces, edges, otherIndex, depth + 1);
+							if (distanceFromStart < distance)
+								distanceFromStart = distance;
+						}
 					}
 				}
 			}
 		}
+		return distanceFromStart;
 	}
 
 	void MinimumSpanningTree::Cost(std::vector<RouteNode>& result, std::vector<IndexedEdge>& edges, const size_t vertexIndex, const float cost) noexcept

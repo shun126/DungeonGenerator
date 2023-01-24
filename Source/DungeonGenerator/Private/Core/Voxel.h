@@ -175,3 +175,5 @@ namespace dungeon
 		uint32_t mHeight;
 	};
 }
+
+#include "Voxel.inl"

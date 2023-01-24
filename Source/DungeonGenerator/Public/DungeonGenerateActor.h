@@ -4,8 +4,11 @@
 */
 
 #pragma once
+#include <GameFramework/Actor.h>
+#include <memory>
 #include "DungeonGenerateActor.generated.h"
 
+// 前方宣言
 class CDungeonGenerator;
 class UDungeonGenerateParameter;
 class UDungeonMiniMapTexture;
@@ -16,33 +19,41 @@ namespace dungeon
 	class Room;
 }
 
-
+// イベント宣言
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDungeonGeneratorActorSignature, const FTransform&, transform);
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDungeonGeneratorDoorSignature, AActor*, doorActor, EDungeonRoomProps, props);
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDungeonGeneratorPlayerStartSignature, const FVector&, location);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FDungeonGeneratorDelegete, bool, StreamingLevel, EDungeonRoomParts, DungeonRoomParts, const FBox&, RoomRect);
 
+/*!
+ダンジョン生成アクタークラス
+*/
 UCLASS(BlueprintType, Blueprintable)
 class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor
 {
 	GENERATED_BODY()
 
 public:
+	/*!
+	コンストラクタ
+	*/
 	explicit ADungeonGenerateActor(const FObjectInitializer& initializer);
+
+	/*!
+	デストラクタ
+	*/
 	virtual ~ADungeonGenerateActor();
 
 	/*!
 	ミニマップ用のテクスチャを生成します
 	*/
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTexture* GenerateMiniMapTexture(const int32 textureWidth, const uint8 currentLevel = 255, const uint8 lowerLevel = 255);
 
 	/*!
 	最後に生成したミニマップ用のテクスチャを取得します
 	*/
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTexture* GetLastGeneratedMiniMapTexture() const;
 
 	UFUNCTION()
@@ -58,8 +69,11 @@ public:
 
 private:
 	void ReleaseHierarchicalInstancedStaticMeshComponents();
+
 	static void StartAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
+
 	static void AddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs, const UStaticMesh* staticMesh, const FTransform& transform);
+
 	static void EndAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
 
 	static inline FBox ToWorldBoundingBox(const std::shared_ptr<const dungeon::Room>& room, const float gridSize);
@@ -72,33 +86,29 @@ private:
 
 	void PostGenerate();
 
-#if WITH_EDITOR
-	void DrawDebugInfomation();
-#endif
-
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 		UDungeonGenerateParameter* DungeonGenerateParameter = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 		bool InstancedStaticMesh = true;
 
-	UPROPERTY(Transient, BlueprintReadOnly)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> FloorMeshs;
 
-	UPROPERTY(Transient, BlueprintReadOnly)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> SlopeMeshs;
 
-	UPROPERTY(Transient, BlueprintReadOnly)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> WallMeshs;
 
-	UPROPERTY(Transient, BlueprintReadOnly)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> RoomRoofMeshs;
 
-	UPROPERTY(Transient, BlueprintReadOnly)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> AisleRoofMeshs;
 
-	UPROPERTY(Transient, BlueprintReadOnly)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> PillarMeshs;
 
 	// event
@@ -145,25 +155,28 @@ protected:
 		FDungeonGeneratorDelegete OnRoomCreated;
 
 	// ビルドジョブタグ
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		FString BuildJobTag;
 
 	// ライセンスタグ
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		FString LicenseTag;
 
 	// ライセンスID
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		FString LicenseId;
 
-#if WITH_EDITORONLY_DATA
+#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	// 部屋と接続情報のデバッグ情報を表示します
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		bool ShowRoomAisleInfomation = false;
 
 	// ボクセルグリッドのデバッグ情報を表示します
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		bool ShowVoxelGridType = false;
+
+private:
+	void DrawDebugInfomation();
 #endif
 
 private:
