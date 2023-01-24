@@ -26,10 +26,10 @@ class DUNGEONGENERATOR_API IDungeonDoorInterface
 
 public:
 	// 引数と戻り値がないメンバ関数
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="DungeonGenerator")
     	void OnInitialize(EDungeonRoomProps props);
 
 	// 引数と戻り値があるメンバ関数
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "DungeonGenerator")
     	void OnReset();
 };

@@ -228,6 +228,11 @@ namespace dungeon
 		void Branch() noexcept;
 		void Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept;
 
+		uint8_t GetDeepestDepthFromStart() const noexcept
+		{
+			return mDistance;
+		}
+
 	private:
 		/*!
 		生成
@@ -296,5 +301,9 @@ namespace dungeon
 		std::promise<void> mGeneratePromise;
 		std::future<void> mGenerateFuture;
 		std::atomic_bool mGenerated = {false};
+
+		uint8_t mDistance = 0;
 	};
 }
+
+#include "Generator.inl"

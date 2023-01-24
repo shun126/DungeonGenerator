@@ -8,12 +8,12 @@
 
 #pragma once
 #include "Circle.h"
-#include "Point.h"
 #include <array>
-#include <algorithm>
 
 namespace dungeon
 {
+	class Point;
+
 	/*!
 	四面体クラス
 	*/
@@ -88,24 +88,6 @@ namespace dungeon
 	private:
 		std::array<std::shared_ptr<const Point>, VertexSize> mPoints;
 	};
-
-	inline Tetrahedron::Tetrahedron(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3) noexcept
-		: mPoints{ { p0, p1, p2, p3 } }
-	{
-	}
 }
 
-namespace std
-{
-	/*!
-	unordered_map,unordered_set等で利用するハッシュ関数
-	*/
-	template<>
-	struct hash<dungeon::Tetrahedron>
-	{
-		size_t operator()(const dungeon::Tetrahedron& tetrahedron) const noexcept
-		{
-			return tetrahedron.GetHash();
-		}
-	};
-}
+#include "Tetrahedron.inl"

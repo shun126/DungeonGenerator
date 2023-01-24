@@ -8,35 +8,46 @@
 #include "DungeonRoomParts.h"
 #include "DungeonRoomAsset.generated.h"
 
+/*!
+ダンジョンの部屋に置き換える部屋アセット情報クラス
+*/
 UCLASS(Blueprintable)
 class DUNGEONGENERATOR_API UDungeonRoomAsset : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	UDungeonRoomAsset(const FObjectInitializer& ObjectInitializer);
+	/*!
+	コンストラクタ
+	*/
+	explicit UDungeonRoomAsset(const FObjectInitializer& ObjectInitializer);
+
+	/*!
+	デストラクタ
+	*/
 	virtual ~UDungeonRoomAsset() = default;
 
 protected:
+	// TODO:publicを止めて下さい。必要に応じてアクセサを用意して下さい
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		FName LevelName;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		FSoftObjectPath LevelPath;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 1))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = 1))
 		int32 Width;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 1))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = 1))
 		int32 Depth;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 1))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = 1))
 		int32 Height;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		EDungeonRoomHeightCondition HeightCondition = EDungeonRoomHeightCondition::Equal;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		EDungeonRoomParts DungeonParts = EDungeonRoomParts::Any;
 };

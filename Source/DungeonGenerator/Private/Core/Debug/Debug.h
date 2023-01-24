@@ -13,6 +13,19 @@
 #include <memory>
 #include <string>
 
+#if !defined(UE_BUILD_DEBUG)
+#define UE_BUILD_DEBUG 0
+#endif
+#if !defined(UE_BUILD_DEVELOPMENT)
+#define UE_BUILD_DEVELOPMENT 0
+#endif
+#if !defined(UE_BUILD_TEST)
+#define UE_BUILD_TEST 0
+#endif
+#if !defined(UE_BUILD_SHIPPING)
+#define UE_BUILD_SHIPPING 0
+#endif
+
 // ログマクロ
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING > 0
 #include <CoreMinimal.h>

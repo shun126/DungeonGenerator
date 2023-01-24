@@ -106,26 +106,9 @@ void CDungeonGenerator::OnAddChandelier(const ResetActorEvent& func)
 }
 #endif
 
-// TODO:正式採用しない可能性あり
-void CDungeonGenerator::OnResetStart(const ResetActorEvent& func)
-{
-	mOnResetStart = func;
-}
-
-// TODO:正式採用しない可能性あり
-void CDungeonGenerator::OnResetGoal(const ResetActorEvent& func)
-{
-	mOnResetGoal = func;
-}
-
 void CDungeonGenerator::OnResetDoor(const ResetDoorEvent& func)
 {
 	mOnResetDoor = func;
-}
-
-void CDungeonGenerator::OnResetRoomSensor(const ResetRoomSensorEvent& func)
-{
-	mOnResetRoomSensor = func;
 }
 
 void CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
@@ -472,54 +455,32 @@ void CDungeonGenerator::AddTerraine()
 				extent,
 				static_cast<EDungeonRoomParts>(room->GetParts()),
 				static_cast<EDungeonRoomItem>(room->GetItem()),
-				room->GetBranchId()
+				room->GetBranchId(),
+				room->GetDepthFromStart(),
+				mGenerator->GetDeepestDepthFromStart()	//!< TODO:適切な関数名に変えて下さい
 			);
 		}
 	);
 
-	/*
-	ダミー敵を配置します
-	正式版ではこの機能は削除して下さい。
-	敵の配置はADungeonRoomSensorを継承したクラスで行って下さい。
-	*/
 	if (UWorld* world = GetWorld())
 	{
-		if (parameter->DummyEnemyPath.IsValid())
-		{
-			UClass* actorClass = TSoftClassPtr<AActor>(FSoftObjectPath(parameter->DummyEnemyPath.ToString() + "_C")).LoadSynchronous();
-			if (IsValid(actorClass))
-			{
-				TArray<AActor*> actors;
-				UGameplayStatics::GetAllActorsOfClassWithTag(world, ADungeonRoomSensor::StaticClass(), DungeonGeneratorTag, actors);
-				for (AActor* actor : actors)
-				{
-					ADungeonRoomSensor* dungeonRoomSensor = Cast<ADungeonRoomSensor>(actor);
-					if (!IsValid(dungeonRoomSensor))
-						continue;
-
-					const int32 count = dungeonRoomSensor->IdealNumberOfActor();
-					for (int32 i = 0; i < count; ++i)
-					{
-						FTransform transform;
-						if (dungeonRoomSensor->RandomTransform(transform))
-						{
-							SpawnActor(actorClass, TEXT("Dungeon/Enemies"), transform);
-						}
-						else
-						{
-							// TODO:ERROR
-						}
-					}
-				}
-			}
-		}
-
 #if WITH_EDITOR
 		{
-			const FTransform transform;
-			ANavMeshBoundsVolume* mNavMeshBoundsVolume = Cast<ANavMeshBoundsVolume>(
-				SpawnActor(ANavMeshBoundsVolume::StaticClass(), TEXT("Dungeon"), transform)
-			);
+			ANavMeshBoundsVolume* mNavMeshBoundsVolume;
+
+			TArray<AActor*> navMeshBoundsVolumes;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), ANavMeshBoundsVolume::StaticClass(), navMeshBoundsVolumes);
+			if (navMeshBoundsVolumes.Num() > 0)
+			{
+				mNavMeshBoundsVolume = Cast<ANavMeshBoundsVolume>(navMeshBoundsVolumes[0]);
+			}
+			else
+			{
+				const FTransform transform;
+				mNavMeshBoundsVolume = Cast<ANavMeshBoundsVolume>(
+					SpawnActor(ANavMeshBoundsVolume::StaticClass(), TEXT("Dungeon"), transform)
+				);
+			}
 			if (IsValid(mNavMeshBoundsVolume))
 			{
 				/*
@@ -756,20 +717,22 @@ void CDungeonGenerator::SpawnDoorActor(UClass* actorClass, const FTransform& tra
 	}
 }
 
-void CDungeonGenerator::SpawnRoomSensorActor(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId) const
+void CDungeonGenerator::SpawnRoomSensorActor(
+	UClass* actorClass,
+	const dungeon::Identifier& identifier,
+	const FVector& center,
+	const FVector& extent,
+	EDungeonRoomParts parts,
+	EDungeonRoomItem item,
+	uint8 branchId,
+	const uint8 depthFromStart,
+	const uint8 deepestDepthFromStart) const
 {
 	const FTransform transform(center);
 	ADungeonRoomSensor* actor = SpawnActorDeferred<ADungeonRoomSensor>(actorClass, TEXT("Dungeon/Sensors"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (IsValid(actor))
 	{
-		actor->Initialize(identifier, extent, parts, item, branchId);
-		if (mOnResetRoomSensor)
-		{
-			const FBox bounding(
-				center - extent,
-				center + extent);
-			mOnResetRoomSensor(actor, bounding);
-		}
+		actor->Initialize(identifier.Get(), extent, parts, item, branchId, depthFromStart, deepestDepthFromStart);
 		actor->FinishSpawning(transform);
 	}
 };

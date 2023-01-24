@@ -160,3 +160,5 @@ namespace dungeon
 		Random mRandom;
 	};
 }
+
+#include "GenerateParameter.inl"

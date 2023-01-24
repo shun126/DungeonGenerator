@@ -65,26 +65,4 @@ namespace dungeon
 	};
 }
 
-namespace dungeon
-{
-	inline void DelaunayTriangulation3D::ForEach(std::function<void(const Triangle&)> func) noexcept
-	{
-		for (auto& triangle : mTriangles)
-		{
-			func(triangle);
-		}
-	}
-
-	inline void DelaunayTriangulation3D::ForEach(std::function<void(const Triangle&)> func) const noexcept
-	{
-		for (auto& triangle : mTriangles)
-		{
-			func(triangle);
-		}
-	}
-
-	inline bool DelaunayTriangulation3D::IsValid() const noexcept
-	{
-		return mTriangles.empty() == false;
-	}
-}
+#include "DelaunayTriangulation3D.inl"

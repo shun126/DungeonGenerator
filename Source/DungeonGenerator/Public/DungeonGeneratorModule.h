@@ -7,6 +7,9 @@
 #include <CoreMinimal.h>
 #include <Modules/ModuleManager.h>
 
+/*!
+モジュールクラス
+*/
 class FDungeonGeneratorModule : public IModuleInterface
 {
 public:

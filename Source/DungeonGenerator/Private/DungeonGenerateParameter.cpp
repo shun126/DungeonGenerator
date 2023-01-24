@@ -8,6 +8,13 @@
 #include "../Private/Core/Direction.h"
 #include "../Private/Core/Math/Random.h"
 
+#if WITH_EDITOR
+#include "BuildInfomation.h"
+#include "PluginInfomation.h"
+#include <JsonUtilities/Public/JsonUtilities.h>
+#include <Runtime/Json/Public/Serialization/JsonReader.h>
+#endif
+
 namespace
 {
 	static FTransform CalculateWorldTransform_(const FTransform& toWorldTransform, const FTransform& relativeTransform)
@@ -340,3 +347,65 @@ FVector UDungeonGenerateParameter::ToWorld(const uint32_t x, const uint32_t y, c
 		static_cast<float>(z)
 	) * GridSize;
 }
+
+#if WITH_EDITOR
+void UDungeonGenerateParameter::DumpToJson()
+{
+	// TSharedPtr<FJsonObject> jsonRoot = MakeShareable(new FJsonObject);
+	// 
+	// FString outPutString;
+	// TSharedRef<TJsonWriter<>> writer = TJsonWriterFactory<>::Create(&outPutString);
+	// FJsonSerializer::Serialize(jsonRoot.ToSharedRef(), writer);
+
+	FString jsonString(TEXT("{\n"));
+	{
+		jsonString += TEXT("RandomSeed:") + FString::FromInt(RandomSeed) + TEXT(",\n");
+		jsonString += TEXT("GeneratedRandomSeed:") + FString::FromInt(GeneratedRandomSeed) + TEXT(",\n");
+		jsonString += TEXT("NumberOfCandidateRooms:") + FString::FromInt(NumberOfCandidateRooms) + TEXT(",\n");
+		jsonString += TEXT("RoomWidth:{\n");
+		jsonString += TEXT("Min:") + FString::FromInt(RoomWidth.Min) + TEXT(",\n");
+		jsonString += TEXT("Max:") + FString::FromInt(RoomWidth.Max);
+		jsonString += TEXT("},");
+		jsonString += TEXT("RoomDepth:{\n");
+		jsonString += TEXT("Min:") + FString::FromInt(RoomDepth.Min) + TEXT(",\n");
+		jsonString += TEXT("Max:") + FString::FromInt(RoomDepth.Max);
+		jsonString += TEXT("},");
+		jsonString += TEXT("RoomHeight:{\n");
+		jsonString += TEXT("Min:") + FString::FromInt(RoomHeight.Min) + TEXT(",\n");
+		jsonString += TEXT("Max:") + FString::FromInt(RoomHeight.Max);
+		jsonString += TEXT("},");
+		jsonString += TEXT("UnderfloorHeight:") + FString::FromInt(UnderfloorHeight) + TEXT(",\n");
+		jsonString += TEXT("RoomMargin:") + FString::FromInt(RoomMargin) + TEXT(",\n");
+		jsonString += TEXT("MergeRooms:") + MergeRooms ? TEXT("true,\n") : TEXT("false,\n");
+		jsonString += TEXT("GridSize:") + FString::SanitizeFloat(GridSize) + TEXT(",\n");
+		// TArray<FDungeonMeshPartsWithDirection> FloorParts;
+		// TArray<FDungeonMeshParts> SlopeParts;
+		// TArray<FDungeonMeshParts> WallParts;
+		// TArray<FDungeonMeshPartsWithDirection> RoomRoofParts;
+		// TArray<FDungeonMeshPartsWithDirection> AisleRoofParts;
+		// TArray<FDungeonMeshParts> PillarParts;
+		// TArray<FDungeonRandomObjectParts> TorchParts;
+		// TArray<FDungeonRandomObjectParts> ChandelierParts;
+		// TArray<FDungeonObjectParts> DoorParts;
+		// FDungeonActorPartsWithDirection StartParts;
+		// FDungeonActorPartsWithDirection GoalParts;
+		// UClass* DungeonRoomSensorClass = ADungeonRoomSensor::StaticClass();
+		// TArray<UDungeonRoomAsset*> DungeonRoomAssets;
+		jsonString += TEXT("Version:\"DUNGENERATOR_PLUGIN_VERSION_NAME\",\n");
+		jsonString += TEXT("Beta:\"DUNGENERATOR_PLUGIN_BETA_VERSION\",\n");
+		jsonString += TEXT("Tag:\"JENKINS_JOB_TAG\",\n");
+		jsonString += TEXT("UUID:\"JENKINS_UUID\",\n");
+		jsonString += TEXT("License:\"JENKINS_LICENSE\"\n");
+	}
+	jsonString += TEXT("}");
+	
+	const FString fileName(GetName() + ".json");
+	const FString filePath(GetJsonDefaultDirectory() / fileName);
+	FFileHelper::SaveStringToFile(jsonString, *filePath);
+}
+
+FString UDungeonGenerateParameter::GetJsonDefaultDirectory() const
+{
+	return FString(FPaths::ProjectSavedDir() / "DungeonGenerator");
+}
+#endif

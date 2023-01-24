@@ -319,3 +319,5 @@ namespace dungeon
 		uint8_t mBranchId = std::numeric_limits<uint8_t>::max();
 	};
 }
+
+#include "Room.inl"
