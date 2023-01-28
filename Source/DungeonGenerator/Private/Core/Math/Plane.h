@@ -1,4 +1,4 @@
-/*!
+/**
 平面に関するヘッダーファイル
 
 \author		Shun Moriya
@@ -10,7 +10,7 @@
 
 namespace dungeon
 {
-	/*!
+	/**
 	平面クラス
 	*/
 	class Plane final

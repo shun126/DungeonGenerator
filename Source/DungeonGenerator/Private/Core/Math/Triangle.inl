@@ -1,4 +1,4 @@
-/*!
+/**
 三角形に関するヘッダーファイル
 
 \author		Shun Moriya

@@ -1,4 +1,4 @@
-/*!
+/**
 通路に関するヘッダーファイル
 
 \author		Shun Moriya

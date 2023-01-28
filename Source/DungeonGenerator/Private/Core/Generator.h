@@ -1,4 +1,4 @@
-/*!
+/**
 ダンジョン生成ヘッダーファイル
 
 \author		Shun Moriya
@@ -23,7 +23,7 @@ namespace dungeon
 	class MinimumSpanningTree;
 	class Voxel;
 
-	/*!
+	/**
 	ダンジョン生成クラス
 
 	スレッドを生成してダンジョンを生成します。
@@ -32,17 +32,17 @@ namespace dungeon
 	class Generator : public std::enable_shared_from_this<Generator>
 	{
 	public:
-		/*!
+		/**
 		コンストラクタ
 		*/
 		Generator() noexcept;
 
-		/*!
+		/**
 		デストラクタ
 		*/
 		virtual ~Generator() noexcept;
 
-		/*!
+		/**
 		生成
 		スレッドを生成してダンジョンを生成します。
 		IsGenerated以外のメンバー関数を実行すると生成完了までブロックします。
@@ -51,23 +51,23 @@ namespace dungeon
 		*/
 		void Generate(const GenerateParameter& parameter) noexcept;
 
-		/*!
+		/**
 		生成が完了したか？
 		\return		trueならば生成完了
 		*/
 		bool IsGenerated() const noexcept;
 
-		/*!
+		/**
 		生成が完了まで待つ
 		*/
 		void WaitGenerate() const noexcept;
 
-		/*!
+		/**
 		生成パラメータを取得します
 		*/
 		const GenerateParameter& GetGenerateParameter() const noexcept;
 
-		/*!
+		/**
 		グリッド化された情報を取得
 		*/
 		const std::shared_ptr<Voxel>& GetVoxel() const noexcept;
@@ -76,7 +76,7 @@ namespace dungeon
 		// Room
 		size_t GetRoomCount() const noexcept;
 
-		/*!
+		/**
 		生成された部屋を更新します
 		*/
 		void ForEach(std::function<void(const std::shared_ptr<Room>&)> func) noexcept
@@ -89,7 +89,7 @@ namespace dungeon
 			}
 		}
 
-		/*!
+		/**
 		生成された部屋を参照します
 		*/
 		void ForEach(std::function<void(const std::shared_ptr<const Room>&)> func) const noexcept
@@ -168,7 +168,7 @@ namespace dungeon
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Point
-		/*!
+		/**
 		位置から部屋を検索します
 		最初にヒットした部屋を返します
 		\param[in]	point		検索位置
@@ -176,7 +176,7 @@ namespace dungeon
 		*/
 		std::shared_ptr<Room> Find(const Point& point) const noexcept;
 
-		/*!
+		/**
 		位置から部屋を検索します
 		検索位置を含むすべての部屋を返します
 		\param[in]	point		検索位置
@@ -184,7 +184,7 @@ namespace dungeon
 		*/
 		std::vector<std::shared_ptr<Room>> FindAll(const Point& point) const noexcept;
 
-		/*!
+		/**
 		開始地点にふさわしい点を取得します
 		\return		開始地点にふさわしい点
 		*/
@@ -193,7 +193,7 @@ namespace dungeon
 			return mStartPoint;
 		}
 
-		/*!
+		/**
 		ゴール地点にふさわしい点を取得します
 		\return		ゴール地点にふさわしい点
 		*/
@@ -202,7 +202,7 @@ namespace dungeon
 			return mGoalPoint;
 		}
 
-		/*!
+		/**
 		行き止まりの点を更新します
 		\param[in]	func	点を元に更新する関数
 		*/
@@ -234,47 +234,47 @@ namespace dungeon
 		}
 
 	private:
-		/*!
+		/**
 		生成
 		*/
 		void GenerateImpl() noexcept;
 
-		/*!
+		/**
 		部屋の生成
 		*/
 		void GenerateRooms(const GenerateParameter& parameter) noexcept;
 
-		/*!
+		/**
 		部屋の重なりを解消します
 		*/
 		void SeparateRooms(const GenerateParameter& parameter) noexcept;
 
-		/*!
+		/**
 		全ての部屋が収まるように空間を拡張します
 		*/
 		void ExpandSpace(GenerateParameter& parameter) noexcept;
 
-		/*!
+		/**
 		重複した部屋や範囲外の部屋を除去をします
 		*/
 		void RemoveInvalidRooms(const GenerateParameter& parameter) noexcept;
 
-		/*!
+		/**
 		通路の抽出
 		*/
 		void ExtractionAisles(const GenerateParameter& parameter) noexcept;
 
-		/*!
+		/**
 		ボクセル情報を生成
 		*/
 		void GenerateVoxel(const GenerateParameter& parameter) noexcept;
 
-		/*!
+		/**
 		通路の生成
 		*/
 		void GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept;
 
-		/*!
+		/**
 		幅と奥行きを指定した中心から方向ベクターが指す接点までの距離を計算します
 		\param[in]		width		矩形の幅
 		\param[in]		depth		矩形の奥行き

@@ -1,4 +1,4 @@
-/*!
+/**
 最小スパニングツリーに関するヘッダーファイル
 
 \author		Shun Moriya
@@ -12,7 +12,7 @@
 
 namespace dungeon
 {
-	/*!
+	/**
 	最小スパニングツリークラス
 	*/
 	class MinimumSpanningTree final
@@ -20,22 +20,22 @@ namespace dungeon
 		using Edge = Aisle;
 
 	public:
-		/*!
+		/**
 		コンストラクタ
 		*/
 		explicit MinimumSpanningTree(const DelaunayTriangulation3D& delaunayTriangulation) noexcept;
 
-		/*!
+		/**
 		コンストラクタ
 		*/
 		explicit MinimumSpanningTree(const std::vector<std::shared_ptr<const Point>>& points) noexcept;
 
-		/*!
+		/**
 		デストラクタ
 		*/
 		~MinimumSpanningTree() = default;
 
-		/*!
+		/**
 		生成した辺を更新します
 		*/
 		void ForEach(std::function<void(Edge&)> func) noexcept
@@ -46,7 +46,7 @@ namespace dungeon
 			}
 		}
 
-		/*!
+		/**
 		生成した辺を参照します
 		*/
 		void ForEach(std::function<void(const Edge&)> func) const noexcept
@@ -57,7 +57,7 @@ namespace dungeon
 			}
 		}
 
-		/*!
+		/**
 		最小スパニングツリーの辺の個数を取得します
 		\return		最小スパニングツリーの辺の個数
 		*/
@@ -66,7 +66,7 @@ namespace dungeon
 			return mEdges.size();
 		}
 
-		/*!
+		/**
 		開始地点にふさわしい点を取得します
 		\return		開始地点にふさわしい点
 		*/
@@ -75,7 +75,7 @@ namespace dungeon
 			return mStartPoint;
 		}
 
-		/*!
+		/**
 		ゴール地点にふさわしい点を取得します
 		\return		ゴール地点にふさわしい点
 		*/
@@ -84,7 +84,7 @@ namespace dungeon
 			return mGoalPoint;
 		}
 
-		/*!
+		/**
 		行き止まりの点を更新します
 		\param[in]	func	点を元に更新する関数
 		*/
@@ -96,7 +96,7 @@ namespace dungeon
 			}
 		}
 
-		/*!
+		/**
 		スタート地点から最も深い距離を取得します
 		\return		最も遠い距離
 		*/
@@ -106,27 +106,27 @@ namespace dungeon
 		}
 
 	private:
-		/*!
+		/**
 		頂点配列 クラス
 		*/
 		class Verteces final
 		{
 		public:
-			/*!
+			/**
 			頂点から頂点インデックスを取得します
 			\param[in]	point	頂点
 			\return		頂点インデックス
 			*/
 			size_t Index(const std::shared_ptr<const Point>& point) noexcept;
 
-			/*!
+			/**
 			インデックスから頂点を取得します
 			\param[in]	index	頂点インデックス
 			\return		頂点
 			*/
 			const std::shared_ptr<const Point>& Get(const size_t index) const noexcept;
 
-			/*!
+			/**
 			頂点からインデックスを取得します
 			\param[in]	point	頂点
 			\return		頂点インデックス（見つからない場合は~0が返る）
@@ -138,13 +138,13 @@ namespace dungeon
 		};
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
-		/*!
+		/**
 		頂点インデックスを使った辺クラス
 		*/
 		class IndexedEdge final
 		{
 		public:
-			/*!
+			/**
 			コンストラクタ
 			\param[in]	e0		辺の頂点番号
 			\param[in]	e1		辺の頂点番号
@@ -152,7 +152,7 @@ namespace dungeon
 			*/
 			IndexedEdge(const size_t e0, const size_t e1, const float length) noexcept;
 
-			/*!
+			/**
 			頂点番号を取得します
 			\param[in]	index	頂点インデックス
 			\return		頂点番号
@@ -170,7 +170,7 @@ namespace dungeon
 			float mLength;
 		};
 
-		/*!
+		/**
 		ルートノード
 		*/
 		struct RouteNode final
@@ -179,12 +179,12 @@ namespace dungeon
 			float mCost;
 		};
 
-		/*!
+		/**
 		初期化
 		*/
 		void Initialize(const Verteces& verteces, std::vector<IndexedEdge>& edges) noexcept;
 
-		/*!
+		/**
 		最小コストになるように経路を生成する
 		\param[out]	result			std::vector<RouteNode>&
 		\param[in]	edges			std::vector<IndexedEdge>& edges,
@@ -193,7 +193,7 @@ namespace dungeon
 		*/
 		static void Cost(std::vector<RouteNode>& result, std::vector<IndexedEdge>& edges, const size_t vertexIndex, const float cost) noexcept;
 
-		/*!
+		/**
 		開始地点にふさわしい点を検索します
 		\return		開始地点にふさわしい点
 		*/
@@ -201,7 +201,7 @@ namespace dungeon
 
 
 
-		/*!
+		/**
 		スタート地点から部屋までの距離を設定します
 		\param[in]	verteces	頂点
 		\param[in]	edges		辺

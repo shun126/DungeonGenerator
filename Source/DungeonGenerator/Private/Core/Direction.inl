@@ -1,4 +1,4 @@
-/*!
+/**
 方向
 
 \author		Shun Moriya

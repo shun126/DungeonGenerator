@@ -1,4 +1,4 @@
-/*!
+/**
 ボクセルなどに利用するグリッド情報のヘッダーファイル
 
 \author		Shun Moriya
@@ -11,13 +11,13 @@
 
 namespace dungeon
 {
-	/*!
+	/**
 	グリッドクラス
 	*/
 	class Grid final
 	{
 	public:
-		/*!
+		/**
 		グリッド内のセルの種類
 		*/
 		enum class Type : uint8_t
@@ -33,7 +33,7 @@ namespace dungeon
 		};
 		static constexpr size_t TypeSize = static_cast<size_t>(Type::OutOfBounds) + 1;
 
-		/*!
+		/**
 		グリッド内のセルにある小物
 		*/
 		enum class Props : uint8_t
@@ -45,25 +45,25 @@ namespace dungeon
 		static constexpr size_t PropsSize = static_cast<size_t>(Props::UniqueLock) + 1;
 
 	public:
-		/*!
+		/**
 		コンストラクタ
 		*/
 		Grid() noexcept;
 
-		/*!
+		/**
 		コンストラクタ
 		\param[in]	type	グリッドの種類
 		*/
 		explicit Grid(const Type type) noexcept;
 
-		/*!
+		/**
 		コンストラクタ
 		\param[in]	type		グリッドの種類
 		\param[in]	direction	グリッドの方向
 		*/
 		Grid(const Type type, const Direction direction) noexcept;
 
-		/*!
+		/**
 		コンストラクタ
 		\param[in]	type		グリッドの種類
 		\param[in]	direction	グリッドの方向
@@ -71,142 +71,142 @@ namespace dungeon
 		*/
 		Grid(const Type type, const Direction direction, const uint16_t identifier) noexcept;
 
-		/*!
+		/**
 		デストラクタ
 		*/
 		~Grid() = default;
 
-		/*!
+		/**
 		グリッドの種類を取得します
 		*/
 		Type GetType() const noexcept;
 
-		/*!
+		/**
 		グリッドの種類を設定します
 		*/
 		void SetType(const Type type) noexcept;
 
-		/*!
+		/**
 		グリッドの方向を取得します
 		*/
 		Direction GetDirection() const noexcept;
 
-		/*!
+		/**
 		グリッドの方向を設定します
 		*/
 		void SetDirection(const Direction direction) noexcept;
 
-		/*!
+		/**
 		識別子を取得します
 		*/
 		uint16_t GetIdentifier() const noexcept;
 
-		/*!
+		/**
 		識別子を設定します
 		*/
 		void SetIdentifier(const uint16_t identifier) noexcept;
 
-		/*!
+		/**
 		小道具を取得します
 		*/
 		Props GetProps() const noexcept;
 
-		/*!
+		/**
 		小道具を設定します
 		*/
 		void SetProps(const Props props) noexcept;
 
-		/*!
+		/**
 		部屋系のグリッド？
 		\warning	門は部屋系のグリッドでもあります
 		\return		trueならば部屋系のグリッド
 		*/
 		bool IsKindOfRoomType() const noexcept;
 
-		/*!
+		/**
 		門以外の部屋系のグリッド？
 		\warning	門は部屋系のグリッドでもあります
 		\return		trueならば門以外の部屋系のグリッド
 		*/
 		bool IsKindOfRoomTypeWithoutGate() const noexcept;
 
-		/*!
+		/**
 		門系のグリッド？
 		\warning	門は部屋系のグリッドでもあります
 		\return		trueならば門系のグリッド
 		*/
 		bool IsKindOfGateType() const noexcept;
 
-		/*!
+		/**
 		通路系のグリッド？
 		\return		trueならば通路系のグリッド
 		*/
 		bool IsKindOfAisleType() const noexcept;
 
-		/*!
+		/**
 		斜面系のグリッド？
 		\return		trueならば斜面系のグリッド
 		*/
 		bool IsKindOfSlopeType() const noexcept;
 
-		/*!
+		/**
 		空間系のグリッド？
 		\return		trueならば空間系のグリッド
 		*/
 		bool IsKindOfSpatialType() const noexcept;
 
-		/*!
+		/**
 		水平方向に通行可能なセルか判定します
 		*/
 		bool IsHorizontallyPassable() const noexcept;
 
-		/*!
+		/**
 		水平方向に通行不可能なセルか判定します
 		*/
 		bool IsHorizontallyNotPassable() const noexcept;
 
-		/*!
+		/**
 		垂直方向に通行可能なセルか判定します
 		*/
 		bool IsVerticallyPassable() const noexcept;
 
-		/*!
+		/**
 		垂直方向に通行不可能なセルか判定します
 		*/
 		bool IsVerticallyNotPassable() const noexcept;
 
-		/*!
+		/**
 		床（部屋）グリッドを生成します
 		*/
 		static Grid CreateFloor(Random& random, const uint16_t identifier) noexcept;
 
-		/*!
+		/**
 		デッキ（部屋の周辺）グリッドを生成します
 		*/
 		static Grid CreateDeck(Random& random, const uint16_t identifier) noexcept;
 
 		// 判定補助関数
-		/*!
+		/**
 		自身からtoGridを見た時に床が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド（通常は一つ下のグリッド）
 		\return		trueならば床の生成が可能
 		*/
 		bool CanBuildFloor(const Grid& toGrid) const noexcept;
 
-		/*!
+		/**
 		斜面が生成されるか判定します
 		\return		trueならば斜面の生成が可能
 		*/
 		bool CanBuildSlope() const noexcept;
 
-		/*!
+		/**
 		自身からtoGridを見た時に屋根が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド（通常は一つ上のグリッド）
 		\return		trueならば屋根の生成が可能
 		*/
 		bool CanBuildRoof(const Grid& toGrid) const noexcept;
 
-		/*!
+		/**
 		自身からtoGridを見た時に壁が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド
 		\param[in]	direction	自身からtoGridの方向
@@ -215,7 +215,7 @@ namespace dungeon
 		*/
 		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
 
-		/*!
+		/**
 		自身からtoGridを見た時に柱が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド
 		\param[in]	direction	自身からtoGridの方向
@@ -223,7 +223,7 @@ namespace dungeon
 		*/
 		bool CanBuildPillar(const Grid& toGrid) const noexcept;
 
-		/*!
+		/**
 		自身からtoGridを見た時に扉が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド
 		\param[in]	direction	自身からtoGridの方向
@@ -232,7 +232,7 @@ namespace dungeon
 		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction) const noexcept;
 
 
-		/*!
+		/**
 		グリッドの種類の色を取得します
 		*/
 		const FColor& GetTypeColor() const noexcept;

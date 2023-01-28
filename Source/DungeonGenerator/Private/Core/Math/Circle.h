@@ -1,4 +1,4 @@
-/*!
+/**
 球に関するヘッダーファイル
 
 \author		Shun Moriya
@@ -11,7 +11,7 @@
 
 namespace dungeon
 {
-	/*!
+	/**
 	球クラス
 	*/
 	struct Circle

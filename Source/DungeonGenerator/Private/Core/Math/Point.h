@@ -1,4 +1,4 @@
-/*!
+/**
 点に関するヘッダーファイル
 
 \author		Shun Moriya
@@ -14,7 +14,7 @@ namespace dungeon
 	// 前方宣言
 	class Room;
 
-	/*!
+	/**
 	点クラス
 	FVectorに所属する部屋への参照を持っています
 	*/
@@ -24,12 +24,12 @@ namespace dungeon
 		using super = FVector;
 
 	public:
-		/*!
+		/**
 		コンストラクタ
 		*/
 		Point() noexcept;
 
-		/*!
+		/**
 		コンストラクタ
 
 		\param[in]	x	 X座標
@@ -38,55 +38,55 @@ namespace dungeon
 		*/
 		Point(const double x, const double y, const double z) noexcept;
 
-		/*!
+		/**
 		コンストラクタ
 		\param[in]	vector	三次元ベクター
 		*/
 		explicit Point(const FVector& vector) noexcept;
 
-		/*!
+		/**
 		コンストラクタ
 		\param[in]	room	所属する部屋
 		*/
 		explicit Point(const std::shared_ptr<Room>& room) noexcept;
 
-		/*!
+		/**
 		コピーコンストラクタ
 		\param[in]	other	Point
 		*/
 		explicit Point(const Point& other) noexcept;
 
-		/*!
+		/**
 		ムーブコンストラクタ
 		\param[in]	other	Point
 		*/
 		Point(Point&& other) noexcept;
 
-		/*!
+		/**
 		デストラクタ
 		*/
 		~Point() = default;
 
-		/*!
+		/**
 		コピー代入
 		\param[in]	other	代入する点
 		*/
 		Point& operator=(const Point& other) noexcept;
 
-		/*!
+		/**
 		ムーブ代入
 		\param[in]	other	代入する点
 		*/
 		Point& operator=(Point&& other) noexcept;
 
-		/*!
+		/**
 		点が等しいか判定します
 		\param[in]	other	比較する点
 		\return		trueならば等しい
 		*/
 		bool operator==(const Point& other) const noexcept;
 
-		/*!
+		/**
 		2点間の距離を求めます
 		\param[in]	v0		点0
 		\param[in]	v1		点1
@@ -94,7 +94,7 @@ namespace dungeon
 		*/
 		static double Dist(const Point& v0, const Point& v1) noexcept;
 
-		/*!
+		/**
 		2点間の距離の二乗を求めます
 		\param[in]	v0		点0
 		\param[in]	v1		点1
@@ -102,12 +102,12 @@ namespace dungeon
 		*/
 		static double DistSquared(const Point& v0, const Point& v1) noexcept;
 
-		/*!
+		/**
 		所属する部屋オブジェクトを取得します
 		*/
 		const std::shared_ptr<Room>& GetOwnerRoom() const noexcept;
 
-		/*!
+		/**
 		所属する部屋オブジェクトを取得します
 		*/
 		void SetOwnerRoom(const std::shared_ptr<Room>& room) noexcept;

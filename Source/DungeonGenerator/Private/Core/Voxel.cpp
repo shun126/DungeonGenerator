@@ -1,4 +1,4 @@
-/*!
+/**
 グリッドに関するソースファイル
 
 \author		Shun Moriya

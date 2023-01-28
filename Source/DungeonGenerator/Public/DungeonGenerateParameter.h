@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -15,10 +15,11 @@ class UDungeonRoomAsset;
 namespace dungeon
 {
 	class Direction;
+	class Grid;
 	class Random;
 }
 
-/*!
+/**
 配置方向
 */
 UENUM(BlueprintType)
@@ -32,7 +33,18 @@ enum class EPlacementDirection : uint8
 	RandomDirection
 };
 
-/*
+/**
+パーツ選択方法
+*/
+UENUM(BlueprintType)
+enum class EDungeonPartsSelectionMethod : uint8
+{
+	Random,
+	GridIndex,
+	Direction,
+};
+
+/**
 メッシュパーツ構造体
 */
 USTRUCT(BlueprintType)
@@ -50,7 +62,7 @@ struct DUNGEONGENERATOR_API FDungeonParts
 	FTransform CalculateWorldTransform(const FVector& position, const dungeon::Direction& direction) const noexcept;
 
 protected:
-	/*!
+	/**
 	パーツのトランスフォームを計算します
 	\param[in]	random				dungeon::Random&
 	\param[in]	transform			FTransform
@@ -63,7 +75,7 @@ protected:
 	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction, const EPlacementDirection placementDirection) const noexcept;
 };
 
-/*
+/**
 メッシュパーツ構造体
 */
 USTRUCT(BlueprintType)
@@ -75,7 +87,7 @@ struct DUNGEONGENERATOR_API FDungeonMeshParts : public FDungeonParts
 		UStaticMesh* StaticMesh = nullptr;
 };
 
-/*
+/**
 方向指定付きメッシュパーツ構造体
 */
 USTRUCT(BlueprintType)
@@ -86,7 +98,7 @@ struct DUNGEONGENERATOR_API FDungeonMeshPartsWithDirection : public FDungeonMesh
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
 		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
 
-	/*!
+	/**
 	パーツのトランスフォームを計算します
 	\param[in]	random				dungeon::Random&
 	\param[in]	transform			FTransform
@@ -99,7 +111,7 @@ struct DUNGEONGENERATOR_API FDungeonMeshPartsWithDirection : public FDungeonMesh
 	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction) const noexcept;
 };
 
-/*
+/**
 アクターパーツ構造体
 */
 USTRUCT(BlueprintType)
@@ -111,7 +123,7 @@ struct DUNGEONGENERATOR_API FDungeonActorParts : public FDungeonParts
 		UClass* ActorClass = nullptr;
 };
 
-/*
+/**
 方向指定付きアクターパーツ構造体
 */
 USTRUCT(BlueprintType)
@@ -122,7 +134,7 @@ struct DUNGEONGENERATOR_API FDungeonActorPartsWithDirection : public FDungeonAct
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
 		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
 
-	/*!
+	/**
 	パーツのトランスフォームを計算します
 	\param[in]	random				dungeon::Random&
 	\param[in]	transform			FTransform
@@ -135,7 +147,7 @@ struct DUNGEONGENERATOR_API FDungeonActorPartsWithDirection : public FDungeonAct
 	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction) const noexcept;
 };
 
-/*
+/**
 アクターおよびブループリント構造体
 */
 USTRUCT(BlueprintType)
@@ -154,7 +166,7 @@ struct DUNGEONGENERATOR_API FDungeonObjectParts : public FDungeonParts
 		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
 };
 
-/*
+/**
 確率付きアクターおよびブループリント構造体
 */
 USTRUCT(BlueprintType)
@@ -167,7 +179,7 @@ struct DUNGEONGENERATOR_API FDungeonRandomObjectParts : public FDungeonObjectPar
 		float Frequency = 1.f;
 };
 
-/*
+/**
 ダンジョン生成パラメータ
 */
 UCLASS(Blueprintable)
@@ -202,28 +214,28 @@ public:
 
 	float GetGridSize() const;
 
-	const FDungeonMeshPartsWithDirection* SelectFloorParts(dungeon::Random& random) const;
+	const FDungeonMeshPartsWithDirection* SelectFloorParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 	void EachFloorParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const;
 
-	const FDungeonMeshParts* SelectSlopeParts(dungeon::Random& random) const;
+	const FDungeonMeshParts* SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 	void EachSlopeParts(std::function<void(const FDungeonMeshParts&)> func) const;
 
-	const FDungeonMeshParts* SelectWallParts(dungeon::Random& random) const;
+	const FDungeonMeshParts* SelectWallParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 	void EachWallParts(std::function<void(const FDungeonMeshParts&)> func) const;
 
-	const FDungeonMeshPartsWithDirection* SelectRoomRoofParts(dungeon::Random& random) const;
+	const FDungeonMeshPartsWithDirection* SelectRoomRoofParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 	void EachRoomRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const;
 
-	const FDungeonMeshPartsWithDirection* SelectAisleRoofParts(dungeon::Random& random) const;
+	const FDungeonMeshPartsWithDirection* SelectAisleRoofParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 	void EachAisleRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const;
 
-	const FDungeonMeshParts* SelectPillarParts(dungeon::Random& random) const;
+	const FDungeonMeshParts* SelectPillarParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 	void EachPillarParts(std::function<void(const FDungeonMeshParts&)> func) const;
 
-	const FDungeonRandomObjectParts* SelectTorchParts(dungeon::Random& random) const;
-	//const FDungeonRandomObjectParts* SelectChandelierParts(dungeon::Random& random) const;
+	const FDungeonRandomObjectParts* SelectTorchParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
+	//const FDungeonRandomObjectParts* SelectChandelierParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 
-	const FDungeonObjectParts* SelectDoorParts(dungeon::Random& random) const;
+	const FDungeonObjectParts* SelectDoorParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 
 	const FDungeonActorPartsWithDirection& GetStartParts() const;
 
@@ -253,14 +265,14 @@ public:
 
 private:
 	template<typename T = FDungeonMeshParts>
-	T* SelectDungeonMeshParts(dungeon::Random& random, const TArray<T>& parts) const;
+	T* SelectDungeonMeshParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<T>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const;
+
+	FDungeonObjectParts* SelectDungeonObjectParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<FDungeonObjectParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const;
+
+	FDungeonRandomObjectParts* SelectDungeonRandomObjectParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<FDungeonRandomObjectParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const;
 
 	template<typename T = FDungeonMeshParts>
 	void EachMeshParts(const TArray<T>& parts, std::function<void(const T&)> func) const;
-
-	FDungeonObjectParts* SelectDungeonObjectParts(dungeon::Random& random, const TArray<FDungeonObjectParts>& parts) const;
-
-	FDungeonRandomObjectParts* SelectDungeonRandomObjectParts(dungeon::Random& random, const TArray<FDungeonRandomObjectParts>& parts) const;
 
 #if WITH_EDITOR
 	FString GetJsonDefaultDirectory() const;
@@ -275,7 +287,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 		int32 GeneratedRandomSeed = 0;
 
-	/*!
+	/**
 	生成する部屋の数の候補
 	部屋の初期生成数であり、最終的に生成される部屋の数ではありません。
 	*/
@@ -310,32 +322,60 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
 		float GridSize = 100.f;
 
+	//!	床のパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod FloorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	//! 床のパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
 		TArray<FDungeonMeshPartsWithDirection> FloorParts;
 
+	//!	階段やスロープのパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod SloopPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	//! 階段やスロープのパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
 		TArray<FDungeonMeshParts> SlopeParts;
 
+	//!	壁のパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod WallPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	//! 壁のパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
 		TArray<FDungeonMeshParts> WallParts;
 
+	//!	部屋のパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomRoof", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod RoomRoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	//! 部屋の屋根のパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomRoof", BlueprintReadWrite)
 		TArray<FDungeonMeshPartsWithDirection> RoomRoofParts;
 
+	//!	部屋のパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|AisleRoof", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod AisleRoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	//! 通路の屋根のパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|AisleRoof", BlueprintReadWrite)
 		TArray<FDungeonMeshPartsWithDirection> AisleRoofParts;
 
+	//!	柱のパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Pillar", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod PillarPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	//! 柱のパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Pillar", BlueprintReadWrite)
 		TArray<FDungeonMeshParts> PillarParts;
 
+	//!	たいまつ（柱の照明）のパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Torch", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod TorchPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	//! たいまつ（柱の照明）のパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Torch", BlueprintReadWrite)
 		TArray<FDungeonRandomObjectParts> TorchParts;
 
 /*
@@ -344,8 +384,12 @@ protected:
 		TArray<FDungeonRandomObjectParts> ChandelierParts;
 */
 
+	//!	ドアのパーツの生成方法
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Door", BlueprintReadWrite)
+		EDungeonPartsSelectionMethod DoorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
 	// ドアのパーツ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Door", BlueprintReadWrite)
 		TArray<FDungeonObjectParts> DoorParts;
 
 	// スタート地点
@@ -364,19 +408,35 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		TArray<UDungeonRoomAsset*> DungeonRoomAssets;
 
-#if WITH_EDITOR
-#endif
-
 	friend class CDungeonGenerator;
 };
 
+// aka: SelectDungeonObjectParts, SelectDungeonRandomObjectParts
 template <typename T>
-inline T* UDungeonGenerateParameter::SelectDungeonMeshParts(dungeon::Random& random, const TArray<T>& parts) const
+inline T* UDungeonGenerateParameter::SelectDungeonMeshParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<T>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const
 {
 	const int32 size = parts.Num();
 	if (size <= 0)
 		return nullptr;
-	const int32 index = random.Get<uint32_t>(size);
+
+	int32 index = 0;
+
+	switch (partsSelectionMethod)
+	{
+	case EDungeonPartsSelectionMethod::GridIndex:
+		index = 0 % size;
+		break;
+
+	case EDungeonPartsSelectionMethod::Direction:
+		index = grid.GetDirection().Get() % size;
+		break;
+
+	case EDungeonPartsSelectionMethod::Random:
+	default:
+		index = random.Get<uint32_t>(size);
+		break;
+	}
+
 	return const_cast<T*>(&parts[index]);
 }
 

@@ -1,4 +1,4 @@
-/*!
+/**
 デバッグに関するソースファイル
 
 \author		Shun Moriya
@@ -19,7 +19,7 @@ namespace dungeon
 {
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING == 0
 #if defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
-	/*!
+	/**
 	VisualStudioの出力ウィンドウに出力します
 	ソースファイルからのみincludeされる前提なのでstatic関数で良い
 	*/
@@ -39,7 +39,7 @@ namespace dungeon
 #endif
 #endif
 
-	/*!
+	/**
 	BMPファイル生成
 	*/
 	namespace bmp

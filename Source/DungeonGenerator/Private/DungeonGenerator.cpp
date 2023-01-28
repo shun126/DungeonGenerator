@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -8,10 +8,12 @@
 #include "DungeonDoorInterface.h"
 #include "DungeonRoomProps.h"
 #include "DungeonRoomSensor.h"
+#include "Core/Debug/Debug.h"
 #include "Core/Identifier.h"
 #include "Core/Generator.h"
 #include "Core/Voxel.h"
 #include "Core/Math/Math.h"
+#include <GameFramework/PlayerStart.h>
 #include <Engine/StaticMeshActor.h>
 #include <Kismet/GameplayStatics.h>
 #include <NavMesh/NavMeshBoundsVolume.h>
@@ -206,242 +208,244 @@ void CDungeonGenerator::AddTerraine()
 	}
 
 	mGenerator->GetVoxel()->Each([this, parameter](const FIntVector& location, const dungeon::Grid& grid)
-	{
-		const float gridSize = parameter->GetGridSize();
-		const float halfGridSize = gridSize * 0.5f;
-		const FVector halfOffset = FVector(halfGridSize, halfGridSize, 0);
-		const FVector position = parameter->ToWorld(location);
-		const FVector centerPosition = position + halfOffset;
-
-		if (mOnAddSlope && grid.CanBuildSlope())
 		{
-			/*
-			スロープのメッシュを生成
-			メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
-			*/
-			if (const FDungeonMeshParts* parts = parameter->SelectSlopeParts(dungeon::Random::Instance()))
-			{
-				mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(centerPosition, grid.GetDirection()));
-			}
-		}
-		else if (mOnAddFloor && grid.CanBuildFloor(mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z - 1)))
-		{
-			/*
-			床のメッシュを生成
-			メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
-			*/
-			if (const FDungeonMeshParts* parts = parameter->SelectFloorParts(dungeon::Random::Instance()))
-			{
-				mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(centerPosition, grid.GetDirection()));
-			}
-		}
+			const size_t gridIndex = mGenerator->GetVoxel()->Index(location);
+			const float gridSize = parameter->GetGridSize();
+			const float halfGridSize = gridSize * 0.5f;
+			const FVector halfOffset = FVector(halfGridSize, halfGridSize, 0);
+			const FVector position = parameter->ToWorld(location);
+			const FVector centerPosition = position + halfOffset;
 
-		/*
-		壁のメッシュを生成
-		メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面（北側の壁）になっています。
-		*/
-		if (mOnAddWall)
-		{
-			if (const FDungeonMeshParts* parts = parameter->SelectWallParts(dungeon::Random::Instance()))
+			if (mOnAddSlope && grid.CanBuildSlope())
 			{
-				if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y - 1, location.Z), dungeon::Direction::North, parameter->MergeRooms))
+				/*
+				スロープのメッシュを生成
+				メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
+				*/
+				if (const FDungeonMeshParts* parts = parameter->SelectSlopeParts(gridIndex, grid, dungeon::Random::Instance()))
 				{
-					// 北側の壁
-					FVector wallPosition = centerPosition;
-					wallPosition.Y -= halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 0.f));
-				}
-				if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y + 1, location.Z), dungeon::Direction::South, parameter->MergeRooms))
-				{
-					// 南側の壁
-					FVector wallPosition = centerPosition;
-					wallPosition.Y += halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 180.f));
-				}
-				if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X + 1, location.Y, location.Z), dungeon::Direction::East, parameter->MergeRooms))
-				{
-					// 東側の壁
-					FVector wallPosition = centerPosition;
-					wallPosition.X += halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 90.f));
-				}
-				if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X - 1, location.Y, location.Z), dungeon::Direction::West, parameter->MergeRooms))
-				{
-					// 西側の壁
-					FVector wallPosition = centerPosition;
-					wallPosition.X -= halfGridSize;
-					mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, -90.f));
+					mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(centerPosition, grid.GetDirection()));
 				}
 			}
-		}
-
-		/*
-		柱のメッシュを生成
-		メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
-		*/
-		if (mOnResetPillar)
-		{
-			FVector wallVector(0.f);
-			uint8_t wallCount = 0;
-			bool onFloor = false;
-			uint32_t pillarGridHeight = 1;
-			for (int_fast8_t dy = -1; dy <= 0; ++dy)
+			else if (mOnAddFloor && grid.CanBuildFloor(mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z - 1)))
 			{
-				for (int_fast8_t dx = -1; dx <= 0; ++dx)
+				/*
+				床のメッシュを生成
+				メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
+				*/
+				if (const FDungeonMeshParts* parts = parameter->SelectFloorParts(gridIndex, grid, dungeon::Random::Instance()))
 				{
-					// 壁の数を調べます
-					const auto& result = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z);
-					if (grid.CanBuildPillar(result))
-					{
-						wallVector += FVector(static_cast<float>(dx) + 0.5f, static_cast<float>(dy) + 0.5f, 0.f);
-						++wallCount;
-					}
-
-					// 床を調べます
-					const auto& baseFloorGrid = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z);
-					const auto& underFloorGrid = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z - 1);
-					if (baseFloorGrid.CanBuildSlope() || baseFloorGrid.CanBuildFloor(underFloorGrid))
-					{
-						onFloor = true;
-
-						// 天井の高さを調べます
-						uint32_t gridHeight = 1;
-						while (true)
-						{
-							const auto& roofGrid = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z + gridHeight);
-							if (roofGrid.GetType() == dungeon::Grid::Type::OutOfBounds)
-								break;
-							if (!grid.CanBuildRoof(roofGrid))
-								break;
-							++gridHeight;
-						}
-						if (pillarGridHeight < gridHeight)
-							pillarGridHeight = gridHeight;
-					}
+					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(centerPosition, grid.GetDirection()));
 				}
 			}
-			if (onFloor && 0 < wallCount && wallCount < 4)
-			{
-				wallVector.Normalize();
 
-				const FTransform transform(wallVector.Rotation(), position);
-				if (const FDungeonMeshParts* parts = parameter->SelectPillarParts(dungeon::Random::Instance()))
-				{
-					mOnResetPillar(pillarGridHeight, parts->StaticMesh, parts->CalculateWorldTransform(transform));
-				}
-
-				// 水平以外に対応が必要？
-				if (wallCount == 2)
-				{
-					if (const FDungeonObjectParts* parts = parameter->SelectTorchParts(dungeon::Random::Instance()))
-					{
-#if 0
-						const FTransform worldTransform = transform * parts->RelativeTransform;
-						//const FTransform worldTransform = parts->RelativeTransform * transform;
-#else
-						const FVector rotaedLocation = transform.Rotator().RotateVector(parts->RelativeTransform.GetLocation());
-						const FTransform worldTransform(
-							transform.Rotator() + parts->RelativeTransform.Rotator(),
-							transform.GetLocation() + rotaedLocation,
-							transform.GetScale3D() * parts->RelativeTransform.GetScale3D()
-						);
-#endif
-						SpawnActor(parts->ActorClass, TEXT("Dungeon/Actors"), worldTransform);
-					}
-				}
-			}
-		}
-
-		// 扉の生成通知
-		if (const FDungeonObjectParts* parts = parameter->SelectDoorParts(dungeon::Random::Instance()))
-		{
-			const EDungeonRoomProps props = static_cast<EDungeonRoomProps>(grid.GetProps());
-			if (grid.GetProps() != dungeon::Grid::Props::None)
-			{
-				int i = 0;
-			}
-
-			if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X, location.Y - 1, location.Z), dungeon::Direction::North))
-			{
-				// 北側の扉
-				FVector doorPosition = position;
-				doorPosition.X += parameter->GridSize * 0.5f;
-				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, -90.f), props);
-			}
-			if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X, location.Y + 1, location.Z), dungeon::Direction::South))
-			{
-				// 南側の扉
-				FVector doorPosition = position;
-				doorPosition.X += parameter->GridSize * 0.5f;
-				doorPosition.Y += parameter->GridSize;
-				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, -90.f), props);
-			}
-			if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X + 1, location.Y, location.Z), dungeon::Direction::East))
-			{
-				// 東側の扉
-				FVector doorPosition = position;
-				doorPosition.X += parameter->GridSize;
-				doorPosition.Y += parameter->GridSize * 0.5f;
-				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), props);
-			}
-			if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X - 1, location.Y, location.Z), dungeon::Direction::West))
-			{
-				// 西側の扉
-				FVector doorPosition = position;
-				doorPosition.Y += parameter->GridSize * 0.5f;
-				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), props);
-			}
-		}
-		
-		// 屋根のメッシュ生成通知
-		if (grid.CanBuildRoof(mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z + 1)))
-		{
 			/*
 			壁のメッシュを生成
+			メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面（北側の壁）になっています。
+			*/
+			if (mOnAddWall)
+			{
+				if (const FDungeonMeshParts* parts = parameter->SelectWallParts(gridIndex, grid, dungeon::Random::Instance()))
+				{
+					if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y - 1, location.Z), dungeon::Direction::North, parameter->MergeRooms))
+					{
+						// 北側の壁
+						FVector wallPosition = centerPosition;
+						wallPosition.Y -= halfGridSize;
+						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 0.f));
+					}
+					if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y + 1, location.Z), dungeon::Direction::South, parameter->MergeRooms))
+					{
+						// 南側の壁
+						FVector wallPosition = centerPosition;
+						wallPosition.Y += halfGridSize;
+						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 180.f));
+					}
+					if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X + 1, location.Y, location.Z), dungeon::Direction::East, parameter->MergeRooms))
+					{
+						// 東側の壁
+						FVector wallPosition = centerPosition;
+						wallPosition.X += halfGridSize;
+						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 90.f));
+					}
+					if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X - 1, location.Y, location.Z), dungeon::Direction::West, parameter->MergeRooms))
+					{
+						// 西側の壁
+						FVector wallPosition = centerPosition;
+						wallPosition.X -= halfGridSize;
+						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, -90.f));
+					}
+				}
+			}
+
+			/*
+			柱のメッシュを生成
 			メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
 			*/
-			const FTransform transform(centerPosition);
-			//if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y - 1, location.Z), dungeon::Direction::North, parameter->MergeRooms))
-			if (grid.IsKindOfRoomType())
+			if (mOnResetPillar)
 			{
-				if (mOnAddRoomRoof)
+				FVector wallVector(0.f);
+				uint8_t wallCount = 0;
+				bool onFloor = false;
+				uint32_t pillarGridHeight = 1;
+				for (int_fast8_t dy = -1; dy <= 0; ++dy)
 				{
-					if (const FDungeonMeshPartsWithDirection* parts = parameter->SelectRoomRoofParts(dungeon::Random::Instance()))
+					for (int_fast8_t dx = -1; dx <= 0; ++dx)
 					{
-						mOnAddRoomRoof(
-							parts->StaticMesh,
-							parts->CalculateWorldTransform(dungeon::Random::Instance(), transform)
-						);
+						// 壁の数を調べます
+						const auto& result = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z);
+						if (grid.CanBuildPillar(result))
+						{
+							wallVector += FVector(static_cast<float>(dx) + 0.5f, static_cast<float>(dy) + 0.5f, 0.f);
+							++wallCount;
+						}
+
+						// 床を調べます
+						const auto& baseFloorGrid = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z);
+						const auto& underFloorGrid = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z - 1);
+						if (baseFloorGrid.CanBuildSlope() || baseFloorGrid.CanBuildFloor(underFloorGrid))
+						{
+							onFloor = true;
+
+							// 天井の高さを調べます
+							uint32_t gridHeight = 1;
+							while (true)
+							{
+								const auto& roofGrid = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z + gridHeight);
+								if (roofGrid.GetType() == dungeon::Grid::Type::OutOfBounds)
+									break;
+								if (!grid.CanBuildRoof(roofGrid))
+									break;
+								++gridHeight;
+							}
+							if (pillarGridHeight < gridHeight)
+								pillarGridHeight = gridHeight;
+						}
+					}
+				}
+				if (onFloor && 0 < wallCount && wallCount < 4)
+				{
+					wallVector.Normalize();
+
+					const FTransform transform(wallVector.Rotation(), position);
+					if (const FDungeonMeshParts* parts = parameter->SelectPillarParts(gridIndex, grid, dungeon::Random::Instance()))
+					{
+						mOnResetPillar(pillarGridHeight, parts->StaticMesh, parts->CalculateWorldTransform(transform));
+					}
+
+					// 水平以外に対応が必要？
+					if (wallCount == 2)
+					{
+						if (const FDungeonObjectParts* parts = parameter->SelectTorchParts(gridIndex, grid, dungeon::Random::Instance()))
+						{
+		#if 0
+							const FTransform worldTransform = transform * parts->RelativeTransform;
+							//const FTransform worldTransform = parts->RelativeTransform * transform;
+		#else
+							const FVector rotaedLocation = transform.Rotator().RotateVector(parts->RelativeTransform.GetLocation());
+							const FTransform worldTransform(
+								transform.Rotator() + parts->RelativeTransform.Rotator(),
+								transform.GetLocation() + rotaedLocation,
+								transform.GetScale3D() * parts->RelativeTransform.GetScale3D()
+							);
+		#endif
+							SpawnActor(parts->ActorClass, TEXT("Dungeon/Actors"), worldTransform);
+						}
 					}
 				}
 			}
-			else
+
+			// 扉の生成通知
+			if (const FDungeonObjectParts* parts = parameter->SelectDoorParts(gridIndex, grid, dungeon::Random::Instance()))
 			{
-				if (mOnAddAisleRoof)
+				const EDungeonRoomProps props = static_cast<EDungeonRoomProps>(grid.GetProps());
+				if (grid.GetProps() != dungeon::Grid::Props::None)
 				{
-					if (const FDungeonMeshPartsWithDirection* parts = parameter->SelectAisleRoofParts(dungeon::Random::Instance()))
-					{
-						mOnAddAisleRoof(
-							parts->StaticMesh,
-							parts->CalculateWorldTransform(dungeon::Random::Instance(), transform)
-						);
-					}
+					int i = 0;
+				}
+
+				if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X, location.Y - 1, location.Z), dungeon::Direction::North))
+				{
+					// 北側の扉
+					FVector doorPosition = position;
+					doorPosition.X += parameter->GridSize * 0.5f;
+					SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, -90.f), props);
+				}
+				if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X, location.Y + 1, location.Z), dungeon::Direction::South))
+				{
+					// 南側の扉
+					FVector doorPosition = position;
+					doorPosition.X += parameter->GridSize * 0.5f;
+					doorPosition.Y += parameter->GridSize;
+					SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, -90.f), props);
+				}
+				if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X + 1, location.Y, location.Z), dungeon::Direction::East))
+				{
+					// 東側の扉
+					FVector doorPosition = position;
+					doorPosition.X += parameter->GridSize;
+					doorPosition.Y += parameter->GridSize * 0.5f;
+					SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), props);
+				}
+				if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X - 1, location.Y, location.Z), dungeon::Direction::West))
+				{
+					// 西側の扉
+					FVector doorPosition = position;
+					doorPosition.Y += parameter->GridSize * 0.5f;
+					SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), props);
 				}
 			}
+
+			// 屋根のメッシュ生成通知
+			if (grid.CanBuildRoof(mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z + 1)))
+			{
+				/*
+				壁のメッシュを生成
+				メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
+				*/
+				const FTransform transform(centerPosition);
+				//if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y - 1, location.Z), dungeon::Direction::North, parameter->MergeRooms))
+				if (grid.IsKindOfRoomType())
+				{
+					if (mOnAddRoomRoof)
+					{
+						if (const FDungeonMeshPartsWithDirection* parts = parameter->SelectRoomRoofParts(gridIndex, grid, dungeon::Random::Instance()))
+						{
+							mOnAddRoomRoof(
+								parts->StaticMesh,
+								parts->CalculateWorldTransform(dungeon::Random::Instance(), transform)
+							);
+						}
+					}
+				}
+				else
+				{
+					if (mOnAddAisleRoof)
+					{
+						if (const FDungeonMeshPartsWithDirection* parts = parameter->SelectAisleRoofParts(gridIndex, grid, dungeon::Random::Instance()))
+						{
+							mOnAddAisleRoof(
+								parts->StaticMesh,
+								parts->CalculateWorldTransform(dungeon::Random::Instance(), transform)
+							);
+						}
+					}
+				}
 
 #if 0
-			if (mOnResetChandelier)
-			{
-				if (const FDungeonObjectParts* parts = parameter->SelectChandelierParts(dungeon::Random::Instance()))
+				if (mOnResetChandelier)
 				{
-					mOnResetChandelier(parts->ActorClass, worldTransform);
+					if (const FDungeonObjectParts* parts = parameter->SelectChandelierParts(dungeon::Random::Instance()))
+					{
+						mOnResetChandelier(parts->ActorClass, worldTransform);
+					}
 				}
-			}
 #endif
-		}
+			}
 
-		return true;
-	});
+			return true;
+		}
+	);
 
 	// RoomSensorActorを生成
 	mGenerator->ForEach([this, parameter](const std::shared_ptr<const dungeon::Room>& room)
@@ -462,85 +466,84 @@ void CDungeonGenerator::AddTerraine()
 		}
 	);
 
-	if (UWorld* world = GetWorld())
+#if 0
+	//SpawnRecastNavMesh();
+	SpawnNavMeshBoundsVolume(parameter);
+
+#else
+	if (ANavMeshBoundsVolume* navMeshBoundsVolume = FindActor<ANavMeshBoundsVolume>())
 	{
+		const FBox& bounding = CalculateBoundingBox();
+		const FVector& boundingCenter = bounding.GetCenter();
+		const FVector& boundingExtent = bounding.GetExtent();
+
+		if (USceneComponent* rootComponent = navMeshBoundsVolume->GetRootComponent())
+		{
+			rootComponent->SetMobility(EComponentMobility::Stationary);
+
+			navMeshBoundsVolume->SetActorLocation(boundingCenter);
+			navMeshBoundsVolume->SetActorScale3D(FVector::OneVector);
+
 #if WITH_EDITOR
-		{
-			ANavMeshBoundsVolume* mNavMeshBoundsVolume;
-
-			TArray<AActor*> navMeshBoundsVolumes;
-			UGameplayStatics::GetAllActorsOfClass(GetWorld(), ANavMeshBoundsVolume::StaticClass(), navMeshBoundsVolumes);
-			if (navMeshBoundsVolumes.Num() > 0)
+			// ブラシビルダーを生成 (UnrealEd)
+			if (UCubeBuilder* cubeBuilder = NewObject<UCubeBuilder>())
 			{
-				mNavMeshBoundsVolume = Cast<ANavMeshBoundsVolume>(navMeshBoundsVolumes[0]);
+				cubeBuilder->X = boundingExtent.X * 2.0;
+				cubeBuilder->Y = boundingExtent.Y * 2.0;
+				cubeBuilder->Z = boundingExtent.Z * 2.0;
+
+				// ブラシ生成開始
+				navMeshBoundsVolume->PreEditChange(nullptr);
+
+				const EObjectFlags objectFlags = navMeshBoundsVolume->GetFlags() & (RF_Transient | RF_Transactional);
+				navMeshBoundsVolume->Brush = NewObject<UModel>(navMeshBoundsVolume, NAME_None, objectFlags);
+				navMeshBoundsVolume->Brush->Initialize(nullptr, true);
+				navMeshBoundsVolume->Brush->Polys = NewObject<UPolys>(navMeshBoundsVolume->Brush, NAME_None, objectFlags);
+				navMeshBoundsVolume->GetBrushComponent()->Brush = navMeshBoundsVolume->Brush;
+				navMeshBoundsVolume->BrushBuilder = DuplicateObject<UBrushBuilder>(cubeBuilder, navMeshBoundsVolume);
+
+				// ブラシビルダーを使ってブラシを生成
+				cubeBuilder->Build(navMeshBoundsVolume->GetWorld(), navMeshBoundsVolume);
+
+				// ブラシ生成終了
+				navMeshBoundsVolume->PostEditChange();
+
+				// 登録
+				navMeshBoundsVolume->PostRegisterAllComponents();
 			}
 			else
 			{
-				const FTransform transform;
-				mNavMeshBoundsVolume = Cast<ANavMeshBoundsVolume>(
-					SpawnActor(ANavMeshBoundsVolume::StaticClass(), TEXT("Dungeon"), transform)
-				);
+				DUNGEON_GENERATOR_ERROR(TEXT("CubeBuilderの生成に失敗しました"));
 			}
-			if (IsValid(mNavMeshBoundsVolume))
-			{
-				/*
-				mNavMeshBoundsVolume->GetRootComponent()->SetMobility(EComponentMobility::Movable);
-				if (UBrushComponent* component = GetValid(mNavMeshBoundsVolume->GetBrushComponent()))
-				{
-					component->SetMobility(EComponentMobility::Movable);
-				}
-				*/
-				//component->CalcBounds();
-
-				// ブラシビルダーを生成 (UnrealEd)
-				if (UCubeBuilder* cubeBuilder = NewObject<UCubeBuilder>())
-				{
-					const FBox bounding = CalculateBoundingBox();
-					const FVector3d boundingSize = bounding.GetSize();
-
-					mNavMeshBoundsVolume->SetActorLocation(boundingSize * 0.5);
-					cubeBuilder->X = boundingSize.X;
-					cubeBuilder->Y = boundingSize.Y;
-					cubeBuilder->Z = boundingSize.Z;
-
-					// ブラシ生成開始
-					mNavMeshBoundsVolume->PreEditChange(nullptr);
-
-					const EObjectFlags objectFlags = mNavMeshBoundsVolume->GetFlags() & (RF_Transient | RF_Transactional);
-					mNavMeshBoundsVolume->Brush = NewObject<UModel>(mNavMeshBoundsVolume, NAME_None, objectFlags);
-					mNavMeshBoundsVolume->Brush->Initialize(nullptr, true);
-					mNavMeshBoundsVolume->Brush->Polys = NewObject<UPolys>(mNavMeshBoundsVolume->Brush, NAME_None, objectFlags);
-					mNavMeshBoundsVolume->GetBrushComponent()->Brush = mNavMeshBoundsVolume->Brush;
-					mNavMeshBoundsVolume->BrushBuilder = DuplicateObject<UBrushBuilder>(cubeBuilder, mNavMeshBoundsVolume);
-
-					// ブラシビルダーを使ってブラシを生成
-					cubeBuilder->Build(mNavMeshBoundsVolume->GetWorld(), mNavMeshBoundsVolume);
-
-					// ブラシ生成終了
-					mNavMeshBoundsVolume->PostEditChange();
-
-					// 登録
-					mNavMeshBoundsVolume->PostRegisterAllComponents();
-				}
-				else
-				{
-				}
-			}
-			else
-			{
-			}
-		}
-
-		// mRecastNavMeshの検索または生成
-		//if (UWorld* world = GetValid(GetWorld()))
-		{
-			if (IsValid(UGameplayStatics::GetActorOfClass(world, ARecastNavMesh::StaticClass())))
-			{
-				const FTransform transform;
-				SpawnActor(ARecastNavMesh::StaticClass(), TEXT("Dungeon"), transform);
-			}
-		}
+#else
+			/*
+			UCubeBuilderはエディタでのみ使用可能なので
+			スケールによるサイズの変更をスケールで代用します。
+			*/
+			const FBoxSphereBounds boxSphereBounds = navMeshBoundsVolume->GetBounds();
+			const FVector boundingScale = boundingExtent / boxSphereBounds.BoxExtent;
+			navMeshBoundsVolume->SetActorScale3D(boundingScale);
 #endif
+
+			rootComponent->SetMobility(EComponentMobility::Static);
+		}
+		else
+		{
+			DUNGEON_GENERATOR_ERROR(TEXT("NavMeshBoundsVolumeのRootComponentを設定して下さい"));
+		}
+	}
+#endif
+}
+
+void CDungeonGenerator::SpawnRecastNavMesh()
+{
+	if (ARecastNavMesh* navMeshBoundsVolume = FindActor<ARecastNavMesh>())
+	{
+		const auto mode = navMeshBoundsVolume->GetRuntimeGenerationMode();
+		if (mode != ERuntimeGenerationType::Dynamic && mode != ERuntimeGenerationType::DynamicModifiersOnly)
+		{
+			DUNGEON_GENERATOR_ERROR(TEXT("RecastNavMeshのRuntimeGenerationModeをDynamicに設定してください"));
+		}
 	}
 }
 
@@ -561,7 +564,7 @@ void CDungeonGenerator::AddObject()
 
 	if (parameter->GetStartParts().ActorClass)
 	{
-		/*!
+		/**
 		TODO:パーツによる回転指定 PlacementDirection に対応して下さい
 		*/
 		const FTransform wallTransform(*mGenerator->GetStartPoint() * parameter->GetGridSize());
@@ -571,7 +574,7 @@ void CDungeonGenerator::AddObject()
 
 	if (parameter->GetGoalParts().ActorClass)
 	{
-		/*!
+		/**
 		TODO:パーツによる回転指定 PlacementDirection に対応して下さい
 		*/
 		const FTransform wallTransform(*mGenerator->GetGoalPoint() * parameter->GetGridSize());
@@ -614,7 +617,7 @@ FVector CDungeonGenerator::GetGoalLocation() const
 	return GetGoalTransform().GetLocation();
 }
 
-/*!
+/**
 2D空間は（X軸:前 Y軸:右）
 3D空間は（X軸:前 Y軸:右 Z軸:上）である事に注意
 */
@@ -623,8 +626,7 @@ static inline FBox ToWorldBoundingBox(const UDungeonGenerateParameter* parameter
 	check(parameter);
 	const FVector min = parameter->ToWorld(room->GetLeft(), room->GetTop(), room->GetBackground());
 	const FVector max = parameter->ToWorld(room->GetRight(), room->GetBottom(), room->GetForeground());
-	const FBox box(min, max);
-	return box;
+	return FBox(min, max);
 }
 
 FBox CDungeonGenerator::CalculateBoundingBox() const
@@ -647,6 +649,32 @@ FBox CDungeonGenerator::CalculateBoundingBox() const
 	}
 
 	return FBox(EForceInit::ForceInitToZero);
+}
+
+void CDungeonGenerator::MovePlayerStart()
+{
+	if (APlayerStart* playerStart = FindActor<APlayerStart>())
+	{
+		// APlayerStartはコリジョンが無効になっているので、GetSimpleCollisionCylinderを利用する事ができない
+		if (USceneComponent* rootComponent = playerStart->GetRootComponent())
+		{
+			// 接地しない様に少しだけ余白を作る
+			static constexpr float heightMargine = 10.f;
+
+			const EComponentMobility::Type mobility = rootComponent->Mobility;
+			rootComponent->SetMobility(EComponentMobility::Movable);
+
+			FVector location = GetStartLocation();
+			location.Z += rootComponent->GetLocalBounds().BoxExtent.Z + heightMargine;
+			playerStart->SetActorLocation(location);
+
+			rootComponent->SetMobility(mobility);
+		}
+		else
+		{
+			DUNGEON_GENERATOR_ERROR(TEXT("PlayerStartのRootComponentを設定して下さい"));
+		}
+	}
 }
 
 UWorld* CDungeonGenerator::GetWorld()
@@ -758,7 +786,7 @@ void CDungeonGenerator::DestorySpawnedActors()
 	}
 }
 
-UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidth, uint32_t currentLevel, uint32_t lowerLevel) const
+UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidthHeight, uint32_t currentLevel, uint32_t lowerLevel) const
 {
 	const UDungeonGenerateParameter* parameter = mParameter.Get();
 	if (!IsValid(parameter))
@@ -771,7 +799,7 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 	if (lowerLevel > currentLevel)
 		lowerLevel = currentLevel;
 
-	const size_t totalBufferSize = textureWidth * textureWidth;
+	const size_t totalBufferSize = textureWidthHeight * textureWidthHeight;
 	auto pixels = std::make_unique<uint8_t[]>(totalBufferSize);
 
 	horizontalScale = 0;
@@ -781,21 +809,21 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 			length = voxel->GetWidth();
 		if (length < voxel->GetDepth())
 			length = voxel->GetDepth();
-		horizontalScale = static_cast<uint32_t>(static_cast<float>(textureWidth) / length);
+		horizontalScale = static_cast<uint32_t>(static_cast<float>(textureWidthHeight) / length);
 	}
 
-	auto rect = [&pixels, textureWidth, horizontalScale](const uint32_t x, const uint32_t y, const uint8_t color) -> void
+	auto rect = [&pixels, textureWidthHeight, horizontalScale](const uint32_t x, const uint32_t y, const uint8_t color) -> void
 	{
 		const uint32_t px = x * horizontalScale;
 		const uint32_t py = y * horizontalScale;
 		for (uint32_t oy = py; oy < py + horizontalScale; ++oy)
 		{
 			for (uint32_t ox = px; ox < px + horizontalScale; ++ox)
-				pixels[textureWidth * oy + ox] = color;
+				pixels[textureWidthHeight * oy + ox] = color;
 		}
 	};
 
-	auto line = [&pixels, textureWidth, horizontalScale](const uint32_t x, const uint32_t y, const dungeon::Direction::Index dir, const uint8_t color) -> void
+	auto line = [&pixels, textureWidthHeight, horizontalScale](const uint32_t x, const uint32_t y, const dungeon::Direction::Index dir, const uint8_t color) -> void
 	{
 		uint32_t px = x * horizontalScale;
 		uint32_t py = y * horizontalScale;
@@ -803,24 +831,24 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 		{
 		case dungeon::Direction::North:
 			for (uint32_t ox = px; ox < px + horizontalScale; ++ox)
-				pixels[textureWidth * py + ox] = color;
+				pixels[textureWidthHeight * py + ox] = color;
 			break;
 
 		case dungeon::Direction::South:
 			py += horizontalScale;
 			for (uint32_t ox = px; ox < px + horizontalScale; ++ox)
-				pixels[textureWidth * py + ox] = color;
+				pixels[textureWidthHeight * py + ox] = color;
 			break;
 
 		case dungeon::Direction::East:
 			px += horizontalScale;
 			for (uint32_t oy = py; oy < py + horizontalScale; ++oy)
-				pixels[textureWidth * oy + px] = color;
+				pixels[textureWidthHeight * oy + px] = color;
 			break;
 
 		case dungeon::Direction::West:
 			for (uint32_t oy = py; oy < py + horizontalScale; ++oy)
-				pixels[textureWidth * oy + px] = color;
+				pixels[textureWidthHeight * oy + px] = color;
 			break;
 
 		default:
@@ -879,8 +907,8 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 		}
 	}
 
-	//UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidth, textureWidth, PF_A8);
-	UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidth, textureWidth, PF_G8);
+	//UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_A8);
+	UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_G8);
 	{
 		auto lockedBulkData = generateTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 		FMemory::Memcpy(lockedBulkData, pixels.get(), totalBufferSize);
