@@ -13,6 +13,9 @@
 #include "Math/Math.h"
 #include <array>
 
+// 定義するとデバッグに便利なログを出力します
+//#define DEBUG_SHOW_DEVELOP_LOG
+
 namespace dungeon
 {
 	Voxel::Voxel(const GenerateParameter& parameter) noexcept
@@ -151,7 +154,9 @@ namespace dungeon
 			return false;
 		}
 
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("経路探索に成功しました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, nextLocation.X, nextLocation.Y, nextLocation.Z);
+#endif
 
 		// パスをグリッドに反映します
 		{
@@ -188,20 +193,6 @@ namespace dungeon
 
 			// 開始位置と終了位置
 			{
-#if 0
-				const FIntVector delta = nextLocation - start;
-				double yaw = std::atan2(delta.X, delta.Y);
-				yaw *= 4.0 / (3.1415926535897932384626433832795 * 2.0);
-				const Direction d(static_cast<Direction::Index>(static_cast<uint8_t>(yaw) & 3));
-
-				Grid& startGrid = mGrids.get()[Index(start)];
-				startGrid.SetType(Grid::Type::Gate);
-				startGrid.SetDirection(d);
-
-				Grid& goalGrid = mGrids.get()[Index(nextLocation)];
-				goalGrid.SetType(Grid::Type::Gate);
-				goalGrid.SetDirection(d);
-#else
 				Grid& startGrid = mGrids.get()[Index(start)];
 				Grid& goalGrid = mGrids.get()[Index(nextLocation)];
 				startGrid.SetType(Grid::Type::Gate);
@@ -212,7 +203,6 @@ namespace dungeon
 				開始と終了位置は部屋の中なので識別子を書き換えない
 				SetIdentifier(identifier);
 				*/
-#endif
 			}
 		}
 		return true;

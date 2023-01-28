@@ -8,6 +8,12 @@ A*によるパス検索 ソースファイル
 #include "PathFinder.h"
 #include <cassert>
 
+// 定義するとマンハッタン距離で計算する。未定義ならユークリッド距離で計算する
+#define CALCULATE_IN_MANHATTAN_DISTANCE
+
+// 定義すると経路を調べるため、中間データを開放しない
+//#define CHECK_ROUTE
+
 namespace dungeon
 {
 	PathFinder::BaseNode::BaseNode(const NodeType nodeType, const FIntVector& location, const Direction direction) noexcept
@@ -288,7 +294,7 @@ namespace dungeon
 
 	uint32_t PathFinder::Heuristics(const FIntVector& location, const FIntVector& goal) noexcept
 	{
-#if 1
+#if defined(CALCULATE_IN_MANHATTAN_DISTANCE)
 		// マンハッタン距離
 		auto dx = std::abs(goal.X - location.X);
 		auto dy = std::abs(goal.Y - location.Y);

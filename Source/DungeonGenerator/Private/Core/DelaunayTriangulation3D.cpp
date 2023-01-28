@@ -64,13 +64,14 @@ namespace dungeon
 					tetrahedrons.emplace_back(iter->first);
 			}
 		}
+
 #if 0
-		// HACK:最後に、外部三角形の頂点を削除  
+		// TODO: 最後に、外部三角形の頂点を削除  
 		{
 			auto tIter = tetrahedrons.begin();
 			while (tIter != tetrahedrons.end())
 			{
-				if (hugeTetrahedron.hasCommonPoints(*tIter))
+				if (hugeTetrahedron.HasCommonPoints(*tIter))
 				{
 					tIter = tetrahedrons.erase(tIter);
 				}
@@ -81,7 +82,7 @@ namespace dungeon
 			}
 		}
 #endif
-		// そして、伝説へ…
+
 		mTriangles.reserve(tetrahedrons.size());
 		for (const Tetrahedron& tetra : tetrahedrons)
 		{
