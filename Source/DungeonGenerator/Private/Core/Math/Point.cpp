@@ -1,4 +1,4 @@
-/*!
+/**
 点に関するソースファイル
 
 \author		Shun Moriya

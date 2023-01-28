@@ -1,4 +1,4 @@
-/*!
+/**
 平面に関するヘッダーファイル
 
 \author		Shun Moriya

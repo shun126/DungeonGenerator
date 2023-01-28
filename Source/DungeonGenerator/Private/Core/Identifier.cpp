@@ -1,4 +1,4 @@
-/*!
+/**
 識別子クラスソースファイル
 
 \author		Shun Moriya

@@ -1,4 +1,4 @@
-/*!
+/**
 四面体 ヘッダーファイル
 
 \author		Shun Moriya
@@ -14,7 +14,7 @@ namespace dungeon
 {
 	class Point;
 
-	/*!
+	/**
 	四面体クラス
 	*/
 	class Tetrahedron final
@@ -23,22 +23,22 @@ namespace dungeon
 		static constexpr size_t VertexSize = 4;
 
 	public:
-		/*!
+		/**
 		コンストラクタ
 		*/
 		Tetrahedron() = default;
 
-		/*!
+		/**
 		コンストラクタ
 		*/
 		Tetrahedron(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3) noexcept;
 
-		/*!
+		/**
 		デストラクタ
 		*/
 		~Tetrahedron() = default;
 
-		/*!
+		/**
 		他の四面体と共有点を持つか
 		*/
 		bool HasCommonPoints(const Tetrahedron& t) const noexcept;
@@ -48,23 +48,23 @@ namespace dungeon
 		*/
 		Circle GetCircumscribedSphere() const noexcept;
 
-		/*!
+		/**
 		値のハッシュ値を取得します
 		\return		値のハッシュ値
 		*/
 		uint32_t GetHash() const noexcept;
 
-		/*!
+		/**
 		等価性の判定  
 		*/
 		bool operator==(const Tetrahedron& t) const noexcept;
 
-		/*!
+		/**
 		等価性の判定
 		*/
 		bool operator!=(const Tetrahedron& t) const noexcept;
 
-		/*!
+		/**
 		頂点を取得します
 		*/
 		const std::shared_ptr<const Point>& operator[](const size_t index) const noexcept;

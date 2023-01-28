@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -7,7 +7,7 @@
 #include <CoreMinimal.h>
 #include <Modules/ModuleManager.h>
 
-/*!
+/**
 モジュールクラス
 */
 class FDungeonGeneratorModule : public IModuleInterface

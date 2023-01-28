@@ -1,4 +1,4 @@
-/*!
+/**
 四面体 ヘッダーファイル
 
 \author		Shun Moriya
@@ -20,7 +20,7 @@ namespace dungeon
 
 namespace std
 {
-	/*!
+	/**
 	unordered_map,unordered_set等で利用するハッシュ関数
 	*/
 	template<>

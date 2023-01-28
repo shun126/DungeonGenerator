@@ -12,7 +12,7 @@
 class CDungeonGenerator;
 class UTexture2D;
 
-/*!
+/**
 ミニマップテクスチャクラス
 */
 UCLASS(BlueprintType, Blueprintable)
@@ -21,12 +21,12 @@ class DUNGEONGENERATOR_API UDungeonMiniMapTexture : public UObject
 	GENERATED_BODY()
 
 public:
-	/*!
+	/**
 	コンストラクタ
 	*/
 	explicit UDungeonMiniMapTexture(const FObjectInitializer& initializer);
 
-	/*!
+	/**
 	デストラクタ
 	*/
 	virtual ~UDungeonMiniMapTexture() = default;
@@ -42,12 +42,12 @@ protected:
 	virtual void BeginDestroy() override;
 
 private:
-	/*!
+	/**
 	ミニマップテクスチャを生成します
 	*/
 	bool GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const uint8 currentLevel, const uint8 lowerLevel);
 
-	/*!
+	/**
 	ミニマップテクスチャを破棄します
 	*/
 	void DestroyMiniMapTexture();

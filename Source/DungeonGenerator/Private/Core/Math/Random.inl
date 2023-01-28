@@ -1,4 +1,4 @@
-/*!
+/**
 乱数クラス
 \author		Shun Moriya
 \copyright	2023 Shun Moriya

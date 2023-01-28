@@ -1,4 +1,4 @@
-/*!
+/**
 識別子クラスヘッダーファイル
 
 \author		Shun Moriya
@@ -9,7 +9,7 @@
 
 namespace dungeon
 {
-	/*!
+	/**
 	識別子クラス
 	*/
 	class Identifier final
@@ -18,7 +18,7 @@ namespace dungeon
 		using IdentifierType = uint16_t;
 
 	public:
-		/*!
+		/**
 		識別子のタイプ
 		*/
 		enum class Type : uint8_t

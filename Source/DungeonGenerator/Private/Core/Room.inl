@@ -1,4 +1,4 @@
-/*!
+/**
 部屋に関するヘッダーファイル
 
 \author		Shun Moriya

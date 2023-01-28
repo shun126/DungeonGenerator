@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -25,7 +25,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDungeonGeneratorDoorSignature, AAc
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDungeonGeneratorPlayerStartSignature, const FVector&, location);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FDungeonGeneratorDelegete, bool, StreamingLevel, EDungeonRoomParts, DungeonRoomParts, const FBox&, RoomRect);
 
-/*!
+/**
 ダンジョン生成アクタークラス
 */
 UCLASS(BlueprintType, Blueprintable)
@@ -34,23 +34,23 @@ class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor
 	GENERATED_BODY()
 
 public:
-	/*!
+	/**
 	コンストラクタ
 	*/
 	explicit ADungeonGenerateActor(const FObjectInitializer& initializer);
 
-	/*!
+	/**
 	デストラクタ
 	*/
 	virtual ~ADungeonGenerateActor();
 
-	/*!
+	/**
 	ミニマップ用のテクスチャを生成します
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTexture* GenerateMiniMapTexture(const int32 textureWidth, const uint8 currentLevel = 255, const uint8 lowerLevel = 255);
 
-	/*!
+	/**
 	最後に生成したミニマップ用のテクスチャを取得します
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")

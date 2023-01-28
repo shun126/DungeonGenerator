@@ -1,4 +1,4 @@
-/*!
+/**
 デバッグに関するヘッダーファイル
 
 他のWindowsマクロと衝突を防ぐため、このファイルをヘッダーからincludeしないで下さい。
@@ -51,7 +51,7 @@ DECLARE_LOG_CATEGORY_EXTERN(DungeonGenerator, Log, All);
 
 namespace dungeon
 {
-	/*!
+	/**
 	VisualStudioの出力ウィンドウに出力します
 	ソースファイルからのみincludeされる前提なのでstatic関数で良い
 	*/
@@ -92,7 +92,7 @@ namespace dungeon
 		};
 #pragma pack()
 
-		/*!
+		/**
 		キャンバスクラス
 		*/
 		class Canvas
@@ -101,7 +101,7 @@ namespace dungeon
 			// コントラクタ
 			Canvas() noexcept;
 
-			/*!
+			/**
 			コンストラクタ
 			*/
 			Canvas(const uint32_t width, const uint32_t height) noexcept;
@@ -109,7 +109,7 @@ namespace dungeon
 			// デストラクタ
 			virtual ~Canvas() = default;
 
-			/*!
+			/**
 			画像データの生成
 			*/
 			void Create(const uint32_t width, const uint32_t height) noexcept;
@@ -119,12 +119,12 @@ namespace dungeon
 			*/
 			int Write(const std::string& filename) noexcept;
 
-			/*!
+			/**
 			矩形の描画
 			*/
 			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;
 
-			/*!
+			/**
 			フレームの描画
 			*/
 			void Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;

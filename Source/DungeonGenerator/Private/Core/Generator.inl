@@ -1,4 +1,4 @@
-/*!
+/**
 ダンジョン生成ヘッダーファイル
 
 \author		Shun Moriya

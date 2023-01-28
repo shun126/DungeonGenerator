@@ -1,4 +1,4 @@
-/*!
+/**
 A*によるパス検索 ソースファイル
 
 \author		Shun Moriya

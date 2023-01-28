@@ -1,4 +1,4 @@
-/*!
+/**
 四面体 ソースファイル
 
 \author		Shun Moriya
@@ -12,7 +12,7 @@
 
 namespace dungeon
 {
-	/*!
+	/**
 	他の四面体と共有点を持つか
 	*/
 	bool Tetrahedron::HasCommonPoints(const Tetrahedron& t) const noexcept

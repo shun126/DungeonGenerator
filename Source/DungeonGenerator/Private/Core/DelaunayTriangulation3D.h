@@ -1,4 +1,4 @@
-/*!
+/**
 三次元ドロネー三角形分割に関するヘッダーファイル
 
 \author		Shun Moriya
@@ -16,7 +16,7 @@
 
 namespace dungeon
 {
-	/*!
+	/**
 	三次元ドロネー三角形分割クラス
 
 	コンストラクタに与えられた座標を元に三角形を生成します
@@ -26,28 +26,28 @@ namespace dungeon
 		using TetraMap = std::unordered_map<Tetrahedron, bool>;
 
 	public:
-		/*!
+		/**
 		コンストラクタ
 		与えられた点のリストをもとにDelaunay分割を行う
 		*/
 		explicit DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept;
 
-		/*!
+		/**
 		デストラクタ
 		*/
 		virtual ~DelaunayTriangulation3D() = default;
 
-		/*!
+		/**
 		三角形を更新します
 		*/
 		void ForEach(std::function<void(const Triangle&)> func) noexcept;
 
-		/*!
+		/**
 		三角形を更新します
 		*/
 		void ForEach(std::function<void(const Triangle&)> func) const noexcept;
 
-		/*!
+		/**
 		有効な分割か調べます
 		\return		有効ならばtrue
 		*/

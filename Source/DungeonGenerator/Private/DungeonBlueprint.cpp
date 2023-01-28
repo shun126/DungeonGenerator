@@ -1,4 +1,4 @@
-/*!
+/**
 BluePrint 計算関数ライブラリクラス
 
 \author		Shun Moriya

@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -8,7 +8,7 @@
 #include "DungeonRoomParts.h"
 #include "DungeonRoomSensor.generated.h"
 
-// ‘O•ûéŒ¾
+// å‰æ–¹å®£è¨€
 class UBoxComponent;
 
 /*
@@ -32,7 +32,7 @@ public:
 
 	/*
 	Initialize
-	TODO: ˆø”‚ª‘½‚·‚¬‚é‚Ì‚ÅA\‘¢‘Ì‚Å‚Ü‚Æ‚ß‚é“™‚Ì‘Îˆ‚µ‚Ä‰º‚³‚¢
+	TODO: å¼•æ•°ãŒå¤šã™ãã‚‹ã®ã§ã€æ§‹é€ ä½“ã§ã¾ã¨ã‚ã‚‹ç­‰ã®å¯¾å‡¦ã—ã¦ä¸‹ã•ã„
 	*/
 	void Initialize(
 		const int32 identifier,
@@ -48,7 +48,7 @@ public:
 		void OnInitialize();
 	virtual void OnInitialize_Implementation();
 
-	/*!
+	/**
 	Finalize
 	*/
 	void Finalize();
@@ -57,7 +57,7 @@ public:
 		void OnFinalize();
 	virtual void OnFinalize_Implementation();
 
-	/*!
+	/**
 	Reset
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
@@ -101,8 +101,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		bool GetFloorHeightPosition(FVector& result, FVector startPosition, const float offsetHeight = 0.f) const;
 
-	/*!
-	ƒXƒ^[ƒg‚©‚ç‚Ì[‚³‚Ì”ä—¦‚ğŒvZ‚·‚é
+	/**
+	ã‚¹ã‚¿ãƒ¼ãƒˆã‹ã‚‰ã®æ·±ã•ã®æ¯”ç‡ã‚’è¨ˆç®—ã™ã‚‹
 	*/
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator")
 		float GetDepthRatioFromStart() const;
@@ -130,22 +130,22 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		UBoxComponent* Bounding = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		int32 Identifier = -1;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		EDungeonRoomParts Parts = EDungeonRoomParts::Any;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		EDungeonRoomItem Item = EDungeonRoomItem::Empty;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		uint8 BranchId = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		uint8 DepthFromStart = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		uint8 DeepestDepthFromStart = 0;
 
 private:

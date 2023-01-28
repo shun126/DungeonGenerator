@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -8,7 +8,7 @@
 #include "DungeonRoomParts.h"
 #include "DungeonRoomAsset.generated.h"
 
-/*!
+/**
 ダンジョンの部屋に置き換える部屋アセット情報クラス
 */
 UCLASS(Blueprintable)
@@ -17,12 +17,12 @@ class DUNGEONGENERATOR_API UDungeonRoomAsset : public UObject
 	GENERATED_BODY()
 
 public:
-	/*!
+	/**
 	コンストラクタ
 	*/
 	explicit UDungeonRoomAsset(const FObjectInitializer& ObjectInitializer);
 
-	/*!
+	/**
 	デストラクタ
 	*/
 	virtual ~UDungeonRoomAsset() = default;

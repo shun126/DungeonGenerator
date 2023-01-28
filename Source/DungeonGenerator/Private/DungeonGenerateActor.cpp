@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -15,10 +15,10 @@
 #include "Core/Voxel.h"
 #include "Core/Math/Vector.h"
 
-#include <EngineUtils.h>
+//#include <EngineUtils.h>
 #include <Components/CapsuleComponent.h>
 #include <Engine/LevelStreaming.h>
-#include <GameFramework/PlayerStart.h>
+//#include <GameFramework/PlayerStart.h>
 #include <GameFramework/Character.h>
 #include <Kismet/GameplayStatics.h>
 #include <NavigationSystem.h>
@@ -112,26 +112,7 @@ void ADungeonGenerateActor::MovePlayerStart()
 		}
 		else
 		{
-			for (TActorIterator<APlayerStart> ite(GetWorld()); ite; ++ite)
-			{
-				APlayerStart* playerStart = *ite;
-
-				// APlayerStartはコリジョンが無効になっているので、GetSimpleCollisionCylinderを利用する事ができない
-				if (USceneComponent* rootComponent = playerStart->GetRootComponent())
-				{
-					// 接地しない様に少し(10センチメートル)だけ余白を作る
-					static constexpr float heightMargine = 10.f;
-
-					const EComponentMobility::Type mobility = rootComponent->Mobility;
-					rootComponent->SetMobility(EComponentMobility::Movable);
-
-					FVector location = mDungeonGenerator->GetStartLocation();
-					location.Z += rootComponent->GetLocalBounds().BoxExtent.Z + heightMargine;
-					playerStart->SetActorLocation(location);
-
-					rootComponent->SetMobility(mobility);
-				}
-			}
+			mDungeonGenerator->MovePlayerStart();
 		}
 	}
 }
@@ -329,7 +310,7 @@ void ADungeonGenerateActor::Tick(float DeltaSeconds)
 #endif
 }
 
-/*!
+/**
 2D空間は（X軸:前 Y軸:右）
 3D空間は（X軸:前 Y軸:右 Z軸:上）である事に注意
 */

@@ -1,4 +1,4 @@
-/*!
+/**
 方向
 
 \author		Shun Moriya
@@ -11,7 +11,7 @@ namespace dungeon
 {
 	namespace detail
 	{
-		/*!
+		/**
 		方向
 		Direction::IndexとPathFinder::SearchDirectionに並びを合わせて下さい
 		*/

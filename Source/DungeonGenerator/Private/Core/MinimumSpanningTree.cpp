@@ -1,4 +1,4 @@
-/*!
+/**
 最小スパニングツリーに関するソースファイル
 
 \author		Shun Moriya
@@ -72,7 +72,7 @@ namespace dungeon
 	class UnionFind final
 	{
 	public:
-		/*!
+		/**
 		コンストラクタ
 		\param[in]	edgeSize	edgeの数
 		*/
@@ -86,7 +86,7 @@ namespace dungeon
 			}
 		}
 
-		/*!
+		/**
 		x と y が同じ集合にいるか調べます
 		\param[in]	x	頂点番号
 		\param[in]	y	頂点番号	
@@ -97,7 +97,7 @@ namespace dungeon
 			return FindRoot(x) == FindRoot(y);
 		}
 
-		/*!
+		/**
 		x と y を同じ集合にする
 		\param[in]	x	頂点番号
 		\param[in]	y	頂点番号
@@ -121,7 +121,7 @@ namespace dungeon
 		}
 
 	private:
-		/*!
+		/**
 		木の生成
 		\param[in]	index	頂点番号
 		*/
@@ -131,7 +131,7 @@ namespace dungeon
 			mRank[index] = 0;
 		}
 
-		/*!
+		/**
 		親の頂点番号を検索
 		\param[in]	index	頂点番号
 		\return		親の頂点番号

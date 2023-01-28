@@ -1,4 +1,4 @@
-/*!
+/**
 ダンジョン生成ソースファイル
 
 \author		Shun Moriya
@@ -136,7 +136,7 @@ namespace dungeon
 #endif
 	}
 
-	/*!
+	/**
 	部屋の生成
 	*/
 	void Generator::GenerateRooms(const GenerateParameter& parameter) noexcept
@@ -189,7 +189,7 @@ namespace dungeon
 #endif
 	}
 
-	/*!
+	/**
 	部屋の重なりを解消します
 	*/
 	void Generator::SeparateRooms(const GenerateParameter& parameter) noexcept
@@ -395,7 +395,7 @@ namespace dungeon
 		}
 	}
 
-	/*!
+	/**
 	重複した部屋や範囲外の部屋を除去をします
 	*/
 	void Generator::RemoveInvalidRooms(const GenerateParameter& parameter) noexcept

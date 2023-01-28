@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -6,6 +6,7 @@
 #include "DungeonGenerateParameter.h"
 #include "DungeonRoomAsset.h"
 #include "../Private/Core/Direction.h"
+#include "../Private/Core/Grid.h"
 #include "../Private/Core/Math/Random.h"
 
 #if WITH_EDITOR
@@ -146,22 +147,60 @@ UDungeonGenerateParameter::UDungeonGenerateParameter(const FObjectInitializer& O
 {
 }
 
-FDungeonObjectParts* UDungeonGenerateParameter::SelectDungeonObjectParts(dungeon::Random& random, const TArray<FDungeonObjectParts>& parts) const
+// aka: SelectDungeonMeshParts, SelectDungeonRandomObjectParts
+FDungeonObjectParts* UDungeonGenerateParameter::SelectDungeonObjectParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<FDungeonObjectParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const
 {
 	const int32 size = parts.Num();
 	if (size <= 0)
 		return nullptr;
-	const int32 index = random.Get<uint32_t>() % size;
+
+	int32 index = 0;
+
+	switch (partsSelectionMethod)
+	{
+	case EDungeonPartsSelectionMethod::GridIndex:
+		index = gridIndex % size;
+		break;
+
+	case EDungeonPartsSelectionMethod::Direction:
+		index = grid.GetDirection().Get() % size;
+		break;
+
+	case EDungeonPartsSelectionMethod::Random:
+	default:
+		index = random.Get<uint32_t>() % size;
+		break;
+	}
+
 	FDungeonObjectParts* actorParts = const_cast<FDungeonObjectParts*>(&parts[index]);
 	return IsValid(actorParts->GetActorClass()) ? actorParts : nullptr;
 }
 
-FDungeonRandomObjectParts* UDungeonGenerateParameter::SelectDungeonRandomObjectParts(dungeon::Random& random, const TArray<FDungeonRandomObjectParts>& parts) const
+// aka: SelectDungeonMeshParts, SelectDungeonObjectParts
+FDungeonRandomObjectParts* UDungeonGenerateParameter::SelectDungeonRandomObjectParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<FDungeonRandomObjectParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const
 {
 	const int32 size = parts.Num();
 	if (size <= 0)
 		return nullptr;
-	const int32 index = random.Get<uint32_t>() % size;
+
+	int32 index = 0;
+
+	switch (partsSelectionMethod)
+	{
+	case EDungeonPartsSelectionMethod::GridIndex:
+		index = gridIndex % size;
+		break;
+
+	case EDungeonPartsSelectionMethod::Direction:
+		index = grid.GetDirection().Get() % size;
+		break;
+
+	case EDungeonPartsSelectionMethod::Random:
+	default:
+		index = random.Get<uint32_t>() % size;
+		break;
+	}
+
 	FDungeonRandomObjectParts* actorParts = const_cast<FDungeonRandomObjectParts*>(&parts[index]);
 	if (!IsValid(actorParts->GetActorClass()))
 		return nullptr;
@@ -223,9 +262,9 @@ float UDungeonGenerateParameter::GetGridSize() const
 	return GridSize;
 }
 
-const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(dungeon::Random& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonMeshParts(random, FloorParts);
+	return SelectDungeonMeshParts(gridIndex, grid, random, FloorParts, FloorPartsSelectionMethod);
 }
 
 void UDungeonGenerateParameter::EachFloorParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const
@@ -233,9 +272,9 @@ void UDungeonGenerateParameter::EachFloorParts(std::function<void(const FDungeon
 	EachMeshParts(FloorParts, func);
 }
 
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(dungeon::Random& random) const
+const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonMeshParts(random, SlopeParts);
+	return SelectDungeonMeshParts(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
 }
 
 void UDungeonGenerateParameter::EachSlopeParts(std::function<void(const FDungeonMeshParts&)> func) const
@@ -243,9 +282,9 @@ void UDungeonGenerateParameter::EachSlopeParts(std::function<void(const FDungeon
 	EachMeshParts(SlopeParts, func);
 }
 
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallParts(dungeon::Random& random) const
+const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonMeshParts(random, WallParts);
+	return SelectDungeonMeshParts(gridIndex, grid, random, WallParts, WallPartsSelectionMethod);
 }
 
 void UDungeonGenerateParameter::EachWallParts(std::function<void(const FDungeonMeshParts&)> func) const
@@ -253,9 +292,9 @@ void UDungeonGenerateParameter::EachWallParts(std::function<void(const FDungeonM
 	EachMeshParts(WallParts, func);
 }
 
-const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoomRoofParts(dungeon::Random& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoomRoofParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonMeshParts(random, RoomRoofParts);
+	return SelectDungeonMeshParts(gridIndex, grid, random, RoomRoofParts, RoomRoofPartsSelectionMethod);
 }
 
 void UDungeonGenerateParameter::EachRoomRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const
@@ -263,9 +302,9 @@ void UDungeonGenerateParameter::EachRoomRoofParts(std::function<void(const FDung
 	EachMeshParts(RoomRoofParts, func);
 }
 
-const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectAisleRoofParts(dungeon::Random& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectAisleRoofParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonMeshParts(random, AisleRoofParts);
+	return SelectDungeonMeshParts(gridIndex, grid, random, AisleRoofParts, AisleRoofPartsSelectionMethod);
 }
 
 void UDungeonGenerateParameter::EachAisleRoofParts(std::function<void(const FDungeonMeshPartsWithDirection&)> func) const
@@ -273,9 +312,9 @@ void UDungeonGenerateParameter::EachAisleRoofParts(std::function<void(const FDun
 	EachMeshParts(AisleRoofParts, func);
 }
 
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectPillarParts(dungeon::Random& random) const
+const FDungeonMeshParts* UDungeonGenerateParameter::SelectPillarParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonMeshParts(random, PillarParts);
+	return SelectDungeonMeshParts(gridIndex, grid, random, PillarParts, PillarPartsSelectionMethod);
 }
 
 void UDungeonGenerateParameter::EachPillarParts(std::function<void(const FDungeonMeshParts&)> func) const
@@ -283,19 +322,21 @@ void UDungeonGenerateParameter::EachPillarParts(std::function<void(const FDungeo
 	EachMeshParts(PillarParts, func);
 }
 
-const FDungeonRandomObjectParts* UDungeonGenerateParameter::SelectTorchParts(dungeon::Random& random) const
+const FDungeonRandomObjectParts* UDungeonGenerateParameter::SelectTorchParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonRandomObjectParts(random, TorchParts);
+	return SelectDungeonRandomObjectParts(gridIndex, grid, random, TorchParts, TorchPartsSelectionMethod);
 }
+
 #if 0
-const FDungeonObjectParts* UDungeonGenerateParameter::SelectChandelierParts(dungeon::Random& random) const
+const FDungeonObjectParts* UDungeonGenerateParameter::SelectChandelierParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonRandomObjectParts(random, ChandelierParts);
+	return SelectDungeonRandomObjectParts(gridIndex, grid, random, ChandelierParts, ChandelierPartsSelectionMethod);
 }
 #endif
-const FDungeonObjectParts* UDungeonGenerateParameter::SelectDoorParts(dungeon::Random& random) const
+
+const FDungeonObjectParts* UDungeonGenerateParameter::SelectDoorParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const
 {
-	return SelectDungeonObjectParts(random, DoorParts);
+	return SelectDungeonObjectParts(gridIndex, grid, random, DoorParts, DoorPartsSelectionMethod);
 }
 
 const FDungeonActorPartsWithDirection& UDungeonGenerateParameter::GetStartParts() const

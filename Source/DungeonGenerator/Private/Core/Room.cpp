@@ -1,4 +1,4 @@
-/*!
+/**
 部屋に関するソースファイル
 
 \author		Shun Moriya
@@ -15,7 +15,7 @@
 
 namespace
 {
-	/*!
+	/**
 	サイズを乱数で選択
 	\param[in]	minimum		最小値
 	\param[in]	maximum		最大値

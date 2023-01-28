@@ -1,4 +1,4 @@
-/*!
+/**
 \author		Shun Moriya
 \copyright	2023 Shun Moriya
 */
@@ -11,7 +11,7 @@
 #include "BuildInfomation.h"
 #include "../../DungeonGenerator/Public/DungeonGenerateParameter.h"
 #include "../../DungeonGenerator/Public/DungeonGenerator.h"
-#include <EngineUtils.h>
+//#include <EngineUtils.h>
 //#include <Kismet/GameplayStatics.h>
 #include <PropertyCustomizationHelpers.h>
 #include <AssetToolsModule.h>
@@ -49,8 +49,8 @@ void FDungeonGenerateEditorModule::StartupModule()
 	// LegacyAsset
 	{
 		EAssetTypeCategories::Type gameAssetCategory = AssetTools.RegisterAdvancedAssetCategory(
-			FName(TEXT("DungeonGenerator")),
-			FText::FromName(TEXT("CustomCategory"))
+			FName(TEXT("DungeonGeneratorAssets")),
+			FText::FromName(TEXT("DungeonGenerator"))
 		);
 
 		// FDungeonRoomAssetTypeActionsを追加
@@ -226,27 +226,7 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 		const int32 value = dungeonGenerateParameter->GetGeneratedRandomSeed();
 		mRandomSeedValue->SetText(FText::FromString(FString::FromInt(value)));
 
-		// MovePlayerStart
-		for (TActorIterator<APlayerStart> ite(dungeonGenerator->GetWorld()); ite; ++ite)
-		{
-			APlayerStart* playerStart = *ite;
-
-			// APlayerStartはコリジョンが無効になっているので、GetSimpleCollisionCylinderを利用する事ができない
-			if (USceneComponent* rootComponent = playerStart->GetRootComponent())
-			{
-				// 接地しない様に少しだけ余白を作る
-				static constexpr float heightMargine = 10.f;
-
-				const EComponentMobility::Type mobility = rootComponent->Mobility;
-				rootComponent->SetMobility(EComponentMobility::Movable);
-
-				FVector location = dungeonGenerator->GetStartLocation();
-				location.Z += rootComponent->GetLocalBounds().BoxExtent.Z + heightMargine;
-				playerStart->SetActorLocation(location);
-
-				rootComponent->SetMobility(mobility);
-			}
-		}
+		dungeonGenerator->MovePlayerStart();
 
 		// TODO:ミニマップテクスチャの出力を検討して下さい
 
@@ -277,5 +257,4 @@ void FDungeonGenerateEditorModule::SetAssetData(const FAssetData& assetData)
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_GAME_MODULE(FDungeonGenerateEditorModule, DungeonGenerateEditor);
-//IMPLEMENT_MODULE(FDungeonGenerateEditorModule, DungeonGeneratorEditor)
+IMPLEMENT_MODULE(FDungeonGenerateEditorModule, DungeonGeneratorEditor)
