@@ -417,7 +417,11 @@ void UDungeonGenerateParameter::DumpToJson()
 		jsonString += TEXT("},");
 		jsonString += TEXT("UnderfloorHeight:") + FString::FromInt(UnderfloorHeight) + TEXT(",\n");
 		jsonString += TEXT("RoomMargin:") + FString::FromInt(RoomMargin) + TEXT(",\n");
-		jsonString += TEXT("MergeRooms:") + MergeRooms ? TEXT("true,\n") : TEXT("false,\n");
+		jsonString += TEXT("MergeRooms:");
+		if(MergeRooms)
+			jsonString += TEXT("true,\n");
+		else
+			jsonString += TEXT("false,\n");
 		jsonString += TEXT("GridSize:") + FString::SanitizeFloat(GridSize) + TEXT(",\n");
 		// TArray<FDungeonMeshPartsWithDirection> FloorParts;
 		// TArray<FDungeonMeshParts> SlopeParts;

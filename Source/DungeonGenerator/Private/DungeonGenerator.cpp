@@ -27,6 +27,9 @@
 #include <Builders/CubeBuilder.h>
 #endif
 
+// 定義するとデバッグに便利なログを出力します
+//#define DEBUG_SHOW_DEVELOP_LOG
+
 static const FName DungeonGeneratorTag("DungeonGenerator");
 
 namespace
@@ -172,16 +175,20 @@ void CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
 		mGenerator->WaitGenerate();
 
 		// デバッグ情報を出力
-#if WITH_EDITOR
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		{
 			const FString path = FPaths::ProjectSavedDir() + TEXT("/dungeon_diagram.pu");
 			mGenerator->DumpRoomDiagram(TCHAR_TO_UTF8(*path));
 		}
 #endif
+
+		// TODO: 生成が成功したか失敗したか出力してください
+		DUNGEON_GENERATOR_LOG(TEXT("Done."));
 	}
 	else
 	{
-		// TODO:ダンジョン生成パラメータが設定されていない事を通知して下さい
+		DUNGEON_GENERATOR_ERROR(TEXT("ダンジョン生成パラメータを設定してください"));
+
 		Clear();
 	}
 }
@@ -196,14 +203,14 @@ void CDungeonGenerator::AddTerraine()
 {
 	if (mGenerator == nullptr)
 	{
-		// TODO:Createされていない事を通知して下さい
+		DUNGEON_GENERATOR_ERROR(TEXT("CDungeonGenerator::Createを呼び出してください"));
 		return;
 	}
 
 	const UDungeonGenerateParameter* parameter = mParameter.Get();
 	if (!IsValid(parameter))
 	{
-		// TODO:UDungeonGenerateParameterされていない事を通知して下さい
+		DUNGEON_GENERATOR_ERROR(TEXT("DungeonGenerateParameterを設定してください"));
 		return;
 	}
 
@@ -338,17 +345,17 @@ void CDungeonGenerator::AddTerraine()
 					{
 						if (const FDungeonObjectParts* parts = parameter->SelectTorchParts(gridIndex, grid, dungeon::Random::Instance()))
 						{
-		#if 0
+#if 0
 							const FTransform worldTransform = transform * parts->RelativeTransform;
 							//const FTransform worldTransform = parts->RelativeTransform * transform;
-		#else
+#else
 							const FVector rotaedLocation = transform.Rotator().RotateVector(parts->RelativeTransform.GetLocation());
 							const FTransform worldTransform(
 								transform.Rotator() + parts->RelativeTransform.Rotator(),
 								transform.GetLocation() + rotaedLocation,
 								transform.GetScale3D() * parts->RelativeTransform.GetScale3D()
 							);
-		#endif
+#endif
 							SpawnActor(parts->ActorClass, TEXT("Dungeon/Actors"), worldTransform);
 						}
 					}
@@ -551,14 +558,14 @@ void CDungeonGenerator::AddObject()
 {
 	if (mGenerator == nullptr)
 	{
-		// TODO:Createされていない事を通知して下さい
+		DUNGEON_GENERATOR_ERROR(TEXT("CDungeonGenerator::Createを呼び出してください"));
 		return;
 	}
 
 	const UDungeonGenerateParameter* parameter = mParameter.Get();
 	if (!IsValid(parameter))
 	{
-		// TODO:UDungeonGenerateParameterされていない事を通知して下さい
+		DUNGEON_GENERATOR_ERROR(TEXT("DungeonGenerateParameterを設定してください"));
 		return;
 	}
 

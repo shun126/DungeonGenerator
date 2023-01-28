@@ -42,7 +42,7 @@ namespace dungeon
 				return p == point;
 			}
 		);
-		return i == mVerteces.end() ? ~0 : std::distance(mVerteces.begin(), i);
+		return i == mVerteces.end() ? static_cast<size_t>(~0) : std::distance(mVerteces.begin(), i);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,7 +230,7 @@ namespace dungeon
 
 		size_t startPointIndex = verteces.Find(mStartPoint);
 		// cppcheck-suppress [knownConditionTrueFalse]
-		if (startPointIndex != ~0)
+		if (startPointIndex != static_cast<size_t>(~0))
 		{
 			// スタートから各部屋の深さ（部屋の数）を設定
 			mDistance = SetDistanceFromStartToRoom(verteces, edges, startPointIndex, 0);

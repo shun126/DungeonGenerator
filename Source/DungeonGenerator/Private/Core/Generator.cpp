@@ -24,6 +24,9 @@
 #if WITH_EDITOR
 #include <Misc/Paths.h>
 
+// 定義するとデバッグに便利なログを出力します
+//#define DEBUG_SHOW_DEVELOP_LOG
+
 // 定義すると途中経過と最終結果をBMPで出力します（デバッグ機能）
 //#define DEBUG_GENERATE_BITMAP_FILE
 
@@ -108,7 +111,7 @@ namespace dungeon
 		// ボクセル情報を生成します
 		GenerateVoxel(mGenerateParameter);
 
-#if WITH_EDITOR
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		// 部屋の情報をダンプ
 		for (const auto& room : mRooms)
 		{
@@ -141,37 +144,27 @@ namespace dungeon
 	*/
 	void Generator::GenerateRooms(const GenerateParameter& parameter) noexcept
 	{
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Generate Rooms"));
+#endif
 
-#if 1
 		for (size_t i = 0; i < parameter.GetNumberOfCandidateRooms(); ++i)
 		{
 			auto room = std::make_shared<Room>(parameter);
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 			DUNGEON_GENERATOR_LOG(TEXT("Room: X=%d,Y=%d,Z=%d W=%d,D=%d,H=%d center(%f, %f, %f)")
 				, room->GetX(), room->GetY(), room->GetZ()
 				, room->GetWidth(), room->GetDepth(), room->GetHeight()
 				, room->GetCenter().X, room->GetCenter().Y, room->GetCenter().Z
 			);
+#endif
 			room->SetUnderfloorHeight(parameter.mUnderfloorHeight);
 			mRooms.emplace_back(std::move(room));
 		}
 
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		// サブレベル配置テスト用の部屋
 		//mRooms.emplace_back(std::make_shared<Room>(16, 15, 5, 3, 3, 1));
-#else
-#if 1
-		// 三角形分割に失敗
-		mRooms.emplace_back(std::make_shared<Room>(16, 15, 5, 2, 3, 1));
-		mRooms.emplace_back(std::make_shared<Room>(9, 19, 7, 4, 3, 1));
-		mRooms.emplace_back(std::make_shared<Room>(21, 9, 5, 3, 4, 1));
-		mRooms.emplace_back(std::make_shared<Room>(21, 18, 7, 4, 2, 1));
-#else
-		// 経路生成に失敗
-		mRooms.emplace_back(std::make_shared<Room>(13, 16, 7, 2, 3, 1));
-		mRooms.emplace_back(std::make_shared<Room>(17, 14, 4, 4, 3, 1));
-		mRooms.emplace_back(std::make_shared<Room>(13, 10, 5, 3, 4, 1));
-		mRooms.emplace_back(std::make_shared<Room>(11, 12, 4, 4, 2, 1));
-#endif
 #endif
 
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
@@ -194,7 +187,9 @@ namespace dungeon
 	*/
 	void Generator::SeparateRooms(const GenerateParameter& parameter) noexcept
 	{
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Separate Rooms"));
+#endif
 
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
 		size_t imageNo = 0;
@@ -293,7 +288,8 @@ namespace dungeon
 #if !defined(HORIZONTAL_MOVEMENT_AT_IMPACT)
 						room1->SetZ(static_cast<int32_t>(std::ceil(newRoomCenter.Z - room1HalfHeight)));
 #endif
-#if 0
+
+#if defined(DEBUG_SHOW_DEVELOP_LOG) && 0
 						// 交差していないか再確認
 						if (room0->Intersect(*room1, parameter.GetRoomMargin()))
 						{
@@ -333,12 +329,11 @@ namespace dungeon
 #endif
 		} while (counter > 0 && retry);
 
-#if defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		if (counter == 0)
 		{
 			DUNGEON_GENERATOR_LOG(TEXT("Generator::SeparateRooms: Give up..."));
 		}
-#endif
 
 		for (const std::shared_ptr<const Room>& room : mRooms)
 		{
@@ -347,11 +342,14 @@ namespace dungeon
 				, room->GetWidth(), room->GetDepth(), room->GetHeight()
 			);
 		}
+#endif
 	}
 
 	void Generator::ExpandSpace(GenerateParameter& parameter) noexcept
 	{
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("ExpandSpace"));
+#endif
 
 		int32_t minX, minY, minZ;
 		int32_t maxX, maxY, maxZ;
@@ -383,6 +381,7 @@ namespace dungeon
 			room->SetZ(room->GetZ() - minZ);
 		}
 
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Room: W=%d,D=%d,H=%d に空間を変更しました")
 			, parameter.mWidth, parameter.mDepth, parameter.mHeight
 		);
@@ -393,6 +392,7 @@ namespace dungeon
 				, room->GetWidth(), room->GetDepth(), room->GetHeight()
 			);
 		}
+#endif
 	}
 
 	/**
@@ -400,7 +400,9 @@ namespace dungeon
 	*/
 	void Generator::RemoveInvalidRooms(const GenerateParameter& parameter) noexcept
 	{
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Remove duplicate rooms and out-of-range rooms"));
+#endif
 
 		auto result = std::remove_if(mRooms.begin(), mRooms.end(), [&parameter, this](const std::shared_ptr<Room>& room) -> bool
 			{
@@ -410,10 +412,12 @@ namespace dungeon
 					room->GetTop() < 0 || static_cast<int32_t>(parameter.GetDepth()) <= room->GetBottom() ||
 					room->GetBackground() < 0 || static_cast<int32_t>(parameter.GetHeight()) <= room->GetForeground())
 				{
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 					DUNGEON_GENERATOR_LOG(TEXT("Room: X=%d,Y=%d W=%d,H=%d center(%f, %f) 範囲外")
 						, room->GetX(), room->GetY(), room->GetWidth(), room->GetDepth()
 						, room->GetCenter().X, room->GetCenter().Y
 					);
+#endif
 					return true;
 				}
 
@@ -453,8 +457,10 @@ namespace dungeon
 	// ドロネー三角形分割した辺を最小スパニングツリーにて抽出
 	void Generator::ExtractionAisles(const GenerateParameter& parameter) noexcept
 	{
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Extract Aisles"));
 		DUNGEON_GENERATOR_LOG(TEXT("%d rooms detected"), mRooms.size());
+#endif
 
 		// すべての部屋の中点を記録します
 		std::vector<std::shared_ptr<const Point>> points;
@@ -485,21 +491,11 @@ namespace dungeon
 			}
 #endif
 
-#if 0
-			delaunayTriangulation.ForEach([this](const Triangle& triangle)
-				{
-					mAisles.emplace_back(triangle.GetPoint(0), triangle.GetPoint(1));
-					mAisles.emplace_back(triangle.GetPoint(1), triangle.GetPoint(2));
-					mAisles.emplace_back(triangle.GetPoint(2), triangle.GetPoint(0));
-				}
-			);
-#else
 			// 最小スパニングツリー
 			MinimumSpanningTree minimumSpanningTree(delaunayTriangulation);
 			GenerateAisle(minimumSpanningTree);
 			// TODO:関数名を適切にして下さい
 			mDistance = minimumSpanningTree.GetDistance();
-#endif
 		}
 		else
 		{
@@ -644,7 +640,9 @@ namespace dungeon
 			}
 		);
 
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("%d minimum spanning tree edges detected"), minimumSpanningTree.Size());
+#endif
 
 		mStartPoint = minimumSpanningTree.GetStartPoint();
 		mGoalPoint = minimumSpanningTree.GetGoalPoint();
