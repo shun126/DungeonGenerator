@@ -70,7 +70,8 @@ namespace dungeon
 	{
 		if (!goalCondition.Contains(idealGoal))
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("ゴール地点をゴール範囲に含めて下さい (%d,%d,%d)"), idealGoal.X, idealGoal.Y, idealGoal.Z);
+			DUNGEON_GENERATOR_ERROR(TEXT("Voxel: ゴール地点をゴール範囲に含めて下さい (%d,%d,%d)"), idealGoal.X, idealGoal.Y, idealGoal.Z);
+			mLastError = Error::GoalPointIsOutsideGoalRange;
 			return false;
 		}
 
@@ -143,14 +144,16 @@ namespace dungeon
 
 		if (!goalCondition.Contains(nextLocation))
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("経路探索に失敗しました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, idealGoal.X, idealGoal.Y, idealGoal.Z);
+			DUNGEON_GENERATOR_ERROR(TEXT("Voxel: 経路探索に失敗しました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, idealGoal.X, idealGoal.Y, idealGoal.Z);
+			mLastError = Error::RouteSearchFailed;
 			return false;
 		}
 
 		// nextLocationが実際に到達した場所
 		if (!pathFinder.Commit(nextLocation))
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("経路探索に失敗しました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, idealGoal.X, idealGoal.Y, idealGoal.Z);
+			DUNGEON_GENERATOR_ERROR(TEXT("Voxel: 経路探索に失敗しました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, idealGoal.X, idealGoal.Y, idealGoal.Z);
+			mLastError = Error::RouteSearchFailed;
 			return false;
 		}
 

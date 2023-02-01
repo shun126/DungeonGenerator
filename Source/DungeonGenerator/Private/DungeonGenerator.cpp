@@ -116,80 +116,98 @@ void CDungeonGenerator::OnResetDoor(const ResetDoorEvent& func)
 	mOnResetDoor = func;
 }
 
-void CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
+bool CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
 {
 	// Conversion from UDungeonGenerateParameter to dungeon::GenerateParameter
-	if (IsValid(parameter))
-	{
-		dungeon::GenerateParameter generateParameter;
-		int32 randomSeed = parameter->GetRandomSeed();
-		if (parameter->GetRandomSeed() == 0)
-			randomSeed = static_cast<int32>(time(nullptr));
-		generateParameter.mRandom.SetSeed(randomSeed);
-		const_cast<UDungeonGenerateParameter*>(parameter)->SetGeneratedRandomSeed(randomSeed);
-		generateParameter.mNumberOfCandidateRooms = parameter->NumberOfCandidateRooms;
-		generateParameter.mMinRoomWidth = parameter->RoomWidth.Min;
-		generateParameter.mMaxRoomWidth = parameter->RoomWidth.Max;
-		generateParameter.mMinRoomDepth = parameter->RoomDepth.Min;
-		generateParameter.mMaxRoomDepth = parameter->RoomDepth.Max;
-		generateParameter.mMinRoomHeight = parameter->RoomHeight.Min;
-		generateParameter.mMaxRoomHeight = parameter->RoomHeight.Max;
-		generateParameter.mRoomMargin = parameter->RoomMargin;
-		generateParameter.mUnderfloorHeight = parameter->UnderfloorHeight;
-		mParameter = parameter;
-
-		mGenerator = std::make_shared<dungeon::Generator>();
-		mGenerator->OnQueryParts([this, parameter](const std::shared_ptr<const dungeon::Room>& room)
-		{
-			parameter->EachDungeonRoomAsset([this, &room](const UDungeonRoomAsset* dungeonRoomAsset)
-			{
-				if (dungeonRoomAsset->HeightCondition == EDungeonRoomHeightCondition::Equal)
-				{
-					if (room->GetHeight() != dungeonRoomAsset->Height)
-						return;
-				}
-				else if (dungeonRoomAsset->HeightCondition == EDungeonRoomHeightCondition::EqualGreater)
-				{
-					if (room->GetHeight() < dungeonRoomAsset->Height)
-						return;
-				}
-
-				if (dungeonRoomAsset->DungeonParts != EDungeonRoomParts::Any)
-				{
-					// EDungeonRoomParts と dungeon::Room::Parts の順番を合わせて下さい
-					if (static_cast<dungeon::Room::Parts>(dungeonRoomAsset->DungeonParts) != room->GetParts())
-						return;
-				}
-
-				if (room->GetWidth() == dungeonRoomAsset->Width && room->GetDepth() == dungeonRoomAsset->Depth)
-				{
-					//const FVector position = ToWorld_(room->GetX(), room->GetY(), room->GetZ(), mDungeonGenerateParameter->GetGridSize());
-					//mCreateRequestLevels.Add(mDungeonGenerateParameter->GetLevelName(), FTransform(position));
-				}
-			});
-		});
-
-		mGenerator->Generate(generateParameter);
-
-		// TODO:プログレッシブバーなど進捗を表示したい
-		mGenerator->WaitGenerate();
-
-		// デバッグ情報を出力
-#if defined(DEBUG_SHOW_DEVELOP_LOG)
-		{
-			const FString path = FPaths::ProjectSavedDir() + TEXT("/dungeon_diagram.pu");
-			mGenerator->DumpRoomDiagram(TCHAR_TO_UTF8(*path));
-		}
-#endif
-
-		// TODO: 生成が成功したか失敗したか出力してください
-		DUNGEON_GENERATOR_LOG(TEXT("Done."));
-	}
-	else
+	if (!IsValid(parameter))
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("ダンジョン生成パラメータを設定してください"));
 
 		Clear();
+	}
+
+	dungeon::GenerateParameter generateParameter;
+	int32 randomSeed = parameter->GetRandomSeed();
+	if (parameter->GetRandomSeed() == 0)
+		randomSeed = static_cast<int32>(time(nullptr));
+	generateParameter.mRandom.SetSeed(randomSeed);
+	const_cast<UDungeonGenerateParameter*>(parameter)->SetGeneratedRandomSeed(randomSeed);
+	generateParameter.mNumberOfCandidateRooms = parameter->NumberOfCandidateRooms;
+	generateParameter.mMinRoomWidth = parameter->RoomWidth.Min;
+	generateParameter.mMaxRoomWidth = parameter->RoomWidth.Max;
+	generateParameter.mMinRoomDepth = parameter->RoomDepth.Min;
+	generateParameter.mMaxRoomDepth = parameter->RoomDepth.Max;
+	generateParameter.mMinRoomHeight = parameter->RoomHeight.Min;
+	generateParameter.mMaxRoomHeight = parameter->RoomHeight.Max;
+	generateParameter.mRoomMargin = parameter->RoomMargin;
+	generateParameter.mUnderfloorHeight = parameter->UnderfloorHeight;
+	mParameter = parameter;
+
+	mGenerator = std::make_shared<dungeon::Generator>();
+	mGenerator->OnQueryParts([this, parameter](const std::shared_ptr<const dungeon::Room>& room)
+	{
+		parameter->EachDungeonRoomAsset([this, &room](const UDungeonRoomAsset* dungeonRoomAsset)
+		{
+			if (dungeonRoomAsset->HeightCondition == EDungeonRoomHeightCondition::Equal)
+			{
+				if (room->GetHeight() != dungeonRoomAsset->Height)
+					return;
+			}
+			else if (dungeonRoomAsset->HeightCondition == EDungeonRoomHeightCondition::EqualGreater)
+			{
+				if (room->GetHeight() < dungeonRoomAsset->Height)
+					return;
+			}
+
+			if (dungeonRoomAsset->DungeonParts != EDungeonRoomParts::Any)
+			{
+				// EDungeonRoomParts と dungeon::Room::Parts の順番を合わせて下さい
+				if (static_cast<dungeon::Room::Parts>(dungeonRoomAsset->DungeonParts) != room->GetParts())
+					return;
+			}
+
+			if (room->GetWidth() == dungeonRoomAsset->Width && room->GetDepth() == dungeonRoomAsset->Depth)
+			{
+				//const FVector position = ToWorld_(room->GetX(), room->GetY(), room->GetZ(), mDungeonGenerateParameter->GetGridSize());
+				//mCreateRequestLevels.Add(mDungeonGenerateParameter->GetLevelName(), FTransform(position));
+			}
+		});
+	});
+
+	mGenerator->Generate(generateParameter);
+
+	// TODO:プログレッシブバーなど進捗を表示したい
+	mGenerator->WaitGenerate();
+
+	// デバッグ情報を出力
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
+	{
+		const FString path = FPaths::ProjectSavedDir() + TEXT("/dungeon_diagram.pu");
+		mGenerator->DumpRoomDiagram(TCHAR_TO_UTF8(*path));
+	}
+#endif
+
+	// 生成エラーを確認する
+	dungeon::Generator::Error generatorError = mGenerator->GetLastError();
+	if (dungeon::Generator::Error::Success != generatorError)
+	{
+		DUNGEON_GENERATOR_LOG(TEXT("Found error."));
+
+#if WITH_EDITOR
+		// デバッグに必要な情報（デバッグ生成パラメータ）を出力する
+		/*
+		TODO:外部からファイル名を与えられるように変更して下さい
+		const FString path = FPaths::ProjectSavedDir() + TEXT("/dungeon_diagram.json");
+		*/
+		parameter->DumpToJson();
+#endif
+
+		return false;
+	}
+	else
+	{
+		DUNGEON_GENERATOR_LOG(TEXT("Done."));
+		return true;
 	}
 }
 
@@ -473,6 +491,7 @@ void CDungeonGenerator::AddTerraine()
 		}
 	);
 
+	SpawnRecastNavMesh();
 #if 0
 	//SpawnRecastNavMesh();
 	SpawnNavMeshBoundsVolume(parameter);
@@ -520,7 +539,7 @@ void CDungeonGenerator::AddTerraine()
 			}
 			else
 			{
-				DUNGEON_GENERATOR_ERROR(TEXT("CubeBuilderの生成に失敗しました"));
+				DUNGEON_GENERATOR_ERROR(TEXT("CDungeonGenerator: CubeBuilderの生成に失敗しました"));
 			}
 #else
 			/*
@@ -681,6 +700,9 @@ void CDungeonGenerator::MovePlayerStart()
 		{
 			DUNGEON_GENERATOR_ERROR(TEXT("PlayerStartのRootComponentを設定して下さい"));
 		}
+	}
+	else
+	{
 	}
 }
 

@@ -66,6 +66,7 @@ namespace dungeon
 		if (mGenerateThread.joinable())
 			mGenerateThread.join();
 
+		mLastError = Error::Success;
 		mGenerated = false;
 		mGenerateFuture = mGeneratePromise.get_future();
 		mGenerateParameter = parameter;
@@ -137,6 +138,17 @@ namespace dungeon
 			DumpAisle(TCHAR_TO_UTF8(*path));
 		}
 #endif
+
+		// エラー情報を記録
+		if (Generator::Error::Success != mLastError)
+		{
+			if (Voxel::Error::Success != mVoxel->GetLastError())
+			{
+				uint8_t errorIndex = static_cast<uint8_t>(Generator::Error::___StartVoxelError);
+				errorIndex += static_cast<uint8_t>(mVoxel->GetLastError());
+				mLastError = static_cast<Generator::Error>(errorIndex);
+			}
+		}
 	}
 
 	/**
@@ -480,14 +492,15 @@ namespace dungeon
 #if WITH_EDITOR
 			if (!delaunayTriangulation.IsValid())
 			{
-				DUNGEON_GENERATOR_ERROR(TEXT("三角形分割が失敗 %d rooms"), mRooms.size());
+				DUNGEON_GENERATOR_ERROR(TEXT("Generator:三角形分割に失敗しました %d rooms"), mRooms.size());
 				for (const auto& room : mRooms)
 				{
-					DUNGEON_GENERATOR_ERROR(TEXT("%d, %d, %d, %d, %d, %d"),
+					DUNGEON_GENERATOR_ERROR(TEXT("X:%d Y:%d Z:%d Width:%d Depth:%d Height:%d"),
 						room->GetX(), room->GetY(), room->GetZ(),
 						room->GetWidth(), room->GetDepth(), room->GetHeight()
 					);
 				}
+				mLastError = Error::TriangulationFailed;
 			}
 #endif
 
