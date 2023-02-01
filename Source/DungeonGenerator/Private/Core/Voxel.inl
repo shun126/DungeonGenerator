@@ -9,4 +9,8 @@
 
 namespace dungeon
 {
+	inline Voxel::Error Voxel::GetLastError() const noexcept
+	{
+		return mLastError;
+	}
 }

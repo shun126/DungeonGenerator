@@ -32,6 +32,18 @@ namespace dungeon
 	class Generator : public std::enable_shared_from_this<Generator>
 	{
 	public:
+		enum class Error : uint8_t
+		{
+			Success,
+			TriangulationFailed,
+
+			// from Voxel class
+			___StartVoxelError,
+			GoalPointIsOutsideGoalRange,
+			RouteSearchFailed,
+		};
+
+	public:
 		/**
 		コンストラクタ
 		*/
@@ -61,6 +73,11 @@ namespace dungeon
 		生成が完了まで待つ
 		*/
 		void WaitGenerate() const noexcept;
+
+		/**
+		生成時に発生したエラーを取得します
+		*/
+		Error GetLastError() const noexcept;
 
 		/**
 		生成パラメータを取得します
@@ -303,6 +320,8 @@ namespace dungeon
 		std::atomic_bool mGenerated = {false};
 
 		uint8_t mDistance = 0;
+
+		Error mLastError = Error::Success;
 	};
 }
 

@@ -9,4 +9,8 @@
 
 namespace dungeon
 {
+	inline Generator::Error Generator::GetLastError() const noexcept
+	{
+		return mLastError;
+	}
 }

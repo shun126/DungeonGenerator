@@ -390,7 +390,7 @@ FVector UDungeonGenerateParameter::ToWorld(const uint32_t x, const uint32_t y, c
 }
 
 #if WITH_EDITOR
-void UDungeonGenerateParameter::DumpToJson()
+void UDungeonGenerateParameter::DumpToJson() const
 {
 	// TSharedPtr<FJsonObject> jsonRoot = MakeShareable(new FJsonObject);
 	// 

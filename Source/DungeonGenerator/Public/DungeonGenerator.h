@@ -69,8 +69,9 @@ public:
 	/**
 	パラメータを元にダンジョンを生成します
 	\param[in]	asset	UDungeonGenerateParameter
+	\return		falseならば生成に失敗
 	*/
-	void Create(const UDungeonGenerateParameter* asset);
+	bool Create(const UDungeonGenerateParameter* asset);
 
 	/**
 	地形を追加します

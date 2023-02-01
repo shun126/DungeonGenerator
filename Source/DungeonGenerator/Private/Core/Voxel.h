@@ -23,6 +23,14 @@ namespace dungeon
 	class Voxel final
 	{
 	public:
+		enum class Error : uint8_t
+		{
+			Success,
+			GoalPointIsOutsideGoalRange,
+			RouteSearchFailed
+		};
+
+	public:
 		/**
 		コンストラクタ
 		*/
@@ -136,6 +144,11 @@ namespace dungeon
 		*/
 		bool Contain(const FIntVector& location) const noexcept;
 
+		/**
+		生成時に発生したエラーを取得します
+		*/
+		Error GetLastError() const noexcept;
+
 	private:
 		/**
 		空きグリッドか調べます
@@ -173,6 +186,8 @@ namespace dungeon
 		uint32_t mWidth;
 		uint32_t mDepth;
 		uint32_t mHeight;
+
+		Error mLastError = Error::Success;
 	};
 }
 
