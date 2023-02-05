@@ -107,6 +107,11 @@ namespace dungeon
 		void SetIdentifier(const uint16_t identifier) noexcept;
 
 		/**
+		無効な識別子か判定します？
+		*/
+		bool IsInvalidIdetifier() const noexcept;
+
+		/**
 		小道具を取得します
 		*/
 		Props GetProps() const noexcept;
@@ -232,16 +237,23 @@ namespace dungeon
 		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction) const noexcept;
 
 
+
+
 		/**
 		グリッドの種類の色を取得します
 		*/
 		const FColor& GetTypeColor() const noexcept;
 
+		const FString& GetTypeName() const noexcept;
+		const FString& GetPropsName() const noexcept;
+
 	private:
+		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
+
 		Type mType;					//!< グリッドの種類
 		Props mProps;
 		Direction mDirection;		//!< グリッドの方向
-		uint16_t mIdentifier = ~0;
+		uint16_t mIdentifier = InvalidIdentifier;
 	};
 }
 

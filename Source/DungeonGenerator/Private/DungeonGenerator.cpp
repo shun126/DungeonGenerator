@@ -959,6 +959,7 @@ std::shared_ptr<const dungeon::Generator> CDungeonGenerator::GetGenerator() cons
 	return mGenerator;
 }
 
+
 #if WITH_EDITOR
 void CDungeonGenerator::DrawDebugInfomation(const bool showRoomAisleInfomation, const bool showVoxelGridType) const
 {

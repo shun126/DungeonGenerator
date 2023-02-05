@@ -80,6 +80,11 @@ namespace dungeon
 		mIdentifier = identifier;
 	}
 
+	inline bool Grid::IsInvalidIdetifier() const noexcept
+	{
+		return mIdentifier == InvalidIdentifier;
+	}
+
 	inline Grid::Props Grid::GetProps() const noexcept
 	{
 		return mProps;

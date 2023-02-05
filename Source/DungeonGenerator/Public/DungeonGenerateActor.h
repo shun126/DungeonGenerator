@@ -90,6 +90,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 		UDungeonGenerateParameter* DungeonGenerateParameter = nullptr;
 
+#if WITH_EDITORONLY_DATA
+	//! 乱数の種
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+		int32 GeneratedRandomSeed = 0;
+#endif
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 		bool InstancedStaticMesh = true;
 
@@ -174,6 +180,10 @@ protected:
 	// ボクセルグリッドのデバッグ情報を表示します
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		bool ShowVoxelGridType = false;
+
+	// プレイヤーの位置のボクセルグリッドのデバッグ情報を表示します
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+		bool ShowVoxelGridTypeAtPlayerLocation = false;
 
 private:
 	void DrawDebugInfomation();

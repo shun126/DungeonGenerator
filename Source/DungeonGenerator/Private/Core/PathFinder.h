@@ -7,8 +7,10 @@ A*によるパス検索 ヘッダーファイル
 
 #pragma once
 #include "Direction.h"
+#include "PathNodeSwitcher.h"
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace dungeon
@@ -37,11 +39,29 @@ namespace dungeon
 		*/
 		enum class NodeType : uint8_t
 		{
-			Space = 0,		//!< 空間
-			Aisle,			//!< 通路
 			Gate,			//!< 門
+			Space,			//!< 空間
+			Aisle,			//!< 通路
 			Downstairs,		//!< 下階段
 			Upstairs,		//!< 上階段
+		};
+
+		/*
+		TODO:コード整理をしてください
+		*/
+		struct UseNode final
+		{
+			std::unordered_set<uint64_t> mNodes;
+
+			void Add(const FIntVector& location)
+			{
+				mNodes.emplace(PathFinder::Hash(location));
+			}
+
+			bool Contain(const FIntVector& location) const
+			{
+				return mNodes.find(PathFinder::Hash(location)) != mNodes.end();
+			}
 		};
 
 	private:
@@ -135,13 +155,12 @@ namespace dungeon
 	public:
 		/**
 		ノードを開く
-		\param[in]	nodeType		ノードの種類
 		\param[in]	location		現在位置
 		\param[in]	goal			ゴール位置
 		\param[in]	searchDirection	検索可能な方向
 		\return		自身のキー
 		*/
-		uint64_t Start(const NodeType nodeType, const FIntVector& location, const FIntVector& goal, const SearchDirection searchDirection) noexcept;
+		uint64_t Start(const FIntVector& location, const FIntVector& goal, const SearchDirection searchDirection) noexcept;
 
 		/**
 		ノードを開く
@@ -211,7 +230,43 @@ namespace dungeon
 		*/
 		static SearchDirection Cast(const Direction direction) noexcept;
 
+
+
+
+
+
+		/*
+		使用中ノードと関連するノードの予約をする
+		\param[in]		location	
+		\param[in]		std::shared_ptr<PathNodeSwitcher::Node>
+		*/
+		void ReserveOpenNode(const FIntVector& location, const std::shared_ptr<PathNodeSwitcher::Node>& openNode);
+
+		/*
+		ノードと関連ノードが使用中か調べます
+		\param[in]		location	位置
+		*/
+		bool IsUsingOpenNode(const FIntVector& location) const;
+
 	private:
+		/*
+		使用予約されたノードを使用中に変更する
+		\param[in]		parentHash		ノードのハッシュ値
+		*/
+		void UseOpenNode(const uint64_t parentHash);
+
+		/*
+		使用中のノードを使用予約に戻す
+		\param[in]		parentHash		ノードのハッシュ値
+		*/
+		void RevertOpenNode(const uint64_t parentHash);
+
+		/*
+		使用予約されたノードと使用中のノードをクリアする
+		*/
+		void ClearOpenNode();
+
+	public:
 		/**
 		位置からハッシュキーを計算
 		\param[in]	location	位置
@@ -219,6 +274,7 @@ namespace dungeon
 		*/
 		static uint64_t Hash(const FIntVector& location) noexcept;
 
+	private:
 		/**
 		総コストを計算を取得
 		\param[in]	cost		現在コスト
@@ -245,6 +301,7 @@ namespace dungeon
 		static uint32_t Heuristics(const FIntVector& location, const FIntVector& goal) noexcept;
 
 	private:
+		PathNodeSwitcher mNoEntryNodeSwitcher;
 		std::unordered_map<uint64_t, OpenNode> mOpen;
 		std::unordered_map<uint64_t, CloseNode> mClose;
 		std::vector<BaseNode> mRoute;

@@ -389,6 +389,15 @@ FVector UDungeonGenerateParameter::ToWorld(const uint32_t x, const uint32_t y, c
 	) * GridSize;
 }
 
+FIntVector UDungeonGenerateParameter::ToGrid(const FVector& location) const
+{
+	return FIntVector(
+		static_cast<int32>(location.X / GridSize),
+		static_cast<int32>(location.Y / GridSize),
+		static_cast<int32>(location.Z / GridSize)
+	);
+}
+
 #if WITH_EDITOR
 void UDungeonGenerateParameter::DumpToJson() const
 {

@@ -259,6 +259,13 @@ public:
 	*/
 	FVector ToWorld(const uint32_t x, const uint32_t y, const uint32_t z) const;
 
+	/*
+	Converts from a grid coordinate system to a world coordinate system
+	2D空間は（X軸:前 Y軸:右）
+	3D空間は（X軸:前 Y軸:右 Z軸:上）である事に注意
+	*/
+	FIntVector ToGrid(const FVector& location) const;
+
 #if WITH_EDITOR
 	void DumpToJson() const;
 #endif
