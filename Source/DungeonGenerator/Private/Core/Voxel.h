@@ -27,7 +27,6 @@ namespace dungeon
 		{
 			Success,
 			GoalPointIsOutsideGoalRange,
-			RouteSearchFailed
 		};
 
 	public:
@@ -84,6 +83,10 @@ namespace dungeon
 		\param[in]	floorGrid	一階部分のグリッド
 		*/
 		void Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) noexcept;
+
+
+		bool Find(FIntVector& result, const FIntVector& start, const FIntVector& goal, const PathGoalCondition& goalCondition, const Identifier& identifier) noexcept;
+
 
 		/**
 		経路をGridに書き込みます
@@ -162,7 +165,7 @@ namespace dungeon
 		\param[in]	location	座標
 		\return		trueならば進入可能
 		*/
-		bool IsHorizontallyPassable(const FIntVector& location) const noexcept;
+		//bool IsHorizontallyPassable(const FIntVector& location) const noexcept;
 
 		/**
 		水平方向の移動で進入できるか？
@@ -170,7 +173,7 @@ namespace dungeon
 		\param[in]	location	座標
 		\return		trueならば進入可能
 		*/
-		bool IsHorizontallyPassable(const Grid& baseGrid, const FIntVector& location) const noexcept;
+		//bool IsHorizontallyPassable(const Grid& baseGrid, const FIntVector& location) const noexcept;
 
 		/**
 		ゴールに到達したか？

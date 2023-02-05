@@ -276,6 +276,11 @@ void ADungeonGenerateActor::PreInitializeComponents()
 			mDungeonGenerator->AddTerraine();
 			mDungeonGenerator->AddObject();
 		}
+
+#if WITH_EDITOR
+		// ダンジョン生成した乱数を記録
+		GeneratedRandomSeed = DungeonGenerateParameter->GetGeneratedRandomSeed();
+#endif
 	}
 
 	MovePlayerStart();
@@ -510,6 +515,33 @@ void ADungeonGenerateActor::DrawDebugInfomation()
 		);
 	}
 #endif
+
+	// プレイヤーの位置のボクセルグリッドのデバッグ情報を表示します
+	if (ShowVoxelGridTypeAtPlayerLocation)
+	{
+		if (APawn* playerPawn = GetValid(UGameplayStatics::GetPlayerPawn(this, 0)))
+		{
+			TArray<FString> output;
+
+			FIntVector location = DungeonGenerateParameter->ToGrid(playerPawn->GetActorLocation());
+			output.Add(TEXT("Grid:") + FString::FromInt(location.X) + TEXT(",") + FString::FromInt(location.Y) + TEXT(",") + FString::FromInt(location.Z));
+
+			const dungeon::Grid& grid = generator->GetGrid(location);
+			output.Add(TEXT("Identifier:") + FString::FromInt(grid.GetIdentifier()));
+			output.Add(TEXT(" Type : ") + grid.GetTypeName());
+			//Direction GetDirection() const noexcept;
+			output.Add(TEXT(" Props : ") + grid.GetPropsName());
+
+			// 文字列を展開
+			FString message;
+			for (const FString& line : output)
+			{
+				message.Append(line);
+				message.Append(TEXT("\n"));
+			}
+			UKismetSystemLibrary::DrawDebugString(playerPawn->GetWorld(), playerPawn->GetPawnViewLocation(), message, nullptr, FLinearColor::White);
+		}
+	}
 }
 #endif
 

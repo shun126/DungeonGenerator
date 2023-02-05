@@ -88,14 +88,17 @@ namespace dungeon
 	*/
 	bool Grid::CanBuildFloor(const Grid& toGrid) const noexcept
 	{
-		if (IsKindOfRoomType() || IsKindOfAisleType())
+		if (IsKindOfRoomType())
 		{
-			/*
-			部屋の上下には1グリッド空白があるので、
-			部屋系以外のグリッドなら床を生成する。
-			*/
 			return
-				//toGrid.IsKindOfRoomType() ||
+				toGrid.IsKindOfAisleType() ||
+				toGrid.IsKindOfSlopeType() ||
+				toGrid.IsKindOfSpatialType();
+		}
+		else if (IsKindOfAisleType())
+		{
+			return
+				toGrid.IsKindOfRoomType() ||
 				toGrid.IsKindOfAisleType() ||
 				toGrid.IsKindOfSlopeType() ||
 				toGrid.IsKindOfSpatialType();
@@ -159,7 +162,7 @@ namespace dungeon
 		{
 			/*
 			部屋と部屋が隣接している場合、
-			グリッドの識別番頭（＝部屋の識別番号）が不一致なら壁がある
+			グリッドの識別番号（＝部屋の識別番号）が不一致なら壁がある
 			*/
 			if (IsKindOfRoomTypeWithoutGate() && toGrid.IsKindOfRoomTypeWithoutGate())
 			{
@@ -169,7 +172,15 @@ namespace dungeon
 
 		if (IsKindOfGateType())
 		{
-			// 門は空間のみ壁を生成する
+			if (toGrid.IsKindOfRoomType() || toGrid.IsKindOfSlopeType())
+			{
+				// 識別子が異なっていて、かつ方向が交差していたら壁
+				return
+					GetIdentifier() != toGrid.GetIdentifier() &&
+					GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
+			}
+
+			// 空間なら壁
 			return toGrid.IsKindOfSpatialType();
 		}
 		else if (IsKindOfRoomTypeWithoutGate())
@@ -202,7 +213,10 @@ namespace dungeon
 			if (toGrid.IsKindOfSlopeType())
 			{
 				// 方向が交差していたら壁
-				return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
+				// グリッドの識別番号が不一致なら壁がある
+				return
+					(toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction)) ||
+					(toGrid.mIdentifier != mIdentifier);
 			}
 
 			return toGrid.IsKindOfSpatialType();
@@ -212,7 +226,9 @@ namespace dungeon
 			if (toGrid.IsKindOfSlopeType())
 			{
 				// 方向が交差していたら壁
-				return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
+				// グリッドの識別番号が不一致なら壁がある
+				return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction) ||
+					(toGrid.mIdentifier != mIdentifier);
 			}
 
 			return toGrid.IsKindOfSpatialType();
@@ -286,5 +302,36 @@ namespace dungeon
 		static_assert(ColorSize == static_cast<size_t>(TypeSize));
 		const size_t index = static_cast<size_t>(mType);
 		return colors[index];
+	}
+
+	const FString& Grid::GetTypeName() const noexcept
+	{
+		static const FString names[] = {
+			"Floor",
+			"Deck",
+			"Gate",
+			"Aisle",
+			"Slope",
+			"Atrium",
+			"Empty",
+			"OutOfBounds"
+		};
+		static constexpr size_t NameSize = sizeof(names) / sizeof(names[0]);
+		static_assert(NameSize == static_cast<size_t>(TypeSize));
+		const size_t index = static_cast<size_t>(mType);
+		return names[index];
+	}
+
+	const FString& Grid::GetPropsName() const noexcept
+	{
+		static const FString names[] = {
+			"None",
+			"Lock",
+			"UniqueLock"
+		};
+		static constexpr size_t NameSize = sizeof(names) / sizeof(names[0]);
+		static_assert(NameSize == static_cast<size_t>(PropsSize));
+		const size_t index = static_cast<size_t>(mProps);
+		return names[index];
 	}
 }

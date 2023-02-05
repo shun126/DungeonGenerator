@@ -20,6 +20,7 @@
 namespace dungeon
 {
 	// 前方宣言
+	class Grid;
 	class MinimumSpanningTree;
 	class Voxel;
 
@@ -36,11 +37,11 @@ namespace dungeon
 		{
 			Success,
 			TriangulationFailed,
+			RouteSearchFailed,
 
 			// from Voxel class
 			___StartVoxelError,
 			GoalPointIsOutsideGoalRange,
-			RouteSearchFailed,
 		};
 
 	public:
@@ -88,6 +89,8 @@ namespace dungeon
 		グリッド化された情報を取得
 		*/
 		const std::shared_ptr<Voxel>& GetVoxel() const noexcept;
+
+		const Grid& GetGrid(const FIntVector& location) const noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Room
@@ -237,6 +240,8 @@ namespace dungeon
 
 
 
+
+
 		void DumpRoomDiagram(const std::string& path) const noexcept;
 		void DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<const Room>& room) const noexcept;
 
@@ -299,6 +304,11 @@ namespace dungeon
 		\return			中心から接点までの距離
 		*/
 		float GetDistanceCenterToContact(const float width, const float depth, const FVector& direction, const float margin = 0.f) const noexcept;
+
+		/**
+		リセット
+		*/
+		void Reset();
 
 	private:
 		GenerateParameter mGenerateParameter;

@@ -84,33 +84,62 @@ namespace dungeon
 		);
 	}
 
+	void Generator::Reset()
+	{
+		mVoxel.reset();
+		mRooms.clear();
+		mLeafPoints.clear();
+		mStartPoint.reset();
+		mGoalPoint.reset();
+		mAisles.clear();
+		mLastError = Generator::Error::Success;
+	}
+
 	void Generator::GenerateImpl() noexcept
 	{
-		mRooms.clear();
+		static constexpr std::uint8_t maxRetryCount = 2;
+		std::uint_fast8_t retryCount = 0;
+		do
+		{
+			Reset();
 
-		// 部屋の生成
-		GenerateRooms(mGenerateParameter);
+			// 部屋の生成
+			GenerateRooms(mGenerateParameter);
 
-		// 部屋の分離
-		SeparateRooms(mGenerateParameter);
+			// 部屋の分離
+			SeparateRooms(mGenerateParameter);
 
-		// 全ての部屋が収まるように空間を拡張します
-		ExpandSpace(mGenerateParameter);
+			// 全ての部屋が収まるように空間を拡張します
+			ExpandSpace(mGenerateParameter);
 
-		// 重複した部屋や範囲外の部屋を除去
-		RemoveInvalidRooms(mGenerateParameter);
+			// 重複した部屋や範囲外の部屋を除去
+			RemoveInvalidRooms(mGenerateParameter);
 
-		// 通路の生成
-		ExtractionAisles(mGenerateParameter);
+			// 通路の生成
+			ExtractionAisles(mGenerateParameter);
 
-		// ブランチIDの生成
-		Branch();
+			// ブランチIDの生成
+			Branch();
 
-		// 部屋と通路に意味付けする
-		MissionGraph missionGraph(shared_from_this(), mGoalPoint);
+			// 部屋と通路に意味付けする
+			MissionGraph missionGraph(shared_from_this(), mGoalPoint);
 
-		// ボクセル情報を生成します
-		GenerateVoxel(mGenerateParameter);
+			// ボクセル情報を生成します
+			GenerateVoxel(mGenerateParameter);
+
+			// エラー情報を記録
+			if (Generator::Error::Success != mLastError)
+			{
+				if (Voxel::Error::Success != mVoxel->GetLastError())
+				{
+					uint8_t errorIndex = static_cast<uint8_t>(Generator::Error::___StartVoxelError);
+					errorIndex += static_cast<uint8_t>(mVoxel->GetLastError());
+					mLastError = static_cast<Generator::Error>(errorIndex);
+				}
+			}
+
+			++retryCount;
+		} while (Generator::Error::Success != mLastError && retryCount < maxRetryCount);
 
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		// 部屋の情報をダンプ
@@ -138,17 +167,6 @@ namespace dungeon
 			DumpAisle(TCHAR_TO_UTF8(*path));
 		}
 #endif
-
-		// エラー情報を記録
-		if (Generator::Error::Success != mLastError)
-		{
-			if (Voxel::Error::Success != mVoxel->GetLastError())
-			{
-				uint8_t errorIndex = static_cast<uint8_t>(Generator::Error::___StartVoxelError);
-				errorIndex += static_cast<uint8_t>(mVoxel->GetLastError());
-				mLastError = static_cast<Generator::Error>(errorIndex);
-			}
-		}
 	}
 
 	/**
@@ -681,6 +699,13 @@ namespace dungeon
 			);
 		}
 
+		// 通路の距離が短い順に並べ替える
+		std::sort(mAisles.begin(), mAisles.end(), [](const Aisle& l, const Aisle& r)
+			{
+				return l.GetLength() < r.GetLength();
+			}
+		);
+
 		// 通路を生成
 		for (const Aisle& aisle : mAisles)
 		{
@@ -705,11 +730,27 @@ namespace dungeon
 			const std::shared_ptr<Room>& goalRoom = e->GetOwnerRoom();
 			check(startRoom);
 			check(goalRoom);
-			const PathGoalCondition goalCondition(goalRoom->GetRect());
+			
+			FIntVector start = ToIntVector(*s);
+			FIntVector goal = ToIntVector(*e);
+
+			/*
+			TODO:
+			もしもstart周囲に侵入可能なグリッドが無いならば、
+			startの直行方向にずらしながら進入可能なグリッドが無いか探す
+			*/
+			FIntVector result;
+			if (mVoxel->Find(result, start, goal, PathGoalCondition(goalRoom->GetRect()), aisle.GetIdentifier()))
+			{
+				start = result;
+			}
+			else
+			{
+				// TODO: 生成可能な門が見つからないので、エラー報告してください
+			}
 
 			// Aisle generation by A*.
-			const FIntVector start = ToIntVector(*s);
-			if (mVoxel->Aisle(start, ToIntVector(*e), goalCondition, aisle.GetIdentifier()))
+			if (mVoxel->Aisle(start, goal, PathGoalCondition(goalRoom->GetRect()), aisle.GetIdentifier()))
 			{
 				Grid grid = mVoxel->Get(start.X, start.Y, start.Z);
 				check(grid.GetProps() == Grid::Props::None);
@@ -721,6 +762,11 @@ namespace dungeon
 						grid.SetProps(Grid::Props::Lock);
 				}
 				mVoxel->Set(start.X, start.Y, start.Z, grid);
+			}
+			else
+			{
+				DUNGEON_GENERATOR_ERROR(TEXT("経路探索に失敗しました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
+				mLastError = Error::RouteSearchFailed;
 			}
 		}
 	}
@@ -874,6 +920,12 @@ namespace dungeon
 				}
 			}
 		}
+	}
+
+
+	const Grid& Generator::GetGrid(const FIntVector& location) const noexcept
+	{
+		return mVoxel->Get(location.X, location.Y, location.Z);
 	}
 
 

@@ -82,13 +82,13 @@ namespace dungeon
 	{
 	}
 
-	uint64_t PathFinder::Start(const NodeType nodeType, const FIntVector& location, const FIntVector& goal, const SearchDirection searchDirection) noexcept
+	uint64_t PathFinder::Start(const FIntVector& location, const FIntVector& goal, const SearchDirection searchDirection) noexcept
 	{
 		// キーを生成
 		const uint64_t parentKey = Hash(location);
 
 		// Openリストを作成
-		return Open(parentKey, nodeType, 0, location, goal, Direction(), searchDirection);
+		return Open(parentKey, NodeType::Gate, 0, location, goal, Direction(), searchDirection);
 	}
 
 	uint64_t PathFinder::Open(const uint64_t parentKey, const NodeType nodeType, const uint32_t cost, const FIntVector& location, const FIntVector& goal, const Direction direction, const SearchDirection searchDirection) noexcept
@@ -130,6 +130,8 @@ namespace dungeon
 				mClose.erase(closeNode);
 				// Openリストに再登録
 				mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
+
+				RevertOpenNode(key);
 			}
 		}
 		// オープンとクローズリストに追加するノードがない
@@ -187,6 +189,8 @@ namespace dungeon
 		// Openノードを削除
 		mOpen.erase(result);
 
+		UseOpenNode(key);
+
 		return true;
 	}
 
@@ -194,6 +198,8 @@ namespace dungeon
 
 	bool PathFinder::Commit(const FIntVector& goal) noexcept
 	{
+		ClearOpenNode();
+
 		if (!mRoute.empty())
 			return false;
 
@@ -222,12 +228,28 @@ namespace dungeon
 				break;
 			}
 
+			// ゴールノードなら必ずノードは門に変更する
+			if (current->first == key)
+			{
+				current->second.mNodeType = NodeType::Gate;
+			}
+
 			// ノードを記録する
 			mRoute.emplace_back(current->second);
 
 			// スタートノード？
 			if (current->first == current->second.mParentKey)
+			{
+				/*
+				スタートノードの方向は仮に北を設定していたので、
+				ここで修正する
+				*/
+				if (mRoute.size() > 1)
+				{
+					mRoute[mRoute.size() - 1].mDirection = mRoute[mRoute.size() - 2].mDirection;
+				}
 				break;
+			}
 		}
 
 		// 経路生成に失敗
@@ -277,8 +299,8 @@ namespace dungeon
 	uint64_t PathFinder::Hash(const FIntVector& location) noexcept
 	{
 		return
-			static_cast<uint64_t>(location.Z) << 32 |
-			static_cast<uint64_t>(location.Y) << 16 |
+			static_cast<uint64_t>(location.Z) << 44 |
+			static_cast<uint64_t>(location.Y) << 22 |
 			static_cast<uint64_t>(location.X);
 	}
 
@@ -325,5 +347,37 @@ namespace dungeon
 		check(static_cast<uint8_t>(SearchDirection::South) == static_cast<uint8_t>(Direction::South));
 		check(static_cast<uint8_t>(SearchDirection::West) == static_cast<uint8_t>(Direction::West));
 		return static_cast<SearchDirection>(direction.Get());
+	}
+
+
+
+
+	void PathFinder::ReserveOpenNode(const FIntVector& parentLocation, const std::shared_ptr<PathNodeSwitcher::Node>& openNode)
+	{
+		const uint64_t parentHash = Hash(parentLocation);
+		// 親ノードがオープンリストにあるなら、進入禁止予約リストに登録
+		mNoEntryNodeSwitcher.Reserve(parentHash, openNode);
+		// クローズリストにあるなら、進入禁止リストに登録
+	}
+
+	bool PathFinder::IsUsingOpenNode(const FIntVector& location) const
+	{
+		const uint64_t key = Hash(location);
+		return mNoEntryNodeSwitcher.IsUsing(key);
+	}
+
+	void PathFinder::UseOpenNode(const uint64_t parentHash)
+	{
+		mNoEntryNodeSwitcher.Use(parentHash);
+	}
+
+	void PathFinder::RevertOpenNode(const uint64_t parentHash)
+	{
+		mNoEntryNodeSwitcher.Revert(parentHash);
+	}
+
+	void PathFinder::ClearOpenNode()
+	{
+		mNoEntryNodeSwitcher.Clear();
 	}
 }
