@@ -121,6 +121,9 @@ public:
 
 	// overrides
 	virtual void BeginDestroy() override;
+#if WITH_EDITOR
+	virtual void Tick(float DeltaSeconds) override;
+#endif
 
 private:
 	 bool FindFloorHeightPosition(FVector& result, const FVector& startPosition, const FVector& endPosition, const float offsetHeight) const;
@@ -147,6 +150,11 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		uint8 DeepestDepthFromStart = 0;
+
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+		bool ShowDebugInfomation = false;
+#endif
 
 private:
 	enum class State : uint8_t

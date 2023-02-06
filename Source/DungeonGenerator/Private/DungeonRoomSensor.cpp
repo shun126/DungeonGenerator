@@ -8,6 +8,15 @@
 #include "Core/Identifier.h"
 #include <Components/BoxComponent.h>
 
+#if WITH_EDITOR
+#include <Kismet/KismetSystemLibrary.h>
+
+namespace
+{
+	static bool ForceShowDebugInfomation = false;
+}
+#endif
+
 const FName& ADungeonRoomSensor::GetDungeonGeneratorTag()
 {
 	return CDungeonGenerator::GetDungeonGeneratorTag();
@@ -24,6 +33,11 @@ const TArray<FName>& ADungeonRoomSensor::GetDungeonGeneratorTags()
 ADungeonRoomSensor::ADungeonRoomSensor(const FObjectInitializer& initializer)
 	: Super(initializer)
 {
+#if WITH_EDITOR
+	// ティック有効化
+	PrimaryActorTick.bCanEverTick = PrimaryActorTick.bStartWithTickEnabled = true;
+#endif
+
 	Bounding = initializer.CreateDefaultSubobject<UBoxComponent>(this, TEXT("Sensor"));
 	check(IsValid(Bounding));
 	Bounding->SetMobility(EComponentMobility::Static);
@@ -38,6 +52,37 @@ void ADungeonRoomSensor::BeginDestroy()
 	Super::BeginDestroy();
 	Finalize();
 }
+
+#if WITH_EDITOR
+void ADungeonRoomSensor::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (ShowDebugInfomation || ForceShowDebugInfomation)
+	{
+		TArray<FString> output;
+		output.Add(TEXT("Identifier:") + FString::FromInt(Identifier));
+		output.Add(TEXT("Parts:") + GetDungeonRoomPartsName(Parts));
+		output.Add(TEXT("Item:") + GetDungeonRoomItemName(Item));
+		output.Add(TEXT("BranchId:") + FString::FromInt(BranchId));
+		output.Add(TEXT("DepthFromStart:") + FString::FromInt(DepthFromStart));
+
+		// 文字列を展開
+		FString message;
+		for (const FString& line : output)
+		{
+			message.Append(line);
+			message.Append(TEXT("\n"));
+		}
+		
+		FVector location = GetActorLocation();
+		static constexpr double offsetHeight = 100;
+		location.Z -= Bounding->GetScaledBoxExtent().Z;
+		location.Z += offsetHeight;
+		UKismetSystemLibrary::DrawDebugString(GetWorld(), location, message, nullptr, FLinearColor::White);
+	}
+}
+#endif
 
 void ADungeonRoomSensor::Initialize(
 	const int32 identifier,
