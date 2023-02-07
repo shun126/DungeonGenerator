@@ -13,7 +13,7 @@
 
 namespace
 {
-	static bool ForceShowDebugInfomation = false;
+	static bool ForceShowDebugInfomation = true;
 }
 #endif
 
