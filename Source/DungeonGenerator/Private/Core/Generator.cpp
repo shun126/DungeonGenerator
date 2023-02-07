@@ -359,12 +359,12 @@ namespace dungeon
 #endif
 		} while (counter > 0 && retry);
 
-#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		if (counter == 0)
 		{
-			DUNGEON_GENERATOR_LOG(TEXT("Generator::SeparateRooms: Give up..."));
+			DUNGEON_GENERATOR_ERROR(TEXT("Generator::SeparateRooms: Give up..."));
 		}
 
+#if defined(DEBUG_SHOW_DEVELOP_LOG)
 		for (const std::shared_ptr<const Room>& room : mRooms)
 		{
 			DUNGEON_GENERATOR_LOG(TEXT("Room: X=%d,Y=%d,Z=%d W=%d,D=%d,H=%d")
@@ -747,6 +747,8 @@ namespace dungeon
 			else
 			{
 				// TODO: 生成可能な門が見つからないので、エラー報告してください
+				int i = 0;
+				DUNGEON_GENERATOR_ERROR(TEXT("生成可能な門が見つからない (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
 			}
 
 			// Aisle generation by A*.
@@ -948,10 +950,11 @@ namespace dungeon
 					stream << room0->GetName() << "--" << room1->GetName();
 				else
 					stream << room1->GetName() << "--" << room0->GetName();
+				stream << ": Identifier:" << std::to_string(aisle.GetIdentifier().Get());
 				if (aisle.IsUniqueLocked())
-					stream << ": Unique lock";
+					stream << " (Unique lock)";
 				else if(aisle.IsLocked())
-					stream << ": Lock";
+					stream << " (Lock)";
 				stream << std::endl;
 
 				if (room != room0)
@@ -971,6 +974,7 @@ namespace dungeon
 			{
 				stream << "rectangle " << room->GetName() << "[" << std::endl;
 				stream << room->GetName() << std::endl;
+				stream << "Identifier:" << std::to_string(room->GetIdentifier().Get()) << std::endl;
 				stream << "Branch:" << std::to_string(room->GetBranchId()) << "(" << room->GetPartsName() << ")" << std::endl;
 				stream << "Depth:" << std::to_string(room->GetDepthFromStart()) << std::endl;
 				if (Room::Item::Empty != room->GetItem())

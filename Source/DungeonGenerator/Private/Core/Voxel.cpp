@@ -77,13 +77,27 @@ namespace dungeon
 			for (auto i = Direction::Begin(); i != Direction::End(); ++i)
 			{
 				const FIntVector openLocation = nextLocation + *i;
-				if (IsEmpty(openLocation) || IsReachedGoal(openLocation, goal.Z, goalCondition))
+				if (IsReachedGoal(openLocation, goal.Z, goalCondition))
 				{
 					result = nextLocation;
 					return true;
 				}
+				else if (Contain(openLocation))
+				{
+					const size_t index = Index(openLocation);
+					const auto& grid = mGrids.get()[index];
 
-				gateFinder.Entry(openLocation, goal);
+					if (grid.GetType() == Grid::Type::Empty)
+					{
+						result = nextLocation;
+						return true;
+					}
+					else if (grid.GetType() == Grid::Type::Deck)
+					{
+						gateFinder.Entry(openLocation, goal);
+					}
+				}
+
 			}
 		}
 

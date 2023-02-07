@@ -200,8 +200,10 @@ namespace dungeon
 			}
 			else if (toGrid.IsKindOfSlopeType())
 			{
+				// 通路の識別子が違うなら壁
+				return toGrid.GetIdentifier() != GetIdentifier();
 				// 方向が交差していたら壁
-				return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
+				// return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
 			}
 
 			return

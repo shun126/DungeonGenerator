@@ -27,8 +27,8 @@
 #include <Builders/CubeBuilder.h>
 #endif
 
-// 定義するとデバッグに便利なログを出力します
-//#define DEBUG_SHOW_DEVELOP_LOG
+// 定義するとミッショングラフのデバッグファイル(PlantUML)を出力します
+//#define DEBUG_GENERATE_MISSION_GRAPH_FILE
 
 static const FName DungeonGeneratorTag("DungeonGenerator");
 
@@ -180,8 +180,9 @@ bool CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
 	mGenerator->WaitGenerate();
 
 	// デバッグ情報を出力
-#if defined(DEBUG_SHOW_DEVELOP_LOG)
+#if defined(DEBUG_GENERATE_MISSION_GRAPH_FILE)
 	{
+		// TODO:外部からファイル名を与えられるように変更して下さい
 		const FString path = FPaths::ProjectSavedDir() + TEXT("/dungeon_diagram.pu");
 		mGenerator->DumpRoomDiagram(TCHAR_TO_UTF8(*path));
 	}
