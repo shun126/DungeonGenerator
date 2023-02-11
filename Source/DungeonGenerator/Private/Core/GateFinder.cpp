@@ -22,34 +22,51 @@ namespace dungeon
 
 	void GateFinder::Entry(const FIntVector& start, const FIntVector& goal)
 	{
+		const auto closeGate = std::find_if(mCloseGates.begin(), mCloseGates.end(), [&start](const std::shared_ptr<const Gate>& gate)
+			{
+				return start == gate->mLocation;
+			}
+		);
+		if (closeGate != mCloseGates.end())
+			return;
+		
+		const auto openGate = std::find_if(mOpenGates.begin(), mOpenGates.end(), [&start](const std::shared_ptr<const Gate>& gate)
+			{
+				return start == gate->mLocation;
+			}
+		);
+		if (openGate != mOpenGates.end())
+			return;
+
 		const FIntVector delta = goal - start;
 		const int64_t squaredLength =
 			static_cast<int64_t>(delta.X * delta.X) +
 			static_cast<int64_t>(delta.Y * delta.Y) +
 			static_cast<int64_t>(delta.Z * delta.Z);
-		mGates.emplace_back(start, squaredLength);
+		mOpenGates.emplace_back(std::make_shared<const Gate>(start, squaredLength));
 	}
 
 	bool GateFinder::Pop(FIntVector& result)
 	{
-		std::vector<Gate>::iterator nearestGate = mGates.begin();
+		auto nearestGate = mOpenGates.begin();
 		int64_t nearestDistance = std::numeric_limits<int64_t>::max();
 
-		for (std::vector<Gate>::iterator i = mGates.begin(); i != mGates.end(); ++i)
+		for (std::vector<std::shared_ptr<const Gate>>::iterator i = mOpenGates.begin(); i != mOpenGates.end(); ++i)
 		{
-			if (nearestDistance > (*i).mSquaredDistance)
+			if (nearestDistance > (*i)->mSquaredDistance)
 			{
-				nearestDistance = (*i).mSquaredDistance;
+				nearestDistance = (*i)->mSquaredDistance;
 				nearestGate = i;
 			}
 		}
 
-		if (nearestGate == mGates.end())
+		if (nearestGate == mOpenGates.end())
 			return false;
 
-		result = (*nearestGate).mLocation;
+		result = (*nearestGate)->mLocation;
 
-		mGates.erase(nearestGate);
+		mCloseGates.push_back(*nearestGate);
+		mOpenGates.erase(nearestGate);
 
 		return true;
 	}

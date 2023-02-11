@@ -7,6 +7,7 @@
 #include "DungeonGenerator.h"
 #include "Core/Identifier.h"
 #include <Components/BoxComponent.h>
+#include <random>
 
 #if WITH_EDITOR
 #include <Kismet/KismetSystemLibrary.h>
@@ -147,34 +148,42 @@ const UBoxComponent* ADungeonRoomSensor::GetBounding() const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // BluePrint便利関数
-int32 ADungeonRoomSensor::IdealNumberOfActor() const
+int32 ADungeonRoomSensor::IdealNumberOfActor(const float areaRequiredPerPerson, const int32 maxNumberOfActor) const
 {
 	const FBox& bounds = Bounding->Bounds.GetBox();
 	const float deltaX = (bounds.Max.X - bounds.Min.X);
 	const float deltaY = (bounds.Max.Y - bounds.Min.Y);
-	const float area = deltaX * deltaY;
-
-	static constexpr float AreaRequiredPerPerson = 800.f * 800.f;
-	return std::max(0, static_cast<int32>(area / AreaRequiredPerPerson));
+	const float squaredArea = deltaX * deltaY;
+	const float squaredAreaRequiredPerPerson = areaRequiredPerPerson * areaRequiredPerPerson;
+	int32 numberOfActor = std::max(0, static_cast<int32>(squaredArea / squaredAreaRequiredPerPerson));
+	return std::min(numberOfActor, maxNumberOfActor);
 }
 
 bool ADungeonRoomSensor::RandomPoint(FVector& result, const float offsetHeight) const
 {
+	static std::random_device seed;
+	static std::mt19937 engine(seed());				// メルセンヌ・ツイスター法
+	//static std::minstd_rand0 engine(seed());		// 線形合同法
+	//static std::ranlux24_base engine(seed());		// キャリー付き減算法
+	std::normal_distribution<> distribution(0., 1.);
+	double ratioX = distribution(engine);
+	double ratioY = distribution(engine);
+
+	static constexpr double range = 0.8;
+	ratioX = std::max(-range, std::min(ratioX, range));
+	ratioY = std::max(-range, std::min(ratioY, range));
+
 	const FVector& center = Bounding->Bounds.Origin;
 	const FVector& extent = Bounding->Bounds.BoxExtent;
-
-	const double ratioX = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * 0.8;
-	const double ratioY = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * 0.8;
-
 	const FVector startPosition(
-		center.X + extent.Y * ratioX,
+		center.X + extent.X * ratioX,
 		center.Y + extent.Y * ratioY,
 		center.Z
 	);
 	const FVector endPosition(
 		startPosition.X,
 		startPosition.Y,
-		center.Z - extent.Z * 2
+		center.Z - extent.Z * 2.
 	);
 
 	// ホームを最も近い地上の位置を調べる
@@ -187,9 +196,13 @@ bool ADungeonRoomSensor::RandomTransform(FTransform& result, const float offsetH
 	if (!RandomPoint(position, offsetHeight))
 		return false;
 
+	// look outward from the center
 	const FVector& center = Bounding->Bounds.Origin;
-	const double yaw = std::atan2(position.Y - center.Y, position.X - center.X) * 57.295779513082320876798154814105;
-	FRotator rotator(0.f, yaw, 0.f);
+	const double dx = center.X - position.X;
+	const double dy = center.Y - position.Y;
+	const double yaw = std::atan2(dy, dx) * 57.295779513082320876798154814105;
+	const FRotator rotator(0.f, yaw, 0.f);
+
 	result = FTransform(rotator, position, FVector::OneVector);
 	return true;
 }

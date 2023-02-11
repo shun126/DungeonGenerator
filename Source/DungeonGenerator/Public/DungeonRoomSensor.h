@@ -79,9 +79,12 @@ public:
 
 	/*
 	Get the ideal number of people in the bounding
+	\param[in]		areaRequiredPerPerson (default : 500cm)
+	\param[in]		maxNumberOfActor (default : 5 actors)
+	\return			ideal number of people in the bounding
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		int32 IdealNumberOfActor() const;
+		int32 IdealNumberOfActor(const float areaRequiredPerPerson = 500.f, const int32 maxNumberOfActor = 5) const;
 
 	/*
 	Get a random position in the bounding

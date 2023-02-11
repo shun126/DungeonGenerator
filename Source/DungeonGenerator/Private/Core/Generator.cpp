@@ -61,6 +61,17 @@ namespace dungeon
 			mGenerateThread.join();
 	}
 
+	void Generator::Reset()
+	{
+		mVoxel.reset();
+		mRooms.clear();
+		mLeafPoints.clear();
+		mStartPoint.reset();
+		mGoalPoint.reset();
+		mAisles.clear();
+		mLastError = Generator::Error::Success;
+	}
+
 	void Generator::Generate(const GenerateParameter& parameter) noexcept
 	{
 		if (mGenerateThread.joinable())
@@ -84,53 +95,19 @@ namespace dungeon
 		);
 	}
 
-	void Generator::Reset()
-	{
-		mVoxel.reset();
-		mRooms.clear();
-		mLeafPoints.clear();
-		mStartPoint.reset();
-		mGoalPoint.reset();
-		mAisles.clear();
-		mLastError = Generator::Error::Success;
-	}
-
 	void Generator::GenerateImpl() noexcept
 	{
-		static constexpr std::uint8_t maxRetryCount = 2;
+		static constexpr std::uint8_t maxRetryCount = 3;
 		std::uint_fast8_t retryCount = 0;
 		do
 		{
-			Reset();
-
-			// 部屋の生成
-			GenerateRooms(mGenerateParameter);
-
-			// 部屋の分離
-			SeparateRooms(mGenerateParameter);
-
-			// 全ての部屋が収まるように空間を拡張します
-			ExpandSpace(mGenerateParameter);
-
-			// 重複した部屋や範囲外の部屋を除去
-			RemoveInvalidRooms(mGenerateParameter);
-
-			// 通路の生成
-			ExtractionAisles(mGenerateParameter);
-
-			// ブランチIDの生成
-			Branch();
-
-			// 部屋と通路に意味付けする
-			MissionGraph missionGraph(shared_from_this(), mGoalPoint);
-
-			// ボクセル情報を生成します
-			GenerateVoxel(mGenerateParameter);
+			// 生成
+			GeneratePath();
 
 			// エラー情報を記録
-			if (Generator::Error::Success != mLastError)
+			if (mLastError != Generator::Error::Success)
 			{
-				if (Voxel::Error::Success != mVoxel->GetLastError())
+				if (mVoxel && mVoxel->GetLastError() != Voxel::Error::Success)
 				{
 					uint8_t errorIndex = static_cast<uint8_t>(Generator::Error::___StartVoxelError);
 					errorIndex += static_cast<uint8_t>(mVoxel->GetLastError());
@@ -139,7 +116,7 @@ namespace dungeon
 			}
 
 			++retryCount;
-		} while (Generator::Error::Success != mLastError && retryCount < maxRetryCount);
+		} while (mLastError != Generator::Error::Success && retryCount < maxRetryCount);
 
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		// 部屋の情報をダンプ
@@ -169,10 +146,45 @@ namespace dungeon
 #endif
 	}
 
+	bool Generator::GeneratePath() noexcept
+	{
+		Reset();
+
+		// 部屋の生成
+		if (!GenerateRooms(mGenerateParameter))
+			return false;
+
+		// 部屋の分離
+		if (!SeparateRooms(mGenerateParameter))
+			return false;
+
+		// 全ての部屋が収まるように空間を拡張します
+		if (!ExpandSpace(mGenerateParameter))
+			return false;
+
+		// 重複した部屋や範囲外の部屋を除去
+		if (!RemoveInvalidRooms(mGenerateParameter))
+			return false;
+
+		// 通路の生成
+		if (!ExtractionAisles(mGenerateParameter))
+			return false;
+
+		// ブランチIDの生成
+		if (!Branch())
+			return false;
+
+		// 部屋と通路に意味付けする
+		MissionGraph missionGraph(shared_from_this(), mGoalPoint);
+
+		// ボクセル情報を生成します
+		return GenerateVoxel(mGenerateParameter);
+	}
+
 	/**
 	部屋の生成
 	*/
-	void Generator::GenerateRooms(const GenerateParameter& parameter) noexcept
+	bool Generator::GenerateRooms(const GenerateParameter& parameter) noexcept
 	{
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Generate Rooms"));
@@ -210,12 +222,14 @@ namespace dungeon
 		const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectLogDir() + "generator_1.bmp"));
 		canvas.Write(filename);
 #endif
+
+		return true;
 	}
 
 	/**
 	部屋の重なりを解消します
 	*/
-	void Generator::SeparateRooms(const GenerateParameter& parameter) noexcept
+	bool Generator::SeparateRooms(const GenerateParameter& parameter) noexcept
 	{
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Separate Rooms"));
@@ -224,7 +238,7 @@ namespace dungeon
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
 		size_t imageNo = 0;
 #endif
-		size_t counter = mRooms.size();
+		size_t counter = mRooms.size() * 2;
 		bool retry;
 		do {
 			retry = false;
@@ -362,6 +376,8 @@ namespace dungeon
 		if (counter == 0)
 		{
 			DUNGEON_GENERATOR_ERROR(TEXT("Generator::SeparateRooms: Give up..."));
+			mLastError = Error::SeparateRoomsFailed;
+			return false;
 		}
 
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
@@ -373,9 +389,11 @@ namespace dungeon
 			);
 		}
 #endif
+
+		return true;
 	}
 
-	void Generator::ExpandSpace(GenerateParameter& parameter) noexcept
+	bool Generator::ExpandSpace(GenerateParameter& parameter) noexcept
 	{
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("ExpandSpace"));
@@ -423,12 +441,14 @@ namespace dungeon
 			);
 		}
 #endif
+
+		return true;
 	}
 
 	/**
 	重複した部屋や範囲外の部屋を除去をします
 	*/
-	void Generator::RemoveInvalidRooms(const GenerateParameter& parameter) noexcept
+	bool Generator::RemoveInvalidRooms(const GenerateParameter& parameter) noexcept
 	{
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Remove duplicate rooms and out-of-range rooms"));
@@ -482,10 +502,12 @@ namespace dungeon
 		}
 		const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectLogDir() + "generator_3.bmp"));
 #endif
+
+		return true;
 	}
 
 	// ドロネー三角形分割した辺を最小スパニングツリーにて抽出
-	void Generator::ExtractionAisles(const GenerateParameter& parameter) noexcept
+	bool Generator::ExtractionAisles(const GenerateParameter& parameter) noexcept
 	{
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		DUNGEON_GENERATOR_LOG(TEXT("Extract Aisles"));
@@ -614,6 +636,8 @@ namespace dungeon
 				mQueryParts(room);
 			}
 		}
+
+		return mLastError == Error::Success;
 	}
 
 	float Generator::GetDistanceCenterToContact(const float width, const float depth, const FVector& direction, const float margin) const noexcept
@@ -637,7 +661,7 @@ namespace dungeon
 		return 0.f;
 	}
 
-	void Generator::GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept
+	bool Generator::GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept
 	{
 		minimumSpanningTree.ForEach([this](const Aisle& edge)
 			{
@@ -682,9 +706,11 @@ namespace dungeon
 				mLeafPoints.emplace_back(point);
 			}
 		);
+
+		return true;
 	}
 
-	void Generator::GenerateVoxel(const GenerateParameter& parameter) noexcept
+	bool Generator::GenerateVoxel(const GenerateParameter& parameter) noexcept
 	{
 		mVoxel = std::make_shared<Voxel>(parameter);
 
@@ -734,21 +760,17 @@ namespace dungeon
 			FIntVector start = ToIntVector(*s);
 			FIntVector goal = ToIntVector(*e);
 
-			/*
-			TODO:
-			もしもstart周囲に侵入可能なグリッドが無いならば、
-			startの直行方向にずらしながら進入可能なグリッドが無いか探す
-			*/
+			// start周囲に侵入可能なグリッドを探す
 			FIntVector result;
-			if (mVoxel->Find(result, start, goal, PathGoalCondition(goalRoom->GetRect()), aisle.GetIdentifier()))
+			if (mVoxel->SearchGateLocation(result, start, goal, PathGoalCondition(goalRoom->GetRect()), aisle.GetIdentifier()))
 			{
 				start = result;
 			}
 			else
 			{
-				// TODO: 生成可能な門が見つからないので、エラー報告してください
-				int i = 0;
 				DUNGEON_GENERATOR_ERROR(TEXT("生成可能な門が見つからない (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
+				mLastError = Error::GateSearchFailed;
+				return false;
 			}
 
 			// Aisle generation by A*.
@@ -769,8 +791,11 @@ namespace dungeon
 			{
 				DUNGEON_GENERATOR_ERROR(TEXT("経路探索に失敗しました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
 				mLastError = Error::RouteSearchFailed;
+				return false;
 			}
 		}
+
+		return true;
 	}
 
 	bool Generator::IsGenerated() const noexcept
@@ -1002,7 +1027,7 @@ namespace dungeon
 		}
 	}
 
-	void Generator::Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept
+	bool Generator::Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept
 	{
 		room->SetBranchId(branchId);
 
@@ -1031,25 +1056,31 @@ namespace dungeon
 				{
 					if (aisleCount >= 3)
 						++branchId;
-					Branch(generatedEdges, room0, branchId);
+					if (!Branch(generatedEdges, room0, branchId))
+						return false;
 				}
 				if (room != room1)
 				{
 					if (aisleCount >= 3)
 						++branchId;
-					Branch(generatedEdges, room1, branchId);
+					if (!Branch(generatedEdges, room1, branchId))
+						return false;
 				}
 			}
 		}
+
+		return true;
 	}
 
-	void Generator::Branch() noexcept
+	bool Generator::Branch() noexcept
 	{
 		if (mStartPoint)
 		{
 			std::unordered_set<const Aisle*> edges;
 			uint8_t branchId = 0;
-			Branch(edges, mStartPoint->GetOwnerRoom(), branchId);
+			return Branch(edges, mStartPoint->GetOwnerRoom(), branchId);
 		}
+
+		return false;
 	}
 }

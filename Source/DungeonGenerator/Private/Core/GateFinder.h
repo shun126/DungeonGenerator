@@ -6,6 +6,7 @@
 */
 
 #pragma once
+#include <memory>
 #include <vector>
 #include <Math/IntVector.h>
 
@@ -31,6 +32,7 @@ namespace dungeon
 		bool Pop(FIntVector& result);
 
 	private:
-		std::vector<Gate> mGates;
+		std::vector<std::shared_ptr<const Gate>> mOpenGates;
+		std::vector<std::shared_ptr<const Gate>> mCloseGates;
 	};
 }

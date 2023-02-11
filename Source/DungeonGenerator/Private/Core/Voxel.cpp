@@ -67,7 +67,7 @@ namespace dungeon
 		}
 	}
 
-	bool Voxel::Find(FIntVector& result, const FIntVector& start, const FIntVector& goal, const PathGoalCondition& goalCondition, const Identifier& identifier) noexcept
+	bool Voxel::SearchGateLocation(FIntVector& result, const FIntVector& start, const FIntVector& goal, const PathGoalCondition& goalCondition, const Identifier& identifier) noexcept
 	{
 		GateFinder gateFinder(start, goal);
 

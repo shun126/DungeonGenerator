@@ -36,7 +36,9 @@ namespace dungeon
 		enum class Error : uint8_t
 		{
 			Success,
+			SeparateRoomsFailed,
 			TriangulationFailed,
+			GateSearchFailed,
 			RouteSearchFailed,
 
 			// from Voxel class
@@ -247,8 +249,8 @@ namespace dungeon
 
 		void DumpAisle(const std::string& path) const noexcept;
 
-		void Branch() noexcept;
-		void Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept;
+		bool Branch() noexcept;
+		bool Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept;
 
 		uint8_t GetDeepestDepthFromStart() const noexcept
 		{
@@ -262,39 +264,44 @@ namespace dungeon
 		void GenerateImpl() noexcept;
 
 		/**
+		生成
+		*/
+		bool GeneratePath() noexcept;
+
+		/**
 		部屋の生成
 		*/
-		void GenerateRooms(const GenerateParameter& parameter) noexcept;
+		bool GenerateRooms(const GenerateParameter& parameter) noexcept;
 
 		/**
 		部屋の重なりを解消します
 		*/
-		void SeparateRooms(const GenerateParameter& parameter) noexcept;
+		bool SeparateRooms(const GenerateParameter& parameter) noexcept;
 
 		/**
 		全ての部屋が収まるように空間を拡張します
 		*/
-		void ExpandSpace(GenerateParameter& parameter) noexcept;
+		bool ExpandSpace(GenerateParameter& parameter) noexcept;
 
 		/**
 		重複した部屋や範囲外の部屋を除去をします
 		*/
-		void RemoveInvalidRooms(const GenerateParameter& parameter) noexcept;
+		bool RemoveInvalidRooms(const GenerateParameter& parameter) noexcept;
 
 		/**
 		通路の抽出
 		*/
-		void ExtractionAisles(const GenerateParameter& parameter) noexcept;
+		bool ExtractionAisles(const GenerateParameter& parameter) noexcept;
 
 		/**
 		ボクセル情報を生成
 		*/
-		void GenerateVoxel(const GenerateParameter& parameter) noexcept;
+		bool GenerateVoxel(const GenerateParameter& parameter) noexcept;
 
 		/**
 		通路の生成
 		*/
-		void GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept;
+		bool GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept;
 
 		/**
 		幅と奥行きを指定した中心から方向ベクターが指す接点までの距離を計算します

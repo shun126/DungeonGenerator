@@ -613,7 +613,7 @@ void CDungeonGenerator::AddObject()
 FTransform CDungeonGenerator::GetStartTransform() const
 {
 	const UDungeonGenerateParameter* parameter = mParameter.Get();
-	if (IsValid(parameter) && mGenerator)
+	if (IsValid(parameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
 	{
 		const FTransform wallTransform(*mGenerator->GetStartPoint() * parameter->GetGridSize());
 		const FTransform worldTransform = wallTransform * parameter->GetStartParts().RelativeTransform;
@@ -625,7 +625,7 @@ FTransform CDungeonGenerator::GetStartTransform() const
 FTransform CDungeonGenerator::GetGoalTransform() const
 {
 	const UDungeonGenerateParameter* parameter = mParameter.Get();
-	if (IsValid(parameter) && mGenerator)
+	if (IsValid(parameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
 	{
 		const FTransform wallTransform(*mGenerator->GetGoalPoint() * parameter->GetGridSize());
 		const FTransform worldTransform = wallTransform * parameter->GetGoalParts().RelativeTransform;
@@ -822,6 +822,9 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 	if (!IsValid(parameter))
 		return nullptr;
 		
+	if (mGenerator->GetLastError() != dungeon::Generator::Error::Success)
+		return nullptr;
+
 	std::shared_ptr<dungeon::Voxel> voxel = mGenerator->GetVoxel();
 
 	if (currentLevel > voxel->GetHeight() - 1)
