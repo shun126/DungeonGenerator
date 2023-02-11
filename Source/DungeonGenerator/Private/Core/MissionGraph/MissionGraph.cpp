@@ -86,7 +86,7 @@ namespace dungeon
 				if (roomDepth >= 3)
 				{
 					const auto& depths = mGenerator->FindByDepth(roomDepth - 2);
-					const auto index = rand() % depths.size();
+					const auto index = std::rand() % depths.size();
 					Generate(depths[index], count + 1);
 				}
 			}

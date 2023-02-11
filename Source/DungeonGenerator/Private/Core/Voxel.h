@@ -84,9 +84,16 @@ namespace dungeon
 		*/
 		void Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) noexcept;
 
-
-		bool Find(FIntVector& result, const FIntVector& start, const FIntVector& goal, const PathGoalCondition& goalCondition, const Identifier& identifier) noexcept;
-
+		/**
+		門を生成可能な場所を探します
+		\param[out]		result		FIntVector
+		\param[in]		start		FIntVector
+		\param[in]		goal		FIntVector
+		\param[in]		goalCondition	PathGoalCondition
+		\param[in]		identifier	Identifier
+		\return			trueならば検索成功
+		*/
+		bool SearchGateLocation(FIntVector& result, const FIntVector& start, const FIntVector& goal, const PathGoalCondition& goalCondition, const Identifier& identifier) noexcept;
 
 		/**
 		経路をGridに書き込みます

@@ -279,7 +279,9 @@ namespace dungeon
 			*/
 			else if (toGrid.IsKindOfSlopeType())
 			{
-				return GetDirection().IsNorthSouth() == toGrid.GetDirection().IsNorthSouth();
+				return
+					mDirection.IsNorthSouth() == toGrid.GetDirection().IsNorthSouth() &&
+					mDirection.IsNorthSouth() == Direction(direction).IsNorthSouth();
 			}
 
 			return toGrid.IsKindOfAisleType();

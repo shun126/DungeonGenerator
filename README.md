@@ -5,16 +5,13 @@
 One day I wanted to create a video game, but I didn't have the level design know-how. So I decided to create a procedural dungeon generator.
 The dungeon generator was based on Vazgriz's algorithm. You can read more about [Vazgriz's algorithm here](https://vazgriz.com/119/procedurally-generated-dungeons/).
 
-We had a try to use Unreal Engine 5 to create the demo, which can be used with any game engine by providing a Vector class, etc.
-
-**NOTE** We are looking for proposals of visual expression from artists. The current implementation is a random choice for each static meshes. As you know, the pattern is visible and can not be looked like a natural terrain.
+This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. 
 
 # Feature
 
 * DungeonGenerator is a plug-in for UnrealEngine.
-* It generates meshes along a grid.
+* Tiled Dungeon Generation both In-Editor & Runtime
 * Users can easily generate dungeons by preparing meshes for floors, walls, ceilings, and stairs.
-* Dungeons can be generated at runtime. Dungeons can also be generated statically.
 * A mini-map of the dungeon can be generated.
 * Generates actors for doors and keys by MissionGraph.
 

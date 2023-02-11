@@ -258,9 +258,11 @@ void ADungeonGenerateActor::PreInitializeComponents()
 				}
 			);
 
-			mDungeonGenerator->Create(DungeonGenerateParameter);
-			mDungeonGenerator->AddTerraine();
-			mDungeonGenerator->AddObject();
+			if (mDungeonGenerator->Create(DungeonGenerateParameter))
+			{
+				mDungeonGenerator->AddTerraine();
+				mDungeonGenerator->AddObject();
+			}
 
 			EndAddInstance(FloorMeshs);
 			EndAddInstance(SlopeMeshs);
@@ -272,9 +274,11 @@ void ADungeonGenerateActor::PreInitializeComponents()
 		else
 		{
 			mDungeonGenerator = std::make_shared<CDungeonGenerator>();
-			mDungeonGenerator->Create(DungeonGenerateParameter);
-			mDungeonGenerator->AddTerraine();
-			mDungeonGenerator->AddObject();
+			if (mDungeonGenerator->Create(DungeonGenerateParameter))
+			{
+				mDungeonGenerator->AddTerraine();
+				mDungeonGenerator->AddObject();
+			}
 		}
 
 #if WITH_EDITOR
