@@ -14,7 +14,7 @@
 
 namespace
 {
-	static bool ForceShowDebugInfomation = true;
+	static bool ForceShowDebugInfomation = false;
 }
 #endif
 

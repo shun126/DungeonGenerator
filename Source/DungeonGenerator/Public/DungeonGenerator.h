@@ -133,10 +133,9 @@ public:
 	\param[out]		horizontalScale		ワールド座標からテクスチャ座標へ変換する為のスケール値
 	\param[in]		textureWidthHeight	生成するテクスチャの幅（高さは幅と同じ）
 	\param[in]		currentLevel		生成するフロアの高さの基準
-	\param[in]		lowerLevel			生成するフロアの下層への距離
 	\return			テクスチャオブジェクト
 	*/
-	UTexture2D* GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidthHeight, uint32_t currentLevel, uint32_t lowerLevel) const;
+	UTexture2D* GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
 
 	/**
 	ダンジョン生成オブジェクトを取得します

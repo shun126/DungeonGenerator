@@ -221,6 +221,15 @@ namespace dungeon
 		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
 
 		/**
+		自身からtoGridを見た時に壁が生成されるか判定します
+		\param[in]	toGrid		参照先グリッド
+		\param[in]	direction	自身からtoGridの方向
+		\param[in]	mergeRooms	部屋と部屋を結合する
+		\return		trueならば壁の生成が可能
+		*/
+		bool CanBuildWallForMinimap(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
+
+		/**
 		自身からtoGridを見た時に柱が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド
 		\param[in]	direction	自身からtoGridの方向

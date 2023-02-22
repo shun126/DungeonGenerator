@@ -120,6 +120,11 @@ namespace dungeon
 			int Write(const std::string& filename) noexcept;
 
 			/**
+			点の描画
+			*/
+			void Put(int32_t x, int32_t y, const RGBCOLOR color) noexcept;
+
+			/**
 			矩形の描画
 			*/
 			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;

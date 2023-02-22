@@ -5,7 +5,7 @@
 
 #include "DungeonGeneratorCommands.h"
 
-#define LOCTEXT_NAMESPACE "FDungeonGeneratorModule"
+#define LOCTEXT_NAMESPACE "FDungeonGenerateEditorModule"
 
 void FDungeonGeneratorCommands::RegisterCommands()
 {

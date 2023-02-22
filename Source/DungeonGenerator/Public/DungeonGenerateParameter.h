@@ -20,10 +20,10 @@ namespace dungeon
 }
 
 /**
-配置方向
+パーツ配置方向
 */
 UENUM(BlueprintType)
-enum class EPlacementDirection : uint8
+enum class EDungeonPartsPlacementDirection : uint8
 {
 	North,
 	East,
@@ -66,13 +66,13 @@ protected:
 	パーツのトランスフォームを計算します
 	\param[in]	random				dungeon::Random&
 	\param[in]	transform			FTransform
-	\param[in]	placementDirection	EPlacementDirection 
-	\return		EPlacementDirectionに応じたトランスフォーム
+	\param[in]	placementDirection	EDungeonPartsPlacementDirection 
+	\return		EDungeonPartsPlacementDirectionに応じたトランスフォーム
 	*/
-	FTransform CalculateWorldTransform(dungeon::Random& random, const FTransform& transform, const EPlacementDirection placementDirection) const noexcept;
-	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator, const EPlacementDirection placementDirection) const noexcept;
-	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw, const EPlacementDirection placementDirection) const noexcept;
-	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction, const EPlacementDirection placementDirection) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FTransform& transform, const EDungeonPartsPlacementDirection placementDirection) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator, const EDungeonPartsPlacementDirection placementDirection) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw, const EDungeonPartsPlacementDirection placementDirection) const noexcept;
+	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction, const EDungeonPartsPlacementDirection placementDirection) const noexcept;
 };
 
 /**
@@ -96,14 +96,14 @@ struct DUNGEONGENERATOR_API FDungeonMeshPartsWithDirection : public FDungeonMesh
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
-		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
+		EDungeonPartsPlacementDirection PlacementDirection = EDungeonPartsPlacementDirection::RandomDirection;
 
 	/**
 	パーツのトランスフォームを計算します
 	\param[in]	random				dungeon::Random&
 	\param[in]	transform			FTransform
-	\param[in]	placementDirection	EPlacementDirection
-	\return		EPlacementDirectionに応じたトランスフォーム
+	\param[in]	placementDirection	EDungeonPartsPlacementDirection
+	\return		EDungeonPartsPlacementDirectionに応じたトランスフォーム
 	*/
 	FTransform CalculateWorldTransform(dungeon::Random& random, const FTransform& transform) const noexcept;
 	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator) const noexcept;
@@ -132,14 +132,14 @@ struct DUNGEONGENERATOR_API FDungeonActorPartsWithDirection : public FDungeonAct
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
-		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
+		EDungeonPartsPlacementDirection PlacementDirection = EDungeonPartsPlacementDirection::RandomDirection;
 
 	/**
 	パーツのトランスフォームを計算します
 	\param[in]	random				dungeon::Random&
 	\param[in]	transform			FTransform
-	\param[in]	placementDirection	EPlacementDirection
-	\return		EPlacementDirectionに応じたトランスフォーム
+	\param[in]	placementDirection	EDungeonPartsPlacementDirection
+	\return		EDungeonPartsPlacementDirectionに応じたトランスフォーム
 	*/
 	FTransform CalculateWorldTransform(dungeon::Random& random, const FTransform& transform) const noexcept;
 	FTransform CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator) const noexcept;
@@ -163,7 +163,7 @@ struct DUNGEONGENERATOR_API FDungeonObjectParts : public FDungeonParts
 	UClass* GetActorClass();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
-		EPlacementDirection PlacementDirection = EPlacementDirection::RandomDirection;
+		EDungeonPartsPlacementDirection PlacementDirection = EDungeonPartsPlacementDirection::RandomDirection;
 };
 
 /**
@@ -295,11 +295,17 @@ protected:
 		int32 GeneratedRandomSeed = 0;
 
 	/**
+	ダンジョンの階層
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "1"))
+		uint8 NumberOfCandidateFloors = 3;
+
+	/**
 	生成する部屋の数の候補
 	部屋の初期生成数であり、最終的に生成される部屋の数ではありません。
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
-		int32 NumberOfCandidateRooms = 8;
+		uint8 NumberOfCandidateRooms = 8;
 
 	//! 部屋の幅
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))

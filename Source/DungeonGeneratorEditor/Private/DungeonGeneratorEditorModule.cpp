@@ -19,7 +19,7 @@
 #include <ToolMenus.h>
 #include <GameFramework/PlayerStart.h>
 
-static const FName DungeonGeneratorTabName("DungeonGeneratorModule");
+static const FName DungeonGeneratorTabName("DungeonGenerator");
 
 #define LOCTEXT_NAMESPACE "FDungeonGenerateEditorModule"
 
@@ -40,7 +40,7 @@ void FDungeonGenerateEditorModule::StartupModule()
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FDungeonGenerateEditorModule::RegisterMenus));
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(DungeonGeneratorTabName, FOnSpawnTab::CreateRaw(this, &FDungeonGenerateEditorModule::OnSpawnPluginTab))
-		.SetDisplayName(LOCTEXT("FDungeonGeneratorTabTitle", "DungeonGeneratorModule"))
+		.SetDisplayName(LOCTEXT("FDungeonGeneratorTabTitle", "DungeonGenerator"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 
 	// AssetToolsモジュールを取得

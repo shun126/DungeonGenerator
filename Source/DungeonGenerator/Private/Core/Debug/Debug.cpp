@@ -119,6 +119,13 @@ namespace dungeon
 			return 1;
 		}
 
+		void Canvas::Put(int32_t x, int32_t y, const RGBCOLOR color) noexcept
+		{
+			x = std::max(0, std::min(x, static_cast<int32_t>(mWidth - 1)));
+			y = std::max(0, std::min(y, static_cast<int32_t>(mHeight - 1)));
+			mRgbImage.get()[y * mWidth + x] = color;
+		}
+
 		void Canvas::Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept
 		{
 			left = std::max(0, std::min(left, static_cast<int32_t>(mWidth - 1)));

@@ -19,7 +19,7 @@ void UDungeonMiniMapTexture::BeginDestroy()
 	DestroyMiniMapTexture();
 }
 
-bool UDungeonMiniMapTexture::GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const uint8 currentLevel, const uint8 lowerLevel)
+bool UDungeonMiniMapTexture::GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor)
 {
 	if (dungeonGenerator == nullptr)
 		return false;
@@ -27,7 +27,7 @@ bool UDungeonMiniMapTexture::GenerateMiniMapTexture(const std::shared_ptr<const 
 	DestroyMiniMapTexture();
 
 	uint32_t horizontalScale;
-	Texture = dungeonGenerator->GenerateMiniMapTexture(horizontalScale, textureWidth, currentLevel, lowerLevel);
+	Texture = dungeonGenerator->GenerateMiniMapTexture(horizontalScale, textureWidth, currentFloor);
 	if (IsValid(Texture) == false)
 		return false;
 
@@ -49,13 +49,17 @@ void UDungeonMiniMapTexture::DestroyMiniMapTexture()
 	}
 }
 
-FVector2D UDungeonMiniMapTexture::ToRelative(const FVector& location) const
+UTexture2D* UDungeonMiniMapTexture::GetTexture() const noexcept
 {
-	const float ratio = 1.f / mGridSize * GeneratedScale;
-	return FVector2D(location.X * ratio, location.Y * ratio);
+	return Texture;
 }
 
-FVector2D UDungeonMiniMapTexture::ToRelativeWithScale(const FVector& location, const double scale) const
+const FVector2D& UDungeonMiniMapTexture::GetGeneratedScaleVector() const noexcept
 {
-	return ToRelative(location) * scale;
+	return GeneratedScaleVector;
+}
+
+float UDungeonMiniMapTexture::GetGeneratedScale() const noexcept
+{
+	return GeneratedScale;
 }

@@ -51,7 +51,7 @@ namespace dungeon
 		/**
 		コンストラクタ
 		*/
-		explicit Room(const GenerateParameter& parameter) noexcept;
+		Room(const GenerateParameter& parameter, const FIntVector& location) noexcept;
 
 		/**
 		コピーコンストラクタ
@@ -230,8 +230,8 @@ namespace dungeon
 
 		/**
 		部屋が交差しているか調べます
-		\param[in]	other	調べる部屋
-		\param[in]	margin	水平方向のマージン
+		\param[in]	other		調べる部屋
+		\param[in]	margin		方向のマージン
 		\return		trueならば交差している
 		垂直方向のマージンは床方向に１、天井方向はかならず０で交差判定します。
 		*/

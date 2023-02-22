@@ -11,7 +11,7 @@
 // 前方宣言
 class CDungeonGenerator;
 class UDungeonGenerateParameter;
-class UDungeonMiniMapTexture;
+class UDungeonMiniMapTextureLayer;
 class UDungeonTransactionalHierarchicalInstancedStaticMeshComponent;
 
 namespace dungeon
@@ -44,17 +44,25 @@ public:
 	*/
 	virtual ~ADungeonGenerateActor();
 
+
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		int32 FindFloorHeight(const double z) const;
+
+
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		int32 FindVoxelHeight(const double z) const;
+
 	/**
 	ミニマップ用のテクスチャを生成します
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		UDungeonMiniMapTexture* GenerateMiniMapTexture(const int32 textureWidth, const uint8 currentLevel = 255, const uint8 lowerLevel = 255);
+		UDungeonMiniMapTextureLayer* GenerateMiniMapTextureLayer(const int32 textureWidth);
 
 	/**
-	最後に生成したミニマップ用のテクスチャを取得します
+	生成済みのミニマップ用のテクスチャを取得します
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		UDungeonMiniMapTexture* GetLastGeneratedMiniMapTexture() const;
+		UDungeonMiniMapTextureLayer* GetGeneratedMiniMapTextureLayer() const;
 
 	UFUNCTION()
 		void OnMoveStreamLevel();
@@ -160,6 +168,11 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 		FDungeonGeneratorDelegete OnRoomCreated;
 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+		UDungeonMiniMapTextureLayer* DungeonMiniMapTextureLayer;
+	
+
 	// ビルドジョブタグ
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		FString BuildJobTag;
@@ -200,6 +213,5 @@ private:
 
 private:
 	std::shared_ptr<CDungeonGenerator> mDungeonGenerator = nullptr;
-	TWeakObjectPtr<UDungeonMiniMapTexture> mLastGeneratedMiniMapTexture = nullptr;
 	bool mPostGenerated = false;
 };

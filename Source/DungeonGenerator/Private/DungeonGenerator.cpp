@@ -132,6 +132,7 @@ bool CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
 		randomSeed = static_cast<int32>(time(nullptr));
 	generateParameter.mRandom.SetSeed(randomSeed);
 	const_cast<UDungeonGenerateParameter*>(parameter)->SetGeneratedRandomSeed(randomSeed);
+	generateParameter.mNumberOfCandidateFloors = parameter->NumberOfCandidateFloors;
 	generateParameter.mNumberOfCandidateRooms = parameter->NumberOfCandidateRooms;
 	generateParameter.mMinRoomWidth = parameter->RoomWidth.Min;
 	generateParameter.mMaxRoomWidth = parameter->RoomWidth.Max;
@@ -816,7 +817,7 @@ void CDungeonGenerator::DestorySpawnedActors()
 	}
 }
 
-UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidthHeight, uint32_t currentLevel, uint32_t lowerLevel) const
+UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidthHeight, uint32_t currentLevel) const
 {
 	const UDungeonGenerateParameter* parameter = mParameter.Get();
 	if (!IsValid(parameter))
@@ -826,11 +827,6 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 		return nullptr;
 
 	std::shared_ptr<dungeon::Voxel> voxel = mGenerator->GetVoxel();
-
-	if (currentLevel > voxel->GetHeight() - 1)
-		currentLevel = voxel->GetHeight() - 1;
-	if (lowerLevel > currentLevel)
-		lowerLevel = currentLevel;
 
 	const size_t totalBufferSize = textureWidthHeight * textureWidthHeight;
 	auto pixels = std::make_unique<uint8_t[]>(totalBufferSize);
@@ -891,15 +887,27 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 
 	std::memset(pixels.get(), 0x00, totalBufferSize);
 
-	float paintHeight = static_cast<float>(lowerLevel + 1);
-	if (paintHeight < 1.f)
-		paintHeight = 1.f;
-	const float paintRatio = 1.f / paintHeight;
+	if (currentLevel > voxel->GetHeight() - 1)
+		currentLevel = voxel->GetHeight() - 1;
 
-	for (uint32_t z = currentLevel - lowerLevel; z <= currentLevel; ++z)
+	// 下の階層から描画する
+	const float paintRatio = 1.f / std::max(1.f, static_cast<float>(currentLevel));
+	for (uint32_t z = 0; z <= currentLevel; ++z)
 	{
-		const float floorRatio = 0.f + static_cast<float>(currentLevel - z) * paintRatio * 0.5f;
-		const float wallRatio = 0.5f + static_cast<float>(currentLevel - z) * paintRatio * 0.5f;
+		constexpr float floorColorRange = 0.6f;
+		constexpr float wallColorRange = 0.6f;
+
+		float floorRatio, wallRatio;
+		if (currentLevel == 0)
+		{
+			floorRatio = 0.f + 1.f * paintRatio * floorColorRange;
+			wallRatio = (1.f - wallColorRange) + 1.f * paintRatio * wallColorRange;
+		}
+		else
+		{
+			floorRatio = 0.f + static_cast<float>(z) * paintRatio * floorColorRange;
+			wallRatio = (1.f - wallColorRange) + static_cast<float>(z) * paintRatio * wallColorRange;
+		}
 		const uint8_t floorColor = static_cast<uint8_t>(255.f * floorRatio);
 		const uint8_t wallColor = static_cast<uint8_t>(255.f * wallRatio);
 
