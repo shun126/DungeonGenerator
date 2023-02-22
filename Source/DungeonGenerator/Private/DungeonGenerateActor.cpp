@@ -6,7 +6,7 @@
 #include "DungeonGenerateActor.h"
 #include "DungeonGenerateParameter.h"
 #include "DungeonGenerator.h"
-#include "DungeonMiniMapTexture.h"
+#include "DungeonMiniMapTextureLayer.h"
 #include "DungeonTransactionalHierarchicalInstancedStaticMeshComponent.h"
 #include "BuildInfomation.h"
 #include "Core/Grid.h"
@@ -343,7 +343,6 @@ void ADungeonGenerateActor::PostGenerate()
 
 	/*
 	部屋の生成通知
-	通知先で敵アクターなどを生成する事を想定しています
 	*/
 	if (OnRoomCreated.IsBound())
 	{
@@ -606,27 +605,43 @@ void ADungeonGenerateActor::UnloadStreamLevels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // BluePrint便利関数
-UDungeonMiniMapTexture* ADungeonGenerateActor::GenerateMiniMapTexture(const int32 textureWidth, const uint8 currentLevel, const uint8 lowerLevel)
+int32 ADungeonGenerateActor::FindFloorHeight(const double z) const
 {
-	if (mDungeonGenerator == nullptr)
-		return nullptr;
+	const int32 gridZ = FindVoxelHeight(z);
 
+	if (mDungeonGenerator == nullptr)
+		return 0;
+
+	const std::shared_ptr<const dungeon::Generator>& generator = mDungeonGenerator->GetGenerator();
+	return generator->FindFloor(gridZ);
+}
+
+int32 ADungeonGenerateActor::FindVoxelHeight(const double z) const
+{
+	if (DungeonGenerateParameter == nullptr)
+		return 0;
+
+	return static_cast<int32>(z / DungeonGenerateParameter->GetGridSize());
+}
+
+UDungeonMiniMapTextureLayer* ADungeonGenerateActor::GenerateMiniMapTextureLayer(const int32 textureWidth)
+{
 	if (textureWidth <= 0)
 		return nullptr;
 
-	UDungeonMiniMapTexture* miniMapTexture = NewObject<UDungeonMiniMapTexture>(this);
-	if (IsValid(miniMapTexture) == false)
+	const float gridSize = DungeonGenerateParameter->GetGridSize();
+
+	DungeonMiniMapTextureLayer = NewObject<UDungeonMiniMapTextureLayer>(this);
+	if (IsValid(DungeonMiniMapTextureLayer) == false)
 		return nullptr;
 
-	if (miniMapTexture->GenerateMiniMapTexture(mDungeonGenerator, textureWidth, currentLevel, lowerLevel) == false)
+	if (DungeonMiniMapTextureLayer->GenerateMiniMapTexture(mDungeonGenerator, textureWidth, gridSize) == false)
 		return nullptr;
 
-	mLastGeneratedMiniMapTexture = miniMapTexture;
-
-	return miniMapTexture;
+	return DungeonMiniMapTextureLayer;
 }
 
-UDungeonMiniMapTexture* ADungeonGenerateActor::GetLastGeneratedMiniMapTexture() const
+UDungeonMiniMapTextureLayer* ADungeonGenerateActor::GetGeneratedMiniMapTextureLayer() const
 {
-	return mLastGeneratedMiniMapTexture.Get();
+	return DungeonMiniMapTextureLayer;
 }

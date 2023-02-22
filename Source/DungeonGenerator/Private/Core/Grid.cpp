@@ -91,6 +91,7 @@ namespace dungeon
 		if (IsKindOfRoomType())
 		{
 			return
+				toGrid.GetIdentifier() != GetIdentifier() ||
 				toGrid.IsKindOfAisleType() ||
 				toGrid.IsKindOfSlopeType() ||
 				toGrid.IsKindOfSpatialType();
@@ -98,6 +99,7 @@ namespace dungeon
 		else if (IsKindOfAisleType())
 		{
 			return
+				toGrid.GetIdentifier() != GetIdentifier() ||
 				toGrid.IsKindOfRoomType() ||
 				toGrid.IsKindOfAisleType() ||
 				toGrid.IsKindOfSlopeType() ||
@@ -122,10 +124,6 @@ namespace dungeon
 	{
 		if (IsKindOfRoomType())
 		{
-			/*
-			部屋の上下には1グリッド空白があるので、
-			部屋系以外のグリッドなら屋根を生成する。
-			*/
 			return
 				(toGrid.mType == Type::Deck || toGrid.mType == Type::Gate) ||
 				toGrid.IsKindOfAisleType() ||
@@ -193,17 +191,90 @@ namespace dungeon
 		}
 		else if (IsKindOfAisleType())
 		{
-			if (toGrid.IsKindOfAisleType())
+			if (toGrid.IsKindOfAisleType() || toGrid.IsKindOfSlopeType())
 			{
 				// 通路の識別子が違うなら壁
 				return toGrid.GetIdentifier() != GetIdentifier();
 			}
-			else if (toGrid.IsKindOfSlopeType())
+
+			return
+				toGrid.IsKindOfRoomTypeWithoutGate() ||
+				toGrid.IsKindOfSpatialType();
+		}
+		else if (mType == Type::Slope)
+		{
+			if (toGrid.IsKindOfSlopeType())
+			{
+				// 方向が交差していたら壁
+				// グリッドの識別番号が不一致なら壁がある
+				return
+					(toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction)) ||
+					(toGrid.mIdentifier != mIdentifier);
+			}
+
+			return toGrid.IsKindOfSpatialType();
+		}
+		else if (mType == Type::Atrium)
+		{
+			if (toGrid.IsKindOfSlopeType())
+			{
+				// 方向が交差していたら壁
+				// グリッドの識別番号が不一致なら壁がある
+				return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction) ||
+					(toGrid.mIdentifier != mIdentifier);
+			}
+
+			return toGrid.IsKindOfSpatialType();
+		}
+
+		return false;
+	}
+
+	/*
+	自身からtoGridを見た時に壁が生成されるか判定します
+	*/
+	bool Grid::CanBuildWallForMinimap(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
+	{
+		// 部屋と部屋の間に壁を生成する？
+		if (!mergeRooms)
+		{
+			/*
+			部屋と部屋が隣接している場合、
+			グリッドの識別番号（＝部屋の識別番号）が不一致なら壁がある
+			*/
+			if (IsKindOfRoomTypeWithoutGate() && toGrid.IsKindOfRoomTypeWithoutGate())
+			{
+				return mIdentifier != toGrid.mIdentifier;
+			}
+		}
+
+		if (IsKindOfGateType())
+		{
+			if (toGrid.IsKindOfRoomType() || toGrid.IsKindOfSlopeType())
+			{
+				// 識別子が異なっていて、かつ方向が交差していたら壁
+				return
+					GetIdentifier() != toGrid.GetIdentifier() &&
+					GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
+			}
+
+			// 空間なら壁
+			return toGrid.IsKindOfSpatialType();
+		}
+		else if (IsKindOfRoomTypeWithoutGate())
+		{
+			// 門は部屋系のグリッドでもあるので注意
+			return
+				toGrid.IsKindOfAisleType() ||
+				//toGrid.IsKindOfSlopeType() ||
+				toGrid.IsKindOfSpatialType();
+		}
+		else if (IsKindOfAisleType())
+		{
+			if (toGrid.IsKindOfAisleType() || toGrid.IsKindOfSlopeType())
 			{
 				// 通路の識別子が違うなら壁
 				return toGrid.GetIdentifier() != GetIdentifier();
-				// 方向が交差していたら壁
-				// return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
 			}
 
 			return

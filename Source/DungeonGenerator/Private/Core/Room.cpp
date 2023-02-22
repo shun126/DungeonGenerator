@@ -29,31 +29,14 @@ namespace
 
 namespace dungeon
 {
-	Room::Room(const GenerateParameter& parameter) noexcept
+	Room::Room(const GenerateParameter& parameter, const FIntVector& location) noexcept
 	{
+		mX = location.X;
+		mY = location.Y;
+		mZ = location.Z;
 		mWidth = randSize(parameter.GetRandom(), parameter.GetMinRoomWidth(), parameter.GetMaxRoomWidth());
 		mDepth = randSize(parameter.GetRandom(), parameter.GetMinRoomDepth(), parameter.GetMaxRoomDepth());
 		mHeight = randSize(parameter.GetRandom(), parameter.GetMinRoomHeight(), parameter.GetMaxRoomHeight());
-
-		const float range = std::max(1.f, std::sqrtf(parameter.GetNumberOfCandidateRooms()));
-		const float radian = parameter.GetRandom().Get<float>() * (3.14159265359f * 2.f);
-		const float width = std::sin(radian) * range;
-		const float depth = std::cos(radian) * range;
-		mX = static_cast<int32_t>(std::round(width));
-		mY = static_cast<int32_t>(std::round(depth));
-		if (parameter.GetRoomMargin() > 0)
-		{
-			const float height = 3.f * parameter.GetRandom().Get<float>();
-			mZ = static_cast<int32_t>(std::round(height));
-		}
-		else
-		{
-			/*
-			RoomMarginが0の場合、部屋と部屋の間にスロープを作る隙間が無いので、
-			部屋の高さを必ず同じにする必要がある。
-			*/
-			mZ = 0;
-		}
 	}
 
 	Room::Room(const Room& other) noexcept
@@ -248,8 +231,8 @@ namespace dungeon
 		const int32_t right = GetRight() + margin;
 		const int32_t top = GetTop() - margin;
 		const int32_t bottom = GetBottom() + margin;
-		const int32_t foreground = GetForeground() + 0;
-		const int32_t background = GetBackground() - 1;
+		const int32_t foreground = GetForeground();
+		const int32_t background = GetBackground();
 		return
 			(left < other.GetRight() && right > other.GetLeft()) &&
 			(top < other.GetBottom() && bottom > other.GetTop()) &&

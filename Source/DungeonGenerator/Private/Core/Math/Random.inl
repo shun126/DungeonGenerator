@@ -89,7 +89,13 @@ namespace dungeon
 	template<typename T>
 	inline T Random::Get()
 	{
-		if constexpr (std::is_same<T, double>())
+		if constexpr (std::is_same<T, bool>())
+		{
+			// 線形合同法と異なり、XorShiftは最下位ビットの短周期の規則性はない。
+			// 0または1を直接得ることができるため、最下位ビットを取る実装としている。
+			return static_cast<bool>(GetU32() & 0x1);
+		}
+		else if constexpr (std::is_same<T, double>())
 		{
 			static const double INVERT = 1. / static_cast<double>(0xFFFFFFFF);
 			return static_cast<double>(GetU32()) * INVERT;
@@ -111,12 +117,6 @@ namespace dungeon
 			const uint64_t low = static_cast<uint64_t>(GetU32());
 			return static_cast<int64_t>(hight | low);
 		}
-		else if constexpr (std::is_same<T, bool>())
-		{
-			// 線形合同法と異なり、XorShiftは最下位ビットの短周期の規則性はない。
-			// 0または1を直接得ることができるため、最下位ビットを取る実装としている。
-			return static_cast<bool>(GetU32() & 0x1);
-		}
 		else if constexpr (std::is_integral<T>::value)
 		{
 			return static_cast<T>(GetU32());
@@ -132,11 +132,13 @@ namespace dungeon
 	{
 		if constexpr (std::is_floating_point<T>::value)
 		{
-			return Get<T>() * to;
+			const auto value = Get<T>();
+			return value * to;
 		}
 		else
 		{
-			return Get<T>() % to;
+			const size_t value = Get<T>();
+			return value % to;
 		}
 	}
 
@@ -146,11 +148,13 @@ namespace dungeon
 		check(from <= to);
 		if constexpr (std::is_floating_point<T>::value)
 		{
-			return from + Get<T>() * (to - from);
+			const auto value = Get<T>();
+			return from + value * (to - from);
 		}
 		else
 		{
-			return from + Get<T>() % (to - from);
+			const size_t value = Get<T>();
+			return from + value % (to - from);
 		}
 	}
 

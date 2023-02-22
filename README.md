@@ -26,14 +26,16 @@ Visualization of dungeon generation status.
 ![DungeonGeneratorStatus](Document/DungeonGenerator01.gif)
 
 # Requirements
-* [Unreal Engine 5](https://www.unrealengine.com/unreal-engine-5)
+* [Unreal Engine 5.11](https://www.unrealengine.com/unreal-engine-5)
+* [Visual Studio 2022](https://visualstudio.microsoft.com/)
+
 # Guide
 * Put the DungeonGenerator folder in the PROJECT's Plugins folder.
   * In case of BluePrint project, an error occurs when packaging. Try converting your prohject to C++ project.
 * Create DungeonGenerateParameter asset.
 * Put a DungeonGenerateActor in the level.
 
-We will add a detailed description to the Wiki
+Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
 
 # License
 * GPL-3.0

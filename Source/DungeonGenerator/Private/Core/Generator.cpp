@@ -13,13 +13,11 @@
 #include "Voxel.h"
 #include "Debug/Debug.h"
 #include "Math/Math.h"
+#include "Math/PerlinNoise.h"
 #include "Math/Plane.h"
 #include "Math/Vector.h"
 
 #include "MissionGraph/MissionGraph.h"
-
-// 定義すると部屋の衝突解決を水平方向に移動します
-#define HORIZONTAL_MOVEMENT_AT_IMPACT
 
 #if WITH_EDITOR
 #include <Misc/Paths.h>
@@ -37,7 +35,7 @@
 namespace dungeon
 {
 #if defined(DEBUG_GENERATE_BITMAP_FILE) | defined(DEBUG_GENERATE_RESULT_BITMAP_FILE)
-	static constexpr float imageScale = 5.0f;
+	static constexpr float imageScale = 10.0f;
 	static const bmp::RGBCOLOR frameColor = { 102, 95, 85 };
 	static const bmp::RGBCOLOR baseDarkColor = { 95, 84, 62 };
 	static const bmp::RGBCOLOR baseLightColor = { 173, 153, 112 };
@@ -65,6 +63,7 @@ namespace dungeon
 	{
 		mVoxel.reset();
 		mRooms.clear();
+		mFloorHeight.clear();
 		mLeafPoints.clear();
 		mStartPoint.reset();
 		mGoalPoint.reset();
@@ -174,6 +173,10 @@ namespace dungeon
 		if (!Branch())
 			return false;
 
+		// 階層情報の生成
+		if (!DetectFloorHeight())
+			return false;
+
 		// 部屋と通路に意味付けする
 		MissionGraph missionGraph(shared_from_this(), mGoalPoint);
 
@@ -190,9 +193,36 @@ namespace dungeon
 		DUNGEON_GENERATOR_LOG(TEXT("Generate Rooms"));
 #endif
 
+		PerlinNoise perlinNoise(parameter.GetRandom());
+		const uint8_t perlinNoiseOctabes = 4;
+
+		const float range = std::max(1.f, std::sqrtf(parameter.GetNumberOfCandidateRooms()));
+
 		for (size_t i = 0; i < parameter.GetNumberOfCandidateRooms(); ++i)
 		{
-			auto room = std::make_shared<Room>(parameter);
+			const float radian = parameter.GetRandom().Get<float>() * (3.14159265359f * 2.f);
+			const float width = std::sin(radian);
+			const float depth = std::cos(radian);
+			float noise = perlinNoise.OctaveNoise(perlinNoiseOctabes, width, depth);
+			noise = noise * 0.5f + 0.5f;
+			noise = std::max(0.f, std::min(noise, 1.f));
+
+			FIntVector location(
+				static_cast<int32_t>(std::round(width * range)),
+				static_cast<int32_t>(std::round(depth * range)),
+				static_cast<int32_t>(std::round(noise * parameter.GetNumberOfCandidateFloors()))
+			);
+
+			if (parameter.GetRoomMargin() == 0)
+			{
+				/*
+				RoomMarginが0の場合、部屋と部屋の間にスロープを作る隙間が無いので、
+				部屋の高さを必ず同じにする必要がある。
+				*/
+				location.Z = 0;
+			}
+
+			auto room = std::make_shared<Room>(parameter, location);
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 			DUNGEON_GENERATOR_LOG(TEXT("Room: X=%d,Y=%d,Z=%d W=%d,D=%d,H=%d center(%f, %f, %f)")
 				, room->GetX(), room->GetY(), room->GetZ()
@@ -209,18 +239,33 @@ namespace dungeon
 		//mRooms.emplace_back(std::make_shared<Room>(16, 15, 5, 3, 3, 1));
 #endif
 
+		GenerateRoomImageForDebug("generator_1.bmp");
+
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
-		bmp::Canvas canvas(Scale(parameter.GetWidth()), Scale(parameter.GetDepth()));
-		for (const auto& room : mRooms)
 		{
-			canvas.Rectangle(Scale(room->GetLeft()), Scale(room->GetTop()), Scale(room->GetRight()), Scale(room->GetBottom()), baseDarkColor);
+			constexpr size_t width = 512;
+
+			bmp::Canvas canvas(width, width);
+			for (size_t y = 0; y < width; ++y)
+			{
+				for (size_t x = 0; x < width; ++x)
+				{
+					float noise = perlinNoise.OctaveNoise(
+						perlinNoiseOctabes,
+						static_cast<float>(x) / static_cast<float>(width),
+						static_cast<float>(y) / static_cast<float>(width)
+					);
+					noise = noise * 0.5f + 0.5f;
+					noise = std::max(0.f, std::min(noise, 1.f));
+
+					bmp::RGBCOLOR color;
+					color.rgbBlue = color.rgbGreen = color.rgbRed = static_cast<uint8_t>(noise * 255.f);
+					canvas.Put(x, y, color);
+				}
+			}
+			const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectSavedDir() + "/DungeonGenerator/perlinNoize.bmp"));
+			canvas.Write(filename);
 		}
-		for (const auto& room : mRooms)
-		{
-			canvas.Frame(Scale(room->GetLeft()), Scale(room->GetTop()), Scale(room->GetRight()), Scale(room->GetBottom()), frameColor);
-		}
-		const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectLogDir() + "generator_1.bmp"));
-		canvas.Write(filename);
 #endif
 
 		return true;
@@ -238,115 +283,112 @@ namespace dungeon
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
 		size_t imageNo = 0;
 #endif
-		size_t counter = mRooms.size() * 2;
+
+		// 中心から近い順に並べ替える
+		std::sort(mRooms.begin(), mRooms.end(), [](const std::shared_ptr<const Room>& l, const std::shared_ptr<const Room>& r)
+			{
+				const double lsd = l->GetCenter().SquaredLength();
+				const double rsd = r->GetCenter().SquaredLength();
+				return lsd < rsd;
+			}
+		);
+
+		// 部屋の交差を解消します
+		size_t counter = std::max(static_cast<size_t>(5), mRooms.size() / 2);
 		bool retry;
 		do {
 			retry = false;
 
-			for (const std::shared_ptr<Room>& room0 : mRooms)
+			for (const std::shared_ptr<const Room>& room0 : mRooms)
 			{
 				std::vector<std::shared_ptr<Room>> intersectedRooms;
 
 				// 他の部屋と交差している？
-				for (auto room1 : mRooms)
+				for (const std::shared_ptr<Room>& room1 : mRooms)
 				{
 					if (room0 != room1 && room0->Intersect(*room1, parameter.GetRoomMargin()))
 					{
 						// 交差した部屋を記録
 						// cppcheck-suppress [useStlAlgorithm]
 						intersectedRooms.emplace_back(room1);
+						// 動いた先で交差している可能性があるので再チェック
+						retry = true;
 					}
 				}
 
-				// 他の部屋と交差しているなら移動
-				if (intersectedRooms.size() > 0)
+				// 交差した部屋が重ならないように移動
+				for (const std::shared_ptr<Room>& room1 : intersectedRooms)
 				{
-					// 交差した部屋が重ならないように移動
-					for (auto& room1 : intersectedRooms)
+					// 二つの部屋を合わせた空間の大きさ
+					const FVector contactSize = FVector(
+						room0->GetWidth() + room1->GetWidth(),
+						room0->GetDepth() + room1->GetDepth(),
+						room0->GetHeight() + room1->GetHeight()
+					);
+
+					// 二つの部屋を合わせた空間の半分大きさ
+					const FVector contactHalfSize = contactSize * 0.5;
+
+					// room1を押し出す中心を求める
+					const FVector& contactPoint = room0->GetCenter();
+
+					// room1を押し出す方向を求める
+					FVector direction = room1->GetCenter() - contactPoint;
+
+					// 水平方向への移動を優先
+					direction.Z = 0;
+
+					// 中心が一致してしまったので適当な方向に押し出す
+					if (direction.SizeSquared() == 0.)
 					{
-						// 二つの部屋を合わせた空間の大きさ
-						const FVector contactSize = FVector(
-							room0->GetWidth() + room1->GetWidth(),
-							room0->GetDepth() + room1->GetDepth(),
-							room0->GetHeight() + room1->GetHeight()
-						);
-
-						// 二つの部屋を合わせた空間の半分大きさ
-						const FVector contactHalfSize = contactSize * 0.5f;
-
-						// room1を押し出す中心を求める
-						const FVector& contactPoint = room0->GetCenter();
-
-						// room1を押し出す方向を求める
-						FVector direction = room1->GetCenter() - contactPoint;
-#if defined(HORIZONTAL_MOVEMENT_AT_IMPACT)
-						{
-							// 水平方向への移動を優先
-							direction.Z = 0;
-						}
-#endif
-						if (direction.SizeSquared() == 0.f)
-						{
-							// 中心が一致してしまったので適当な方向に押し出す
-							const float ratio = parameter.GetRandom().Get<float>();
-							const float radian = ratio * (3.14159265359f * 2.f);
-							direction.X = std::cos(radian);
-							direction.Y = std::sin(radian);
-						}
-
-						// 押し出し範囲を設定
-						const float margin = static_cast<float>(parameter.GetRoomMargin());
-						const std::array<Plane, 6> planes = {
-							Plane(FVector(-1.f,  0.f,  0.f), contactPoint + FVector(contactHalfSize.X + margin, 0., 0.)),	// +X
-							Plane(FVector( 1.f,  0.f,  0.f), contactPoint + FVector(-contactHalfSize.X - margin, 0., 0.)),	// -X
-							Plane(FVector( 0.f, -1.f,  0.f), contactPoint + FVector(0.,  contactHalfSize.Y + margin, 0.)),	// +Y
-							Plane(FVector( 0.f,  1.f,  0.f), contactPoint + FVector(0., -contactHalfSize.Y - margin, 0.)),	// -Y
-							Plane(FVector( 0.f,  0.f, -1.f), contactPoint + FVector(0., 0.,  contactHalfSize.Z + 0.)),		// +Z
-							Plane(FVector( 0.f,  0.f,  1.f), contactPoint + FVector(0., 0., -contactHalfSize.Z - 0.)),		// -Z
-						};
-
-						FVector newRoomCenter;
-						float minimumDistance = std::numeric_limits<float>::max();
-						for (const auto& plane : planes)
-						{
-							FVector roomCenter;
-							if (plane.Intersect(contactPoint, direction, roomCenter))
-							{
-								const float distance = FVector::DistSquared(contactPoint, roomCenter);
-								if (minimumDistance > distance)
-								{
-									minimumDistance = distance;
-									newRoomCenter = roomCenter;
-								}
-							}
-						}
-
-						// room1の中心を移動
-						const float room1HalfWidth = static_cast<float>(room1->GetWidth()) * .5f;
-						const float room1HalfDepth = static_cast<float>(room1->GetDepth()) * .5f;
-#if !defined(HORIZONTAL_MOVEMENT_AT_IMPACT)
-						const float room1HalfHeight = static_cast<float>(room1->GetHeight()) * .5f;
-#endif
-						room1->SetX(static_cast<int32_t>(std::ceil(newRoomCenter.X - room1HalfWidth)));
-						room1->SetY(static_cast<int32_t>(std::ceil(newRoomCenter.Y - room1HalfDepth)));
-#if !defined(HORIZONTAL_MOVEMENT_AT_IMPACT)
-						room1->SetZ(static_cast<int32_t>(std::ceil(newRoomCenter.Z - room1HalfHeight)));
-#endif
-
-#if defined(DEBUG_SHOW_DEVELOP_LOG) && 0
-						// 交差していないか再確認
-						if (room0->Intersect(*room1, parameter.GetRoomMargin()))
-						{
-							DUNGEON_GENERATOR_LOG(TEXT("direction %f,%f"), direction.X, direction.Y);
-							DUNGEON_GENERATOR_LOG(TEXT("Room0: L=%d,R=%d,T=%d,B=%d W=%d,H=%d"), room0->GetLeft(), room0->GetRight(), room0->GetTop(), room0->GetBottom(), room0->GetWidth(), room0->GetDepth());
-							DUNGEON_GENERATOR_LOG(TEXT("Room1: L=%d,R=%d,T=%d,B=%d W=%d,H=%d"), room1->GetLeft(), room1->GetRight(), room1->GetTop(), room1->GetBottom(), room1->GetWidth(), room1->GetDepth());
-							check(false);
-						}
-#endif
+						const double ratio = parameter.GetRandom().Get<double>();
+						const double radian = ratio * (3.14159265359 * 2.);
+						direction.X = std::cos(radian);
+						direction.Y = std::sin(radian);
 					}
 
-					// 動いた先で交差している可能性があるので再チェック
-					retry = true;
+					// 押し出し範囲を設定
+					const double margin = static_cast<double>(parameter.GetRoomMargin());
+					const std::array<Plane, 4> planes =
+					{
+						Plane(FVector(-1.,  0.,  0.), contactPoint + FVector( contactHalfSize.X + margin, 0., 0.)),	// +X
+						Plane(FVector( 1.,  0.,  0.), contactPoint + FVector(-contactHalfSize.X - margin, 0., 0.)),	// -X
+						Plane(FVector( 0., -1.,  0.), contactPoint + FVector(0.,  contactHalfSize.Y + margin, 0.)),	// +Y
+						Plane(FVector( 0.,  1.,  0.), contactPoint + FVector(0., -contactHalfSize.Y - margin, 0.)),	// -Y
+					};
+
+					FVector newRoomCenter;
+					double minimumDistance = std::numeric_limits<double>::max();
+					for (const auto& plane : planes)
+					{
+						FVector roomCenter;
+						if (plane.Intersect(contactPoint, direction, roomCenter))
+						{
+							const double distance = FVector::DistSquared(contactPoint, roomCenter);
+							if (minimumDistance > distance)
+							{
+								minimumDistance = distance;
+								newRoomCenter = roomCenter;
+							}
+						}
+					}
+
+					// room1の中心を移動
+					const double room1HalfWidth = static_cast<double>(room1->GetWidth()) * .5f;
+					const double room1HalfDepth = static_cast<double>(room1->GetDepth()) * .5f;
+					room1->SetX(static_cast<int32_t>(std::floor(newRoomCenter.X - room1HalfWidth)));
+					room1->SetY(static_cast<int32_t>(std::floor(newRoomCenter.Y - room1HalfDepth)));
+
+#if defined(DEBUG_SHOW_DEVELOP_LOG) && 0
+					// 交差していないか再確認
+					if (room0->Intersect(*room1, parameter.GetRoomMargin()))
+					{
+						DUNGEON_GENERATOR_LOG(TEXT("direction %f,%f"), direction.X, direction.Y);
+						DUNGEON_GENERATOR_LOG(TEXT("Room0: L=%d,R=%d,T=%d,B=%d W=%d,H=%d"), room0->GetLeft(), room0->GetRight(), room0->GetTop(), room0->GetBottom(), room0->GetWidth(), room0->GetDepth());
+						DUNGEON_GENERATOR_LOG(TEXT("Room1: L=%d,R=%d,T=%d,B=%d W=%d,H=%d"), room1->GetLeft(), room1->GetRight(), room1->GetTop(), room1->GetBottom(), room1->GetWidth(), room1->GetDepth());
+						check(false);
+					}
+#endif
 				}
 			}
 
@@ -355,25 +397,14 @@ namespace dungeon
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
 			if (retry)
 			{
-				bmp::Canvas canvas(Scale(parameter.GetWidth()), Scale(parameter.GetDepth()));
-				for (const auto& room : mRooms)
-				{
-					canvas.Rectangle(Scale(room->GetLeft()), Scale(room->GetTop()), Scale(room->GetRight()), Scale(room->GetBottom()), baseDarkColor);
-				}
-				for (const auto& room : mRooms)
-				{
-					canvas.Frame(Scale(room->GetLeft()), Scale(room->GetTop()), Scale(room->GetRight()), Scale(room->GetBottom()), frameColor);
-				}
-
-				const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectLogDir() + "generator_2_" + FString::FromInt(imageNo) + ".bmp"));
-				canvas.Write(filename);
-
+				std::string filename = "generator_2_" + std::to_string(imageNo) + ".bmp";
+				GenerateRoomImageForDebug(filename);
 				++imageNo;
 			}
 #endif
 		} while (counter > 0 && retry);
 
-		if (counter == 0)
+		if (counter == 0 && retry)
 		{
 			DUNGEON_GENERATOR_ERROR(TEXT("Generator::SeparateRooms: Give up..."));
 			mLastError = Error::SeparateRoomsFailed;
@@ -500,8 +531,27 @@ namespace dungeon
 		{
 			canvas.Frame(Scale(room->GetLeft()), Scale(room->GetTop()), Scale(room->GetRight()), Scale(room->GetBottom()), frameColor);
 		}
-		const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectLogDir() + "generator_3.bmp"));
+		const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectSavedDir() + "/DungeonGenerator/generator_3.bmp"));
+		canvas.Write(filename);
 #endif
+
+		return true;
+	}
+
+	bool Generator::DetectFloorHeight() noexcept
+	{
+		mFloorHeight.clear();
+
+		for (const std::shared_ptr<const Room>& room : mRooms)
+		{
+			const int32_t z = room->GetBackground();
+			if (std::find(mFloorHeight.begin(), mFloorHeight.end(), z) == mFloorHeight.end())
+			{
+				mFloorHeight.emplace_back(z);
+			}
+		}
+
+		std::sort(mFloorHeight.begin(), mFloorHeight.end());
 
 		return true;
 	}
@@ -599,7 +649,7 @@ namespace dungeon
 			canvas.Frame(Scale(room->GetLeft()), Scale(room->GetTop()), Scale(room->GetRight()), Scale(room->GetBottom()), frameColor);
 		}
 
-		const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectLogDir() + "generator_4.bmp"));
+		const auto filename = TCHAR_TO_ANSI(*(FPaths::ProjectSavedDir() + "/DungeonGenerator/generator_4.bmp"));
 		canvas.Write(filename);
 #endif
 
@@ -811,10 +861,83 @@ namespace dungeon
 		}
 	}
 
+	void Generator::GenerateRoomImageForDebug(const std::string& filename) const
+	{
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+		int32_t minX, minY;
+		int32_t maxX, maxY;
+
+		minX = minY = std::numeric_limits<int32_t>::max();
+		maxX = maxY = std::numeric_limits<int32_t>::lowest();
+
+		// 空間の必要な大きさを求める
+		for (const std::shared_ptr<const Room>& room : mRooms)
+		{
+			minX = std::min(minX, room->GetLeft());
+			minY = std::min(minY, room->GetTop());
+			maxX = std::max(maxX, room->GetRight());
+			maxY = std::max(maxY, room->GetBottom());
+		}
+
+		const int32_t width = maxX - minX + 2;
+		const int32_t height = maxY - minY + 2;
+		const int32_t halfWidth = width / 2 - 1;
+		const int32_t halfHeight = height / 2 - 1;
+
+		// 空間のサイズを設定
+		bmp::Canvas canvas(Scale(width), Scale(height));
+		for (const auto& room : mRooms)
+		{
+			canvas.Rectangle(
+				Scale(room->GetLeft() + halfWidth),
+				Scale(room->GetTop() + halfHeight),
+				Scale(room->GetRight() + halfWidth),
+				Scale(room->GetBottom() + halfHeight),
+				baseDarkColor
+			);
+		}
+		for (const auto& room : mRooms)
+		{
+			canvas.Frame(
+				Scale(room->GetLeft() + halfWidth),
+				Scale(room->GetTop() + halfHeight),
+				Scale(room->GetRight() + halfWidth),
+				Scale(room->GetBottom() + halfHeight),
+				frameColor
+			);
+		}
+
+		std::string path = TCHAR_TO_ANSI(*FPaths::ProjectSavedDir());
+		path += "/DungeonGenerator/";
+		path += filename;
+		canvas.Write(path);
+#endif
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// 以下は生成完了後に操作する関数です。
 	// 必ず mGenerateFuture を使って生成の完了を待ってから処理して下さい。
 	////////////////////////////////////////////////////////////////////////////////////////////////
+	const std::vector<int32_t>& Generator::GetFloorHeight() const
+	{
+		WaitGenerate();
+
+		return mFloorHeight;
+	}
+
+	const size_t Generator::FindFloor(const int32_t height) const
+	{
+		const std::vector<int32_t>& floorHeight = GetFloorHeight();
+
+		for (size_t i = 0; i < floorHeight.size(); ++i)
+		{
+			if (height <= floorHeight[i])
+				return i;
+		}
+
+		return 0;
+	}
+
 	std::shared_ptr<Room> Generator::Find(const Point& point) const noexcept
 	{
 		WaitGenerate();

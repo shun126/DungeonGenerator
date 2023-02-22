@@ -9,9 +9,9 @@
 	"CreatedByURL": "https://mnu.sakura.ne.jp/",
 	"DocsURL": "https://github.com/shun126/DungeonGenerator/wiki/",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/36a8b87d859f44439cfe1515975d7197",
-	"SupportURL": "https://github.com/shun126/DungeonGenerator/issues/",
+	"SupportURL": "https://github.com/shun126/DungeonGenerator/discussions/",
 	"CanContainContent": false,
-	"IsBetaVersion": true,
+	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"Modules": [
@@ -19,7 +19,7 @@
 			"Name": "DungeonGenerator",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [
+			"PlatformAllowList": [
 				"Win64"
 			]
 		},
@@ -27,7 +27,7 @@
 			"Name": "DungeonGeneratorEditor",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [
+			"PlatformAllowList": [
 				"Win64"
 			]
 		}

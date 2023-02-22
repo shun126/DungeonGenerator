@@ -47,23 +47,23 @@ FTransform FDungeonParts::CalculateWorldTransform(const FVector& position, const
 	return CalculateWorldTransform(position, direction.ToDegree());
 }
 
-FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FTransform& transform, const EPlacementDirection placementDirection) const noexcept
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FTransform& transform, const EDungeonPartsPlacementDirection placementDirection) const noexcept
 {
-	if (static_cast<uint8>(placementDirection) < static_cast<uint8>(EPlacementDirection::West))
+	if (static_cast<uint8>(placementDirection) < static_cast<uint8>(EDungeonPartsPlacementDirection::West))
 	{
 		const FRotator rotator(0, static_cast<int32>(placementDirection) * 90, 0);
 		FTransform result(transform);
 		result.SetRotation(rotator.Quaternion());
 		return CalculateWorldTransform_(result, RelativeTransform);
 	}
-	else if (placementDirection == EPlacementDirection::RandomDirection)
+	else if (placementDirection == EDungeonPartsPlacementDirection::RandomDirection)
 	{
 		const FRotator rotator(0, random.Get<double>(-180, 180), 0);
 		FTransform result(transform);
 		result.SetRotation(rotator.Quaternion());
 		return CalculateWorldTransform_(result, RelativeTransform);
 	}
-	else if (placementDirection == EPlacementDirection::FollowGridDirection)
+	else if (placementDirection == EDungeonPartsPlacementDirection::FollowGridDirection)
 	{
 		return CalculateWorldTransform_(transform, RelativeTransform);
 	}
@@ -72,19 +72,19 @@ FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const
 	return transform;
 }
 
-FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator, const EPlacementDirection placementDirection) const noexcept
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const FRotator& rotator, const EDungeonPartsPlacementDirection placementDirection) const noexcept
 {
 	const FTransform transform(rotator, position);
 	return CalculateWorldTransform(random, transform, placementDirection);
 }
 
-FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw, const EPlacementDirection placementDirection) const noexcept
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const float yaw, const EDungeonPartsPlacementDirection placementDirection) const noexcept
 {
 	const FRotator rotator(0, yaw, 0);
 	return CalculateWorldTransform(random, position, rotator, placementDirection);
 }
 
-FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction, const EPlacementDirection placementDirection) const noexcept
+FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const FVector& position, const dungeon::Direction& direction, const EDungeonPartsPlacementDirection placementDirection) const noexcept
 {
 	return CalculateWorldTransform(random, position, direction.ToDegree(), placementDirection);
 }
@@ -460,6 +460,6 @@ void UDungeonGenerateParameter::DumpToJson() const
 
 FString UDungeonGenerateParameter::GetJsonDefaultDirectory() const
 {
-	return FString(FPaths::ProjectSavedDir() / "DungeonGenerator");
+	return FString(FPaths::ProjectSavedDir() / TEXT("DungeonGenerator"));
 }
 #endif

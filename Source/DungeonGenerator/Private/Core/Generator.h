@@ -13,6 +13,7 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <string>
 #include <thread>
 #include <unordered_set>
 #include <vector>
@@ -135,6 +136,16 @@ namespace dungeon
 
 	private:
 		void FindByRoute(std::vector<std::shared_ptr<Room>>& result, std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<const Room>& room) const noexcept;
+
+	public:
+		////////////////////////////////////////////////////////////////////////////////////////////
+		// Floor
+		const std::vector<int32_t>& GetFloorHeight() const;
+
+		/*
+		指定した座標が何階か検索します
+		*/
+		const size_t FindFloor(const int32_t height) const;
 
 	public:
 		////////////////////////////////////////////////////////////////////////////////////////////
@@ -288,6 +299,11 @@ namespace dungeon
 		*/
 		bool RemoveInvalidRooms(const GenerateParameter& parameter) noexcept;
 
+		/*
+		階層の高さを検出
+		*/	
+		bool DetectFloorHeight() noexcept;
+	
 		/**
 		通路の抽出
 		*/
@@ -317,11 +333,18 @@ namespace dungeon
 		*/
 		void Reset();
 
+		/*
+		デバッグ用に部屋の位置を画像に出力します
+		*/
+		void GenerateRoomImageForDebug(const std::string& filename) const;
+
 	private:
 		GenerateParameter mGenerateParameter;
 
 		std::shared_ptr<Voxel> mVoxel;
 		std::vector<std::shared_ptr<Room>> mRooms;
+
+		std::vector<int32_t> mFloorHeight;
 
 		std::vector<std::shared_ptr<const Point>> mLeafPoints;
 		std::shared_ptr<const Point> mStartPoint;

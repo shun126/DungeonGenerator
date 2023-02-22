@@ -26,25 +26,15 @@ namespace dungeon
 		~GenerateParameter() = default;
 
 		/**
-		ダンジョンの幅
+		ダンジョンの階層
 		*/
-		uint32_t GetWidth() const noexcept { return mWidth; }
-
-		/**
-		ダンジョンの奥行き
-		*/
-		uint32_t GetDepth() const noexcept { return mDepth; }
-
-		/**
-		ダンジョンの高さ
-		*/
-		uint32_t GetHeight() const noexcept { return mHeight; }
+		uint8_t GetNumberOfCandidateFloors() const noexcept { return mNumberOfCandidateFloors; }
 
 		/**
 		生成する部屋の数の候補
 		部屋の初期生成数であり、最終的に生成される部屋の数ではありません。
 		*/
-		uint32_t GetNumberOfCandidateRooms() const noexcept { return mNumberOfCandidateRooms; }
+		uint8_t GetNumberOfCandidateRooms() const noexcept { return mNumberOfCandidateRooms; }
 
 		/**
 		部屋の最小の幅
@@ -93,6 +83,23 @@ namespace dungeon
 
 
 
+
+
+		/**
+		ダンジョンの幅
+		*/
+		uint32_t GetWidth() const noexcept { return mWidth; }
+
+		/**
+		ダンジョンの奥行き
+		*/
+		uint32_t GetDepth() const noexcept { return mDepth; }
+
+		/**
+		ダンジョンの高さ
+		*/
+		uint32_t GetHeight() const noexcept { return mHeight; }
+
 		/**
 		ダンジョンの幅
 		*/
@@ -106,13 +113,21 @@ namespace dungeon
 		/**
 		ダンジョンの高さ
 		*/
-		uint32_t mHeight = 0;
+		uint32_t mHeight = 3;
+
+
+
+
+		/**
+		生成する階層の候補
+		*/
+		uint8_t mNumberOfCandidateFloors = 3;
 
 		/**
 		生成する部屋の数の候補
 		部屋の初期生成数であり、最終的に生成される部屋の数ではありません。
 		*/
-		uint32_t mNumberOfCandidateRooms = 5;
+		uint8_t mNumberOfCandidateRooms = 5;
 
 		/**
 		部屋の最小の幅
