@@ -31,7 +31,6 @@ void FDungeonGenerateEditorModule::StartupModule()
 	FDungeonGeneratorCommands::Register();
 
 	PluginCommands = MakeShareable(new FUICommandList);
-
 	PluginCommands->MapAction(
 		FDungeonGeneratorCommands::Get().OpenPluginWindow,
 		FExecuteAction::CreateRaw(this, &FDungeonGenerateEditorModule::PluginButtonClicked),
@@ -70,7 +69,6 @@ void FDungeonGenerateEditorModule::StartupModule()
 void FDungeonGenerateEditorModule::ShutdownModule()
 {
 	UToolMenus::UnRegisterStartupCallback(this);
-
 	UToolMenus::UnregisterOwner(this);
 
 	FDungeonGeneratorStyle::Shutdown();

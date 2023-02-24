@@ -4,10 +4,10 @@
 */
 
 #include "DungeonGeneratorStyle.h"
-#include "Styling/SlateStyleRegistry.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Slate/SlateGameResources.h"
 #include "Interfaces/IPluginManager.h"
+#include "Slate/SlateGameResources.h"
+#include "Styling/SlateStyleRegistry.h"
 #include "Styling/SlateStyleMacros.h"
 
 #define RootToContentDir Style->RootToContentDir
@@ -43,9 +43,7 @@ TSharedRef< FSlateStyleSet > FDungeonGeneratorStyle::Create()
 {
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("DungeonGeneratorStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("DungeonGenerator")->GetBaseDir() / TEXT("Resources"));
-
-	Style->Set("DungeonGenerator.OpenPluginWindow", new IMAGE_BRUSH_SVG(TEXT("PlaceholderButtonIcon"), Icon20x20));
-
+	Style->Set("DungeonGenerator.OpenPluginWindow", new IMAGE_BRUSH(TEXT("PlaceholderButtonIcon"), Icon20x20));
 	return Style;
 }
 

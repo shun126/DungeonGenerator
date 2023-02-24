@@ -26,7 +26,6 @@ public class DungeonGeneratorEditor : ModuleRules
 			{
 				"Projects",
 				"InputCore",
-				"EditorFramework",
 				"UnrealEd",
 				"ToolMenus",
 				"CoreUObject",
@@ -37,7 +36,13 @@ public class DungeonGeneratorEditor : ModuleRules
 				"DungeonGenerator",
 			}
 		);
-		
-		//DynamicallyLoadedModuleNames.AddRange(new string[] {});
-	}
+        BuildVersion Version;
+        if (BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version))
+        {
+            if (Version.MajorVersion == 5)
+            {
+                PrivateDependencyModuleNames.AddRange(new string[] { "EditorFramework" });
+            }
+        }
+    }
 }
