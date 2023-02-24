@@ -4,6 +4,7 @@
 */
 
 #pragma once
+#include "DungeonRoomParts.h"
 #include <GameFramework/Actor.h>
 #include <memory>
 #include "DungeonGenerateActor.generated.h"
