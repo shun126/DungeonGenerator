@@ -26,7 +26,7 @@
 //#define DEBUG_SHOW_DEVELOP_LOG
 
 // 定義すると途中経過と最終結果をBMPで出力します（デバッグ機能）
-//#define DEBUG_GENERATE_BITMAP_FILE
+#define DEBUG_GENERATE_BITMAP_FILE
 
 // 定義すると最終結果をBMPで出力します（デバッグ機能）
 //#define DEBUG_GENERATE_RESULT_BITMAP_FILE
@@ -194,8 +194,7 @@ namespace dungeon
 #endif
 
 		PerlinNoise perlinNoise(parameter.GetRandom());
-		const uint8_t perlinNoiseOctabes = 4;
-
+		constexpr float noiseBoostRatio = 1.333f;
 		const float range = std::max(1.f, std::sqrtf(parameter.GetNumberOfCandidateRooms()));
 
 		for (size_t i = 0; i < parameter.GetNumberOfCandidateRooms(); ++i)
@@ -203,14 +202,16 @@ namespace dungeon
 			const float radian = parameter.GetRandom().Get<float>() * (3.14159265359f * 2.f);
 			const float width = std::sin(radian);
 			const float depth = std::cos(radian);
-			float noise = perlinNoise.OctaveNoise(perlinNoiseOctabes, width, depth);
+			const float height = std::max(0.f, static_cast<float>(parameter.GetNumberOfCandidateFloors()) - 1);
+			float noise = perlinNoise.Noise(width, depth);
 			noise = noise * 0.5f + 0.5f;
+			noise *= noiseBoostRatio;
 			noise = std::max(0.f, std::min(noise, 1.f));
 
 			FIntVector location(
 				static_cast<int32_t>(std::round(width * range)),
 				static_cast<int32_t>(std::round(depth * range)),
-				static_cast<int32_t>(std::round(noise * parameter.GetNumberOfCandidateFloors()))
+				static_cast<int32_t>(std::round(noise * height))
 			);
 
 			if (parameter.GetRoomMargin() == 0)
@@ -250,12 +251,12 @@ namespace dungeon
 			{
 				for (size_t x = 0; x < width; ++x)
 				{
-					float noise = perlinNoise.OctaveNoise(
-						perlinNoiseOctabes,
+					float noise = perlinNoise.Noise(
 						static_cast<float>(x) / static_cast<float>(width),
 						static_cast<float>(y) / static_cast<float>(width)
 					);
 					noise = noise * 0.5f + 0.5f;
+					noise *= noiseBoostRatio;
 					noise = std::max(0.f, std::min(noise, 1.f));
 
 					bmp::RGBCOLOR color;
@@ -336,7 +337,8 @@ namespace dungeon
 					FVector direction = room1->GetCenter() - contactPoint;
 
 					// 水平方向への移動を優先
-					direction.Z = 0;
+					if (room1->GetBackground() <= 0 || (parameter.GetNumberOfCandidateFloors() - 1) <= room1->GetForeground())
+						direction.Z = 0;
 
 					// 中心が一致してしまったので適当な方向に押し出す
 					if (direction.SizeSquared() == 0.)
