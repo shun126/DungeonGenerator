@@ -1,6 +1,7 @@
 /**
 \author		Shun Moriya
-\copyright	2023 Shun Moriya
+\copyright	2023- Shun Moriya
+All Rights Reserved.
 */
 
 #include "DungeonGenerateParameter.h"
@@ -51,14 +52,14 @@ FTransform FDungeonParts::CalculateWorldTransform(dungeon::Random& random, const
 {
 	if (static_cast<uint8>(placementDirection) < static_cast<uint8>(EDungeonPartsPlacementDirection::West))
 	{
-		const FRotator rotator(0, static_cast<int32>(placementDirection) * 90, 0);
+		const FRotator rotator(0., static_cast<double>(placementDirection) * 90., 0.);
 		FTransform result(transform);
 		result.SetRotation(rotator.Quaternion());
 		return CalculateWorldTransform_(result, RelativeTransform);
 	}
 	else if (placementDirection == EDungeonPartsPlacementDirection::RandomDirection)
 	{
-		const FRotator rotator(0, random.Get<double>(-180, 180), 0);
+		const FRotator rotator(0., static_cast<double>(random.Get<uint8_t>(4)) * 90., 0.);
 		FTransform result(transform);
 		result.SetRotation(rotator.Quaternion());
 		return CalculateWorldTransform_(result, RelativeTransform);
