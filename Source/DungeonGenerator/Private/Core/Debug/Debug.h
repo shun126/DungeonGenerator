@@ -4,7 +4,8 @@
 他のWindowsマクロと衝突を防ぐため、このファイルをヘッダーからincludeしないで下さい。
 
 \author		Shun Moriya
-\copyright	2023 Shun Moriya
+\copyright	2023- Shun Moriya
+All Rights Reserved.
 */
 
 #pragma once

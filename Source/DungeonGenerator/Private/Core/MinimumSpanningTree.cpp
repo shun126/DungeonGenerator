@@ -1,9 +1,10 @@
 /**
 最小スパニングツリーに関するソースファイル
 
-\author		Shun Moriya
-\copyright	2023 Shun Moriya
 \cite		https://algo-logic.info/kruskal-mst/
+\author		Shun Moriya
+\copyright	2023- Shun Moriya
+All Rights Reserved.
 */
 
 #include "MinimumSpanningTree.h"

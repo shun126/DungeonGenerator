@@ -2,7 +2,8 @@
 ゲート検索
 
 \author		Shun Moriya
-\copyright	2023 Shun Moriya
+\copyright	2023- Shun Moriya
+All Rights Reserved.
 */
 
 #include "GateFinder.h"
