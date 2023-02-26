@@ -19,7 +19,7 @@
 			"Name": "DungeonGenerator",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
-			"PlatformAllowList": [
+			"WhitelistPlatforms": [
 				"Win64"
 			]
 		},
@@ -27,7 +27,7 @@
 			"Name": "DungeonGeneratorEditor",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "Default",
-			"PlatformAllowList": [
+			"WhitelistPlatforms": [
 				"Win64"
 			]
 		}
