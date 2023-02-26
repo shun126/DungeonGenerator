@@ -7,13 +7,17 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 
 This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. 
 
+Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
+
 # Feature
 
 * DungeonGenerator is a plug-in for UnrealEngine.
 * Tiled Dungeon Generation both In-Editor & Runtime
 * Users can easily generate dungeons by preparing meshes for floors, walls, ceilings, and stairs.
-* A mini-map of the dungeon can be generated.
-* Generates actors for doors and keys by MissionGraph.
+* A mini-map of the dungeon can be generated. [beta version]
+* Generates actors for doors and keys by MissionGraph. [beta version]
+* Supported Development Platforms: Windows (should be possible to build on all platforms)
+* Supported Target Build Platforms: Windows (should be possible to target all platforms)
 
 ![DungeonGeneratorStatus](Document/DungeonGenerator04.gif)
 
@@ -28,14 +32,6 @@ Visualization of dungeon generation status.
 # Requirements
 * [Unreal Engine 5.1.1](https://www.unrealengine.com/unreal-engine-5)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
-
-# Guide
-* Put the DungeonGenerator folder in the PROJECT's Plugins folder.
-  * In case of BluePrint project, an error occurs when packaging. Try converting your prohject to C++ project.
-* Create DungeonGenerateParameter asset.
-* Put a DungeonGenerateActor in the level.
-
-Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
 
 # License
 * GPL-3.0
