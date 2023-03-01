@@ -8,7 +8,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 
 /*
-部屋に置かれるべきアイテム
+Items to be placed in the room
 Same content as dungeon::Room::Item
 */
 UENUM(BlueprintType)
@@ -19,13 +19,15 @@ enum class EDungeonRoomItem : uint8
 	UniqueKey,
 };
 
-//! 部屋に置かれるべきアイテムの種類数
-static constexpr uint8 DungeonRoomItemSize = 3;
+/**
+Number of different items to be placed in the room
+*/
+static constexpr uint8 DungeonRoomItemSize = static_cast<uint8>(EDungeonRoomItem::UniqueKey) + 1;
 
 /*
-部屋に置かれるべきアイテムのシンボル名を取得します
+Gets the symbolic name of the item to be placed in the room
 Same content as dungeon::Room::Parts
 \param[in]	item	EDungeonRoomItem
-\return		EDungeonRoomItemのシンボル名
+\return EDungeonRoomItem symbol name
 */
 extern const FString& GetDungeonRoomItemName(const EDungeonRoomItem item);

@@ -7,27 +7,29 @@ All Rights Reserved.
 #pragma once
 #include <CoreMinimal.h>
 
-/*
-部屋のパーツ
+/**
+Type of room parts
 Same content as dungeon::Room::Parts
 */
 UENUM(BlueprintType)
 enum class EDungeonRoomParts : uint8
 {
-	Any,			//!< どこでも良い（dungeon::Room::Parts::Unidentifiedと同等）
-	Start,			//!< スタート地点
-	Goal,			//!< ゴール地点
-	Hall,			//!< 広間（通路が複数つながっている）
-	Hanare,			//!< 離れ（通路が一つだけつながっている）
+	Any,			//!< Unspecified (equivalent to dungeon::Room::Parts::Unidentified)
+	Start,			//!< starting point
+	Goal,			//!< goal point
+	Hall,			//!< A hall (several corridors are connected)
+	Hanare,			//!< separate room (with only one passageway connected to it)
 };
 
-//! 部屋のパーツの種類数
-static constexpr uint8 DungeonRoomPartsSize = 5;
+/**
+Number of different room parts
+*/
+static constexpr uint8 DungeonRoomPartsSize = static_cast<uint8>(EDungeonRoomParts::Hanare) + 1;
 
-/*
-部屋のパーツのシンボル名を取得します
+/**
+Get the symbol name of a room part.
 Same content as dungeon::Room::Parts
 \param[in]	parts	EDungeonRoomParts
-\return		EDungeonRoomPartsのシンボル名
+\return		Symbol name for EDungeonRoomParts
 */
 extern const FString& GetDungeonRoomPartsName(const EDungeonRoomParts parts);

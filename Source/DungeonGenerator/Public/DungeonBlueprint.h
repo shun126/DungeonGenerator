@@ -9,9 +9,9 @@ All Rights Reserved.
 #include "DungeonBlueprint.generated.h"
 
 /**
-BluePrint 計算関数ライブラリクラス
+BluePrint function library class
 */
-UCLASS()
+UCLASS(Blueprintable)
 class UDungeonBlueprint : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()

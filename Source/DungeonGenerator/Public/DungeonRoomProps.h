@@ -7,8 +7,8 @@ All Rights Reserved.
 #pragma once
 #include <CoreMinimal.h>
 
-/*
-部屋に置かれるべき配置物
+/**
+Objects to be placed in the room
 Same content as dungeon::Grid::Props
 */
 UENUM(BlueprintType)
@@ -19,13 +19,15 @@ enum class EDungeonRoomProps : uint8
 	UniqueLock,
 };
 
-//! 部屋に置かれるべき配置物の種類数
-static constexpr uint8 DungeonRoomPropsSize = 3;
+/**
+Number of different types of placements to be placed in the room
+*/
+static constexpr uint8 DungeonRoomPropsSize = static_cast<uint8>(EDungeonRoomProps::UniqueLock) + 1;
 
-/*
-部屋に置かれるべき配置物のシンボル名を取得します
+/**
+Gets the symbolic name of the placement that should be placed in the room
 Same content as dungeon::Room::Parts
 \param[in]	props	EDungeonRoomProps
-\return		EDungeonRoomPropsのシンボル名
+\return		EDungeonRoomProps symbol name
 */
 extern const FString& GetDungeonRoomPropsName(const EDungeonRoomProps props);

@@ -13,7 +13,7 @@ All Rights Reserved.
 
 UHierarchicalInstancedStaticMeshComponentを継承しています
 */
-UCLASS(meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, BlueprintType, meta = (BlueprintSpawnableComponent))
 class DUNGEONGENERATOR_API UDungeonTransactionalHierarchicalInstancedStaticMeshComponent : public UHierarchicalInstancedStaticMeshComponent
 {
 	GENERATED_BODY()

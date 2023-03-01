@@ -22,7 +22,7 @@ namespace dungeon
 /**
 ミニマップテクスチャクラス
 */
-UCLASS(BlueprintType, Blueprintable)
+UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonMiniMapTextureLayer : public UObject
 {
 	GENERATED_BODY()
