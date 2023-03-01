@@ -181,21 +181,21 @@ struct DUNGEONGENERATOR_API FDungeonRandomObjectParts : public FDungeonObjectPar
 };
 
 /**
-ダンジョン生成パラメータ
+Dungeon generation parameters
 */
-UCLASS(Blueprintable)
+UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonGenerateParameter : public UObject
 {
 	GENERATED_BODY()
 
 public:
 	/*
-	コンストラクタ
+	constructor
 	*/
 	explicit UDungeonGenerateParameter(const FObjectInitializer& ObjectInitializer);
 
 	/*
-	デストラクタ
+	destructor
 	*/
 	virtual ~UDungeonGenerateParameter() = default;
 

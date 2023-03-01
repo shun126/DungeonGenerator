@@ -30,7 +30,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FDungeonGeneratorDelegete, bool, 
 /**
 ダンジョン生成アクタークラス
 */
-UCLASS(BlueprintType, Blueprintable)
+UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor
 {
 	GENERATED_BODY()
@@ -107,7 +107,7 @@ protected:
 #endif
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-		bool InstancedStaticMesh = true;
+		bool InstancedStaticMesh = false;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> FloorMeshs;

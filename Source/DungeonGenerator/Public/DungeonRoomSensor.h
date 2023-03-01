@@ -9,13 +9,13 @@ All Rights Reserved.
 #include "DungeonRoomParts.h"
 #include "DungeonRoomSensor.generated.h"
 
-// 前方宣言
+// forward declaration
 class UBoxComponent;
 
 /*
 Room Bounding Box Sensor Actor Class
 */
-UCLASS(BlueprintType, Blueprintable)
+UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API ADungeonRoomSensor : public AActor
 {
 	GENERATED_BODY()
@@ -33,7 +33,7 @@ public:
 
 	/*
 	Initialize
-	TODO: 引数が多すぎるので、構造体でまとめる等の対処して下さい
+	TODO: Too many arguments, so please deal with them by putting them together in a structure, etc.
 	*/
 	void Initialize(
 		const int32 identifier,
@@ -45,12 +45,15 @@ public:
 		const uint8 deepestDepthFromStart
 	);
 
+	/**
+	Function called during initialization after object creation
+	*/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor, Category = "DungeonGenerator")
 		void OnInitialize();
 	virtual void OnInitialize_Implementation();
 
 	/**
-	Finalize
+	Function called before object destruction
 	*/
 	void Finalize();
 
@@ -64,6 +67,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		void Reset();
 
+	/**
+	Function called on reset
+	*/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
 		void OnReset();
 	virtual void OnReset_Implementation();
@@ -106,7 +112,7 @@ public:
 		bool GetFloorHeightPosition(FVector& result, FVector startPosition, const float offsetHeight = 0.f) const;
 
 	/**
-	スタートからの深さの比率を計算する
+	Calculate the depth ratio from the start
 	*/
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator")
 		float GetDepthRatioFromStart() const;

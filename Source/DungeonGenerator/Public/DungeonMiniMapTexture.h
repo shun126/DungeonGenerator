@@ -16,7 +16,7 @@ class UTexture2D;
 /**
 ミニマップテクスチャクラス
 */
-UCLASS(BlueprintType, Blueprintable)
+UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonMiniMapTexture : public UObject
 {
 	GENERATED_BODY()

@@ -10,9 +10,9 @@ All Rights Reserved.
 #include "DungeonRoomAsset.generated.h"
 
 /**
-ダンジョンの部屋に置き換える部屋アセット情報クラス
+Sub-level information to replace dungeon rooms
 */
-UCLASS(Blueprintable)
+UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonRoomAsset : public UObject
 {
 	GENERATED_BODY()

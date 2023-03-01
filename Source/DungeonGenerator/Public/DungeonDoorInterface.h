@@ -9,8 +9,8 @@ All Rights Reserved.
 #include <UObject/Interface.h>
 #include "DungeonDoorInterface.generated.h"
 
-/*
-ダンジョンドアインターフェイスクラス
+/**
+Dungeon Door Interface Class
 */
 UINTERFACE(MinimalAPI, Blueprintable)
 class UDungeonDoorInterface : public UInterface
@@ -18,19 +18,24 @@ class UDungeonDoorInterface : public UInterface
 	GENERATED_BODY()
 };
 
-/*
-ダンジョンドアインターフェイスクラス
+/**
+Dungeon Door Interface Class
 */
 class DUNGEONGENERATOR_API IDungeonDoorInterface
 {
 	GENERATED_BODY()
 
 public:
-	// 引数と戻り値がないメンバ関数
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="DungeonGenerator")
+	/**
+	Function called during initialization after object creation
+	\param[in]	props	Types of props that need to be installed on the door
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "DungeonGenerator")
     	void OnInitialize(EDungeonRoomProps props);
 
-	// 引数と戻り値があるメンバ関数
+	/**
+	Function called on reset
+	*/
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "DungeonGenerator")
     	void OnReset();
 };
