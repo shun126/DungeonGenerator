@@ -9,6 +9,8 @@ This is an easy to use. Simply drop the DungeonGenerateActor into your level, se
 
 Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
 
+And see [DungeonGeneratorTest](https://github.com/shun126/DungeonGeneratorTest) for a sample plugin project.
+
 # Feature
 
 * DungeonGenerator is a plug-in for UnrealEngine.
