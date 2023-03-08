@@ -38,18 +38,18 @@ public:
 
 public:
 	/**
-	タグ名を取得します
+	Get tag name
 	*/
 	static const FName& GetDungeonGeneratorTag();
 
 public:
 	/**
-	コンストラクタ
+	constructor
 	*/
 	CDungeonGenerator();
 
 	/**
-	デストラクタ
+	destructor
 	*/
 	virtual ~CDungeonGenerator() = default;
 
@@ -68,59 +68,59 @@ public:
 
 
 	/**
-	パラメータを元にダンジョンを生成します
+	Generate dungeon
 	\param[in]	asset	UDungeonGenerateParameter
 	\return		falseならば生成に失敗
 	*/
 	bool Create(const UDungeonGenerateParameter* asset);
 
 	/**
-	地形を追加します
+	Add terrain
 	*/
 	void AddTerraine();
 
 	/**
-	物体を追加します
+	Add an object
 	*/
 	void AddObject();
 
 	/**
-	追加した地形と物体をクリアします
+	Clear added terrain and objects
 	*/
 	void Clear();
 
 	/**
-	スタート位置の座標を取得します
+	Get start position
 	\return		スタート位置の座標
 	*/
 	FVector GetStartLocation() const;
 
 	/**
-	スタート位置のトランスフォームを取得します
+	Get start Transform
 	\return		スタート位置のトランスフォーム
 	*/
 	FTransform GetStartTransform() const;
 
 	/**
-	ゴール位置の座標を取得します
+	Get goal position
 	\return		ゴール位置の座標
 	*/
 	FVector GetGoalLocation() const;
 
 	/**
-	ゴール位置のトランスフォームを取得します
+	Get goal Transform
 	\return		ゴール位置のトランスフォーム
 	*/
 	FTransform GetGoalTransform() const;
 
 	/**
-	生成したダンジョン全体を覆うバウンディングボックスを取得します
+	Get a bounding box covering the entire generated dungeon
 	\return			バウンディングボックス
 	*/
 	FBox CalculateBoundingBox() const;
 
 	/**
-	APlayerStartをスタート地点に移動します
+	Move APlayerStart to the starting point
 	*/
 	void MovePlayerStart();
 
@@ -130,11 +130,11 @@ public:
 	static UWorld* GetWorld();
 
 	/**
-	生成したダンジョンのミニマップテクスチャを生成します
-	\param[out]		horizontalScale		ワールド座標からテクスチャ座標へ変換する為のスケール値
-	\param[in]		textureWidthHeight	生成するテクスチャの幅（高さは幅と同じ）
-	\param[in]		currentLevel		生成するフロアの高さの基準
-	\return			テクスチャオブジェクト
+	Generates a minimap texture of the generated dungeon
+	\param[out]		horizontalScale		Scale value to convert from world coordinates to texture coordinates
+	\param[in]		textureWidthHeight	Width of texture to be generated (height equals width)
+	\param[in]		currentLevel		Criteria for floor height to be generated
+	\return			texture object
 	*/
 	UTexture2D* GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
 

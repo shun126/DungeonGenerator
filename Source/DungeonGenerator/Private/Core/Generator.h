@@ -13,6 +13,7 @@ All Rights Reserved.
 #include <atomic>
 #include <functional>
 #include <future>
+#include <list>
 #include <memory>
 #include <string>
 #include <thread>
@@ -28,9 +29,6 @@ namespace dungeon
 
 	/**
 	ダンジョン生成クラス
-
-	スレッドを生成してダンジョンを生成します。
-	IsGenerated以外のメンバー関数を実行すると生成完了までブロックします。
 	*/
 	class Generator : public std::enable_shared_from_this<Generator>
 	{
@@ -53,6 +51,8 @@ namespace dungeon
 		コンストラクタ
 		*/
 		Generator() noexcept;
+		Generator(const Generator&) = delete;
+		Generator& operator=(const Generator&) = delete;
 
 		/**
 		デストラクタ
@@ -61,23 +61,9 @@ namespace dungeon
 
 		/**
 		生成
-		スレッドを生成してダンジョンを生成します。
-		IsGenerated以外のメンバー関数を実行すると生成完了までブロックします。
-
 		\param[in]	parameter	生成パラメータ
 		*/
 		void Generate(const GenerateParameter& parameter) noexcept;
-
-		/**
-		生成が完了したか？
-		\return		trueならば生成完了
-		*/
-		bool IsGenerated() const noexcept;
-
-		/**
-		生成が完了まで待つ
-		*/
-		void WaitGenerate() const noexcept;
 
 		/**
 		生成時に発生したエラーを取得します
@@ -105,8 +91,6 @@ namespace dungeon
 		*/
 		void ForEach(std::function<void(const std::shared_ptr<Room>&)> func) noexcept
 		{
-			WaitGenerate();
-
 			for (const auto& room : mRooms)
 			{
 				func(room);
@@ -118,8 +102,6 @@ namespace dungeon
 		*/
 		void ForEach(std::function<void(const std::shared_ptr<const Room>&)> func) const noexcept
 		{
-			WaitGenerate();
-
 			for (const auto& room : mRooms)
 			{
 				func(room);
@@ -153,8 +135,6 @@ namespace dungeon
 		// Aisle
 		void EachAisle(std::function<void(const Aisle& edge)> func) const noexcept
 		{
-			WaitGenerate();
-
 			for (const auto& aisle : mAisles)
 			{
 				func(aisle);
@@ -164,8 +144,6 @@ namespace dungeon
 		// 部屋に接続している通路を検索
 		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(Aisle& edge)> func) noexcept
 		{
-			WaitGenerate();
-
 			for (auto& aisle : mAisles)
 			{
 				const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
@@ -180,8 +158,6 @@ namespace dungeon
 
 		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(const Aisle& edge)> func) const noexcept
 		{
-			WaitGenerate();
-
 			for (const auto& aisle : mAisles)
 			{
 				const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
@@ -242,8 +218,6 @@ namespace dungeon
 		*/
 		void EachLeafPoint(std::function<void(const std::shared_ptr<const Point>& point)> func) const noexcept
 		{
-			WaitGenerate();
-
 			for (auto& point : mLeafPoints)
 			{
 				func(point);
@@ -273,12 +247,7 @@ namespace dungeon
 		/**
 		生成
 		*/
-		void GenerateImpl() noexcept;
-
-		/**
-		生成
-		*/
-		bool GeneratePath() noexcept;
+		bool GenerateImpl(GenerateParameter& parameter) noexcept;
 
 		/**
 		部屋の生成
@@ -343,7 +312,7 @@ namespace dungeon
 		GenerateParameter mGenerateParameter;
 
 		std::shared_ptr<Voxel> mVoxel;
-		std::vector<std::shared_ptr<Room>> mRooms;
+		std::list<std::shared_ptr<Room>> mRooms;
 
 		std::vector<int32_t> mFloorHeight;
 
@@ -354,11 +323,6 @@ namespace dungeon
 		std::vector<Aisle> mAisles;
 
 		std::function<void(const std::shared_ptr<const Room>&)> mQueryParts;
-
-		std::thread mGenerateThread;
-		std::promise<void> mGeneratePromise;
-		std::future<void> mGenerateFuture;
-		std::atomic_bool mGenerated = {false};
 
 		uint8_t mDistance = 0;
 

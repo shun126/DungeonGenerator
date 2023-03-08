@@ -30,7 +30,7 @@ namespace dungeon
 	}
 
 	Point::Point(const std::shared_ptr<Room>& room) noexcept
-		: super(room->GetFloorCenter())
+		: super(room->GetGroundCenter())
 		, mRoom(room)
 	{
 	}

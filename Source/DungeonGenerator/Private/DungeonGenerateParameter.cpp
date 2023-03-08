@@ -6,13 +6,13 @@ All Rights Reserved.
 
 #include "DungeonGenerateParameter.h"
 #include "DungeonRoomAsset.h"
+#include "PluginInfomation.h"
+#include "Core/Debug/BuildInfomation.h"
 #include "../Private/Core/Direction.h"
 #include "../Private/Core/Grid.h"
 #include "../Private/Core/Math/Random.h"
 
 #if WITH_EDITOR
-#include "BuildInfomation.h"
-#include "PluginInfomation.h"
 #include <JsonUtilities/Public/JsonUtilities.h>
 #include <Runtime/Json/Public/Serialization/JsonReader.h>
 #endif
@@ -248,11 +248,6 @@ const FInt32Interval& UDungeonGenerateParameter::GetRoomHeight() const noexcept
 	return RoomHeight;
 }
 
-int32 UDungeonGenerateParameter::GetUnderfloorHeight() const
-{
-	return UnderfloorHeight;
-}
-
 int32 UDungeonGenerateParameter::GetRoomMargin() const
 {
 	return RoomMargin;
@@ -425,7 +420,6 @@ void UDungeonGenerateParameter::DumpToJson() const
 		jsonString += TEXT("Min:") + FString::FromInt(RoomHeight.Min) + TEXT(",\n");
 		jsonString += TEXT("Max:") + FString::FromInt(RoomHeight.Max);
 		jsonString += TEXT("},");
-		jsonString += TEXT("UnderfloorHeight:") + FString::FromInt(UnderfloorHeight) + TEXT(",\n");
 		jsonString += TEXT("RoomMargin:") + FString::FromInt(RoomMargin) + TEXT(",\n");
 		jsonString += TEXT("MergeRooms:");
 		if(MergeRooms)

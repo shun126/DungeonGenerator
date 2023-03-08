@@ -14,7 +14,7 @@ class CDungeonGenerator;
 class UTexture2D;
 
 /**
-ミニマップテクスチャクラス
+Minimap Textures
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonMiniMapTexture : public UObject
@@ -23,22 +23,24 @@ class DUNGEONGENERATOR_API UDungeonMiniMapTexture : public UObject
 
 public:
 	/**
-	コンストラクタ
+	constructor
 	*/
 	explicit UDungeonMiniMapTexture(const FObjectInitializer& initializer);
 
 	/**
-	デストラクタ
+	destructor
 	*/
 	virtual ~UDungeonMiniMapTexture() = default;
 
-	// 生成したテクスチャ
+	/*
+	Generated textures
+	*/
 	UTexture2D* GetTexture() const noexcept;
 
-	// Voxel空間からテクスチャ空間への変換
+	// Conversion from Voxel space to texture space
 	const FVector2D& GetGeneratedScaleVector() const noexcept;
 
-	// Voxel空間からテクスチャ空間への変換
+	// Conversion from Voxel space to texture space
 	float GetGeneratedScale() const noexcept;
 
 protected:
@@ -47,25 +49,25 @@ protected:
 
 private:
 	/**
-	ミニマップテクスチャを生成します
+	Generates a minimap texture
 	*/
 	bool GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor);
 
 	/**
-	ミニマップテクスチャを破棄します
+	Discard minimap textures
 	*/
 	void DestroyMiniMapTexture();
 
 protected:
-	// 生成したテクスチャ
+	// Generated textures
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 		UTexture2D* Texture = nullptr;
 
-	// Voxel空間からテクスチャ空間への変換
+	// Transformation scale from Voxel space to texture space
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 		FVector2D GeneratedScaleVector;
 
-	// Voxel空間からテクスチャ空間への変換
+	// Transformation scale from Voxel space to texture space
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 		float GeneratedScale = 1.f;
 

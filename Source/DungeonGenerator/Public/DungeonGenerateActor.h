@@ -28,7 +28,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDungeonGeneratorPlayerStartSignatur
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FDungeonGeneratorDelegete, bool, StreamingLevel, EDungeonRoomParts, DungeonRoomParts, const FBox&, RoomRect);
 
 /**
-ダンジョン生成アクタークラス
+dungeon generation actor
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor
@@ -37,12 +37,12 @@ class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor
 
 public:
 	/**
-	コンストラクタ
+	constructor
 	*/
 	explicit ADungeonGenerateActor(const FObjectInitializer& initializer);
 
 	/**
-	デストラクタ
+	destructor
 	*/
 	virtual ~ADungeonGenerateActor();
 
@@ -55,13 +55,13 @@ public:
 		int32 FindVoxelHeight(const double z) const;
 
 	/**
-	ミニマップ用のテクスチャを生成します
+	Generates a texture layer for the minimap
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTextureLayer* GenerateMiniMapTextureLayer(const int32 textureWidth);
 
 	/**
-	生成済みのミニマップ用のテクスチャを取得します
+	Get a texture layer for a generated minimap
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTextureLayer* GetGeneratedMiniMapTextureLayer() const;
@@ -101,8 +101,8 @@ protected:
 		UDungeonGenerateParameter* DungeonGenerateParameter = nullptr;
 
 #if WITH_EDITORONLY_DATA
-	//! 乱数の種
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	//! Random number seeds
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		int32 GeneratedRandomSeed = 0;
 #endif
 
@@ -155,8 +155,8 @@ protected:
 
 
 	/*
-	プレイヤーをスタート位置へ移動する通知
-	PreInitializeComponentsのタイミングで呼び出されます
+	Notification to move the player to the starting position
+	Called at the timing of PreInitializeComponents
 	*/
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 		FDungeonGeneratorPlayerStartSignature OnMovePlayerStart;
@@ -170,34 +170,34 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 		FDungeonGeneratorDelegete OnRoomCreated;
 
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	// Cache of the UIDungeonMiniMapTextureLayer
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		UDungeonMiniMapTextureLayer* DungeonMiniMapTextureLayer;
 	
 
-	// ビルドジョブタグ
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	// build job tag
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
 		FString BuildJobTag;
 
-	// ライセンスタグ
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	// license tag
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
 		FString LicenseTag;
 
-	// ライセンスID
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	// License ID
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
 		FString LicenseId;
 
 #if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
-	// 部屋と接続情報のデバッグ情報を表示します
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	// Displays debugging information on room and connection information
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
 		bool ShowRoomAisleInfomation = false;
 
-	// ボクセルグリッドのデバッグ情報を表示します
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	// Displays voxel grid debugging information
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
 		bool ShowVoxelGridType = false;
 
-	// プレイヤーの位置のボクセルグリッドのデバッグ情報を表示します
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	// Displays debugging information for the voxel grid at the player's position
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
 		bool ShowVoxelGridTypeAtPlayerLocation = false;
 
 private:

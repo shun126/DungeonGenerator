@@ -48,7 +48,10 @@ bool UDungeonMiniMapTextureLayer::GenerateMiniMapTexture(const std::shared_ptr<c
 
 UDungeonMiniMapTexture* UDungeonMiniMapTextureLayer::GetByFloor(const uint8 floor) const noexcept
 {
-	return DungeonMiniMapTextures.IsEmpty() ? nullptr : DungeonMiniMapTextures[floor];
+	if (floor < DungeonMiniMapTextures.Num())
+		return DungeonMiniMapTextures[floor];
+	else
+		return nullptr;
 }
 
 UDungeonMiniMapTexture* UDungeonMiniMapTextureLayer::GetByHeight(const double height) const noexcept
@@ -65,10 +68,14 @@ int32 UDungeonMiniMapTextureLayer::GetFloorHeight() const noexcept
 FVector2D UDungeonMiniMapTextureLayer::ToRelative(const FVector& location) const
 {
 	if (DungeonMiniMapTextures.IsEmpty())
-		FVector2D::ZeroVector;
-
-	const float ratio = 1.f / mGridSize * DungeonMiniMapTextures[0]->GetGeneratedScale();
-	return FVector2D(location.X * ratio, location.Y * ratio);
+	{
+		return FVector2D::ZeroVector;
+	}
+	else
+	{
+		const float ratio = 1.f / mGridSize * DungeonMiniMapTextures[0]->GetGeneratedScale();
+		return FVector2D(location.X, location.Y) * ratio;
+	}
 }
 
 FVector2D UDungeonMiniMapTextureLayer::ToRelativeWithScale(const FVector& location, const double scale) const

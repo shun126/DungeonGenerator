@@ -130,12 +130,6 @@ namespace dungeon
 		int32_t GetHeight() const noexcept;
 
 		/**
-		床下の高さを取得します
-		\return		床下の高さ
-		*/
-		uint16_t GetUnderfloorHeight() const noexcept;
-
-		/**
 		幅を設定します
 		\param[in]	width	幅
 		*/
@@ -211,12 +205,6 @@ namespace dungeon
 		FVector GetExtent() const noexcept;
 
 		/**
-		床の中心の座標を取得します
-		\return		床の中心
-		*/
-		Point GetFloorCenter() const noexcept;
-
-		/**
 		地面の中心の座標を取得します
 		\return		地面の中心
 		*/
@@ -231,12 +219,13 @@ namespace dungeon
 
 		/**
 		部屋が交差しているか調べます
-		\param[in]	other		調べる部屋
-		\param[in]	margin		方向のマージン
+		\param[in]	other				調べる部屋
+		\param[in]	horizontalMargin	水平方向のマージン
+		\param[in]	verticalMargin		垂直方向のマージン
 		\return		trueならば交差している
 		垂直方向のマージンは床方向に１、天井方向はかならず０で交差判定します。
 		*/
-		bool Intersect(const Room& other, const uint32_t margin) const noexcept;
+		bool Intersect(const Room& other, const uint32_t horizontalMargin, const uint32_t verticalMargin) const noexcept;
 
 		/**
 		点が含まれるか調べます
@@ -310,7 +299,6 @@ namespace dungeon
 		uint32_t mWidth;
 		uint32_t mDepth;
 		uint32_t mHeight;
-		uint16_t mUnderfloorHeight = 0;
 
 		Identifier mIdentifier;
 

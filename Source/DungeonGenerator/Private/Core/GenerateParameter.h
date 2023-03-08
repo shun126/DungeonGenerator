@@ -68,14 +68,14 @@ namespace dungeon
 		uint32_t GetMaxRoomHeight() const noexcept { return mMaxRoomHeight; }
 
 		/**
-		床下の高さ
+		部屋と部屋の水平方向の余白
 		*/
-		uint16_t GetUnderfloorHeight() const noexcept { return mUnderfloorHeight; }
+		uint32_t GetHorizontalRoomMargin() const noexcept { return mHorizontalRoomMargin; };
 
 		/**
-		部屋と部屋の余白
+		部屋と部屋の垂直方向の余白
 		*/
-		uint32_t GetRoomMargin() const noexcept { return mRoomMargin; };
+		uint32_t GetVerticalRoomMargin() const noexcept { return mVerticalRoomMargin; };
 
 		/**
 		乱数発生
@@ -161,14 +161,14 @@ namespace dungeon
 		uint32_t mMaxRoomHeight = 2;
 
 		/**
-		部屋と部屋の余白
+		部屋と部屋の水平方向の余白
 		*/
-		uint32_t mRoomMargin = 0;
+		uint32_t mHorizontalRoomMargin = 0;
 
 		/**
-		床下の高さ
+		部屋と部屋の垂直方向の余白
 		*/
-		uint16_t mUnderfloorHeight = 0;
+		uint32_t mVerticalRoomMargin = 0;
 
 		/**
 		乱数生成器

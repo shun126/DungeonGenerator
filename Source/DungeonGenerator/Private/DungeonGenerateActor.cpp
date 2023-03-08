@@ -9,11 +9,11 @@ All Rights Reserved.
 #include "DungeonGenerator.h"
 #include "DungeonMiniMapTextureLayer.h"
 #include "DungeonTransactionalHierarchicalInstancedStaticMeshComponent.h"
-#include "BuildInfomation.h"
 #include "Core/Grid.h"
 #include "Core/Generator.h"
 #include "Core/Room.h"
 #include "Core/Voxel.h"
+#include "Core/Debug/BuildInfomation.h"
 #include "Core/Math/Vector.h"
 
 //#include <EngineUtils.h>
@@ -407,7 +407,7 @@ void ADungeonGenerateActor::DrawDebugInfomation()
 
 				UKismetSystemLibrary::DrawDebugSphere(
 					GetWorld(),
-					room->GetFloorCenter() * gridSize,
+					room->GetGroundCenter() * gridSize,
 					10.f,
 					12,
 					FColor::Magenta,

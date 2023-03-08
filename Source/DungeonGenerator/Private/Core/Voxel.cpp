@@ -11,12 +11,15 @@ All Rights Reserved.
 #include "GateFinder.h"
 #include "PathFinder.h"
 #include "PathGoalCondition.h"
+#include "Debug/BuildInfomation.h"
 #include "Debug/Debug.h"
 #include "Math/Math.h"
 #include <array>
 
+#if WITH_EDITOR && JENKINS_FOR_DEVELOP
 // 定義するとデバッグに便利なログを出力します
 //#define DEBUG_SHOW_DEVELOP_LOG
+#endif
 
 namespace dungeon
 {
