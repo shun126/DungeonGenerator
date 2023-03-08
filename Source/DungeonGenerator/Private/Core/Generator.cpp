@@ -12,7 +12,9 @@ All Rights Reserved.
 #include "MinimumSpanningTree.h"
 #include "PathGoalCondition.h"
 #include "Voxel.h"
+#include "Debug/BuildInfomation.h"
 #include "Debug/Debug.h"
+#include "Debug/Stopwatch.h"
 #include "Math/Math.h"
 #include "Math/PerlinNoise.h"
 #include "Math/Plane.h"
@@ -20,14 +22,14 @@ All Rights Reserved.
 
 #include "MissionGraph/MissionGraph.h"
 
-#if WITH_EDITOR
+#if WITH_EDITOR && JENKINS_FOR_DEVELOP
 #include <Misc/Paths.h>
 
 // 定義するとデバッグに便利なログを出力します
 //#define DEBUG_SHOW_DEVELOP_LOG
 
 // 定義すると途中経過と最終結果をBMPで出力します（デバッグ機能）
-#define DEBUG_GENERATE_BITMAP_FILE
+//#define DEBUG_GENERATE_BITMAP_FILE
 
 // 定義すると最終結果をBMPで出力します（デバッグ機能）
 //#define DEBUG_GENERATE_RESULT_BITMAP_FILE
@@ -51,13 +53,10 @@ namespace dungeon
 
 	Generator::Generator() noexcept
 	{
-		std::srand(std::time(nullptr));
 	}
 
 	Generator::~Generator() noexcept
 	{
-		if (mGenerateThread.joinable())
-			mGenerateThread.join();
 	}
 
 	void Generator::Reset()
@@ -74,35 +73,15 @@ namespace dungeon
 
 	void Generator::Generate(const GenerateParameter& parameter) noexcept
 	{
-		if (mGenerateThread.joinable())
-			mGenerateThread.join();
-
 		mLastError = Error::Success;
-		mGenerated = false;
-		mGenerateFuture = mGeneratePromise.get_future();
 		mGenerateParameter = parameter;
 
-		auto sharedThis = shared_from_this();
-		mGenerateThread = std::thread([sharedThis]()
-			{
-				// 生成
-				sharedThis->GenerateImpl();
-
-				// 完了
-				sharedThis->mGenerated = true;
-				sharedThis->mGeneratePromise.set_value();
-			}
-		);
-	}
-
-	void Generator::GenerateImpl() noexcept
-	{
 		static constexpr std::uint8_t maxRetryCount = 3;
 		std::uint_fast8_t retryCount = 0;
 		do
 		{
 			// 生成
-			GeneratePath();
+			GenerateImpl(mGenerateParameter);
 
 			// エラー情報を記録
 			if (mLastError != Generator::Error::Success)
@@ -146,43 +125,66 @@ namespace dungeon
 #endif
 	}
 
-	bool Generator::GeneratePath() noexcept
+	bool Generator::GenerateImpl(GenerateParameter& parameter) noexcept
 	{
+		Stopwatch stopwatch;
+
 		Reset();
 
 		// 部屋の生成
-		if (!GenerateRooms(mGenerateParameter))
+		stopwatch.Start();
+		if (!GenerateRooms(parameter))
 			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("GenerateRooms: %lf sec"), stopwatch.Lap());
 
 		// 部屋の分離
-		if (!SeparateRooms(mGenerateParameter))
+		stopwatch.Start();
+		if (!SeparateRooms(parameter))
 			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("SeparateRooms: %lf sec"), stopwatch.Lap());
 
 		// 全ての部屋が収まるように空間を拡張します
-		if (!ExpandSpace(mGenerateParameter))
+		stopwatch.Start();
+		if (!ExpandSpace(parameter))
 			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("ExpandSpace: %lf sec"), stopwatch.Lap());
 
 		// 重複した部屋や範囲外の部屋を除去
-		if (!RemoveInvalidRooms(mGenerateParameter))
+		stopwatch.Start();
+		if (!RemoveInvalidRooms(parameter))
 			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("RemoveInvalidRooms: %lf sec"), stopwatch.Lap());
 
 		// 通路の生成
-		if (!ExtractionAisles(mGenerateParameter))
+		stopwatch.Start();
+		if (!ExtractionAisles(parameter))
 			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("ExtractionAisles: %lf sec"), stopwatch.Lap());
 
 		// ブランチIDの生成
+		stopwatch.Start();
 		if (!Branch())
 			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("Branch: %lf sec"), stopwatch.Lap());
 
 		// 階層情報の生成
+		stopwatch.Start();
 		if (!DetectFloorHeight())
 			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("DetectFloorHeight: %lf sec"), stopwatch.Lap());
 
 		// 部屋と通路に意味付けする
+		stopwatch.Start();
 		MissionGraph missionGraph(shared_from_this(), mGoalPoint);
+		DUNGEON_GENERATOR_LOG(TEXT("MissionGraph: %lf sec"), stopwatch.Lap());
 
 		// ボクセル情報を生成します
-		return GenerateVoxel(mGenerateParameter);
+		stopwatch.Start();
+		if (!GenerateVoxel(parameter))
+			return false;
+		DUNGEON_GENERATOR_LOG(TEXT("GenerateVoxel: %lf sec"), stopwatch.Lap());
+
+		return true;
 	}
 
 	/**
@@ -196,7 +198,11 @@ namespace dungeon
 
 		PerlinNoise perlinNoise(parameter.GetRandom());
 		constexpr float noiseBoostRatio = 1.333f;
-		const float range = std::max(1.f, std::sqrtf(parameter.GetNumberOfCandidateRooms()));
+
+		float range = std::max(1.f, std::sqrtf(parameter.GetNumberOfCandidateRooms()));
+		float maxRoomWidth = std::min(parameter.GetMinRoomWidth(), parameter.GetMinRoomDepth());
+		maxRoomWidth += parameter.GetHorizontalRoomMargin();
+		range *= maxRoomWidth;
 
 		for (size_t i = 0; i < parameter.GetNumberOfCandidateRooms(); ++i)
 		{
@@ -204,18 +210,19 @@ namespace dungeon
 			const float width = std::sin(radian);
 			const float depth = std::cos(radian);
 			const float height = std::max(0.f, static_cast<float>(parameter.GetNumberOfCandidateFloors()) - 1);
+			const float distance = parameter.GetRandom().Get<float>(range);
 			float noise = perlinNoise.Noise(width, depth);
 			noise = noise * 0.5f + 0.5f;
 			noise *= noiseBoostRatio;
 			noise = std::max(0.f, std::min(noise, 1.f));
 
 			FIntVector location(
-				static_cast<int32_t>(std::round(width * range)),
-				static_cast<int32_t>(std::round(depth * range)),
-				static_cast<int32_t>(std::round(noise * height))
+				static_cast<int32_t>(std::round(width * distance)),
+				static_cast<int32_t>(std::round(depth * distance)),
+				static_cast<int32_t>(std::round(height * noise))
 			);
 
-			if (parameter.GetRoomMargin() == 0)
+			if (parameter.GetHorizontalRoomMargin() == 0)
 			{
 				/*
 				RoomMarginが0の場合、部屋と部屋の間にスロープを作る隙間が無いので、
@@ -232,7 +239,6 @@ namespace dungeon
 				, room->GetCenter().X, room->GetCenter().Y, room->GetCenter().Z
 			);
 #endif
-			room->SetUnderfloorHeight(parameter.mUnderfloorHeight);
 			mRooms.emplace_back(std::move(room));
 		}
 
@@ -282,12 +288,8 @@ namespace dungeon
 		DUNGEON_GENERATOR_LOG(TEXT("Separate Rooms"));
 #endif
 
-#if defined(DEBUG_GENERATE_BITMAP_FILE)
-		size_t imageNo = 0;
-#endif
-
 		// 中心から近い順に並べ替える
-		std::sort(mRooms.begin(), mRooms.end(), [](const std::shared_ptr<const Room>& l, const std::shared_ptr<const Room>& r)
+		mRooms.sort([](const std::shared_ptr<const Room>& l, const std::shared_ptr<const Room>& r)
 			{
 				const double lsd = l->GetCenter().SquaredLength();
 				const double rsd = r->GetCenter().SquaredLength();
@@ -296,7 +298,8 @@ namespace dungeon
 		);
 
 		// 部屋の交差を解消します
-		size_t counter = std::max(static_cast<size_t>(5), mRooms.size() / 2);
+		size_t imageNo = 0;
+		constexpr size_t maxImageNo = 10;
 		bool retry;
 		do {
 			retry = false;
@@ -308,7 +311,7 @@ namespace dungeon
 				// 他の部屋と交差している？
 				for (const std::shared_ptr<Room>& room1 : mRooms)
 				{
-					if (room0 != room1 && room0->Intersect(*room1, parameter.GetRoomMargin()))
+					if (room0 != room1 && room0->Intersect(*room1, parameter.GetHorizontalRoomMargin(), parameter.GetVerticalRoomMargin()))
 					{
 						// 交差した部屋を記録
 						// cppcheck-suppress [useStlAlgorithm]
@@ -351,7 +354,7 @@ namespace dungeon
 					}
 
 					// 押し出し範囲を設定
-					const double margin = static_cast<double>(parameter.GetRoomMargin());
+					const double margin = static_cast<double>(parameter.GetHorizontalRoomMargin());
 					const std::array<Plane, 4> planes =
 					{
 						Plane(FVector(-1.,  0.,  0.), contactPoint + FVector( contactHalfSize.X + margin, 0., 0.)),	// +X
@@ -381,10 +384,9 @@ namespace dungeon
 					const double room1HalfDepth = static_cast<double>(room1->GetDepth()) * .5f;
 					room1->SetX(static_cast<int32_t>(std::floor(newRoomCenter.X - room1HalfWidth)));
 					room1->SetY(static_cast<int32_t>(std::floor(newRoomCenter.Y - room1HalfDepth)));
-
-#if defined(DEBUG_SHOW_DEVELOP_LOG) && 0
+#if 0
 					// 交差していないか再確認
-					if (room0->Intersect(*room1, parameter.GetRoomMargin()))
+					if (room0->Intersect(*room1, parameter.GetHorizontalRoomMargin()))
 					{
 						DUNGEON_GENERATOR_LOG(TEXT("direction %f,%f"), direction.X, direction.Y);
 						DUNGEON_GENERATOR_LOG(TEXT("Room0: L=%d,R=%d,T=%d,B=%d W=%d,H=%d"), room0->GetLeft(), room0->GetRight(), room0->GetTop(), room0->GetBottom(), room0->GetWidth(), room0->GetDepth());
@@ -395,25 +397,58 @@ namespace dungeon
 				}
 			}
 
-			--counter;
-
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
 			if (retry)
 			{
 				std::string filename = "generator_2_" + std::to_string(imageNo) + ".bmp";
 				GenerateRoomImageForDebug(filename);
-				++imageNo;
 			}
 #endif
-		} while (counter > 0 && retry);
 
-		if (counter == 0 && retry)
+			++imageNo;
+		} while (imageNo < maxImageNo && retry);
+
+		if (imageNo >= maxImageNo && retry)
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("Generator::SeparateRooms: Give up..."));
-			mLastError = Error::SeparateRoomsFailed;
-			return false;
+			auto room0iterator = mRooms.begin();
+			while (room0iterator != mRooms.end())
+			{
+				auto room1iterator = mRooms.begin();
+				while (room1iterator != mRooms.end())
+				{
+					if (room0iterator == room1iterator || (*room0iterator)->Intersect(*(*room1iterator), parameter.GetHorizontalRoomMargin(), parameter.GetVerticalRoomMargin()) == false)
+					{
+						++room1iterator;
+					}
+					else
+					{
+						room1iterator = mRooms.erase(room1iterator);
+					}
+				}
+
+				++room0iterator;
+			}
+
+			for (const std::shared_ptr<const Room>& room0 : mRooms)
+			{
+				for (const std::shared_ptr<Room>& room1 : mRooms)
+				{
+					if (room0 != room1 && room0->Intersect(*room1, parameter.GetHorizontalRoomMargin(), parameter.GetVerticalRoomMargin()))
+					{
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+						GenerateRoomImageForDebug("generator_2_failure.bmp");
+#endif
+						DUNGEON_GENERATOR_ERROR(TEXT("Generator::SeparateRooms: The room crossing was not resolved."));
+						mLastError = Error::SeparateRoomsFailed;
+						return false;
+					}
+				}
+			}
 		}
 
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+		GenerateRoomImageForDebug("generator_2_success.bmp");
+#endif
 #if defined(DEBUG_SHOW_DEVELOP_LOG)
 		for (const std::shared_ptr<const Room>& room : mRooms)
 		{
@@ -515,7 +550,7 @@ namespace dungeon
 					if (otherRoom == room)
 						continue;
 					// 内包？
-					if (room->Intersect(*otherRoom, parameter.GetRoomMargin()) == true)
+					if (room->Intersect(*otherRoom, parameter.GetHorizontalRoomMargin(), parameter.GetVerticalRoomMargin()) == true)
 						return true;
 				}
 
@@ -572,7 +607,7 @@ namespace dungeon
 		points.reserve(mRooms.size());
 		for (const std::shared_ptr<Room>& room : mRooms)
 		{
-			// Room::GetFloorCenterリストを作成
+			// Room::GetGroundCenterリストを作成
 			// cppcheck-suppress [useStlAlgorithm]
 			points.emplace_back(std::make_shared<const Point>(room));
 		}
@@ -656,7 +691,6 @@ namespace dungeon
 		canvas.Write(filename);
 #endif
 
-		// TODO:Branch
 		for (const std::shared_ptr<Room>& room : mRooms)
 		{
 			if (room->Contain(*mStartPoint))
@@ -773,8 +807,8 @@ namespace dungeon
 			const FIntVector min(room->GetLeft(), room->GetTop(), room->GetBackground());
 			const FIntVector max(room->GetRight(), room->GetBottom(), room->GetForeground());
 			mVoxel->Rectangle(min, max
-				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier().Get())
-				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier().Get())
+				, Grid::CreateFloor(parameter.GetRandom(), room->GetIdentifier().Get())
+				, Grid::CreateDeck(parameter.GetRandom(), room->GetIdentifier().Get())
 			);
 		}
 
@@ -851,19 +885,6 @@ namespace dungeon
 		return true;
 	}
 
-	bool Generator::IsGenerated() const noexcept
-	{
-		return mGenerated;
-	}
-
-	void Generator::WaitGenerate() const noexcept
-	{
-		if (mGenerateThread.get_id() != std::this_thread::get_id())
-		{
-			mGenerateFuture.wait();
-		}
-	}
-
 	void Generator::GenerateRoomImageForDebug(const std::string& filename) const
 	{
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
@@ -919,12 +940,9 @@ namespace dungeon
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// 以下は生成完了後に操作する関数です。
-	// 必ず mGenerateFuture を使って生成の完了を待ってから処理して下さい。
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	const std::vector<int32_t>& Generator::GetFloorHeight() const
 	{
-		WaitGenerate();
-
 		return mFloorHeight;
 	}
 
@@ -943,8 +961,6 @@ namespace dungeon
 
 	std::shared_ptr<Room> Generator::Find(const Point& point) const noexcept
 	{
-		WaitGenerate();
-
 		for (const auto& room : mRooms)
 		{
 			// cppcheck-suppress [useStlAlgorithm]
@@ -956,8 +972,6 @@ namespace dungeon
 
 	std::vector<std::shared_ptr<Room>> Generator::FindAll(const Point& point) const noexcept
 	{
-		WaitGenerate();
-
 		std::vector<std::shared_ptr<Room>> result;
 		result.reserve(mRooms.size());
 		for (const auto& room : mRooms)

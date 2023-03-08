@@ -10,6 +10,7 @@ All Rights Reserved.
 #include "DungeonRoomProps.h"
 #include "DungeonRoomSensor.h"
 #include "Core/Debug/Debug.h"
+#include "Core/Debug/BuildInfomation.h"
 #include "Core/Identifier.h"
 #include "Core/Generator.h"
 #include "Core/Voxel.h"
@@ -141,8 +142,8 @@ bool CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
 	generateParameter.mMaxRoomDepth = parameter->RoomDepth.Max;
 	generateParameter.mMinRoomHeight = parameter->RoomHeight.Min;
 	generateParameter.mMaxRoomHeight = parameter->RoomHeight.Max;
-	generateParameter.mRoomMargin = parameter->RoomMargin;
-	generateParameter.mUnderfloorHeight = parameter->UnderfloorHeight;
+	generateParameter.mHorizontalRoomMargin = parameter->RoomMargin;
+	generateParameter.mVerticalRoomMargin = parameter->VerticalRoomMargin;
 	mParameter = parameter;
 
 	mGenerator = std::make_shared<dungeon::Generator>();
@@ -177,9 +178,6 @@ bool CDungeonGenerator::Create(const UDungeonGenerateParameter* parameter)
 	});
 
 	mGenerator->Generate(generateParameter);
-
-	// TODO:プログレッシブバーなど進捗を表示したい
-	mGenerator->WaitGenerate();
 
 	// デバッグ情報を出力
 #if defined(DEBUG_GENERATE_MISSION_GRAPH_FILE)
@@ -660,7 +658,7 @@ static inline FBox ToWorldBoundingBox(const UDungeonGenerateParameter* parameter
 
 FBox CDungeonGenerator::CalculateBoundingBox() const
 {
-	if (mGenerator && mGenerator->IsGenerated())
+	if (mGenerator)
 	{
 		const UDungeonGenerateParameter* parameter = mParameter.Get();
 		if (IsValid(parameter))
@@ -1023,7 +1021,7 @@ void CDungeonGenerator::DrawRoomAisleInfomation() const
 
 		UKismetSystemLibrary::DrawDebugSphere(
 			GetWorld(),
-			room->GetFloorCenter() * parameter->GetGridSize(),
+			room->GetGroundCenter() * parameter->GetGridSize(),
 			10.f,
 			12,
 			FColor::Magenta,

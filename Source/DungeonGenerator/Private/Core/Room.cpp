@@ -47,7 +47,6 @@ namespace dungeon
 		, mWidth(other.mWidth)
 		, mDepth(other.mDepth)
 		, mHeight(other.mHeight)
-		, mUnderfloorHeight(other.mUnderfloorHeight)
 		, mIdentifier(other.mIdentifier)
 		, mParts(other.mParts)
 		, mItem(other.mItem)
@@ -63,7 +62,6 @@ namespace dungeon
 		, mWidth(std::move(other.mWidth))
 		, mDepth(std::move(other.mDepth))
 		, mHeight(std::move(other.mHeight))
-		, mUnderfloorHeight(std::move(other.mUnderfloorHeight))
 		, mIdentifier(std::move(other.mIdentifier))
 		, mParts(std::move(other.mParts))
 		, mItem(std::move(other.mItem))
@@ -122,11 +120,6 @@ namespace dungeon
 		return mHeight;
 	}
 
-	uint16_t Room::GetUnderfloorHeight() const noexcept
-	{
-		return mUnderfloorHeight;
-	}
-
 	void Room::SetWidth(const int32_t width) noexcept
 	{
 		mWidth = width;
@@ -140,11 +133,6 @@ namespace dungeon
 	void Room::SetHeight(const int32_t height) noexcept
 	{
 		mHeight = height;
-	}
-
-	void Room::SetUnderfloorHeight(const uint16_t underfloorHeight) noexcept
-	{
-		mUnderfloorHeight = underfloorHeight;
 	}
 
 	int32_t Room::GetLeft() const noexcept
@@ -202,14 +190,6 @@ namespace dungeon
 		return FVector(x, y, z);
 	}
 
-	Point Room::GetFloorCenter() const noexcept
-	{
-		const float x = static_cast<float>(GetX()) + static_cast<float>(GetWidth()) * 0.5f;
-		const float y = static_cast<float>(GetY()) + static_cast<float>(GetDepth()) * 0.5f;
-		const float z = static_cast<float>(GetZ() + GetUnderfloorHeight());
-		return Point(x, y, z);
-	}
-
 	Point Room::GetGroundCenter() const noexcept
 	{
 		const float x = static_cast<float>(GetX()) + static_cast<float>(GetWidth()) * 0.5f;
@@ -226,14 +206,14 @@ namespace dungeon
 			(GetBackground() < other.GetForeground() && GetForeground() > other.GetBackground());
 	}
 
-	bool Room::Intersect(const Room& other, const uint32_t margin) const noexcept
+	bool Room::Intersect(const Room& other, const uint32_t horizontalMargin, const uint32_t verticalMargin) const noexcept
 	{
-		const int32_t left = GetLeft() - margin;
-		const int32_t right = GetRight() + margin;
-		const int32_t top = GetTop() - margin;
-		const int32_t bottom = GetBottom() + margin;
-		const int32_t foreground = GetForeground();
-		const int32_t background = GetBackground();
+		const int32_t left = GetLeft() - horizontalMargin;
+		const int32_t right = GetRight() + horizontalMargin;
+		const int32_t top = GetTop() - horizontalMargin;
+		const int32_t bottom = GetBottom() + horizontalMargin;
+		const int32_t foreground = GetForeground() + verticalMargin;
+		const int32_t background = GetBackground() - verticalMargin;
 		return
 			(left < other.GetRight() && right > other.GetLeft()) &&
 			(top < other.GetBottom() && bottom > other.GetTop()) &&

@@ -5,11 +5,12 @@
 One day I wanted to create a video game, but I didn't have the level design know-how. So I decided to create a procedural dungeon generator.
 The dungeon generator was based on Vazgriz's algorithm. You can read more about [Vazgriz's algorithm here](https://vazgriz.com/119/procedurally-generated-dungeons/).
 
-This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. 
+This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
 
-Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
+Also, [UnrealEngine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
-And see [DungeonGeneratorTest](https://github.com/shun126/DungeonGeneratorTest) for a sample plugin project.
+## Demo
+* [DungeonGeneratorTest](https://github.com/shun126/DungeonGeneratorTest) is a BluePrint sample project for first-person exploration.
 
 # Feature
 

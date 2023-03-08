@@ -19,17 +19,17 @@ class DUNGEONGENERATOR_API UDungeonRoomAsset : public UObject
 
 public:
 	/**
-	コンストラクタ
+	constructor
 	*/
 	explicit UDungeonRoomAsset(const FObjectInitializer& ObjectInitializer);
 
 	/**
-	デストラクタ
+	destructor
 	*/
 	virtual ~UDungeonRoomAsset() = default;
 
 protected:
-	// TODO:publicを止めて下さい。必要に応じてアクセサを用意して下さい
+	// TODO:Stop public. Provide accessors as needed.
 public:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		FName LevelName;

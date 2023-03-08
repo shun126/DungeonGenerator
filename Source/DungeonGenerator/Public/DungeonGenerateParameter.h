@@ -209,8 +209,6 @@ public:
 	const FInt32Interval& GetRoomDepth() const noexcept;
 	const FInt32Interval& GetRoomHeight() const noexcept;
 
-	int32 GetUnderfloorHeight() const;
-
 	int32 GetRoomMargin() const;
 
 	float GetGridSize() const;
@@ -287,108 +285,108 @@ private:
 #endif
 
 protected:
-	//! 乱数の種 (0なら自動生成)
+	//! Seed of random number (if 0, auto-generated)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "0"))
 		int32 RandomSeed = 0;
 
-	//! 乱数の種 (0なら自動生成)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	//! Seed of random numbers used for the last generation
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		int32 GeneratedRandomSeed = 0;
 
 	/**
-	ダンジョンの階層
+	dungeon level
 	*/
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "1"))
 		uint8 NumberOfCandidateFloors = 3;
 
 	/**
-	生成する部屋の数の候補
-	部屋の初期生成数であり、最終的に生成される部屋の数ではありません。
+	Candidate number of rooms to be generated
+	This is the initial number of rooms to be generated, not the final number of rooms to be generated.
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
 		uint8 NumberOfCandidateRooms = 8;
 
-	//! 部屋の幅
+	//! Room Width
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))
 		FInt32Interval RoomWidth = { 4, 8 };
 
-	//! 部屋の奥行き
+	//! Room depth
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))
 		FInt32Interval RoomDepth = { 4, 8 };
 
-	//! 部屋の高さ
+	//! Room height
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))
 		FInt32Interval RoomHeight = { 2, 3 };
 
-	//! 床下の高さ
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0"))
-		int32 UnderfloorHeight = 0;
-
-	//! 部屋と部屋の余白
+	//! Horizontal room and room margins
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0"))
 		int32 RoomMargin = 1;
 
-	//! 部屋と部屋の結合
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0"))
+	//! Horizontal room-to-room coupling
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
 		bool MergeRooms = false;
 
-	//! グリッドサイズ
+	//! Vertical room-to-room margins
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0"))
+		int32 VerticalRoomMargin = 0;
+
+	//! voxel size
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
 		float GridSize = 100.f;
 
-	//!	床のパーツの生成方法
+	//!	How to generate floor parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod FloorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	//! 床のパーツ
+	//! Floor parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
 		TArray<FDungeonMeshPartsWithDirection> FloorParts;
 
-	//!	階段やスロープのパーツの生成方法
+	//!	How to generate parts for stairs and ramps
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod SloopPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	//! 階段やスロープのパーツ
+	//! Stairs and ramp parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
 		TArray<FDungeonMeshParts> SlopeParts;
 
-	//!	壁のパーツの生成方法
+	//!	How to generate wall parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod WallPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	//! 壁のパーツ
+	//! Wall parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
 		TArray<FDungeonMeshParts> WallParts;
 
-	//!	部屋のパーツの生成方法
+	//!	How to generate room parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomRoof", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod RoomRoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	//! 部屋の屋根のパーツ
+	//! Room Roof Parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomRoof", BlueprintReadWrite)
 		TArray<FDungeonMeshPartsWithDirection> RoomRoofParts;
 
-	//!	部屋のパーツの生成方法
+	//!	How to generate aisle parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|AisleRoof", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod AisleRoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	//! 通路の屋根のパーツ
+	//! Roof parts of aisle
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|AisleRoof", BlueprintReadWrite)
 		TArray<FDungeonMeshPartsWithDirection> AisleRoofParts;
 
-	//!	柱のパーツの生成方法
+	//!	How to generate parts of columns
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Pillar", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod PillarPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	//! 柱のパーツ
+	//! Pillar Parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Pillar", BlueprintReadWrite)
 		TArray<FDungeonMeshParts> PillarParts;
 
-	//!	たいまつ（柱の照明）のパーツの生成方法
+	//!	How to generate parts for torch (pillar lighting)
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Torch", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod TorchPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	//! たいまつ（柱の照明）のパーツ
+	//! Torch (pillar lighting) parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Torch", BlueprintReadWrite)
 		TArray<FDungeonRandomObjectParts> TorchParts;
 
@@ -398,27 +396,27 @@ protected:
 		TArray<FDungeonRandomObjectParts> ChandelierParts;
 */
 
-	//!	ドアのパーツの生成方法
+	//!	How to generate door parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Door", BlueprintReadWrite)
 		EDungeonPartsSelectionMethod DoorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	// ドアのパーツ
+	// Door Parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Door", BlueprintReadWrite)
 		TArray<FDungeonObjectParts> DoorParts;
 
-	// スタート地点
+	// starting point
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
 		FDungeonActorPartsWithDirection StartParts;
 
-	// ゴール位置
+	// goal position
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
 		FDungeonActorPartsWithDirection GoalParts;
 
-	// 部屋のセンサークラス
+	// Room Sensor Class
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (AllowedClasses = "DungeonRoomSensor"))
 		UClass* DungeonRoomSensorClass = ADungeonRoomSensor::StaticClass();
 
-	//! サブレベル配置
+	//! sublevel placement
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		TArray<UDungeonRoomAsset*> DungeonRoomAssets;
 

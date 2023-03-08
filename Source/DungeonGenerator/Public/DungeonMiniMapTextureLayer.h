@@ -20,7 +20,7 @@ namespace dungeon
 }
 
 /**
-ミニマップテクスチャクラス
+Minimap Texture Layer
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonMiniMapTextureLayer : public UObject
@@ -29,54 +29,54 @@ class DUNGEONGENERATOR_API UDungeonMiniMapTextureLayer : public UObject
 
 public:
 	/**
-	コンストラクタ
+	constructor
 	*/
 	explicit UDungeonMiniMapTextureLayer(const FObjectInitializer& initializer);
 
 	/**
-	デストラクタ
+	destructor
 	*/
 	virtual ~UDungeonMiniMapTextureLayer() = default;
 
 	/**
-	総階層数を取得します
+	Get the total number of levels
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		int32 GetFloorHeight() const noexcept;
 
 	/**
-	階層からUDungeonMiniMapTextureを取得します
+	Get UDungeonMiniMapTexture from level
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTexture* GetByFloor(const uint8 floor) const noexcept;
 
 	/**
-	高さからUDungeonMiniMapTextureを取得します
+	Get UDungeonMiniMapTexture from height
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTexture* GetByHeight(const double height) const noexcept;
 
 	/**
-	ワールド座標からスクリーン座標に変換します
+	Converts from world coordinates to screen coordinates
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		FVector2D ToRelative(const FVector& location) const;
 
 	/**
-	ワールド座標からスクリーン座標に変換します
+	Converts from world coordinates to screen coordinates
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		FVector2D ToRelativeWithScale(const FVector& location, const double scale) const;
 
 	/**
-	ワールド座標からスクリーン座標と階層に変換します
+	Converts from world coordinates to screen coordinates and level
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		FVector2D ToRelativeAndFloor(uint8& floor, const FVector& location) const;
 
 private:
 	/**
-	ミニマップテクスチャを生成します
+	Generates a minimap texture
 	*/
 	bool GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const float gridSize);
 
@@ -86,10 +86,10 @@ protected:
 		TArray<UDungeonMiniMapTexture*> DungeonMiniMapTextures;
 
 private:
-	// Generatorへの参照
+	// Reference to Generator
 	std::shared_ptr<const dungeon::Generator> mGenerator;
 
-	// ワールド空間からVoxel空間への変換
+	// Transformation scale from world space to Voxel space
 	float mGridSize = 1.f;
 
 	friend class ADungeonGenerateActor;

@@ -7,13 +7,16 @@ All Rights Reserved.
 */
 
 #include "PathFinder.h"
+#include "Debug/BuildInfomation.h"
 #include <cassert>
 
 // 定義するとマンハッタン距離で計算する。未定義ならユークリッド距離で計算する
 #define CALCULATE_IN_MANHATTAN_DISTANCE
 
+#if WITH_EDITOR && JENKINS_FOR_DEVELOP
 // 定義すると経路を調べるため、中間データを開放しない
 //#define CHECK_ROUTE
+#endif
 
 namespace dungeon
 {
