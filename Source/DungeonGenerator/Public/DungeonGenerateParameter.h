@@ -270,6 +270,8 @@ public:
 #endif
 
 private:
+	int32 SelectDungeonMeshPartsIndex(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod) const;
+		
 	template<typename T = FDungeonMeshParts>
 	T* SelectDungeonMeshParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<T>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const;
 
@@ -419,6 +421,7 @@ protected:
 	//! sublevel placement
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		TArray<UDungeonRoomAsset*> DungeonRoomAssets;
+	// TObjectPtr<UDungeonRoomAsset> not used for UE4 compatibility
 
 	friend class CDungeonGenerator;
 };
@@ -431,24 +434,7 @@ inline T* UDungeonGenerateParameter::SelectDungeonMeshParts(const size_t gridInd
 	if (size <= 0)
 		return nullptr;
 
-	int32 index = 0;
-
-	switch (partsSelectionMethod)
-	{
-	case EDungeonPartsSelectionMethod::GridIndex:
-		index = 0 % size;
-		break;
-
-	case EDungeonPartsSelectionMethod::Direction:
-		index = grid.GetDirection().Get() % size;
-		break;
-
-	case EDungeonPartsSelectionMethod::Random:
-	default:
-		index = random.Get<uint32_t>(size);
-		break;
-	}
-
+	const int32 index = SelectDungeonMeshPartsIndex(gridIndex, grid, random, size, partsSelectionMethod);
 	return const_cast<T*>(&parts[index]);
 }
 

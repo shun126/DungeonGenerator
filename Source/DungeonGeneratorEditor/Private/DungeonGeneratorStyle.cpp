@@ -9,7 +9,13 @@ All Rights Reserved.
 #include "Interfaces/IPluginManager.h"
 #include "Slate/SlateGameResources.h"
 #include "Styling/SlateStyleRegistry.h"
+
+#include <Misc/EngineVersionComparison.h>
+#if UE_VERSION_OLDER_THAN(5, 0, 0)
+#define IMAGE_BRUSH( RelativePath, ... ) FSlateImageBrush(RootToContentDir(RelativePath, TEXT(".png")), __VA_ARGS__)
+#else
 #include "Styling/SlateStyleMacros.h"
+#endif
 
 #define RootToContentDir Style->RootToContentDir
 

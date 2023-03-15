@@ -16,7 +16,7 @@ public class DungeonGenerator : ModuleRules
 			new string[]
 			{
 			});
-		
+
 		PrivateIncludePaths.AddRange(
 			new string[]
 			{
@@ -27,24 +27,28 @@ public class DungeonGenerator : ModuleRules
 			{
 				"Core",
 			});
-			
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"CoreUObject",
 				"Engine",
 				"NavigationSystem",
-			});
+                "JsonUtilities"
+            });
 		if (Target.bBuildEditor)
 		{
 			PrivateDependencyModuleNames.AddRange(
 				new string[] {
-					"UnrealEd"
-				});
+					"UnrealEd",
+                });
 		}
 
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[] {
 			});
+
+		//CppStandard = CppStandardVersion.Cpp17;
+		CppStandard = CppStandardVersion.Latest;
 	}
 }

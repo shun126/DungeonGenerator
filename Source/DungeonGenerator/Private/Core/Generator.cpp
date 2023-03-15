@@ -291,8 +291,8 @@ namespace dungeon
 		// 中心から近い順に並べ替える
 		mRooms.sort([](const std::shared_ptr<const Room>& l, const std::shared_ptr<const Room>& r)
 			{
-				const double lsd = l->GetCenter().SquaredLength();
-				const double rsd = r->GetCenter().SquaredLength();
+				const double lsd = l->GetCenter().SizeSquared();
+				const double rsd = r->GetCenter().SizeSquared();
 				return lsd < rsd;
 			}
 		);

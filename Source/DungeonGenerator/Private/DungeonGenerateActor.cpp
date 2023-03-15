@@ -523,7 +523,8 @@ void ADungeonGenerateActor::DrawDebugInfomation()
 	// プレイヤーの位置のボクセルグリッドのデバッグ情報を表示します
 	if (ShowVoxelGridTypeAtPlayerLocation)
 	{
-		if (APawn* playerPawn = GetValid(UGameplayStatics::GetPlayerPawn(this, 0)))
+		APawn* playerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+		if (IsValid(playerPawn))
 		{
 			TArray<FString> output;
 
@@ -606,7 +607,7 @@ void ADungeonGenerateActor::UnloadStreamLevels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // BluePrint便利関数
-int32 ADungeonGenerateActor::FindFloorHeight(const double z) const
+int32 ADungeonGenerateActor::FindFloorHeight(const float z) const
 {
 	const int32 gridZ = FindVoxelHeight(z);
 
@@ -617,7 +618,7 @@ int32 ADungeonGenerateActor::FindFloorHeight(const double z) const
 	return generator->FindFloor(gridZ);
 }
 
-int32 ADungeonGenerateActor::FindVoxelHeight(const double z) const
+int32 ADungeonGenerateActor::FindVoxelHeight(const float z) const
 {
 	if (DungeonGenerateParameter == nullptr)
 		return 0;

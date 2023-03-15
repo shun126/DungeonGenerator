@@ -48,11 +48,11 @@ public:
 
 
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		int32 FindFloorHeight(const double z) const;
+		int32 FindFloorHeight(const float z) const;
 
 
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		int32 FindVoxelHeight(const double z) const;
+		int32 FindVoxelHeight(const float z) const;
 
 	/**
 	Generates a texture layer for the minimap
@@ -110,22 +110,22 @@ protected:
 		bool InstancedStaticMesh = false;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
-		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> FloorMeshs;
+		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> FloorMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
-		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> SlopeMeshs;
+		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> SlopeMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
-		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> WallMeshs;
+		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> WallMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
-		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> RoomRoofMeshs;
+		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> RoomRoofMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
-		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> AisleRoofMeshs;
+		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> AisleRoofMeshs;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator")
-		TArray<TObjectPtr<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>> PillarMeshs;
+		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> PillarMeshs;
 
 	// event
 	UPROPERTY(BlueprintAssignable, Category = "Event")
@@ -173,7 +173,8 @@ protected:
 	// Cache of the UIDungeonMiniMapTextureLayer
 	UPROPERTY(BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 		UDungeonMiniMapTextureLayer* DungeonMiniMapTextureLayer;
-	
+	// TObjectPtr<UDungeonMiniMapTextureLayer> not used for UE4 compatibility
+
 
 	// build job tag
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")

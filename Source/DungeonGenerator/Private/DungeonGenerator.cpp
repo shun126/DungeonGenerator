@@ -18,6 +18,7 @@ All Rights Reserved.
 #include <GameFramework/PlayerStart.h>
 #include <Engine/StaticMeshActor.h>
 #include <Kismet/GameplayStatics.h>
+#include <Misc/EngineVersionComparison.h>
 #include <NavMesh/NavMeshBoundsVolume.h>
 #include <NavMesh/RecastNavMesh.h>
 
@@ -690,20 +691,44 @@ void CDungeonGenerator::MovePlayerStart()
 
 			const EComponentMobility::Type mobility = rootComponent->Mobility;
 			rootComponent->SetMobility(EComponentMobility::Movable);
+			{
+				float cylinderRadius, cylinderHalfHeight;
+				rootComponent->CalcBoundingCylinder(cylinderRadius, cylinderHalfHeight);
 
-			FVector location = GetStartLocation();
-			location.Z += rootComponent->GetLocalBounds().BoxExtent.Z + heightMargine;
-			playerStart->SetActorLocation(location);
+				FVector location = GetStartLocation();
 
+				const UDungeonGenerateParameter* parameter = mParameter.Get();
+				const auto offsetZ = IsValid(parameter) ? parameter->GetGridSize() : (cylinderHalfHeight * 2);
+				FHitResult hitResult;
+				if (playerStart->GetWorld()->LineTraceSingleByChannel(hitResult, location + FVector(0, 0, offsetZ), location, ECollisionChannel::ECC_Pawn))
+				{
+					location = hitResult.ImpactPoint;
+				}
+				location.Z += cylinderHalfHeight + heightMargine;
+
+				playerStart->SetActorLocation(location);
+
+				FCollisionShape collisionShape;
+#if UE_VERSION_OLDER_THAN(5, 0, 0)
+				collisionShape.SetBox(FVector(cylinderRadius, cylinderRadius, cylinderHalfHeight));
+#else
+				collisionShape.SetBox(FVector3f(cylinderRadius, cylinderRadius, cylinderHalfHeight));
+#endif
+				if (playerStart->GetWorld()->OverlapBlockingTestByChannel(location, playerStart->GetActorQuat(), ECollisionChannel::ECC_Pawn, collisionShape))
+				{
+					DUNGEON_GENERATOR_ERROR(TEXT("%s(PlayerStart)が何かに接触しています"), *playerStart->GetName());
+				}
+			}
 			rootComponent->SetMobility(mobility);
 		}
 		else
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("PlayerStartのRootComponentを設定して下さい"));
+			DUNGEON_GENERATOR_ERROR(TEXT("%s(PlayerStart)のRootComponentを設定して下さい"), *playerStart->GetName());
 		}
 	}
 	else
 	{
+		DUNGEON_GENERATOR_WARNING(TEXT("PlayerStartは発見できませんでした"));
 	}
 }
 
@@ -737,10 +762,11 @@ AStaticMeshActor* CDungeonGenerator::SpawnStaticMeshActor(UStaticMesh* staticMes
 	AStaticMeshActor* actor = SpawnActorDeferred<AStaticMeshActor>(AStaticMeshActor::StaticClass(), folderPath, transform, spawnActorCollisionHandlingMethod);
 	if (!IsValid(actor))
 		return nullptr;
-	if (UStaticMeshComponent* mesh = GetValid(actor->GetStaticMeshComponent()))
-	{
+
+	UStaticMeshComponent* mesh = actor->GetStaticMeshComponent();
+	if (IsValid(mesh))
 		mesh->SetStaticMesh(staticMesh);
-	}
+
 	actor->FinishSpawning(transform);
 	return actor;
 }
@@ -950,9 +976,14 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 	//UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_A8);
 	UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_G8);
 	{
-		auto lockedBulkData = generateTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+#if UE_VERSION_OLDER_THAN(5, 0, 0)
+		auto mips = generateTexture->PlatformData->Mips[0];
+#else
+		auto mips = generateTexture->PlatformData->Mips[0];
+#endif
+		auto lockedBulkData = mips.BulkData.Lock(LOCK_READ_WRITE);
 		FMemory::Memcpy(lockedBulkData, pixels.get(), totalBufferSize);
-		generateTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+		mips.BulkData.Unlock();
 	}
 	//generateTexture->Filter = TextureFilter::TF_Nearest;
 	generateTexture->AddToRoot();
