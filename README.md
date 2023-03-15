@@ -3,10 +3,12 @@
 
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
-[![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
+[![youtube](https://img.shields.io/youtube/views/HIW4mRt2_AA?style=social)](https://youtu.be/HIW4mRt2_AA)
 
 ![DungeonGeneratorPlugin](https://github.com/shun126/DungeonGenerator/raw/main/Document/DungeonGenerator03.jpg)
+
+Trailer: [YouTube](https://youtu.be/HIW4mRt2_AA)
 
 # 🚩 Table of Contents
 - [Why Dungeon Generator?](#-why-dungeon-generator)
@@ -44,7 +46,7 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
 
 # 🔧 Requirements
-* [Unreal Engine 5.1.1](https://www.unrealengine.com/unreal-engine-5)
+* [Unreal Engine 5.1.1 or Unreal Engine 4.27.2](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 # 📜 License

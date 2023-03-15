@@ -54,7 +54,7 @@ public:
 	Get UDungeonMiniMapTexture from height
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		UDungeonMiniMapTexture* GetByHeight(const double height) const noexcept;
+		UDungeonMiniMapTexture* GetByHeight(const float height) const noexcept;
 
 	/**
 	Converts from world coordinates to screen coordinates
@@ -66,7 +66,7 @@ public:
 	Converts from world coordinates to screen coordinates
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		FVector2D ToRelativeWithScale(const FVector& location, const double scale) const;
+		FVector2D ToRelativeWithScale(const FVector& location, const float scale) const;
 
 	/**
 	Converts from world coordinates to screen coordinates and level
@@ -84,6 +84,7 @@ protected:
 	// 階層毎のダンジョンミニマップテクスチャ
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 		TArray<UDungeonMiniMapTexture*> DungeonMiniMapTextures;
+	// TObjectPtr<UDungeonMiniMapTexture> not used for UE4 compatibility
 
 private:
 	// Reference to Generator

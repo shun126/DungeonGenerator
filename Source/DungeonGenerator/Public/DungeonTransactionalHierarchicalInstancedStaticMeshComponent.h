@@ -6,6 +6,7 @@ All Rights Reserved.
 
 #pragma once
 #include <Components/HierarchicalInstancedStaticMeshComponent.h>
+#include <Misc/EngineVersionComparison.h>
 #include "DungeonTransactionalHierarchicalInstancedStaticMeshComponent.generated.h"
 
 /*
@@ -42,10 +43,17 @@ public:
 	*/
 	bool IsImmediate() const;
 
+#if UE_VERSION_OLDER_THAN(5, 0, 0)
+	virtual int32 AddInstance(const FTransform& instanceTransforms) override;
+	virtual TArray<int32> AddInstances(const TArray<FTransform>& instanceTransforms, bool bShouldReturnIndices) override;
+#else
 	virtual int32 AddInstance(const FTransform& instanceTransforms, bool bWorldSpace = false) override;
 	virtual TArray<int32> AddInstances(const TArray<FTransform>& instanceTransforms, bool bShouldReturnIndices, bool bWorldSpace = false) override;
+#endif
 	virtual bool RemoveInstance(int32 instanceIndex) override;
+#if UE_VERSION_NEWER_THAN(5, 0, 0)
 	bool RemoveInstances(const TArray<int32>& instancesToRemove);
+#endif
 	virtual void ClearInstances() override;
 
 private:

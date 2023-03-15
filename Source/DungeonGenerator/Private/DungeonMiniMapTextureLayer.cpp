@@ -54,7 +54,7 @@ UDungeonMiniMapTexture* UDungeonMiniMapTextureLayer::GetByFloor(const uint8 floo
 		return nullptr;
 }
 
-UDungeonMiniMapTexture* UDungeonMiniMapTextureLayer::GetByHeight(const double height) const noexcept
+UDungeonMiniMapTexture* UDungeonMiniMapTextureLayer::GetByHeight(const float height) const noexcept
 {
 	const uint8_t voxelHeight = static_cast<uint8_t>(height / mGridSize);
 	return GetByFloor(mGenerator->FindFloor(voxelHeight));
@@ -67,7 +67,7 @@ int32 UDungeonMiniMapTextureLayer::GetFloorHeight() const noexcept
 
 FVector2D UDungeonMiniMapTextureLayer::ToRelative(const FVector& location) const
 {
-	if (DungeonMiniMapTextures.IsEmpty())
+	if (DungeonMiniMapTextures.Num() <= 0)
 	{
 		return FVector2D::ZeroVector;
 	}
@@ -78,7 +78,7 @@ FVector2D UDungeonMiniMapTextureLayer::ToRelative(const FVector& location) const
 	}
 }
 
-FVector2D UDungeonMiniMapTextureLayer::ToRelativeWithScale(const FVector& location, const double scale) const
+FVector2D UDungeonMiniMapTextureLayer::ToRelativeWithScale(const FVector& location, const float scale) const
 {
 	return ToRelative(location) * scale;
 }

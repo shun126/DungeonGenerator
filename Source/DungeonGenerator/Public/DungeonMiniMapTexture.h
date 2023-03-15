@@ -62,6 +62,7 @@ protected:
 	// Generated textures
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 		UTexture2D* Texture = nullptr;
+	// TObjectPtr<UTexture2D> not used for UE4 compatibility
 
 	// Transformation scale from Voxel space to texture space
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")

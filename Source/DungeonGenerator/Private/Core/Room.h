@@ -10,6 +10,7 @@ All Rights Reserved.
 #include "Identifier.h"
 #include "Math/Math.h"
 #include "Math/Point.h"
+#include <string_view>
 
 namespace dungeon
 {

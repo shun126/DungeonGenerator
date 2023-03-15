@@ -52,6 +52,31 @@ void UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::EndTransacti
 	}
 }
 
+#if UE_VERSION_OLDER_THAN(5, 0, 0)
+int32 UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::AddInstance(const FTransform& instanceTransforms)
+{
+	// トランスフォーム変更に伴う更新が必要か設定
+	mNotDirty = mImmediate;
+
+	// コリジョンを無効化して物理エンジンへの通知を抑制
+	CheckAndDisableCollision();
+
+	// 親クラスを呼び出します
+	return Super::AddInstance(instanceTransforms);
+}
+
+TArray<int32> UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::AddInstances(const TArray<FTransform>& instanceTransforms, bool bShouldReturnIndices)
+{
+	// トランスフォーム変更に伴う更新が必要か設定
+	mNotDirty = mImmediate;
+
+	// コリジョンを無効化して物理エンジンへの通知を抑制
+	CheckAndDisableCollision();
+
+	// 親クラスを呼び出します
+	return Super::AddInstances(instanceTransforms, bShouldReturnIndices);
+}
+#else
 int32 UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::AddInstance(const FTransform& instanceTransforms, bool bWorldSpace)
 {
 	// トランスフォーム変更に伴う更新が必要か設定
@@ -75,6 +100,7 @@ TArray<int32> UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::Add
 	// 親クラスを呼び出します
 	return Super::AddInstances(instanceTransforms, bShouldReturnIndices, bWorldSpace);
 }
+#endif
 
 bool UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::RemoveInstance(int32 instanceIndex)
 {
@@ -88,6 +114,7 @@ bool UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::RemoveInstan
 	return Super::RemoveInstance(instanceIndex);
 }
 
+#if UE_VERSION_NEWER_THAN(5, 0, 0)
 bool UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::RemoveInstances(const TArray<int32>& instancesToRemove)
 {
 	// トランスフォーム変更に伴う更新が必要か設定
@@ -99,6 +126,7 @@ bool UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::RemoveInstan
 	// 親クラスを呼び出します
 	return Super::RemoveInstances(instancesToRemove);
 }
+#endif
 
 void UDungeonTransactionalHierarchicalInstancedStaticMeshComponent::ClearInstances()
 {

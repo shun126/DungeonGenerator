@@ -148,6 +148,24 @@ UDungeonGenerateParameter::UDungeonGenerateParameter(const FObjectInitializer& O
 {
 }
 
+int32 UDungeonGenerateParameter::SelectDungeonMeshPartsIndex(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod) const
+{
+	switch (partsSelectionMethod)
+	{
+	case EDungeonPartsSelectionMethod::GridIndex:
+		return gridIndex % size;
+
+	case EDungeonPartsSelectionMethod::Direction:
+		return grid.GetDirection().Get() % size;
+
+	case EDungeonPartsSelectionMethod::Random:
+		return random.Get<uint32_t>(size);
+
+	default:
+		return gridIndex % size;
+	}
+}
+
 // aka: SelectDungeonMeshParts, SelectDungeonRandomObjectParts
 FDungeonObjectParts* UDungeonGenerateParameter::SelectDungeonObjectParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random, const TArray<FDungeonObjectParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod) const
 {
@@ -155,24 +173,7 @@ FDungeonObjectParts* UDungeonGenerateParameter::SelectDungeonObjectParts(const s
 	if (size <= 0)
 		return nullptr;
 
-	int32 index = 0;
-
-	switch (partsSelectionMethod)
-	{
-	case EDungeonPartsSelectionMethod::GridIndex:
-		index = gridIndex % size;
-		break;
-
-	case EDungeonPartsSelectionMethod::Direction:
-		index = grid.GetDirection().Get() % size;
-		break;
-
-	case EDungeonPartsSelectionMethod::Random:
-	default:
-		index = random.Get<uint32_t>() % size;
-		break;
-	}
-
+	const int32 index = SelectDungeonMeshPartsIndex(gridIndex, grid, random, size, partsSelectionMethod);
 	FDungeonObjectParts* actorParts = const_cast<FDungeonObjectParts*>(&parts[index]);
 	return IsValid(actorParts->GetActorClass()) ? actorParts : nullptr;
 }
@@ -184,24 +185,7 @@ FDungeonRandomObjectParts* UDungeonGenerateParameter::SelectDungeonRandomObjectP
 	if (size <= 0)
 		return nullptr;
 
-	int32 index = 0;
-
-	switch (partsSelectionMethod)
-	{
-	case EDungeonPartsSelectionMethod::GridIndex:
-		index = gridIndex % size;
-		break;
-
-	case EDungeonPartsSelectionMethod::Direction:
-		index = grid.GetDirection().Get() % size;
-		break;
-
-	case EDungeonPartsSelectionMethod::Random:
-	default:
-		index = random.Get<uint32_t>() % size;
-		break;
-	}
-
+	const int32 index = SelectDungeonMeshPartsIndex(gridIndex, grid, random, size, partsSelectionMethod);
 	FDungeonRandomObjectParts* actorParts = const_cast<FDungeonRandomObjectParts*>(&parts[index]);
 	if (!IsValid(actorParts->GetActorClass()))
 		return nullptr;
