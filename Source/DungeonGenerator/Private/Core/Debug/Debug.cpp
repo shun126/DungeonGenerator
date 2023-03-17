@@ -7,6 +7,7 @@ All Rights Reserved.
 */
 
 #include "Debug.h"
+#include <algorithm>
 
 // ログマクロ
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING > 0
@@ -173,7 +174,7 @@ namespace dungeon
 			// left
 			for (int32_t y = top; y <= bottom; ++y)
 			{
-				mRgbImage.get()[y * mWidth + left];
+				mRgbImage.get()[y * mWidth + left] = color;
 			}
 
 			// right
