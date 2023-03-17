@@ -8,6 +8,7 @@ All Rights Reserved.
 */
 
 #include "DelaunayTriangulation3D.h"
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 
