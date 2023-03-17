@@ -9,6 +9,7 @@ All Rights Reserved.
 #include "DungeonRoomParts.h"
 #include "DungeonRoomProps.h"
 #include <EngineUtils.h>
+#include <algorithm>
 #include <functional>
 #include <memory>
 
