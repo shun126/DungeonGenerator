@@ -174,7 +174,7 @@ namespace dungeon
 			// left
 			for (int32_t y = top; y <= bottom; ++y)
 			{
-				mRgbImage.get()[y * mWidth + left];
+				mRgbImage.get()[y * mWidth + left] = color;
 			}
 
 			// right
