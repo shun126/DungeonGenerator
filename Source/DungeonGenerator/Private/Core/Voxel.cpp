@@ -245,8 +245,7 @@ namespace dungeon
 						break;
 
 					default:
-						std::terminate();
-						break;
+						return;
 					}
 					const size_t index = Index(location);
 					Grid& grid = mGrids.get()[index];
