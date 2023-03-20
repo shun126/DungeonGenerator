@@ -1,5 +1,5 @@
 /*
-テクスチャ
+Minimap Textures
 
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
@@ -35,13 +35,16 @@ public:
 	/*
 	Generated textures
 	*/
-	UTexture2D* GetTexture() const noexcept;
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		UTexture2D* GetTexture() const noexcept;
 
 	// Conversion from Voxel space to texture space
-	const FVector2D& GetGeneratedScaleVector() const noexcept;
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		const FVector2D& GetGeneratedScaleVector() const noexcept;
 
 	// Conversion from Voxel space to texture space
-	float GetGeneratedScale() const noexcept;
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		float GetGeneratedScale() const noexcept;
 
 protected:
 	// overrides
@@ -54,7 +57,7 @@ private:
 	bool GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor);
 
 	/**
-	Discard minimap textures
+	Destroy minimap textures
 	*/
 	void DestroyMiniMapTexture();
 
