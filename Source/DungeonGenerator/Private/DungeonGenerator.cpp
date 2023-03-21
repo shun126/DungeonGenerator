@@ -855,6 +855,7 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 
 	const size_t totalBufferSize = textureWidthHeight * textureWidthHeight;
 	auto pixels = std::make_unique<uint8_t[]>(totalBufferSize);
+	std::memset(pixels.get(), 0x00, totalBufferSize);
 
 	horizontalScale = 0;
 	{
@@ -865,6 +866,9 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 			length = voxel->GetDepth();
 		horizontalScale = static_cast<uint32_t>(static_cast<float>(textureWidthHeight) / length);
 	}
+
+	if (currentLevel > voxel->GetHeight() - 1)
+		currentLevel = voxel->GetHeight() - 1;
 
 	auto rect = [&pixels, textureWidthHeight, horizontalScale](const uint32_t x, const uint32_t y, const uint8_t color) -> void
 	{
@@ -909,11 +913,6 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 			break;
 		}
 	};
-
-	std::memset(pixels.get(), 0x00, totalBufferSize);
-
-	if (currentLevel > voxel->GetHeight() - 1)
-		currentLevel = voxel->GetHeight() - 1;
 
 	// 下の階層から描画する
 	const float paintRatio = 1.f / std::max(1.f, static_cast<float>(currentLevel));
@@ -973,23 +972,23 @@ UTexture2D* CDungeonGenerator::GenerateMiniMapTexture(uint32_t& horizontalScale,
 		}
 	}
 
-	//UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_A8);
-	UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_G8);
+	UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_R8);
+	//UTexture2D* generateTexture = UTexture2D::CreateTransient(textureWidthHeight, textureWidthHeight, PF_G8);
+	generateTexture->Filter = TextureFilter::TF_Nearest;
 	{
 #if UE_VERSION_OLDER_THAN(5, 0, 0)
-		auto mips = generateTexture->PlatformData->Mips[0];
+		FTexture2DMipMap& mips = generateTexture->PlatformData->Mips[0];
 #else
-		auto mips = generateTexture->PlatformData->Mips[0];
+		FTexture2DMipMap& mips = generateTexture->GetPlatformData()->Mips[0];
 #endif
 		auto lockedBulkData = mips.BulkData.Lock(LOCK_READ_WRITE);
 		FMemory::Memcpy(lockedBulkData, pixels.get(), totalBufferSize);
 		mips.BulkData.Unlock();
 	}
-	//generateTexture->Filter = TextureFilter::TF_Nearest;
 	generateTexture->AddToRoot();
 	generateTexture->UpdateResource();
 
-	// 作成した generateTexture を破棄する（ことにする）。
+	// 作成した generateTexture を破棄する（ことにする）
 	//generateTexture->ConditionalBeginDestroy();
 	//generateTexture = nullptr;
 
@@ -1000,7 +999,6 @@ std::shared_ptr<const dungeon::Generator> CDungeonGenerator::GetGenerator() cons
 {
 	return mGenerator;
 }
-
 
 #if WITH_EDITOR
 void CDungeonGenerator::DrawDebugInfomation(const bool showRoomAisleInfomation, const bool showVoxelGridType) const
