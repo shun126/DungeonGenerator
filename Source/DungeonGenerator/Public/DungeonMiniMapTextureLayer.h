@@ -1,5 +1,5 @@
 /*
-階層毎に生成されたミニマップテクスチャクラス
+Minimap texture classes generated per layer
 
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
@@ -10,6 +10,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include "DungeonMiniMapTextureLayer.generated.h"
 
+class ADungeonGenerateActor;
 class CDungeonGenerator;
 class UDungeonMiniMapTexture;
 class UTexture2D;
@@ -80,13 +81,12 @@ private:
 	*/
 	bool GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const float gridSize);
 
-protected:
+private:
 	// 階層毎のダンジョンミニマップテクスチャ
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		TArray<UDungeonMiniMapTexture*> DungeonMiniMapTextures;
 	// TObjectPtr<UDungeonMiniMapTexture> not used for UE4 compatibility
 
-private:
 	// Reference to Generator
 	std::shared_ptr<const dungeon::Generator> mGenerator;
 
