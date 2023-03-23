@@ -36,19 +36,19 @@ namespace dungeon
 			auto weight = pred(*i);
 			if (weight < 1)
 				weight = 1;
-			weights.emplace_back(weight, i);
-			totalWeight += weight;
+			const auto currentWeight = totalWeight + weight;
+			weights.emplace_back(currentWeight, i);
+			totalWeight = currentWeight;
 		}
 
 		// TODO: specify random numbers externally.
-		std::size_t rnd = random() % totalWeight;
+		const std::size_t rnd = random() % totalWeight;
 
 		for (const auto& weight : weights)
 		{
+			// cppcheck-suppress [useStlAlgorithm]
 			if (rnd < weight.mWeight)
 				return weight.mBody;
-		
-			rnd -= weight.mWeight;
 		}
 
 		return last;

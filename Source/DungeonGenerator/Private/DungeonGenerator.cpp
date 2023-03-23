@@ -6,7 +6,7 @@ All Rights Reserved.
 
 #include "DungeonGenerator.h"
 #include "DungeonGenerateParameter.h"
-#include "DungeonDoorInterface.h"
+#include "DungeonDoor.h"
 #include "DungeonRoomProps.h"
 #include "DungeonRoomSensor.h"
 #include "Core/Debug/Debug.h"
@@ -31,7 +31,7 @@ All Rights Reserved.
 #endif
 
 // 定義するとミッショングラフのデバッグファイル(PlantUML)を出力します
-//#define DEBUG_GENERATE_MISSION_GRAPH_FILE
+#define DEBUG_GENERATE_MISSION_GRAPH_FILE
 
 static const FName DungeonGeneratorTag("DungeonGenerator");
 
@@ -363,7 +363,7 @@ void CDungeonGenerator::AddTerraine()
 					// 水平以外に対応が必要？
 					if (wallCount == 2)
 					{
-						if (const FDungeonObjectParts* parts = parameter->SelectTorchParts(gridIndex, grid, dungeon::Random::Instance()))
+						if (const FDungeonActorParts* parts = parameter->SelectTorchParts(gridIndex, grid, dungeon::Random::Instance()))
 						{
 #if 0
 							const FTransform worldTransform = transform * parts->RelativeTransform;
@@ -383,13 +383,9 @@ void CDungeonGenerator::AddTerraine()
 			}
 
 			// 扉の生成通知
-			if (const FDungeonObjectParts* parts = parameter->SelectDoorParts(gridIndex, grid, dungeon::Random::Instance()))
+			if (const FDungeonDoorActorParts* parts = parameter->SelectDoorParts(gridIndex, grid, dungeon::Random::Instance()))
 			{
 				const EDungeonRoomProps props = static_cast<EDungeonRoomProps>(grid.GetProps());
-				if (grid.GetProps() != dungeon::Grid::Props::None)
-				{
-					int i = 0;
-				}
 
 				if (grid.CanBuildGate(mGenerator->GetVoxel()->Get(location.X, location.Y - 1, location.Z), dungeon::Direction::North))
 				{
@@ -462,7 +458,7 @@ void CDungeonGenerator::AddTerraine()
 #if 0
 				if (mOnResetChandelier)
 				{
-					if (const FDungeonObjectParts* parts = parameter->SelectChandelierParts(dungeon::Random::Instance()))
+					if (const FDungeonActorParts* parts = parameter->SelectChandelierParts(dungeon::Random::Instance()))
 					{
 						mOnResetChandelier(parts->ActorClass, worldTransform);
 					}
@@ -784,19 +780,16 @@ void CDungeonGenerator::SpawnActorOnFloor(UClass* actorClass, const FTransform& 
 
 void CDungeonGenerator::SpawnDoorActor(UClass* actorClass, const FTransform& transform, EDungeonRoomProps props) const
 {
-	AActor* actor = SpawnActorDeferred<AActor>(actorClass, TEXT("Dungeon/Actors"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	ADungeonDoor* actor = SpawnActorDeferred<ADungeonDoor>(actorClass, TEXT("Dungeon/Actors"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (IsValid(actor))
 	{
-		// execute OnInitialize interface function
-		if (actor->GetClass()->ImplementsInterface(UDungeonDoorInterface::StaticClass()))
-		{
-			IDungeonDoorInterface::Execute_OnInitialize(actor, props);
-		}
+		actor->Initialize(props);
 
 		if (mOnResetDoor)
 		{
 			mOnResetDoor(actor, props);
 		}
+
 		actor->FinishSpawning(transform);
 	}
 }
