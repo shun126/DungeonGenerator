@@ -1,17 +1,13 @@
 /*
 MissionGraph
-ダンジョンの攻略情報を生成します
+Generate dungeon strategy information
 
-鍵と扉の生成アルゴリズム
-1. ゴール部屋に接続する通路にゴール鍵を設定する
-2. 通路に到達可能な部屋のどこかにゴール鍵を置く（別ブランチは抽選の優先度を上げる）
-3. ゴール部屋よりも浅い深度の通路に鍵を設定する
-4. 通路に到達可能な部屋のどこかに鍵を置く（別ブランチは抽選の優先度を上げる）
-5. 深度1より探索深度が不快なら3に戻る
-
-敵配置の生成アルゴリズム
-
-部屋の装飾アルゴリズム
+Algorithm for generating keys and doors
+1. set a goal door in the passage connecting to the goal room
+2. collect reachable aisle and rooms separated by doors
+3. place a key (or goal key) somewhere in the reachable room
+4. place a door somewhere in the reachable aisle
+5. if more keys and doors can be placed, go back to 2.
 
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
@@ -28,16 +24,24 @@ namespace dungeon
 	class Point;
 	class Room;
 
+	/*
+	Generate dungeon strategy information
+	*/
 	class MissionGraph
 	{
 	public:
+		// constructor
 		MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<const Point>& goal) noexcept;
+
+		// destructor
 		virtual ~MissionGraph() = default;
 
 	private:
-		void Generate(const std::shared_ptr<const Room>& room, const uint8_t count = 0) noexcept;
+		// generate mission graph
+		void Generate(const std::shared_ptr<const Room>& room) noexcept;
+
+		// choose an aisle close to the entrance.
 		Aisle* SelectAisle(const std::shared_ptr<const Room>& room) const noexcept;
-		Aisle* SelectAisle(const std::shared_ptr<const Point>& point) const noexcept;
 
 	private:
 		std::shared_ptr<Generator> mGenerator;

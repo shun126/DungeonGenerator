@@ -60,6 +60,7 @@ void ADungeonRoomSensor::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	// cppcheck-suppress [knownConditionTrueFalse]
 	if (ShowDebugInfomation || ForceShowDebugInfomation)
 	{
 		TArray<FString> output;
@@ -106,13 +107,9 @@ void ADungeonRoomSensor::Initialize(
 	DepthFromStart = depthFromStart;
 	DeepestDepthFromStart = deepestDepthFromStart;
 
-	OnInitialize();
+	OnInitialize(parts, item, depthFromStart);
 
 	mState = State::Initialized;
-}
-
-void ADungeonRoomSensor::OnInitialize_Implementation()
-{
 }
 
 void ADungeonRoomSensor::Finalize()
@@ -124,17 +121,9 @@ void ADungeonRoomSensor::Finalize()
 	}
 }
 
-void ADungeonRoomSensor::OnFinalize_Implementation()
-{
-}
-
 void ADungeonRoomSensor::Reset()
 {
 	OnReset();
-}
-
-void ADungeonRoomSensor::OnReset_Implementation()
-{
 }
 
 UBoxComponent* ADungeonRoomSensor::GetBounding()

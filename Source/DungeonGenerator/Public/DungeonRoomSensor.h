@@ -49,8 +49,8 @@ public:
 	Function called during initialization after object creation
 	*/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor, Category = "DungeonGenerator")
-		void OnInitialize();
-	virtual void OnInitialize_Implementation();
+		void OnInitialize(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart);
+	virtual void OnInitialize_Implementation(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart);
 
 	/**
 	Function called before object destruction
@@ -175,3 +175,15 @@ private:
 	};
 	State mState = State::Invalid;
 };
+
+inline void ADungeonRoomSensor::OnInitialize_Implementation(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart)
+{
+}
+
+inline void ADungeonRoomSensor::OnFinalize_Implementation()
+{
+}
+
+inline void ADungeonRoomSensor::OnReset_Implementation()
+{
+}

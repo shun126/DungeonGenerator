@@ -159,7 +159,7 @@ namespace dungeon
 			return false;
 
 		// 最もコストの低いノードを検索
-		std::unordered_map<uint64_t, OpenNode>::iterator result;
+		std::unordered_map<uint64_t, OpenNode>::iterator result = mOpen.begin();
 		uint32_t minimumCost = std::numeric_limits<uint32_t>::max();
 		for (std::unordered_map<uint64_t, OpenNode>::iterator i = mOpen.begin(); i != mOpen.end(); ++i)
 		{

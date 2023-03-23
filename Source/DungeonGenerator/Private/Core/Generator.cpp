@@ -1065,17 +1065,7 @@ namespace dungeon
 					continue;
 				generatedEdges.emplace(&aisle);
 
-				if (room != room0)
-				{
-					// TODO::判定関数を作成して下さい
-					if (room0->GetItem() == Room::Item::Empty &&
-						room0->GetParts() != Room::Parts::Unidentified &&
-						room0->GetParts() != Room::Parts::Start &&
-						room0->GetParts() != Room::Parts::Goal)
-						result.push_back(room0);
-					FindByRoute(result, generatedEdges, room0);
-				}
-				else
+				if (room == room0)
 				{
 					// TODO::判定関数を作成して下さい
 					if (room1->GetItem() == Room::Item::Empty &&
@@ -1084,6 +1074,16 @@ namespace dungeon
 						room1->GetParts() != Room::Parts::Goal)
 						result.push_back(room1);
 					FindByRoute(result, generatedEdges, room1);
+				}
+				else
+				{
+					// TODO::判定関数を作成して下さい
+					if (room0->GetItem() == Room::Item::Empty &&
+						room0->GetParts() != Room::Parts::Unidentified &&
+						room0->GetParts() != Room::Parts::Start &&
+						room0->GetParts() != Room::Parts::Goal)
+						result.push_back(room0);
+					FindByRoute(result, generatedEdges, room0);
 				}
 			}
 		}
