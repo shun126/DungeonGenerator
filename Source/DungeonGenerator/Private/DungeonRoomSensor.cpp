@@ -21,7 +21,7 @@ namespace
 
 const FName& ADungeonRoomSensor::GetDungeonGeneratorTag()
 {
-	return CDungeonGenerator::GetDungeonGeneratorTag();
+	return UDungeonGenerator::GetDungeonGeneratorTag();
 }
 
 const TArray<FName>& ADungeonRoomSensor::GetDungeonGeneratorTags()
@@ -107,7 +107,10 @@ void ADungeonRoomSensor::Initialize(
 	DepthFromStart = depthFromStart;
 	DeepestDepthFromStart = deepestDepthFromStart;
 
-	OnInitialize(parts, item, depthFromStart);
+	const float depthFromStartRatio = deepestDepthFromStart > 0 ?
+		static_cast<float>(depthFromStart) / static_cast<float>(deepestDepthFromStart) :
+		0.0f;
+	OnInitialize(parts, item, depthFromStart, depthFromStartRatio);
 
 	mState = State::Initialized;
 }
@@ -119,21 +122,6 @@ void ADungeonRoomSensor::Finalize()
 		OnFinalize();
 		mState = State::Finalized;
 	}
-}
-
-void ADungeonRoomSensor::Reset()
-{
-	OnReset();
-}
-
-UBoxComponent* ADungeonRoomSensor::GetBounding()
-{
-	return Bounding;
-}
-
-const UBoxComponent* ADungeonRoomSensor::GetBounding() const
-{
-	return Bounding;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

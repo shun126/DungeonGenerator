@@ -218,7 +218,7 @@ public:
 
 	const FDungeonActorPartsWithDirection& GetGoalParts() const;
 
-	void EachDungeonRoomAsset(std::function<void(const UDungeonRoomAsset*)> func) const;
+	void EachDungeonRoomLocator(std::function<void(const FDungeonRoomLocator&)> func) const;
 
 	UClass* GetRoomSensorClass() const;
 
@@ -384,10 +384,10 @@ protected:
 
 	//! sublevel placement
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
-		TArray<UDungeonRoomAsset*> DungeonRoomAssets;
+		UDungeonRoomAsset* DungeonRoomAsset;
 	// TObjectPtr<UDungeonRoomAsset> not used for UE4 compatibility
 
-	friend class CDungeonGenerator;
+	friend class UDungeonGenerator;
 };
 
 // aka: SelectActorParts, SelectRandomActorParts

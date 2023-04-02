@@ -9,18 +9,7 @@ All Rights Reserved.
 #include "DungeonMiniMapTexture.h"
 #include "DungeonGenerator.h"
 
-UDungeonMiniMapTexture::UDungeonMiniMapTexture(const FObjectInitializer& initializer)
-	: Super(initializer)
-{
-}
-
-void UDungeonMiniMapTexture::BeginDestroy()
-{
-	Super::BeginDestroy();
-	DestroyMiniMapTexture();
-}
-
-bool UDungeonMiniMapTexture::GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor)
+bool UDungeonMiniMapTexture::GenerateMiniMapTexture(const UDungeonGenerator* dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor)
 {
 	if (dungeonGenerator == nullptr)
 		return false;
@@ -48,19 +37,4 @@ void UDungeonMiniMapTexture::DestroyMiniMapTexture()
 		Texture->ConditionalBeginDestroy();
 		Texture = nullptr;
 	}
-}
-
-UTexture2D* UDungeonMiniMapTexture::GetTexture() const noexcept
-{
-	return Texture;
-}
-
-const FVector2D& UDungeonMiniMapTexture::GetGeneratedScaleVector() const noexcept
-{
-	return GeneratedScaleVector;
-}
-
-float UDungeonMiniMapTexture::GetGeneratedScale() const noexcept
-{
-	return GeneratedScale;
 }

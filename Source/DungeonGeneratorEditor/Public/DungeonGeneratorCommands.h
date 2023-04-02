@@ -13,15 +13,12 @@ All Rights Reserved.
 class FDungeonGeneratorCommands : public TCommands<FDungeonGeneratorCommands>
 {
 public:
-
-	FDungeonGeneratorCommands()
-		: TCommands<FDungeonGeneratorCommands>(TEXT("DungeonGenerator"), NSLOCTEXT("Contexts", "DungeonGenerator", "DungeonGenerator Plugin"), NAME_None, FDungeonGeneratorStyle::GetStyleSetName())
-	{
-	}
+	FDungeonGeneratorCommands();
+	virtual ~FDungeonGeneratorCommands() = default;
 
 	// TCommands<> interface
 	virtual void RegisterCommands() override;
 
 public:
-	TSharedPtr< FUICommandInfo > OpenPluginWindow;
+	TSharedPtr<FUICommandInfo> OpenPluginWindow;
 };

@@ -6,11 +6,6 @@ All Rights Reserved.
 
 #include "DungeonDoor.h"
 
-ADungeonDoor::ADungeonDoor(const FObjectInitializer& initializer)
-	: Super(initializer)
-{
-}
-
 void ADungeonDoor::Initialize(const EDungeonRoomProps props)
 {
 	Finalize();
@@ -28,19 +23,4 @@ void ADungeonDoor::Finalize()
 		OnFinalize();
 		mState = State::Finalized;
 	}
-}
-
-void ADungeonDoor::Reset()
-{
-	OnReset();
-}
-
-EDungeonRoomProps ADungeonDoor::GetRoomProps() const
-{
-	return Props;
-}
-
-void ADungeonDoor::SetRoomProps(const EDungeonRoomProps props)
-{
-	Props = props;
 }

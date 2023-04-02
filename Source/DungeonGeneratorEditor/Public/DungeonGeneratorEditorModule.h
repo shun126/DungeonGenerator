@@ -26,7 +26,7 @@ public:
 private:
 	void RegisterMenus();
 
-	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
+	TSharedRef<SDockTab> OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs);
 
 	FReply OnClickedGenerateButton();
 	FReply OnClickedClearButton();

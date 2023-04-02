@@ -138,8 +138,15 @@ namespace dungeon
 		}
 		else
 		{
-			const size_t value = Get<T>();
-			return value % to;
+			if (to != 0)
+			{
+				const size_t value = Get<T>();
+				return value % to;
+			}
+			else
+			{
+				return 0;
+			}
 		}
 	}
 
@@ -154,8 +161,15 @@ namespace dungeon
 		}
 		else
 		{
-			const size_t value = Get<T>();
-			return from + value % (to - from);
+			if (from != to)
+			{
+				const size_t value = Get<T>();
+				return from + value % (to - from);
+			}
+			else
+			{
+				return from;
+			}
 		}
 	}
 

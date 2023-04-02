@@ -82,6 +82,11 @@ private:
 	State mState = State::Invalid;
 };
 
+inline ADungeonDoor::ADungeonDoor(const FObjectInitializer& initializer)
+	: Super(initializer)
+{
+}
+
 inline void ADungeonDoor::OnInitialize_Implementation(const EDungeonRoomProps props)
 {
 }
@@ -92,4 +97,19 @@ inline void ADungeonDoor::OnFinalize_Implementation()
 
 inline void ADungeonDoor::OnReset_Implementation()
 {
+}
+
+inline void ADungeonDoor::Reset()
+{
+	OnReset();
+}
+
+inline EDungeonRoomProps ADungeonDoor::GetRoomProps() const
+{
+	return Props;
+}
+
+inline void ADungeonDoor::SetRoomProps(const EDungeonRoomProps props)
+{
+	Props = props;
 }

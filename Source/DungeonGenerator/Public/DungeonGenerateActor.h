@@ -11,7 +11,7 @@ All Rights Reserved.
 #include "DungeonGenerateActor.generated.h"
 
 // 前方宣言
-class CDungeonGenerator;
+class UDungeonGenerator;
 class UDungeonGenerateParameter;
 class UDungeonMiniMapTextureLayer;
 class UDungeonTransactionalHierarchicalInstancedStaticMeshComponent;
@@ -66,12 +66,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		UDungeonMiniMapTextureLayer* GetGeneratedMiniMapTextureLayer() const;
 
-	UFUNCTION()
-		void OnMoveStreamLevel();
-
 	// AActor overrides
 	virtual void PreInitializeComponents() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 #if WITH_EDITOR
 	virtual bool ShouldTickIfViewportsOnly() const override;
@@ -87,10 +85,6 @@ private:
 	static void EndAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
 
 	static inline FBox ToWorldBoundingBox(const std::shared_ptr<const dungeon::Room>& room, const float gridSize);
-
-	void LoadStreamLevels();
-	void UnloadStreamLevels();
-	void LoadStreamLevel(const FName& levelName, const FTransform& levelTransform);
 
 	void MovePlayerStart();
 
@@ -188,10 +182,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
 		FString LicenseId;
 
+	// Cache of the UIDungeonMiniMapTextureLayer
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+		UDungeonGenerator* DungeonGenerator;
+	// TObjectPtr<UDungeonGenerator> not used for UE4 compatibility
+
 #if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	// Displays debugging information on room and connection information
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
-		bool ShowRoomAisleInfomation = false;
+		bool ShowRoomAisleInformation = false;
 
 	// Displays voxel grid debugging information
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
@@ -202,19 +201,9 @@ protected:
 		bool ShowVoxelGridTypeAtPlayerLocation = false;
 
 private:
-	void DrawDebugInfomation();
+	void DrawDebugInformation();
 #endif
 
 private:
-	struct OnMoveStreamLevelParameter final
-	{
-		FName mName;
-		FTransform mTransform;
-	} mOnMoveStreamLevel;
-
-	TMap<FName, FTransform> mCreateRequestLevels;
-
-private:
-	std::shared_ptr<CDungeonGenerator> mDungeonGenerator = nullptr;
 	bool mPostGenerated = false;
 };

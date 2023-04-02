@@ -71,6 +71,35 @@ namespace dungeon
 		}
 	}
 
+	void Voxel::NoMeshGeneration(const FIntVector& min, const FIntVector& max) noexcept
+	{
+		FIntVector min_;
+		min_.X = math::Clamp(min.X, 0, static_cast<int32_t>(mWidth));
+		min_.Y = math::Clamp(min.Y, 0, static_cast<int32_t>(mDepth));
+		min_.Z = math::Clamp(min.Z, 0, static_cast<int32_t>(mHeight));
+
+		FIntVector max_;
+		max_.X = math::Clamp(max.X, 0, static_cast<int32_t>(mWidth));
+		max_.Y = math::Clamp(max.Y, 0, static_cast<int32_t>(mDepth));
+		max_.Z = math::Clamp(max.Z, 0, static_cast<int32_t>(mHeight));
+
+		if (min_.X > max_.X) std::swap(min_.X, max_.X);
+		if (min_.Y > max_.Y) std::swap(min_.Y, max_.Y);
+		if (min_.Z > max_.Z) std::swap(min_.Z, max_.Z);
+
+		for (int32_t z = min_.Z; z < max_.Z; ++z)
+		{
+			for (int32_t y = min_.Y; y < max_.Y; ++y)
+			{
+				for (int32_t x = min_.X; x < max_.X; ++x)
+				{
+					const size_t index = Index(x, y, z);
+					mGrids.get()[index].SetNoMeshGeneration(true);
+				}
+			}
+		}
+	}
+
 	bool Voxel::SearchGateLocation(FIntVector& result, const FIntVector& start, const FIntVector& goal, const PathGoalCondition& goalCondition, const Identifier& identifier) noexcept
 	{
 		GateFinder gateFinder(start, goal);
@@ -251,7 +280,7 @@ namespace dungeon
 					Grid& grid = mGrids.get()[index];
 
 					// 識別子が無効なら通路
-					if (grid.IsInvalidIdetifier())
+					if (grid.IsInvalidIdentifier())
 					{
 						grid.SetIdentifier(identifier.Get());
 					}
