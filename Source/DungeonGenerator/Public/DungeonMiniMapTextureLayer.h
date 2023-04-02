@@ -11,7 +11,7 @@ All Rights Reserved.
 #include "DungeonMiniMapTextureLayer.generated.h"
 
 class ADungeonGenerateActor;
-class CDungeonGenerator;
+class UDungeonGenerator;
 class UDungeonMiniMapTexture;
 class UTexture2D;
 
@@ -79,7 +79,7 @@ private:
 	/**
 	Generates a minimap texture
 	*/
-	bool GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const float gridSize);
+	bool GenerateMiniMapTexture(const UDungeonGenerator* dungeonGenerator, const uint32_t textureWidth, const float gridSize);
 
 private:
 	// 階層毎のダンジョンミニマップテクスチャ
@@ -95,3 +95,18 @@ private:
 
 	friend class ADungeonGenerateActor;
 };
+
+inline UDungeonMiniMapTextureLayer::UDungeonMiniMapTextureLayer(const FObjectInitializer& initializer)
+	: Super(initializer)
+{
+}
+
+inline int32 UDungeonMiniMapTextureLayer::GetFloorHeight() const noexcept
+{
+	return DungeonMiniMapTextures.Num();
+}
+
+inline FVector2D UDungeonMiniMapTextureLayer::ToRelativeWithScale(const FVector& location, const float scale) const
+{
+	return ToRelative(location) * scale;
+}

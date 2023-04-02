@@ -810,6 +810,13 @@ namespace dungeon
 				, Grid::CreateFloor(parameter.GetRandom(), room->GetIdentifier().Get())
 				, Grid::CreateDeck(parameter.GetRandom(), room->GetIdentifier().Get())
 			);
+
+			const FVector center = (FVector(min) + FVector(max)) / 2;
+			const FVector dataSize(room->GetDataWidth(), room->GetDataDepth(), room->GetDataHeight());
+			const FVector dataHalfSize = dataSize / 2;
+			const FIntVector dataMin = FIntVector(center - dataHalfSize);
+			const FIntVector dataMax = dataMin + FIntVector(dataSize);
+			mVoxel->NoMeshGeneration(dataMin, dataMax);
 		}
 
 		// 通路の距離が短い順に並べ替える

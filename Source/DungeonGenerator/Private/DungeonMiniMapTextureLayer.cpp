@@ -11,12 +11,7 @@ All Rights Reserved.
 #include "DungeonGenerator.h"
 #include "Core/Generator.h"
 
-UDungeonMiniMapTextureLayer::UDungeonMiniMapTextureLayer(const FObjectInitializer& initializer)
-	: Super(initializer)
-{
-}
-
-bool UDungeonMiniMapTextureLayer::GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const float gridSize)
+bool UDungeonMiniMapTextureLayer::GenerateMiniMapTexture(const UDungeonGenerator* dungeonGenerator, const uint32_t textureWidth, const float gridSize)
 {
 	if (dungeonGenerator == nullptr)
 		return false;
@@ -60,11 +55,6 @@ UDungeonMiniMapTexture* UDungeonMiniMapTextureLayer::GetByHeight(const float hei
 	return GetByFloor(mGenerator->FindFloor(voxelHeight));
 }
 
-int32 UDungeonMiniMapTextureLayer::GetFloorHeight() const noexcept
-{
-	return DungeonMiniMapTextures.Num();
-}
-
 FVector2D UDungeonMiniMapTextureLayer::ToRelative(const FVector& location) const
 {
 	if (DungeonMiniMapTextures.Num() <= 0)
@@ -76,11 +66,6 @@ FVector2D UDungeonMiniMapTextureLayer::ToRelative(const FVector& location) const
 		const float ratio = 1.f / mGridSize * DungeonMiniMapTextures[0]->GetGeneratedScale();
 		return FVector2D(location.X, location.Y) * ratio;
 	}
-}
-
-FVector2D UDungeonMiniMapTextureLayer::ToRelativeWithScale(const FVector& location, const float scale) const
-{
-	return ToRelative(location) * scale;
 }
 
 FVector2D UDungeonMiniMapTextureLayer::ToRelativeAndFloor(uint8& floor, const FVector& location) const

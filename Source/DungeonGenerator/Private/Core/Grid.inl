@@ -81,7 +81,7 @@ namespace dungeon
 		mIdentifier = identifier;
 	}
 
-	inline bool Grid::IsInvalidIdetifier() const noexcept
+	inline bool Grid::IsInvalidIdentifier() const noexcept
 	{
 		return mIdentifier == InvalidIdentifier;
 	}
@@ -94,5 +94,15 @@ namespace dungeon
 	inline void Grid::SetProps(const Props props) noexcept
 	{
 		mProps = props;
+	}
+
+	inline void Grid::SetNoMeshGeneration(const bool noMeshGeneration)
+	{
+		mNoMeshGeneration = noMeshGeneration;
+	}
+
+	inline bool Grid::IsNoMeshGeneration() const noexcept
+	{
+		return mNoMeshGeneration;
 	}
 }

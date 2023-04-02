@@ -12,8 +12,6 @@ All Rights Reserved.
 #include "BuildInfomation.h"
 #include "../../DungeonGenerator/Public/DungeonGenerateParameter.h"
 #include "../../DungeonGenerator/Public/DungeonGenerator.h"
-//#include <EngineUtils.h>
-//#include <Kismet/GameplayStatics.h>
 #include <PropertyCustomizationHelpers.h>
 #include <AssetToolsModule.h>
 #include <IAssetTools.h>
@@ -213,14 +211,14 @@ void FDungeonGenerateEditorModule::RegisterMenus()
 
 FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 {
-	CDungeonGenerator::DestorySpawnedActors();
+	// 生成した全アクターを削除
+	UDungeonGenerator::DestroySpawnedActors(UDungeonGenerator::GetWorldFromGameViewport());
 
+	// アクターを生成
 	if (UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get())
 	{
-		std::shared_ptr<CDungeonGenerator> dungeonGenerator = std::make_shared<CDungeonGenerator>();
+		UDungeonGenerator* dungeonGenerator = NewObject<UDungeonGenerator>();
 		dungeonGenerator->Create(dungeonGenerateParameter);
-		dungeonGenerator->AddTerraine();
-		dungeonGenerator->AddObject();
 
 		const int32 value = dungeonGenerateParameter->GetGeneratedRandomSeed();
 		mRandomSeedValue->SetText(FText::FromString(FString::FromInt(value)));
@@ -239,7 +237,8 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 
 FReply FDungeonGenerateEditorModule::OnClickedClearButton()
 {
-	CDungeonGenerator::DestorySpawnedActors();
+	// 生成した全アクターを削除
+	UDungeonGenerator::DestroySpawnedActors(UDungeonGenerator::GetWorldFromGameViewport());
 	return FReply::Handled();
 }
 

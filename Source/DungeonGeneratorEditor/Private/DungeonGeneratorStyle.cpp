@@ -21,6 +21,9 @@ All Rights Reserved.
 
 TSharedPtr<FSlateStyleSet> FDungeonGeneratorStyle::StyleInstance = nullptr;
 
+static const FVector2D Icon16x16(16.0f, 16.0f);
+static const FVector2D Icon20x20(20.0f, 20.0f);
+
 void FDungeonGeneratorStyle::Initialize()
 {
 	if (!StyleInstance.IsValid())
@@ -42,9 +45,6 @@ FName FDungeonGeneratorStyle::GetStyleSetName()
 	static FName StyleSetName(TEXT("DungeonGeneratorStyle"));
 	return StyleSetName;
 }
-
-const FVector2D Icon16x16(16.0f, 16.0f);
-const FVector2D Icon20x20(20.0f, 20.0f);
 
 TSharedRef< FSlateStyleSet > FDungeonGeneratorStyle::Create()
 {

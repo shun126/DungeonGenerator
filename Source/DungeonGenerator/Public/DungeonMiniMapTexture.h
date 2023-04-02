@@ -10,7 +10,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include "DungeonMiniMapTexture.generated.h"
 
-class CDungeonGenerator;
+class UDungeonGenerator;
 class UTexture2D;
 
 /**
@@ -54,7 +54,7 @@ private:
 	/**
 	Generates a minimap texture
 	*/
-	bool GenerateMiniMapTexture(const std::shared_ptr<const CDungeonGenerator>& dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor);
+	bool GenerateMiniMapTexture(const UDungeonGenerator* dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor);
 
 	/**
 	Destroy minimap textures
@@ -78,3 +78,29 @@ protected:
 	friend class ADungeonGenerateActor;
 	friend class UDungeonMiniMapTextureLayer;
 };
+
+inline UDungeonMiniMapTexture::UDungeonMiniMapTexture(const FObjectInitializer& initializer)
+	: Super(initializer)
+{
+}
+
+inline void UDungeonMiniMapTexture::BeginDestroy()
+{
+	Super::BeginDestroy();
+	DestroyMiniMapTexture();
+}
+
+inline UTexture2D* UDungeonMiniMapTexture::GetTexture() const noexcept
+{
+	return Texture;
+}
+
+inline const FVector2D& UDungeonMiniMapTexture::GetGeneratedScaleVector() const noexcept
+{
+	return GeneratedScaleVector;
+}
+
+inline float UDungeonMiniMapTexture::GetGeneratedScale() const noexcept
+{
+	return GeneratedScale;
+}

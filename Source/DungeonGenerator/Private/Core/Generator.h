@@ -170,7 +170,7 @@ namespace dungeon
 			}
 		}
 
-		void OnQueryParts(std::function<void(const std::shared_ptr<const Room>&)> func) noexcept
+		void OnQueryParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept
 		{
 			mQueryParts = func;
 		}
@@ -322,7 +322,7 @@ namespace dungeon
 
 		std::vector<Aisle> mAisles;
 
-		std::function<void(const std::shared_ptr<const Room>&)> mQueryParts;
+		std::function<void(const std::shared_ptr<Room>&)> mQueryParts;
 
 		uint8_t mDistance = 0;
 

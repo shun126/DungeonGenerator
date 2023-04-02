@@ -49,8 +49,8 @@ public:
 	Function called during initialization after object creation
 	*/
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CallInEditor, Category = "DungeonGenerator")
-		void OnInitialize(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart);
-	virtual void OnInitialize_Implementation(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart);
+		void OnInitialize(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart, const float depthFromStartRatio);
+	virtual void OnInitialize_Implementation(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart, const float depthFromStartRatio);
 
 	/**
 	Function called before object destruction
@@ -176,7 +176,7 @@ private:
 	State mState = State::Invalid;
 };
 
-inline void ADungeonRoomSensor::OnInitialize_Implementation(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart)
+inline void ADungeonRoomSensor::OnInitialize_Implementation(const EDungeonRoomParts parts, const EDungeonRoomItem item, const uint8 depthFromStart, const float depthFromStartRatio)
 {
 }
 
@@ -186,4 +186,19 @@ inline void ADungeonRoomSensor::OnFinalize_Implementation()
 
 inline void ADungeonRoomSensor::OnReset_Implementation()
 {
+}
+
+inline void ADungeonRoomSensor::Reset()
+{
+	OnReset();
+}
+
+inline UBoxComponent* ADungeonRoomSensor::GetBounding()
+{
+	return Bounding;
+}
+
+inline const UBoxComponent* ADungeonRoomSensor::GetBounding() const
+{
+	return Bounding;
 }

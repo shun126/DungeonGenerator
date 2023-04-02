@@ -85,6 +85,8 @@ namespace dungeon
 		*/
 		void Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) noexcept;
 
+		void NoMeshGeneration(const FIntVector& min, const FIntVector& max) noexcept;
+
 		/**
 		門を生成可能な場所を探します
 		\param[out]		result		FIntVector

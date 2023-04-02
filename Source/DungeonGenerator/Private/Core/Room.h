@@ -293,6 +293,18 @@ namespace dungeon
 
 
 
+		uint32_t GetDataWidth() const noexcept { return mDataWidth; }
+		uint32_t GetDataDepth() const noexcept { return mDataDepth; }
+		uint32_t GetDataHeight() const noexcept { return mDataHeight; }
+
+		void SetDataSize(const uint32_t dataWidth, const uint32_t dataDepth, const uint32_t dataHeight)
+		{
+			mDataWidth = dataWidth;
+			mDataDepth = dataDepth;
+			mDataHeight = dataHeight;
+		}
+
+
 	private:
 		int32_t mX;
 		int32_t mY;
@@ -300,6 +312,10 @@ namespace dungeon
 		uint32_t mWidth;
 		uint32_t mDepth;
 		uint32_t mHeight;
+
+		uint32_t mDataWidth = 0;
+		uint32_t mDataDepth = 0;
+		uint32_t mDataHeight = 0;
 
 		Identifier mIdentifier;
 

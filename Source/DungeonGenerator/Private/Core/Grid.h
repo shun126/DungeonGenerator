@@ -110,7 +110,7 @@ namespace dungeon
 		/**
 		無効な識別子か判定します？
 		*/
-		bool IsInvalidIdetifier() const noexcept;
+		bool IsInvalidIdentifier() const noexcept;
 
 		/**
 		小道具を取得します
@@ -194,10 +194,11 @@ namespace dungeon
 		// 判定補助関数
 		/**
 		自身からtoGridを見た時に床が生成されるか判定します
-		\param[in]	toGrid		参照先グリッド（通常は一つ下のグリッド）
+		\param[in]	toGrid					参照先グリッド（通常は一つ下のグリッド）
+		\param[in]	checkNoMeshGeneration	メッシュ生成禁止判定
 		\return		trueならば床の生成が可能
 		*/
-		bool CanBuildFloor(const Grid& toGrid) const noexcept;
+		bool CanBuildFloor(const Grid& toGrid, const bool checkNoMeshGeneration) const noexcept;
 
 		/**
 		斜面が生成されるか判定します
@@ -246,6 +247,19 @@ namespace dungeon
 		*/
 		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction) const noexcept;
 
+		/**
+		メッシュ生成禁止に設定します
+		\param[in]	noMeshGeneration	メッシュ生成禁止
+		*/
+		void SetNoMeshGeneration(const bool noMeshGeneration);
+
+		/**
+		メッシュ生成禁止か取得します
+		\return		trueならメッシュ生成禁止
+		*/
+		bool IsNoMeshGeneration() const noexcept;
+		
+
 
 
 
@@ -260,9 +274,10 @@ namespace dungeon
 	private:
 		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
 
-		Type mType;					//!< グリッドの種類
+		bool mNoMeshGeneration = false;
+		Type mType;
 		Props mProps;
-		Direction mDirection;		//!< グリッドの方向
+		Direction mDirection;
 		uint16_t mIdentifier = InvalidIdentifier;
 	};
 }

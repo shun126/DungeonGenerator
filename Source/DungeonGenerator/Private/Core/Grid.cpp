@@ -87,8 +87,11 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に床が生成されるか判定します
 	*/
-	bool Grid::CanBuildFloor(const Grid& toGrid) const noexcept
+	bool Grid::CanBuildFloor(const Grid& toGrid, const bool checkNoMeshGeneration) const noexcept
 	{
+		if (checkNoMeshGeneration && IsNoMeshGeneration())
+			return false;
+
 		if (IsKindOfRoomType())
 		{
 			return

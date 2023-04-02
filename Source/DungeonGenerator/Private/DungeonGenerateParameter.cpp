@@ -319,12 +319,17 @@ const FDungeonActorPartsWithDirection& UDungeonGenerateParameter::GetGoalParts()
 	return GoalParts;
 }
 
-void UDungeonGenerateParameter::EachDungeonRoomAsset(std::function<void(const UDungeonRoomAsset*)> func) const
+void UDungeonGenerateParameter::EachDungeonRoomLocator(std::function<void(const FDungeonRoomLocator&)> func) const
 {
-	for (const UDungeonRoomAsset* dungeonRoomAsset : DungeonRoomAssets)
+	if (IsValid(DungeonRoomAsset))
 	{
-		if (IsValid(dungeonRoomAsset) && dungeonRoomAsset->LevelName.IsValid())
-			func(dungeonRoomAsset);
+		for (const FDungeonRoomLocator& dungeonRoomLocator : DungeonRoomAsset->GetDungeonRoomLocator())
+		{
+			if (dungeonRoomLocator.GetLevelPath().IsValid())
+			{
+				func(dungeonRoomLocator);
+			}
+		}
 	}
 }
 
@@ -413,7 +418,7 @@ void UDungeonGenerateParameter::DumpToJson() const
 		// FDungeonActorPartsWithDirection StartParts;
 		// FDungeonActorPartsWithDirection GoalParts;
 		// UClass* DungeonRoomSensorClass = ADungeonRoomSensor::StaticClass();
-		// TArray<UDungeonRoomAsset*> DungeonRoomAssets;
+		// TArray<UDungeonRoomAsset*> DungeonRoomAsset;
 		jsonString += TEXT("Version:\"DUNGENERATOR_PLUGIN_VERSION_NAME\",\n");
 		jsonString += TEXT("Beta:\"DUNGENERATOR_PLUGIN_BETA_VERSION\",\n");
 		jsonString += TEXT("Tag:\"JENKINS_JOB_TAG\",\n");
