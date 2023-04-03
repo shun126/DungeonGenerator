@@ -42,13 +42,13 @@ protected:
 		FSoftObjectPath LevelPath;
 
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = 1))
-		int32 Width;
+		int32 Width = 1;
 
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = 1))
-		int32 Depth;
+		int32 Depth = 1;
 
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = 1))
-		int32 Height;
+		int32 Height = 1;
 
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		EDungeonRoomSizeCondition WidthCondition = EDungeonRoomSizeCondition::Equal;
