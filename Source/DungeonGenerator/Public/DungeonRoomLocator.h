@@ -34,6 +34,8 @@ public:
 	EDungeonRoomSizeCondition GetDepthCondition() const noexcept;
 	EDungeonRoomSizeCondition GetHeightCondition() const noexcept;
 	EDungeonRoomParts GetDungeonParts() const noexcept;
+	bool IsGenerateRoofMesh() const noexcept;
+	bool IsGenerateFloorMesh() const noexcept;
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "World"))
@@ -59,6 +61,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
 		EDungeonRoomParts DungeonParts = EDungeonRoomParts::Any;
+
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
+		bool GenerateRoofMesh = true;
+
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
+		bool GenerateFloorMesh = false;
 };
 
 inline const FSoftObjectPath& FDungeonRoomLocator::GetLevelPath() const noexcept
@@ -104,4 +112,14 @@ inline EDungeonRoomSizeCondition FDungeonRoomLocator::GetHeightCondition() const
 inline EDungeonRoomParts FDungeonRoomLocator::GetDungeonParts() const noexcept
 {
 	return DungeonParts;
+}
+
+inline bool FDungeonRoomLocator::IsGenerateRoofMesh() const noexcept
+{
+	return GenerateRoofMesh;
+}
+
+inline bool FDungeonRoomLocator::IsGenerateFloorMesh() const noexcept
+{
+	return GenerateFloorMesh;
 }

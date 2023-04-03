@@ -85,7 +85,14 @@ namespace dungeon
 		*/
 		void Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) noexcept;
 
-		void NoMeshGeneration(const FIntVector& min, const FIntVector& max) noexcept;
+		/**
+		矩形の範囲にメッシュ生成禁止情報を書き込みます
+		\param[in]	min						最小座標
+		\param[in]	max						最大座標
+		\param[in]	noRoofMeshGeneration	天井メッシュの生成禁止
+		\param[in]	noFloorMeshGeneration	床メッシュの生成禁止
+		*/
+		void NoMeshGeneration(const FIntVector& min, const FIntVector& max, const bool noRoofMeshGeneration, const bool noFloorMeshGeneration) noexcept;
 
 		/**
 		門を生成可能な場所を探します

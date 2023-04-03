@@ -10,4 +10,19 @@ All Rights Reserved.
 
 namespace dungeon
 {
+	inline void Room::SetNoMeshGeneration(const bool noRoofMeshGeneration, const bool noFloorMeshGeneration)
+	{
+		mNoMeshGeneration.set(static_cast<uint8_t>(NoMeshGeneration::Roof), noRoofMeshGeneration);
+		mNoMeshGeneration.set(static_cast<uint8_t>(NoMeshGeneration::Floor), noFloorMeshGeneration);
+	}
+
+	inline bool Room::IsNoFloorMeshGeneration() const noexcept
+	{
+		return mNoMeshGeneration.test(static_cast<uint8_t>(NoMeshGeneration::Floor));
+	}
+
+	inline bool Room::IsNoRoofMeshGeneration() const noexcept
+	{
+		return mNoMeshGeneration.test(static_cast<uint8_t>(NoMeshGeneration::Roof));
+	}
 }

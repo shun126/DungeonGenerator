@@ -192,6 +192,7 @@ bool UDungeonGenerator::CreateImpl_AddRoomAsset(const UDungeonGenerateParameter*
 		if (RequestStreamLevel(dungeonRoomLocator.GetLevelPath(), centerPosition))
 		{
 			room->SetDataSize(dungeonRoomLocator.GetWidth(), dungeonRoomLocator.GetDepth(), dungeonRoomLocator.GetHeight());
+			room->SetNoMeshGeneration(!dungeonRoomLocator.IsGenerateRoofMesh(), !dungeonRoomLocator.IsGenerateFloorMesh());
 		}
 	});
 
@@ -320,7 +321,7 @@ void UDungeonGenerator::AddTerrain()
 								const auto& roofGrid = mGenerator->GetVoxel()->Get(location.X + dx, location.Y + dy, location.Z + gridHeight);
 								if (roofGrid.GetType() == dungeon::Grid::Type::OutOfBounds)
 									break;
-								if (!grid.CanBuildRoof(roofGrid))
+								if (!grid.CanBuildRoof(roofGrid, false))
 									break;
 								++gridHeight;
 							}
@@ -399,7 +400,7 @@ void UDungeonGenerator::AddTerrain()
 			}
 
 			// 屋根のメッシュ生成通知
-			if (grid.CanBuildRoof(mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z + 1)))
+			if (grid.CanBuildRoof(mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z + 1), true))
 			{
 				/*
 				壁のメッシュを生成
@@ -1050,7 +1051,7 @@ void UDungeonGenerator::LoadStreamLevel(const FSoftObjectPath& levelPath, const 
 		}
 		else
 		{
-			// TODO:エラーログを出力してください
+			DUNGEON_GENERATOR_ERROR(TEXT("Failed to Load Level (%s)"), *levelPath.GetLongPackageName());
 		}
 	}
 }

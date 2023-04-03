@@ -96,13 +96,19 @@ namespace dungeon
 		mProps = props;
 	}
 
-	inline void Grid::SetNoMeshGeneration(const bool noMeshGeneration)
+	inline void Grid::SetNoMeshGeneration(const bool noRoofMeshGeneration, const bool noFloorMeshGeneration)
 	{
-		mNoMeshGeneration = noMeshGeneration;
+		mNoMeshGeneration.set(static_cast<uint8_t>(NoMeshGeneration::Roof), noRoofMeshGeneration);
+		mNoMeshGeneration.set(static_cast<uint8_t>(NoMeshGeneration::Floor), noFloorMeshGeneration);
 	}
 
-	inline bool Grid::IsNoMeshGeneration() const noexcept
+	inline bool Grid::IsNoFloorMeshGeneration() const noexcept
 	{
-		return mNoMeshGeneration;
+		return mNoMeshGeneration.test(static_cast<uint8_t>(NoMeshGeneration::Floor));
+	}
+
+	inline bool Grid::IsNoRoofMeshGeneration() const noexcept
+	{
+		return mNoMeshGeneration.test(static_cast<uint8_t>(NoMeshGeneration::Roof));
 	}
 }

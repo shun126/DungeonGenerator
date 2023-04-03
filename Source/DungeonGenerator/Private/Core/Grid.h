@@ -9,6 +9,7 @@ All Rights Reserved.
 #pragma once
 #include "Core/Math/Random.h"
 #include "Direction.h"
+#include <bitset>
 
 namespace dungeon
 {
@@ -209,9 +210,10 @@ namespace dungeon
 		/**
 		自身からtoGridを見た時に屋根が生成されるか判定します
 		\param[in]	toGrid		参照先グリッド（通常は一つ上のグリッド）
+		\param[in]	checkNoMeshGeneration	メッシュ生成禁止判定
 		\return		trueならば屋根の生成が可能
 		*/
-		bool CanBuildRoof(const Grid& toGrid) const noexcept;
+		bool CanBuildRoof(const Grid& toGrid, const bool checkNoMeshGeneration) const noexcept;
 
 		/**
 		自身からtoGridを見た時に壁が生成されるか判定します
@@ -249,16 +251,22 @@ namespace dungeon
 
 		/**
 		メッシュ生成禁止に設定します
-		\param[in]	noMeshGeneration	メッシュ生成禁止
+		\param[in]	noRoofMeshGeneration	天井のメッシュ生成禁止
+		\param[in]	noFloorMeshGeneration	床のメッシュ生成禁止
 		*/
-		void SetNoMeshGeneration(const bool noMeshGeneration);
-
+		void SetNoMeshGeneration(const bool noRoofMeshGeneration, const bool noFloorMeshGeneration);
+		
 		/**
-		メッシュ生成禁止か取得します
+		床のメッシュ生成禁止か取得します
 		\return		trueならメッシュ生成禁止
 		*/
-		bool IsNoMeshGeneration() const noexcept;
-		
+		bool IsNoFloorMeshGeneration() const noexcept;
+
+		/**
+		天井のメッシュ生成禁止か取得します
+		\return		trueならメッシュ生成禁止
+		*/
+		bool IsNoRoofMeshGeneration() const noexcept;
 
 
 
@@ -274,11 +282,17 @@ namespace dungeon
 	private:
 		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
 
-		bool mNoMeshGeneration = false;
 		Type mType;
 		Props mProps;
 		Direction mDirection;
 		uint16_t mIdentifier = InvalidIdentifier;
+
+		enum class NoMeshGeneration : uint8_t
+		{
+			Floor,
+			Roof
+		};
+		std::bitset<2> mNoMeshGeneration = 0;
 	};
 }
 

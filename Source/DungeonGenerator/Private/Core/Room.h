@@ -10,6 +10,7 @@ All Rights Reserved.
 #include "Identifier.h"
 #include "Math/Math.h"
 #include "Math/Point.h"
+#include <bitset>
 #include <string_view>
 
 namespace dungeon
@@ -304,6 +305,24 @@ namespace dungeon
 			mDataHeight = dataHeight;
 		}
 
+		/**
+		メッシュ生成禁止に設定します
+		\param[in]	noRoofMeshGeneration	天井のメッシュ生成禁止
+		\param[in]	noFloorMeshGeneration	床のメッシュ生成禁止
+		*/
+		void SetNoMeshGeneration(const bool noRoofMeshGeneration, const bool noFloorMeshGeneration);
+
+		/**
+		床のメッシュ生成禁止か取得します
+		\return		trueならメッシュ生成禁止
+		*/
+		bool IsNoFloorMeshGeneration() const noexcept;
+
+		/**
+		天井のメッシュ生成禁止か取得します
+		\return		trueならメッシュ生成禁止
+		*/
+		bool IsNoRoofMeshGeneration() const noexcept;
 
 	private:
 		int32_t mX;
@@ -323,6 +342,13 @@ namespace dungeon
 		Item mItem = Item::Empty;
 		uint8_t mDepthFromStart = std::numeric_limits<uint8_t>::max();
 		uint8_t mBranchId = std::numeric_limits<uint8_t>::max();
+
+		enum class NoMeshGeneration : uint8_t
+		{
+			Floor,
+			Roof
+		};
+		std::bitset<2> mNoMeshGeneration = 0;
 	};
 }
 
