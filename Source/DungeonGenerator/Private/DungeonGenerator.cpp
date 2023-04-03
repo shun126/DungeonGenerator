@@ -188,7 +188,15 @@ bool UDungeonGenerator::CreateImpl_AddRoomAsset(const UDungeonGenerateParameter*
 			break;
 		}
 
-		const FVector centerPosition = room->GetGroundCenter() * parameter->GetGridSize();
+		FVector centerPosition = room->GetGroundCenter() * parameter->GetGridSize();
+		if ((room->GetWidth() & 1) != (dungeonRoomLocator.GetWidth() & 1))
+		{
+			centerPosition.X += parameter->GetGridSize() / 2;
+		}
+		if ((room->GetDepth() & 1) != (dungeonRoomLocator.GetDepth() & 1))
+		{
+			centerPosition.Y += parameter->GetGridSize() / 2;
+		}
 		if (RequestStreamLevel(dungeonRoomLocator.GetLevelPath(), centerPosition))
 		{
 			room->SetDataSize(dungeonRoomLocator.GetWidth(), dungeonRoomLocator.GetDepth(), dungeonRoomLocator.GetHeight());
@@ -1048,6 +1056,7 @@ void UDungeonGenerator::LoadStreamLevel(const FSoftObjectPath& levelPath, const 
 		if (bSuccess)
 		{
 			mLoadedStreamLevels.Emplace(levelPath);
+			DUNGEON_GENERATOR_LOG(TEXT("Load Level (%s)"), *levelPath.GetLongPackageName());
 		}
 		else
 		{
