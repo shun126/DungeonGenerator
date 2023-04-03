@@ -71,7 +71,7 @@ namespace dungeon
 		}
 	}
 
-	void Voxel::NoMeshGeneration(const FIntVector& min, const FIntVector& max) noexcept
+	void Voxel::NoMeshGeneration(const FIntVector& min, const FIntVector& max, const bool noRoofMeshGeneration, const bool noFloorMeshGeneration) noexcept
 	{
 		FIntVector min_;
 		min_.X = math::Clamp(min.X, 0, static_cast<int32_t>(mWidth));
@@ -94,7 +94,7 @@ namespace dungeon
 				for (int32_t x = min_.X; x < max_.X; ++x)
 				{
 					const size_t index = Index(x, y, z);
-					mGrids.get()[index].SetNoMeshGeneration(true);
+					mGrids.get()[index].SetNoMeshGeneration(noRoofMeshGeneration, noFloorMeshGeneration);
 				}
 			}
 		}

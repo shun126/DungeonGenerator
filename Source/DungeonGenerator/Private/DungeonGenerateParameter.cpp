@@ -222,9 +222,14 @@ const FInt32Interval& UDungeonGenerateParameter::GetRoomHeight() const noexcept
 	return RoomHeight;
 }
 
-int32 UDungeonGenerateParameter::GetRoomMargin() const
+int32 UDungeonGenerateParameter::GetHorizontalRoomMargin() const noexcept
 {
 	return RoomMargin;
+}
+
+int32 UDungeonGenerateParameter::GetVerticalRoomMargin() const noexcept
+{
+	return VerticalRoomMargin;
 }
 
 float UDungeonGenerateParameter::GetGridSize() const

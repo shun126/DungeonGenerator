@@ -89,7 +89,7 @@ namespace dungeon
 	*/
 	bool Grid::CanBuildFloor(const Grid& toGrid, const bool checkNoMeshGeneration) const noexcept
 	{
-		if (checkNoMeshGeneration && IsNoMeshGeneration())
+		if (checkNoMeshGeneration && IsNoFloorMeshGeneration())
 			return false;
 
 		if (IsKindOfRoomType())
@@ -124,8 +124,11 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に屋根が生成されるか判定します
 	*/
-	bool Grid::CanBuildRoof(const Grid& toGrid) const noexcept
+	bool Grid::CanBuildRoof(const Grid& toGrid, const bool checkNoMeshGeneration) const noexcept
 	{
+		if (checkNoMeshGeneration && IsNoRoofMeshGeneration())
+			return false;
+
 		if (IsKindOfRoomType())
 		{
 			return

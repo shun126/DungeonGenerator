@@ -187,7 +187,8 @@ public:
 	const FInt32Interval& GetRoomDepth() const noexcept;
 	const FInt32Interval& GetRoomHeight() const noexcept;
 
-	int32 GetRoomMargin() const;
+	int32 GetHorizontalRoomMargin() const noexcept;
+	int32 GetVerticalRoomMargin() const noexcept;
 
 	float GetGridSize() const;
 
@@ -284,8 +285,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))
 		FInt32Interval RoomHeight = { 2, 3 };
 
-	//! Horizontal room and room margins
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0"))
+	//! Horizontal room margins
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0"), DisplayName = "Room Horizontal Margin")
 		int32 RoomMargin = 1;
 
 	//! Horizontal room-to-room coupling

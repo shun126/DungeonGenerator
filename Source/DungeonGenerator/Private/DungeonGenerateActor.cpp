@@ -230,37 +230,37 @@ void ADungeonGenerateActor::PreInitializeComponents()
 		DungeonGenerator->OnAddFloor([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(FloorMeshs, staticMesh, transform);
-		OnCreateFloor.Broadcast(transform);
+				OnCreateFloor.Broadcast(transform);
 			}
 		);
 		DungeonGenerator->OnAddSlope([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(SlopeMeshs, staticMesh, transform);
-		OnCreateSlope.Broadcast(transform);
+				OnCreateSlope.Broadcast(transform);
 			}
 		);
 		DungeonGenerator->OnAddWall([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(WallMeshs, staticMesh, transform);
-		OnCreateWall.Broadcast(transform);
+				OnCreateWall.Broadcast(transform);
 			}
 		);
 		DungeonGenerator->OnAddRoomRoof([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(RoomRoofMeshs, staticMesh, transform);
-		OnCreateAisleRoof.Broadcast(transform);
+				OnCreateAisleRoof.Broadcast(transform);
 			}
 		);
 		DungeonGenerator->OnAddAisleRoof([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(AisleRoofMeshs, staticMesh, transform);
-		OnCreateAisleRoof.Broadcast(transform);
+				OnCreateAisleRoof.Broadcast(transform);
 			}
 		);
 		DungeonGenerator->OnAddPillar([this](uint32_t gridHeight, UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(PillarMeshs, staticMesh, transform);
-		OnCreatePillar.Broadcast(transform);
+				OnCreatePillar.Broadcast(transform);
 			}
 		);
 

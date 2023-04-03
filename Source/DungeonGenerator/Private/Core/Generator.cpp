@@ -341,7 +341,7 @@ namespace dungeon
 					FVector direction = room1->GetCenter() - contactPoint;
 
 					// 水平方向への移動を優先
-					if (room1->GetBackground() <= 0 || (parameter.GetNumberOfCandidateFloors() - 1) <= room1->GetForeground())
+					if (room1->GetBackground() <= 0 || static_cast<int32_t>(parameter.GetNumberOfCandidateFloors() + parameter.GetVerticalRoomMargin() - 1) <= room1->GetForeground())
 						direction.Z = 0;
 
 					// 中心が一致してしまったので適当な方向に押し出す
@@ -354,13 +354,16 @@ namespace dungeon
 					}
 
 					// 押し出し範囲を設定
-					const double margin = static_cast<double>(parameter.GetHorizontalRoomMargin());
-					const std::array<Plane, 4> planes =
+					const double hMargin = static_cast<double>(parameter.GetHorizontalRoomMargin());
+					const double vMargin = static_cast<double>(parameter.GetVerticalRoomMargin());
+					const std::array<Plane, 6> planes =
 					{
-						Plane(FVector(-1.,  0.,  0.), contactPoint + FVector( contactHalfSize.X + margin, 0., 0.)),	// +X
-						Plane(FVector( 1.,  0.,  0.), contactPoint + FVector(-contactHalfSize.X - margin, 0., 0.)),	// -X
-						Plane(FVector( 0., -1.,  0.), contactPoint + FVector(0.,  contactHalfSize.Y + margin, 0.)),	// +Y
-						Plane(FVector( 0.,  1.,  0.), contactPoint + FVector(0., -contactHalfSize.Y - margin, 0.)),	// -Y
+						Plane(FVector(-1.,  0.,  0.), contactPoint + FVector( contactHalfSize.X + hMargin, 0., 0.)),	// +X
+						Plane(FVector( 1.,  0.,  0.), contactPoint + FVector(-contactHalfSize.X - hMargin, 0., 0.)),	// -X
+						Plane(FVector( 0., -1.,  0.), contactPoint + FVector(0.,  contactHalfSize.Y + hMargin, 0.)),	// +Y
+						Plane(FVector( 0.,  1.,  0.), contactPoint + FVector(0., -contactHalfSize.Y - hMargin, 0.)),	// -Y
+						Plane(FVector( 0.,  0., -1.), contactPoint + FVector(0., 0.,  contactHalfSize.Z + vMargin)),	// +Z
+						Plane(FVector( 0.,  0.,  1.), contactPoint + FVector(0., 0., -contactHalfSize.Z - vMargin)),	// -Z
 					};
 
 					FVector newRoomCenter;
@@ -816,7 +819,7 @@ namespace dungeon
 			const FVector dataHalfSize = dataSize / 2;
 			const FIntVector dataMin = FIntVector(center - dataHalfSize);
 			const FIntVector dataMax = dataMin + FIntVector(dataSize);
-			mVoxel->NoMeshGeneration(dataMin, dataMax);
+			mVoxel->NoMeshGeneration(dataMin, dataMax, room->IsNoRoofMeshGeneration(), room->IsNoFloorMeshGeneration());
 		}
 
 		// 通路の距離が短い順に並べ替える
