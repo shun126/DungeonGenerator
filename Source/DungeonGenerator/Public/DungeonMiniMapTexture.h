@@ -1,5 +1,5 @@
 /*
-Minimap Textures
+Minimap Texture
 
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
@@ -10,7 +10,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include "DungeonMiniMapTexture.generated.h"
 
-class UDungeonGenerator;
+class CDungeonGeneratorCore;
 class UTexture2D;
 
 /**
@@ -54,7 +54,12 @@ private:
 	/**
 	Generates a minimap texture
 	*/
-	bool GenerateMiniMapTexture(const UDungeonGenerator* dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor);
+	bool GenerateMiniMapTextureWithSize(const std::shared_ptr<CDungeonGeneratorCore>& dungeonGeneratorCore, const uint32_t textureWidth, const uint8 currentFloor);
+
+	/**
+	Generates a minimap texture
+	*/
+	bool GenerateMiniMapTextureWithScale(const std::shared_ptr<CDungeonGeneratorCore>& dungeonGeneratorCore, const uint32_t textureScale, const uint8 currentFloor);
 
 	/**
 	Destroy minimap textures

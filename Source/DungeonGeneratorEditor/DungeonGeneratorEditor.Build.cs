@@ -33,8 +33,9 @@ public class DungeonGeneratorEditor : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"PropertyEditor",
-				"DungeonGenerator",
+                "DesktopWidgets",
+                "PropertyEditor",
+                "DungeonGenerator",
 			}
 		);
         BuildVersion Version;

@@ -11,7 +11,7 @@ All Rights Reserved.
 #include "DungeonMiniMapTextureLayer.generated.h"
 
 class ADungeonGenerateActor;
-class UDungeonGenerator;
+class CDungeonGeneratorCore;
 class UDungeonMiniMapTexture;
 class UTexture2D;
 
@@ -38,6 +38,12 @@ public:
 	destructor
 	*/
 	virtual ~UDungeonMiniMapTextureLayer() = default;
+
+	/**
+	Get UDungeonMiniMapTexture from height
+	*/
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		FVector2D GetTextureSize() const noexcept;
 
 	/**
 	Get the total number of levels
@@ -75,14 +81,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		FVector2D ToRelativeAndFloor(uint8& floor, const FVector& location) const;
 
+	/**
+	Converts from world coordinates to normalized coordinates (0 to 1)
+	*/
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		FVector2D ToNormalize(const FVector& location) const;
+
 private:
 	/**
 	Generates a minimap texture
 	*/
-	bool GenerateMiniMapTexture(const UDungeonGenerator* dungeonGenerator, const uint32_t textureWidth, const float gridSize);
+	bool GenerateMiniMapTextureWithSize(const std::shared_ptr<CDungeonGeneratorCore>& dungeonGeneratorCore, const uint32_t textureWidth, const float gridSize);
+
+	/**
+	Generates a minimap texture
+	*/
+	bool GenerateMiniMapTextureWithScale(const std::shared_ptr<CDungeonGeneratorCore>& dungeonGeneratorCore, const uint32_t textureScale, const float gridSize);
 
 private:
-	// 階層毎のダンジョンミニマップテクスチャ
+	// Dungeon minimap textures for each level
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 		TArray<UDungeonMiniMapTexture*> DungeonMiniMapTextures;
 	// TObjectPtr<UDungeonMiniMapTexture> not used for UE4 compatibility
@@ -94,6 +111,7 @@ private:
 	float mGridSize = 1.f;
 
 	friend class ADungeonGenerateActor;
+	friend class FDungeonGenerateEditorModule;
 };
 
 inline UDungeonMiniMapTextureLayer::UDungeonMiniMapTextureLayer(const FObjectInitializer& initializer)

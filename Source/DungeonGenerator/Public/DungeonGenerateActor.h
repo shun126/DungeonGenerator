@@ -11,7 +11,7 @@ All Rights Reserved.
 #include "DungeonGenerateActor.generated.h"
 
 // 前方宣言
-class UDungeonGenerator;
+class CDungeonGeneratorCore;
 class UDungeonGenerateParameter;
 class UDungeonMiniMapTextureLayer;
 class UDungeonTransactionalHierarchicalInstancedStaticMeshComponent;
@@ -46,11 +46,31 @@ public:
 	*/
 	virtual ~ADungeonGenerateActor();
 
+	/**
+	Generate new dungeon
+	*/
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		void GenerateDungeon();
 
+	/**
+	Destroy  dungeon
+	*/
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		void DestroyDungeon();
+
+	/**
+	Finds the floor from the world Z coordinate
+	\param[in]	z	Z coordinate of world
+	\return		floor
+	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		int32 FindFloorHeight(const float z) const;
 
-
+	/**
+	Finds the Z coordinate of the grid from the world Z coordinate
+	\param[in]	z	Z coordinate of world
+	\return		Z coordinate of the grid
+	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 		int32 FindVoxelHeight(const float z) const;
 
@@ -58,7 +78,13 @@ public:
 	Generates a texture layer for the minimap
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		UDungeonMiniMapTextureLayer* GenerateMiniMapTextureLayer(const int32 textureWidth);
+		UDungeonMiniMapTextureLayer* GenerateMiniMapTextureLayerWithSize(const int32 textureWidth = 512);
+
+	/**
+	Generates a texture layer for the minimap
+	*/
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+		UDungeonMiniMapTextureLayer* GenerateMiniMapTextureLayerWithScale(const int32 dotScale = 1);
 
 	/**
 	Get a texture layer for a generated minimap
@@ -76,9 +102,7 @@ public:
 #endif
 
 private:
-	void ReleaseHierarchicalInstancedStaticMeshComponents();
-
-	static void StartAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
+	static void BeginAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
 
 	static void AddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs, const UStaticMesh* staticMesh, const FTransform& transform);
 
@@ -86,9 +110,10 @@ private:
 
 	static inline FBox ToWorldBoundingBox(const std::shared_ptr<const dungeon::Room>& room, const float gridSize);
 
+	void PreGenerateImplementation();
+	void PostGenerateImplementation();
+	void DestroyImplementation();
 	void MovePlayerStart();
-
-	void PostGenerate();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
@@ -182,11 +207,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
 		FString LicenseId;
 
-	// Cache of the UIDungeonMiniMapTextureLayer
-	UPROPERTY(BlueprintReadOnly, Transient, Category = "DungeonGenerator")
-		UDungeonGenerator* DungeonGenerator;
-	// TObjectPtr<UDungeonGenerator> not used for UE4 compatibility
-
 #if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	// Displays debugging information on room and connection information
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
@@ -205,5 +225,8 @@ private:
 #endif
 
 private:
+	// Cache of the UIDungeonMiniMapTextureLayer
+	std::shared_ptr<CDungeonGeneratorCore> mDungeonGeneratorCore;
+
 	bool mPostGenerated = false;
 };

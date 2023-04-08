@@ -11,7 +11,7 @@ All Rights Reserved.
 
 // ログマクロ
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING > 0
-DEFINE_LOG_CATEGORY(DungeonGenerator);
+DEFINE_LOG_CATEGORY(DungeonGeneratorLogger);
 #else
 #define NOMINMAX
 #include <windows.h>

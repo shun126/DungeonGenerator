@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #include "DungeonRoomSensor.h"
-#include "DungeonGenerator.h"
+#include "DungeonGeneratorCore.h"
 #include "Core/Identifier.h"
 #include <Components/BoxComponent.h>
 #include <random>
@@ -15,13 +15,13 @@ All Rights Reserved.
 
 namespace
 {
-	static bool ForceShowDebugInfomation = false;
+	static bool ForceShowDebugInformation = false;
 }
 #endif
 
 const FName& ADungeonRoomSensor::GetDungeonGeneratorTag()
 {
-	return UDungeonGenerator::GetDungeonGeneratorTag();
+	return CDungeonGeneratorCore::GetDungeonGeneratorTag();
 }
 
 const TArray<FName>& ADungeonRoomSensor::GetDungeonGeneratorTags()
@@ -61,7 +61,7 @@ void ADungeonRoomSensor::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	// cppcheck-suppress [knownConditionTrueFalse]
-	if (ShowDebugInfomation || ForceShowDebugInfomation)
+	if (ShowDebugInfomation || ForceShowDebugInformation)
 	{
 		TArray<FString> output;
 		output.Add(TEXT("Identifier:") + FString::FromInt(Identifier));

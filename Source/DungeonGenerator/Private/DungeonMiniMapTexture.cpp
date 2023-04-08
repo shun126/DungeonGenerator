@@ -1,5 +1,5 @@
 /*
-テクスチャ
+Minimap Texture
 
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
@@ -7,24 +7,40 @@ All Rights Reserved.
 */
 
 #include "DungeonMiniMapTexture.h"
-#include "DungeonGenerator.h"
+#include "DungeonGeneratorCore.h"
 
-bool UDungeonMiniMapTexture::GenerateMiniMapTexture(const UDungeonGenerator* dungeonGenerator, const uint32_t textureWidth, const uint8 currentFloor)
+bool UDungeonMiniMapTexture::GenerateMiniMapTextureWithSize(const std::shared_ptr<CDungeonGeneratorCore>& dungeonGeneratorCore, const uint32_t textureWidth, const uint8 currentFloor)
 {
-	if (dungeonGenerator == nullptr)
+	if (dungeonGeneratorCore == nullptr)
 		return false;
 
 	DestroyMiniMapTexture();
 
 	uint32_t horizontalScale;
-	Texture = dungeonGenerator->GenerateMiniMapTexture(horizontalScale, textureWidth, currentFloor);
+	Texture = dungeonGeneratorCore->GenerateMiniMapTextureWithSize(horizontalScale, textureWidth, currentFloor);
 	if (IsValid(Texture) == false)
 		return false;
 
-	Texture->AddToRoot();
-
 	GeneratedScale = horizontalScale;
 	GeneratedScaleVector.Set(GeneratedScale, GeneratedScale);
+
+	return true;
+}
+
+bool UDungeonMiniMapTexture::GenerateMiniMapTextureWithScale(const std::shared_ptr<CDungeonGeneratorCore>& dungeonGeneratorCore, const uint32_t dotScale, const uint8 currentFloor)
+{
+	if (dungeonGeneratorCore == nullptr)
+		return false;
+
+	DestroyMiniMapTexture();
+
+	uint32_t horizontalScale;
+	Texture = dungeonGeneratorCore->GenerateMiniMapTextureWithScale(horizontalScale, dotScale, currentFloor);
+	if (IsValid(Texture) == false)
+		return false;
+
+	GeneratedScale = horizontalScale;
+	GeneratedScaleVector.Set(horizontalScale, horizontalScale);
 
 	return true;
 }

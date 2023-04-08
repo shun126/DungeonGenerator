@@ -8,7 +8,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include <AssetTypeActions_Base.h>
 
-class DUNGEONGENERATOREDITOR_API FDungeonRoomAssetTypeActions : public FAssetTypeActions_Base
+class FDungeonRoomAssetTypeActions : public FAssetTypeActions_Base
 {
 public:
 	FDungeonRoomAssetTypeActions(EAssetTypeCategories::Type InAssetCategory);
