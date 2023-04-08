@@ -1,10 +1,10 @@
 {
 	"FileVersion": 3,
-	"Version": 5,
-	"VersionName": "1.4",
+	"Version": 6,
+	"VersionName": "1.4.1",
 	"FriendlyName": "DungeonGenerator",
-	"Description": "Generates a three-dimensional dungeon.",
-	"Category": "Other",
+	"Description": "Procedural 3D dungeon generator plugin. Easy generation of levels, mini-maps and missions.",
+	"Category": "Procedural",
 	"CreatedBy": "Narcis Software",
 	"CreatedByURL": "https://happy-game-dev.undo.jp/",
 	"DocsURL": "https://github.com/shun126/DungeonGenerator/wiki/",
@@ -19,6 +19,9 @@
 			"Name": "DungeonGenerator",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64"
+			],
 			"PlatformAllowList": [
 				"Win64"
 			]
@@ -27,6 +30,9 @@
 			"Name": "DungeonGeneratorEditor",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64"
+			],
 			"PlatformAllowList": [
 				"Win64"
 			]

@@ -6,7 +6,7 @@ All Rights Reserved.
 
 #include "DungeonGeneratorModule.h"
 
-#define LOCTEXT_NAMESPACE "DungeonGeneratorModule"
+#define LOCTEXT_NAMESPACE "FDungeonGeneratorModule"
 
 void FDungeonGeneratorModule::StartupModule()
 {
@@ -18,4 +18,4 @@ void FDungeonGeneratorModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE(FDungeonGeneratorModule, DungeonGeneratorModule)
+IMPLEMENT_MODULE(FDungeonGeneratorModule, DungeonGenerator)

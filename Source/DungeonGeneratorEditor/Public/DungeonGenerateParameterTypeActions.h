@@ -8,7 +8,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include <AssetTypeActions_Base.h>
 
-class DUNGEONGENERATOREDITOR_API UDungeonGenerateParameterTypeActions : public FAssetTypeActions_Base
+class UDungeonGenerateParameterTypeActions : public FAssetTypeActions_Base
 {
 public:
 	UDungeonGenerateParameterTypeActions(EAssetTypeCategories::Type InAssetCategory);

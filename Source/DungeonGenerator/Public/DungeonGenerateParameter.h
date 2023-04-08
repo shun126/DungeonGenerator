@@ -388,7 +388,7 @@ protected:
 		UDungeonRoomAsset* DungeonRoomAsset;
 	// TObjectPtr<UDungeonRoomAsset> not used for UE4 compatibility
 
-	friend class UDungeonGenerator;
+	friend class CDungeonGeneratorCore;
 };
 
 // aka: SelectActorParts, SelectRandomActorParts

@@ -13,7 +13,6 @@ All Rights Reserved.
 #include <functional>
 #include <list>
 #include <memory>
-#include "DungeonGenerator.generated.h"
 
 // Forward declaration
 class UDungeonGenerateParameter;
@@ -31,11 +30,8 @@ namespace dungeon
 /*
 Dungeon generate class
 */
-UCLASS()
-class DUNGEONGENERATOR_API UDungeonGenerator : public UObject
+class DUNGEONGENERATOR_API CDungeonGeneratorCore final : public std::enable_shared_from_this<CDungeonGeneratorCore>
 {
-	GENERATED_BODY()
-
 public:
 	using AddStaticMeshEvent = std::function<void(UStaticMesh*, const FTransform&)>;
 	using AddPillarStaticMeshEvent = std::function<void(uint32_t, UStaticMesh*, const FTransform&)>;
@@ -52,12 +48,14 @@ public:
 	/**
 	constructor
 	*/
-	UDungeonGenerator();
+	explicit CDungeonGeneratorCore(const TWeakObjectPtr<UWorld>& world);
+	CDungeonGeneratorCore(const CDungeonGeneratorCore&) = delete;
+	CDungeonGeneratorCore& operator=(const CDungeonGeneratorCore&) = delete;
 
 	/**
 	destructor
 	*/
-	virtual ~UDungeonGenerator() = default;
+	~CDungeonGeneratorCore() = default;
 
 	// event
 	void OnAddFloor(const AddStaticMeshEvent& func);
@@ -120,12 +118,21 @@ public:
 
 	/**
 	Generates a minimap texture of the generated dungeon
-	\param[out]		horizontalScale		Scale value to convert from world coordinates to texture coordinates
-	\param[in]		textureWidthHeight	Width of texture to be generated (height equals width)
-	\param[in]		currentLevel		Criteria for floor height to be generated
+	\param[out]		worldToTextureScale		Scale value to convert from world coordinates to texture coordinates
+	\param[in]		textureWidthHeight		Width of texture to be generated (height equals width)
+	\param[in]		currentLevel			Criteria for floor height to be generated
 	\return			texture object
 	*/
-	UTexture2D* GenerateMiniMapTexture(uint32_t& horizontalScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
+	UTexture2D* GenerateMiniMapTextureWithSize(uint32_t& worldToTextureScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
+
+	/**
+	Generates a minimap texture of the generated dungeon
+	\param[out]		worldToTextureScale		Scale value to convert from world coordinates to texture coordinates
+	\param[in]		textureScale			Scale of texture to be generated (height equals width)
+	\param[in]		currentLevel			Criteria for floor height to be generated
+	\return			texture object
+	*/
+	UTexture2D* GenerateMiniMapTextureWithScale(uint32_t& worldToTextureScale, uint32_t textureScale, uint32_t currentLevel) const;
 
 	/**
 	Get dungeon generation core object.
@@ -141,10 +148,6 @@ private:
 	bool CreateImpl_AddRoomAsset(const UDungeonGenerateParameter* parameter, const std::shared_ptr<dungeon::Room>& room);
 	void AddTerrain();
 	void AddObject();
-
-	////////////////////////////////////////////////////////////////////////////
-	UWorld* FindWorld() const;
-	static UWorld* GetWorldFromGameViewport();
 
 	////////////////////////////////////////////////////////////////////////////
 	AActor* SpawnActor(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
@@ -182,14 +185,18 @@ private:
 	void UnloadStreamLevel(const FSoftObjectPath& levelPath);
 
 	////////////////////////////////////////////////////////////////////////////
+	UTexture2D* GenerateMiniMapTexture(uint32_t worldToTextureScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
+
+	////////////////////////////////////////////////////////////////////////////
 #if WITH_EDITOR
 	void DrawRoomAisleInformation() const;
 	void DrawVoxelGridType() const;
 #endif
 
 private:
-	std::shared_ptr<dungeon::Generator> mGenerator;
+	TWeakObjectPtr<UWorld> mWorld;
 	TWeakObjectPtr<const UDungeonGenerateParameter> mParameter;
+	std::shared_ptr<dungeon::Generator> mGenerator;
 
 	AddStaticMeshEvent mOnAddFloor;
 	AddStaticMeshEvent mOnAddSlope;
@@ -222,64 +229,63 @@ private:
 	friend class FDungeonGenerateEditorModule;
 };
 
-inline void UDungeonGenerator::OnAddFloor(const AddStaticMeshEvent& func)
+inline void CDungeonGeneratorCore::OnAddFloor(const AddStaticMeshEvent& func)
 {
 	mOnAddFloor = func;
 }
 
-inline void UDungeonGenerator::OnAddSlope(const AddStaticMeshEvent& func)
+inline void CDungeonGeneratorCore::OnAddSlope(const AddStaticMeshEvent& func)
 {
 	mOnAddSlope = func;
 }
 
-inline void UDungeonGenerator::OnAddWall(const AddStaticMeshEvent& func)
+inline void CDungeonGeneratorCore::OnAddWall(const AddStaticMeshEvent& func)
 {
 	mOnAddWall = func;
 }
 
-inline void UDungeonGenerator::OnAddRoomRoof(const AddStaticMeshEvent& func)
+inline void CDungeonGeneratorCore::OnAddRoomRoof(const AddStaticMeshEvent& func)
 {
 	mOnAddRoomRoof = func;
 }
 
-inline void UDungeonGenerator::OnAddAisleRoof(const AddStaticMeshEvent& func)
+inline void CDungeonGeneratorCore::OnAddAisleRoof(const AddStaticMeshEvent& func)
 {
 	mOnAddAisleRoof = func;
 }
 
-inline void UDungeonGenerator::OnAddPillar(const AddPillarStaticMeshEvent& func)
+inline void CDungeonGeneratorCore::OnAddPillar(const AddPillarStaticMeshEvent& func)
 {
 	mOnResetPillar = func;
 }
 
-inline void UDungeonGenerator::OnResetTorch(const ResetActorEvent& func)
+inline void CDungeonGeneratorCore::OnResetTorch(const ResetActorEvent& func)
 {
 	mOnResetTorch = func;
 }
 
 #if 0
-inline void UDungeonGenerator::OnAddChandelier(const ResetActorEvent& func)
+inline void CDungeonGeneratorCore::OnAddChandelier(const ResetActorEvent& func)
 {
 	mOnResetChandelier = func;
 }
 #endif
 
-inline void UDungeonGenerator::OnResetDoor(const ResetDoorEvent& func)
+inline void CDungeonGeneratorCore::OnResetDoor(const ResetDoorEvent& func)
 {
 	mOnResetDoor = func;
 }
 
 template<typename T>
-inline T* UDungeonGenerator::SpawnActor(const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+inline T* CDungeonGeneratorCore::SpawnActor(const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
-	AActor* actor = SpawnActor(T::StaticClass(), folderPath, transform, spawnActorCollisionHandlingMethod);
-	return Cast<T>(actor);
+	return Cast<T>(SpawnActor(T::StaticClass(), folderPath, transform, spawnActorCollisionHandlingMethod));
 }
 
 template<typename T>
-inline T* UDungeonGenerator::SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+inline T* CDungeonGeneratorCore::SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
-	UWorld* world = GetWorld();
+	UWorld* world = mWorld.Get();
 	if (!IsValid(world))
 		return nullptr;
 
@@ -297,15 +303,27 @@ inline T* UDungeonGenerator::SpawnActorDeferred(UClass* actorClass, const FName&
 }
 
 template<typename T>
-inline T* UDungeonGenerator::FindActor()
+inline T* CDungeonGeneratorCore::FindActor()
 {
-	const TActorIterator<T> iterator(GetWorld());
-	return iterator ? *iterator : nullptr;
+	UWorld* world = mWorld.Get();
+	if (IsValid(world))
+	{
+		const TActorIterator<T> iterator(world);
+		if (iterator)
+			return *iterator;
+	}
+	return nullptr;
 }
 
 template<typename T>
-inline const T* UDungeonGenerator::FindActor() const
+inline const T* CDungeonGeneratorCore::FindActor() const
 {
-	const TActorIterator<T> iterator(GetWorld());
-	return iterator ? *iterator : nullptr;
+	UWorld* world = mWorld.Get();
+	if (IsValid(world))
+	{
+		const TActorIterator<T> iterator(world);
+		if (iterator)
+			return *iterator;
+	}
+	return nullptr;
 }

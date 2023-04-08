@@ -30,12 +30,12 @@ All Rights Reserved.
 // ログマクロ
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING > 0
 #include <CoreMinimal.h>
-DECLARE_LOG_CATEGORY_EXTERN(DungeonGenerator, Log, All);
-#define DUNGEON_GENERATOR_ERROR(Format, ...)		UE_LOG(DungeonGenerator, Error, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_WARNING(Format, ...)		UE_LOG(DungeonGenerator, Warning, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_DISPLAY(Format, ...)		UE_LOG(DungeonGenerator, Display, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_LOG(Format, ...)			UE_LOG(DungeonGenerator, Log, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_VERBOSE(Format, ...)		UE_LOG(DungeonGenerator, Verbose, Format, ##__VA_ARGS__)
+DECLARE_LOG_CATEGORY_EXTERN(DungeonGeneratorLogger, Log, All);
+#define DUNGEON_GENERATOR_ERROR(Format, ...)		UE_LOG(DungeonGeneratorLogger, Error, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_WARNING(Format, ...)		UE_LOG(DungeonGeneratorLogger, Warning, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_DISPLAY(Format, ...)		UE_LOG(DungeonGeneratorLogger, Display, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_LOG(Format, ...)			UE_LOG(DungeonGeneratorLogger, Log, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_VERBOSE(Format, ...)		UE_LOG(DungeonGeneratorLogger, Verbose, Format, ##__VA_ARGS__)
 #elif defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
 #define DUNGEON_GENERATOR_ERROR(Format, ...)		dungeon::OutputDebugStringWithArgument(Format, ##__VA_ARGS__)
 #define DUNGEON_GENERATOR_WARNING(Format, ...)		dungeon::OutputDebugStringWithArgument(Format, ##__VA_ARGS__)
