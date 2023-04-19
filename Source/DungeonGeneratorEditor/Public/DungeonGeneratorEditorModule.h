@@ -43,6 +43,7 @@ private:
 	TOptional<int32> OnGetGenerateTextureScale() const;
 	void OnSetGenerateTextureScale(int32 value);
 
+	void UpdateGenerateTextureButtons();
 	FReply OnClickedGenerateTextureWithSizeButton();
 	FReply OnClickedGenerateTextureWithScaleButton();
 
@@ -55,7 +56,30 @@ private:
 
 	TSharedPtr<FUICommandList> PluginCommands;
 	TSharedPtr<SEditableTextBox> mRandomSeedValue;
+	TSharedPtr<SButton> mGenerateDungeonButton;
+	TSharedPtr<SButton> mGenerateTextureSizeButton;
+	TSharedPtr<SButton> mGenerateTextureScaleButton;
 	TWeakObjectPtr<UDungeonGenerateParameter> mDungeonGenerateParameter = nullptr;
 	int32 mGenerateTextureSize = 512;
 	int32 mGenerateTextureScale = 1;
 };
+
+inline TOptional<int32> FDungeonGenerateEditorModule::OnGetGenerateTextureSize() const
+{
+	return mGenerateTextureSize;
+}
+
+inline void FDungeonGenerateEditorModule::OnSetGenerateTextureSize(int32 value)
+{
+	mGenerateTextureSize = value;
+}
+
+inline TOptional<int32> FDungeonGenerateEditorModule::OnGetGenerateTextureScale() const
+{
+	return mGenerateTextureScale;
+}
+
+inline void FDungeonGenerateEditorModule::OnSetGenerateTextureScale(int32 value)
+{
+	mGenerateTextureScale = value;
+}

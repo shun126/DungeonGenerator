@@ -14,7 +14,7 @@ FDungeonRoomAssetTypeActions::FDungeonRoomAssetTypeActions(EAssetTypeCategories:
 
 FColor FDungeonRoomAssetTypeActions::GetTypeColor() const
 {
-	return FColor::Orange;
+	return FColor::Emerald;
 }
 
 void FDungeonRoomAssetTypeActions::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)

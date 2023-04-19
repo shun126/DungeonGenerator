@@ -16,6 +16,7 @@ All Rights Reserved.
 
 // Forward declaration
 class UDungeonGenerateParameter;
+class ULevelStreamingDynamic;
 class UStaticMesh;
 class ANavMeshBoundsVolume;
 class AStaticMeshActor;
@@ -181,8 +182,8 @@ private:
 	void AsyncLoadStreamLevels();
 	void SyncLoadStreamLevels();
 	void UnloadStreamLevels();
-	void LoadStreamLevel(const FSoftObjectPath& levelPath, const FVector& levelLocation);
 	void UnloadStreamLevel(const FSoftObjectPath& levelPath);
+	TSoftObjectPtr<const ULevelStreamingDynamic> FindLoadedStreamLevel(const FSoftObjectPath& levelPath) const;
 
 	////////////////////////////////////////////////////////////////////////////
 	UTexture2D* GenerateMiniMapTexture(uint32_t worldToTextureScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
@@ -222,7 +223,8 @@ private:
 	};
 
 	std::list<LoadStreamLevelParameter> mRequestLoadStreamLevels;
-	TSet<FSoftObjectPath> mLoadedStreamLevels;
+	TArray<TSoftObjectPtr<ULevelStreamingDynamic>> mLoadedStreamLevels;
+
 
 	// friend class
 	friend class ADungeonGenerateActor;

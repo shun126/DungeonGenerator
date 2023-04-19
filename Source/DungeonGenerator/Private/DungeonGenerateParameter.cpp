@@ -314,6 +314,11 @@ const FDungeonDoorActorParts* UDungeonGenerateParameter::SelectDoorParts(const s
 	return SelectParts(gridIndex, grid, random, DoorParts, DoorPartsSelectionMethod);
 }
 
+bool UDungeonGenerateParameter::IsMovePlayerStartToStartingPoint() const noexcept
+{
+	return MovePlayerStartToStartingPoint;
+}
+
 const FDungeonActorPartsWithDirection& UDungeonGenerateParameter::GetStartParts() const
 {
 	return StartParts;

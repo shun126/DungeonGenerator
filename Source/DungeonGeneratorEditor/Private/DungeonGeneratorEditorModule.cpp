@@ -31,6 +31,14 @@ static const FName DungeonGeneratorTabName("DungeonGenerator");
 
 #define LOCTEXT_NAMESPACE "FDungeonGenerateEditorModule"
 
+DECLARE_LOG_CATEGORY_EXTERN(DungeonGeneratorLogger, Log, All);
+#define DUNGEON_GENERATOR_ERROR(Format, ...)		UE_LOG(DungeonGeneratorLogger, Error, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_WARNING(Format, ...)		UE_LOG(DungeonGeneratorLogger, Warning, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_DISPLAY(Format, ...)		UE_LOG(DungeonGeneratorLogger, Display, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_LOG(Format, ...)			UE_LOG(DungeonGeneratorLogger, Log, Format, ##__VA_ARGS__)
+#define DUNGEON_GENERATOR_VERBOSE(Format, ...)		UE_LOG(DungeonGeneratorLogger, Verbose, Format, ##__VA_ARGS__)
+DEFINE_LOG_CATEGORY(DungeonGeneratorLogger);
+
 void FDungeonGenerateEditorModule::StartupModule()
 {
 	FDungeonGeneratorStyle::Initialize();
@@ -145,7 +153,7 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 		.FillHeight(1.f)
 		.Padding(2.f)
 		[
-			SNew(SButton)
+			SAssignNew(mGenerateDungeonButton, SButton)
 			.Text(LOCTEXT("GenerateDungeonButton", "Generate dungeon"))
 		.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedGenerateButton)
 		]
@@ -156,7 +164,7 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 		.Padding(2.f)
 		[
 			SNew(SButton)
-			.Text(LOCTEXT("GenerateDungeonButton", "Clear dungeon"))
+			.Text(LOCTEXT("ClearDungeonButton", "Clear dungeon"))
 		.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedClearButton)
 		]
 
@@ -194,7 +202,7 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 		.FillHeight(1.f)
 		.Padding(2.f)
 		[
-			SNew(SButton)
+			SAssignNew(mGenerateTextureSizeButton, SButton)
 			.Text(LOCTEXT("GenerateTextureSizeButton", "Generate texture with size"))
 			.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedGenerateTextureWithSizeButton)
 		]
@@ -232,7 +240,7 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 		.FillHeight(1.f)
 		.Padding(2.f)
 		[
-			SNew(SButton)
+			SAssignNew(mGenerateTextureScaleButton, SButton)
 			.Text(LOCTEXT("GenerateTextureScaleButton", "Generate texture with scale"))
 		.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedGenerateTextureWithScaleButton)
 		]
@@ -260,6 +268,8 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 		]
 		]
 		];
+
+	SetAssetData(FAssetData());
 
 	return dockTab;
 }
@@ -302,7 +312,13 @@ FString FDungeonGenerateEditorModule::GetObjectPath() const
 
 void FDungeonGenerateEditorModule::SetAssetData(const FAssetData& assetData)
 {
-	mDungeonGenerateParameter = Cast<UDungeonGenerateParameter>(assetData.GetAsset());
+	UDungeonGenerateParameter* dungeonGenerateParameter = Cast<UDungeonGenerateParameter>(assetData.GetAsset());
+	mDungeonGenerateParameter = dungeonGenerateParameter;
+
+	// Enable buttons the parameters are set.
+	const bool enabled = dungeonGenerateParameter != nullptr;
+	mGenerateDungeonButton->SetEnabled(enabled);
+	UpdateGenerateTextureButtons();
 }
 
 FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
@@ -310,124 +326,137 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 	UWorld* world = GetWorldFromGameViewport();
 	if (!IsValid(world))
 	{
-		// TODO:エラーログを出力してください
+		DUNGEON_GENERATOR_ERROR(TEXT("Failed to find World object"));
 		return FReply::Unhandled();
 	}
 
-	// 生成した全アクターを削除
+	// Delete all generated actors
 	CDungeonGeneratorCore::DestroySpawnedActors(world);
 
-	// アクターを生成
-	if (UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get())
+	// Release generated dungeons
+	if (mDungeonGeneratorCore)
 	{
-		mDungeonGeneratorCore = std::make_shared<CDungeonGeneratorCore>(world);
-		if (mDungeonGeneratorCore == nullptr)
-		{
-			// TODO:エラーログを出力してください
-			return FReply::Unhandled();
-		}
-
-		mDungeonGeneratorCore->Create(dungeonGenerateParameter);
-		mDungeonGeneratorCore->MovePlayerStart();
-
-		const int32 value = dungeonGenerateParameter->GetGeneratedRandomSeed();
-		mRandomSeedValue->SetText(FText::FromString(FString::FromInt(value)));
-
-		// TODO:ミニマップテクスチャの出力を検討して下さい
-
-		return FReply::Handled();
+		mDungeonGeneratorCore->UnloadStreamLevels();
 	}
-	else
+
+	// Get dungeon generation parameters
+	const UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get();
+	if (dungeonGenerateParameter == nullptr)
 	{
-		// TODO:エラーログを出力してください
+		DUNGEON_GENERATOR_ERROR(TEXT("Set the DungeonGenerateParameter"));
 		return FReply::Unhandled();
 	}
-}
 
-FReply FDungeonGenerateEditorModule::OnClickedClearButton()
-{
-	// 生成した全アクターを削除
-	CDungeonGeneratorCore::DestroySpawnedActors(GetWorldFromGameViewport());
+	// Generate dungeon
+	mDungeonGeneratorCore = std::make_shared<CDungeonGeneratorCore>(world);
+	if (mDungeonGeneratorCore == nullptr)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("Failed to create dungeon generator object"));
+		return FReply::Unhandled();
+	}
+	if (!mDungeonGeneratorCore->Create(dungeonGenerateParameter))
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("Failed to generate dungeon"));
+		OnClickedClearButton();
+		return FReply::Unhandled();
+	}
+	mDungeonGeneratorCore->SyncLoadStreamLevels();
+	if (dungeonGenerateParameter->IsMovePlayerStartToStartingPoint())
+	{
+		mDungeonGeneratorCore->MovePlayerStart();
+	}
 
-	mDungeonGeneratorCore.reset();
+	// Set random seeds for generated dungeons
+	const int32 value = dungeonGenerateParameter->GetGeneratedRandomSeed();
+	mRandomSeedValue->SetText(FText::FromString(FString::FromInt(value)));
+
+	UpdateGenerateTextureButtons();
 
 	return FReply::Handled();
 }
 
-TOptional<int32> FDungeonGenerateEditorModule::OnGetGenerateTextureSize() const
+FReply FDungeonGenerateEditorModule::OnClickedClearButton()
 {
-	return mGenerateTextureSize;
+	// Release generated dungeons
+	if (mDungeonGeneratorCore)
+	{
+		mDungeonGeneratorCore->UnloadStreamLevels();
+	}
+	mDungeonGeneratorCore.reset();
+
+	// Delete all generated actors
+	CDungeonGeneratorCore::DestroySpawnedActors(GetWorldFromGameViewport());
+
+	UpdateGenerateTextureButtons();
+
+	return FReply::Handled();
 }
 
-void FDungeonGenerateEditorModule::OnSetGenerateTextureSize(int32 value)
+void FDungeonGenerateEditorModule::UpdateGenerateTextureButtons()
 {
-	mGenerateTextureSize = value;
-}
-
-TOptional<int32> FDungeonGenerateEditorModule::OnGetGenerateTextureScale() const
-{
-	return mGenerateTextureScale;
-}
-
-void FDungeonGenerateEditorModule::OnSetGenerateTextureScale(int32 value)
-{
-	mGenerateTextureScale = value;
+	const bool enabled = mDungeonGenerateParameter.IsValid() && mDungeonGeneratorCore != nullptr;
+	mGenerateTextureSizeButton->SetEnabled(enabled);
+	mGenerateTextureScaleButton->SetEnabled(enabled);
 }
 
 FReply FDungeonGenerateEditorModule::OnClickedGenerateTextureWithSizeButton()
 {
-	if (UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get())
+	const UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get();
+	if (dungeonGenerateParameter == nullptr)
 	{
-		if (mDungeonGeneratorCore == nullptr)
-		{
-			// TODO:エラーログを出力してください
-			return FReply::Unhandled();
-		}
-
-		UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer = NewObject<UDungeonMiniMapTextureLayer>();
-		if (!IsValid(dungeonMiniMapTextureLayer))
-		{
-			return FReply::Unhandled();
-		}
-
-		if (dungeonMiniMapTextureLayer->GenerateMiniMapTextureWithSize(mDungeonGeneratorCore, mGenerateTextureSize, dungeonGenerateParameter->GetGridSize()) == false)
-		{
-			// TODO:エラーログを出力してください
-			return FReply::Unhandled();
-		}
-
-		return SaveTextures(dungeonMiniMapTextureLayer);
+		DUNGEON_GENERATOR_ERROR(TEXT("Set the DungeonGenerateParameter"));
+		return FReply::Unhandled();
 	}
 
-	return FReply::Unhandled();
+	if (mDungeonGeneratorCore == nullptr)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("Generate the dungeon first."));
+		return FReply::Unhandled();
+	}
+
+	UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer = NewObject<UDungeonMiniMapTextureLayer>();
+	if (!IsValid(dungeonMiniMapTextureLayer))
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("Failed to create DungeonMiniMapTextureLayer object"));
+		return FReply::Unhandled();
+	}
+
+	if (!dungeonMiniMapTextureLayer->GenerateMiniMapTextureWithSize(mDungeonGeneratorCore, mGenerateTextureSize, dungeonGenerateParameter->GetGridSize()))
+	{
+		return FReply::Unhandled();
+	}
+
+	return SaveTextures(dungeonMiniMapTextureLayer);
 }
 
 FReply FDungeonGenerateEditorModule::OnClickedGenerateTextureWithScaleButton()
 {
-	if (UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get())
+	const UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get();
+	if (dungeonGenerateParameter == nullptr)
 	{
-		if (mDungeonGeneratorCore == nullptr)
-		{
-			// TODO:エラーログを出力してください
-			return FReply::Unhandled();
-		}
-
-		UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer = NewObject<UDungeonMiniMapTextureLayer>();
-		if (!IsValid(dungeonMiniMapTextureLayer))
-		{
-			return FReply::Unhandled();
-		}
-
-		if (dungeonMiniMapTextureLayer->GenerateMiniMapTextureWithScale(mDungeonGeneratorCore, mGenerateTextureScale, dungeonGenerateParameter->GetGridSize()) == false)
-		{
-			// TODO:エラーログを出力してください
-			return FReply::Unhandled();
-		}
-
-		return SaveTextures(dungeonMiniMapTextureLayer);
+		DUNGEON_GENERATOR_ERROR(TEXT("Set the DungeonGenerateParameter"));
+		return FReply::Unhandled();
 	}
 
-	return FReply::Unhandled();
+	if (mDungeonGeneratorCore == nullptr)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("Generate the dungeon first."));
+		return FReply::Unhandled();
+	}
+
+	UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer = NewObject<UDungeonMiniMapTextureLayer>();
+	if (!IsValid(dungeonMiniMapTextureLayer))
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("Failed to create DungeonMiniMapTextureLayer object"));
+		return FReply::Unhandled();
+	}
+
+	if (!dungeonMiniMapTextureLayer->GenerateMiniMapTextureWithScale(mDungeonGeneratorCore, mGenerateTextureScale, dungeonGenerateParameter->GetGridSize()))
+	{
+		return FReply::Unhandled();
+	}
+
+	return SaveTextures(dungeonMiniMapTextureLayer);
 }
 
 FReply FDungeonGenerateEditorModule::SaveTextures(const UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer) const
@@ -441,71 +470,85 @@ FReply FDungeonGenerateEditorModule::SaveTextures(const UDungeonMiniMapTextureLa
 		std::function<void()> mFunction;
 	};
 
+	// Mount the package destination
 	const TCHAR* basePath = TEXT("/Game/ProceduralTextures/");
 	const FString absoluteBasePath = FPaths::ProjectContentDir() + TEXT("/ProceduralTextures/");
 	FPackageName::RegisterMountPoint(basePath, absoluteBasePath);
 
+	// Reserve unmounted package destination
 	Finalizer unmount([basePath, &absoluteBasePath]()
 		{
 			FPackageName::UnRegisterMountPoint(basePath, absoluteBasePath);
 		}
 	);
 
-	TArray<UPackage*> packages;
-
-	const int32 floorHeight = dungeonMiniMapTextureLayer->GetFloorHeight();
-	for (int32 floor = 0; floor < floorHeight; ++floor)
+	// Save textures as assets
 	{
-		const FString packageName = FString::Printf(TEXT("Floor%d"), floor);
-		const FString packagePath = basePath + packageName;
-		UPackage* package = CreatePackage(*packagePath);
-		if (!IsValid(package))
+		TArray<UPackage*> packages;
+
+		// Generate texture assets per floors
+		const int32 floorHeight = dungeonMiniMapTextureLayer->GetFloorHeight();
+		for (int32 floor = 0; floor < floorHeight; ++floor)
 		{
-			// TODO:エラーログを出力してください
-			return FReply::Unhandled();
-		}
-		packages.Add(package);
+			// Create package
+			const FString packageName = FString::Printf(TEXT("Floor%d"), floor);
+			const FString packagePath = basePath + packageName;
+			UPackage* package = CreatePackage(*packagePath);
+			if (!IsValid(package))
+			{
+				DUNGEON_GENERATOR_ERROR(TEXT("Failed to create Package"));
+				return FReply::Unhandled();
+			}
 
-		package->FullyLoad();
-		package->MarkPackageDirty();
+			// Load package
+			package->FullyLoad();
+			package->MarkPackageDirty();
 
-		UDungeonMiniMapTexture* dungeonMiniMapTexture = dungeonMiniMapTextureLayer->GetByFloor(floor);
+			// Get minimap texture
+			UDungeonMiniMapTexture* dungeonMiniMapTexture = dungeonMiniMapTextureLayer->GetByFloor(floor);
 
+			// Duplicate texture object and change to saveable
 #if UE_VERSION_NEWER_THAN(5, 1, 0)
-		FName textureName = MakeUniqueObjectName(package, UTexture2D::StaticClass(), FName(*packageName), EUniqueObjectNameOptions::GloballyUnique);
+			FName textureName = MakeUniqueObjectName(package, UTexture2D::StaticClass(), FName(*packageName), EUniqueObjectNameOptions::GloballyUnique);
 #else
-		FName textureName = MakeUniqueObjectName(package, UTexture2D::StaticClass(), FName(*packageName));
+			FName textureName = MakeUniqueObjectName(package, UTexture2D::StaticClass(), FName(*packageName));
 #endif
-		UTexture2D* texture = DuplicateObject(dungeonMiniMapTexture->GetTexture(), package, textureName);
-		texture->SetFlags(RF_Public | RF_Standalone);
-		texture->ClearFlags(RF_Transient);
+			UTexture2D* texture = DuplicateObject(dungeonMiniMapTexture->GetTexture(), package, textureName);
+			texture->SetFlags(RF_Public | RF_Standalone);
+			texture->ClearFlags(RF_Transient);
 
-		FAssetRegistryModule::AssetCreated(texture);
+			// Register texture objects as assets
+			FAssetRegistryModule::AssetCreated(texture);
 
-		const FString longPackageName = FPackageName::LongPackageNameToFilename(packagePath, FPackageName::GetAssetPackageExtension());
-
-#if UE_VERSION_OLDER_THAN(5, 0, 0)
-		const bool saved = UPackage::SavePackage(package, texture, RF_Public | RF_Standalone, *longPackageName);
+			// Package and save texture objects
+			const FString longPackageName = FPackageName::LongPackageNameToFilename(packagePath, FPackageName::GetAssetPackageExtension());
+#if UE_VERSION_NEWER_THAN(5, 1, 0)
+			FSavePackageArgs saveArgs;
+			saveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+			saveArgs.SaveFlags = SAVE_NoError;
+			const bool saved = UPackage::SavePackage(package, texture, *longPackageName, saveArgs);
 #else
-		FSavePackageArgs saveArgs;
-		saveArgs.TopLevelFlags = RF_Public | RF_Standalone;
-		saveArgs.SaveFlags = SAVE_NoError;
-		const bool saved = UPackage::SavePackage(package, texture, *longPackageName, saveArgs);
+			const bool saved = UPackage::SavePackage(package, texture, RF_Public | RF_Standalone, *longPackageName);
 #endif
-		if (saved == false)
+			if (saved == false)
+			{
+				DUNGEON_GENERATOR_ERROR(TEXT("Failed to save Package '%s'"), *longPackageName);
+				return FReply::Unhandled();
+			}
+
+			// Record saved packages
+			packages.Add(package);
+		}
+
+		// Unload packages
+		if (!PackageTools::UnloadPackages(packages))
 		{
-			// TODO:エラーログを出力してください
+			DUNGEON_GENERATOR_ERROR(TEXT("Failed to unload Packages"));
 			return FReply::Unhandled();
 		}
-	}
 
-	if (!PackageTools::UnloadPackages(packages))
-	{
-		// TODO:エラーログを出力してください
-		return FReply::Unhandled();
+		packages.Empty();
 	}
-
-	packages.Empty();
 
 	return FReply::Handled();
 }

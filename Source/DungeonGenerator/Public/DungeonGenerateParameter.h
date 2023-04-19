@@ -215,6 +215,8 @@ public:
 
 	const FDungeonDoorActorParts* SelectDoorParts(const size_t gridIndex, const dungeon::Grid& grid, dungeon::Random& random) const;
 
+	bool IsMovePlayerStartToStartingPoint() const noexcept;
+
 	const FDungeonActorPartsWithDirection& GetStartParts() const;
 
 	const FDungeonActorPartsWithDirection& GetGoalParts() const;
@@ -370,6 +372,10 @@ protected:
 	// Door Parts
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Door", BlueprintReadWrite)
 		TArray<FDungeonDoorActorParts> DoorParts;
+
+	// Move PlayerStart to the starting point.
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Door", BlueprintReadWrite)
+		bool MovePlayerStartToStartingPoint = true;
 
 	// starting point
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)

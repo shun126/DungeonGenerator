@@ -341,15 +341,18 @@ void ADungeonGenerateActor::DestroyImplementation()
 */
 void ADungeonGenerateActor::MovePlayerStart()
 {
-	if (mDungeonGeneratorCore != nullptr)
+	if (DungeonGenerateParameter && DungeonGenerateParameter->IsMovePlayerStartToStartingPoint())
 	{
-		if (OnMovePlayerStart.IsBound())
+		if (mDungeonGeneratorCore)
 		{
-			OnMovePlayerStart.Broadcast(mDungeonGeneratorCore->GetStartLocation());
-		}
-		else
-		{
-			mDungeonGeneratorCore->MovePlayerStart();
+			if (OnMovePlayerStart.IsBound())
+			{
+				OnMovePlayerStart.Broadcast(mDungeonGeneratorCore->GetStartLocation());
+			}
+			else
+			{
+				mDungeonGeneratorCore->MovePlayerStart();
+			}
 		}
 	}
 }
@@ -378,11 +381,6 @@ void ADungeonGenerateActor::Tick(float DeltaSeconds)
 	{
 		mPostGenerated = true;
 		PostGenerateImplementation();
-
-#if !WITH_EDITOR
-		// ティック無効化
-		PrimaryActorTick.bCanEverTick = false;
-#endif
 	}
 
 	// 部屋の生成通知

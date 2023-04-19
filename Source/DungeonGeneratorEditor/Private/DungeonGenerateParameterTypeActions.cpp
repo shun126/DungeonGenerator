@@ -14,7 +14,7 @@ UDungeonGenerateParameterTypeActions::UDungeonGenerateParameterTypeActions(EAsse
 
 FColor UDungeonGenerateParameterTypeActions::GetTypeColor() const
 {
-	return FColor::Orange;
+	return FColor::Emerald;
 }
 
 void UDungeonGenerateParameterTypeActions::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
