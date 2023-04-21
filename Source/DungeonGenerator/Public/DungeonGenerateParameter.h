@@ -374,15 +374,15 @@ protected:
 		TArray<FDungeonDoorActorParts> DoorParts;
 
 	// Move PlayerStart to the starting point.
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Door", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Start", BlueprintReadWrite)
 		bool MovePlayerStartToStartingPoint = true;
 
 	// starting point
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Start", BlueprintReadWrite)
 		FDungeonActorPartsWithDirection StartParts;
 
 	// goal position
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Goal", BlueprintReadWrite)
 		FDungeonActorPartsWithDirection GoalParts;
 
 	// Room Sensor Class

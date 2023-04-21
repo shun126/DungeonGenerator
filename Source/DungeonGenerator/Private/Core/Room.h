@@ -294,33 +294,39 @@ namespace dungeon
 
 
 
-		uint32_t GetDataWidth() const noexcept { return mDataWidth; }
-		uint32_t GetDataDepth() const noexcept { return mDataDepth; }
-		uint32_t GetDataHeight() const noexcept { return mDataHeight; }
+		/*
+		Get the size of the mesh generation prohibited area
+		*/
+		FIntVector GetDataSize() const noexcept;
 
-		void SetDataSize(const uint32_t dataWidth, const uint32_t dataDepth, const uint32_t dataHeight)
-		{
-			mDataWidth = dataWidth;
-			mDataDepth = dataDepth;
-			mDataHeight = dataHeight;
-		}
+		/*
+		Set the size of the mesh generation prohibited area
+		*/
+		void SetDataSize(const uint32_t dataWidth, const uint32_t dataDepth, const uint32_t dataHeight);
+
+		/*
+		Get mesh generation prohibited area
+		\param[out]		min		Minimum Position
+		\param[out]		max		Maximum position
+		*/
+		void GetDataBounds(FIntVector& min, FIntVector& max) const noexcept;
 
 		/**
-		メッシュ生成禁止に設定します
-		\param[in]	noRoofMeshGeneration	天井のメッシュ生成禁止
-		\param[in]	noFloorMeshGeneration	床のメッシュ生成禁止
+		Sets mesh generation prohibition
+		\param[in]	noRoofMeshGeneration	No roof mesh generation
+		\param[in]	noFloorMeshGeneration	No floor mesh generation
 		*/
 		void SetNoMeshGeneration(const bool noRoofMeshGeneration, const bool noFloorMeshGeneration);
 
 		/**
-		床のメッシュ生成禁止か取得します
-		\return		trueならメッシュ生成禁止
+		Floor mesh generation is prohibited or acquired.
+		\return		If true, mesh generation is prohibited
 		*/
 		bool IsNoFloorMeshGeneration() const noexcept;
 
 		/**
-		天井のメッシュ生成禁止か取得します
-		\return		trueならメッシュ生成禁止
+		Mesh generation of the ceiling is prohibited or acquired.
+		\return		If true, mesh generation is prohibited
 		*/
 		bool IsNoRoofMeshGeneration() const noexcept;
 

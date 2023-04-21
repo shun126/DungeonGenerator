@@ -36,7 +36,7 @@ All Rights Reserved.
 // 定義するとミッショングラフのデバッグファイル(PlantUML)を出力します
 #define DEBUG_GENERATE_MISSION_GRAPH_FILE
 
-static const FName DungeonGeneratorTag("DungeonGenerator");
+static const FName DungeonGeneratorTag(TEXT("DungeonGenerator"));
 
 namespace
 {
@@ -191,19 +191,18 @@ bool CDungeonGeneratorCore::CreateImpl_AddRoomAsset(const UDungeonGenerateParame
 			break;
 		}
 
-		FVector centerPosition = room->GetGroundCenter() * parameter->GetGridSize();
-		if ((room->GetWidth() & 1) != (dungeonRoomLocator.GetWidth() & 1))
-		{
-			centerPosition.X += parameter->GetGridSize() / 2;
-		}
-		if ((room->GetDepth() & 1) != (dungeonRoomLocator.GetDepth() & 1))
-		{
-			centerPosition.Y += parameter->GetGridSize() / 2;
-		}
-		if (RequestStreamLevel(dungeonRoomLocator.GetLevelPath(), centerPosition))
+		if (!IsStreamLevelRequested(dungeonRoomLocator.GetLevelPath()))
 		{
 			room->SetDataSize(dungeonRoomLocator.GetWidth(), dungeonRoomLocator.GetDepth(), dungeonRoomLocator.GetHeight());
+
+			FIntVector min, max;
+			room->GetDataBounds(min, max);
 			room->SetNoMeshGeneration(!dungeonRoomLocator.IsGenerateRoofMesh(), !dungeonRoomLocator.IsGenerateFloorMesh());
+
+			const float halfGridSize = parameter->GetGridSize() * 0.5f;
+			const FVector halfOffset(halfGridSize, halfGridSize, 0);
+
+			RequestStreamLevel(dungeonRoomLocator.GetLevelPath(), FVector(min) * parameter->GetGridSize() + halfOffset);
 		}
 	});
 
@@ -230,7 +229,7 @@ void CDungeonGeneratorCore::AddTerrain()
 			const size_t gridIndex = mGenerator->GetVoxel()->Index(location);
 			const float gridSize = parameter->GetGridSize();
 			const float halfGridSize = gridSize * 0.5f;
-			const FVector halfOffset = FVector(halfGridSize, halfGridSize, 0);
+			const FVector halfOffset(halfGridSize, halfGridSize, 0);
 			const FVector position = parameter->ToWorld(location);
 			const FVector centerPosition = position + halfOffset;
 
@@ -1013,19 +1012,19 @@ std::shared_ptr<const dungeon::Generator> CDungeonGeneratorCore::GetGenerator() 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-bool CDungeonGeneratorCore::RequestStreamLevel(const FSoftObjectPath& levelPath, const FVector& levelLocation)
+bool CDungeonGeneratorCore::IsStreamLevelRequested(const FSoftObjectPath& levelPath) const
 {
 	const auto requestStreamLevel = std::find_if(mRequestLoadStreamLevels.begin(), mRequestLoadStreamLevels.end(), [&levelPath](const LoadStreamLevelParameter& requestStreamLevel)
 		{
 			return requestStreamLevel.mPath == levelPath;
 		}
 	);
-	if (requestStreamLevel != mRequestLoadStreamLevels.end())
-		return false;
+	return requestStreamLevel != mRequestLoadStreamLevels.end();
+}
 
+void CDungeonGeneratorCore::RequestStreamLevel(const FSoftObjectPath& levelPath, const FVector& levelLocation)
+{
 	mRequestLoadStreamLevels.emplace_back(levelPath, levelLocation);
-
-	return true;
 }
 
 void CDungeonGeneratorCore::AsyncLoadStreamLevels()
@@ -1040,11 +1039,30 @@ void CDungeonGeneratorCore::AsyncLoadStreamLevels()
 			UWorld* world = mWorld.Get();
 			if (IsValid(world))
 			{
+				bool bSuccess = false;
+#if UE_VERSION_NEWER_THAN(5, 1, 0)
 				const FTransform transform(FRotator::ZeroRotator, requestStreamLevel.mLocation);
 				ULevelStreamingDynamic::FLoadLevelInstanceParams parameter(world, requestStreamLevel.mPath.GetLongPackageName(), transform);
 				parameter.OptionalLevelStreamingClass = UDungeonLevelStreamingDynamic::StaticClass();
-				bool bSuccess = false;
 				ULevelStreamingDynamic* levelStreaming = ULevelStreamingDynamic::LoadLevelInstance(parameter, bSuccess);
+#elif UE_VERSION_NEWER_THAN(5, 0, 0)
+				ULevelStreamingDynamic* levelStreaming = ULevelStreamingDynamic::LoadLevelInstance(
+					world,
+					requestStreamLevel.mPath.GetLongPackageName(),
+					requestStreamLevel.mLocation,
+					FRotator::ZeroRotator,
+					bSuccess,
+					TEXT(""),
+					UDungeonLevelStreamingDynamic::StaticClass(),
+					false);
+#else
+				ULevelStreamingDynamic* levelStreaming = ULevelStreamingDynamic::LoadLevelInstance(
+					world,
+					requestStreamLevel.mPath.GetLongPackageName(),
+					requestStreamLevel.mLocation,
+					FRotator::ZeroRotator,
+					bSuccess);
+#endif
 				if (bSuccess && IsValid(levelStreaming))
 				{
 					mLoadedStreamLevels.Add(levelStreaming);
@@ -1060,6 +1078,7 @@ void CDungeonGeneratorCore::AsyncLoadStreamLevels()
 	}
 }
 
+#if WITH_EDITOR
 void CDungeonGeneratorCore::SyncLoadStreamLevels()
 {
 	UWorld* world = mWorld.Get();
@@ -1072,11 +1091,31 @@ void CDungeonGeneratorCore::SyncLoadStreamLevels()
 			if (FindLoadedStreamLevel(requestStreamLevel.mPath))
 				continue;
 
+			bool bSuccess = false;
+
+#if UE_VERSION_NEWER_THAN(5, 1, 0)
 			const FTransform transform(FRotator::ZeroRotator, requestStreamLevel.mLocation);
 			ULevelStreamingDynamic::FLoadLevelInstanceParams parameter(world, requestStreamLevel.mPath.GetLongPackageName(), transform);
 			parameter.OptionalLevelStreamingClass = UDungeonLevelStreamingDynamic::StaticClass();
-			bool bSuccess = false;
 			ULevelStreamingDynamic* levelStreaming = ULevelStreamingDynamic::LoadLevelInstance(parameter, bSuccess);
+#elif UE_VERSION_NEWER_THAN(5, 0, 0)
+			ULevelStreamingDynamic* levelStreaming = ULevelStreamingDynamic::LoadLevelInstance(
+				world,
+				requestStreamLevel.mPath.GetLongPackageName(),
+				requestStreamLevel.mLocation,
+				FRotator::ZeroRotator,
+				bSuccess,
+				TEXT(""),
+				UDungeonLevelStreamingDynamic::StaticClass(),
+				false);
+#else
+			ULevelStreamingDynamic* levelStreaming = ULevelStreamingDynamic::LoadLevelInstance(
+				world,
+				requestStreamLevel.mPath.GetLongPackageName(),
+				requestStreamLevel.mLocation,
+				FRotator::ZeroRotator,
+				bSuccess);
+#endif
 			if (bSuccess && IsValid(levelStreaming))
 			{
 				levelStreaming->bShouldBlockOnLoad = true;
@@ -1086,17 +1125,19 @@ void CDungeonGeneratorCore::SyncLoadStreamLevels()
 				ULevel* loadedLevel = levelStreaming->GetLoadedLevel();
 				if (IsValid(loadedLevel))
 				{
-#if WITH_EDITOR
-					FString path, filename, extension;
-					FPaths::Split(levelStreaming->PackageNameToLoad.ToString(), path, filename, extension);
-#endif
+					FString folder = levelStreaming->PackageNameToLoad.ToString();
+					folder.RemoveFromStart("/Game/", ESearchCase::IgnoreCase);
+					folder.RemoveFromStart("Map/", ESearchCase::IgnoreCase);
+					folder.RemoveFromStart("Maps/", ESearchCase::IgnoreCase);
+					folder.RemoveFromStart("Level/", ESearchCase::IgnoreCase);
+					folder.RemoveFromStart("Levels/", ESearchCase::IgnoreCase);
+
 					for (AActor* actor : loadedLevel->Actors)
 					{
 						actor->Tags.Add(GetDungeonGeneratorTag());
-#if WITH_EDITOR
-						const FName folderPath(FString(TEXT("Dungeon/Levels/")) + filename);
+
+						const FName folderPath(FString(TEXT("Dungeon/Levels/")) + folder);
 						actor->SetFolderPath(folderPath);
-#endif
 					}
 
 					moveActors.Append(loadedLevel->Actors);
@@ -1120,10 +1161,11 @@ void CDungeonGeneratorCore::SyncLoadStreamLevels()
 		mRequestLoadStreamLevels.clear();
 	}
 }
+#endif
 
 void CDungeonGeneratorCore::UnloadStreamLevels()
 {
-	SyncLoadStreamLevels();
+	mRequestLoadStreamLevels.clear();
 
 	UWorld* world = mWorld.Get();
 	if (IsValid(world))
@@ -1136,38 +1178,60 @@ void CDungeonGeneratorCore::UnloadStreamLevels()
 	}
 }
 
-void CDungeonGeneratorCore::UnloadStreamLevel(const FSoftObjectPath& levelPath)
-{
-	SyncLoadStreamLevels();
-
-	UWorld* world = mWorld.Get();
-	if (IsValid(world))
-	{
-		for (int32 i = 0; i < mLoadedStreamLevels.Num(); ++i)
-		{
-			const TSoftObjectPtr<ULevelStreamingDynamic>& loadedStreamLevel = mLoadedStreamLevels[i];
-			if (loadedStreamLevel->PackageNameToLoad == levelPath.GetAssetPathName())
-			{
-				world->RemoveStreamingLevel(loadedStreamLevel.Get());
-
-				mLoadedStreamLevels.RemoveAt(i);
-				break;
-			}
-		}
-	}
-}
-
 TSoftObjectPtr<const ULevelStreamingDynamic> CDungeonGeneratorCore::FindLoadedStreamLevel(const FSoftObjectPath& levelPath) const
 {
 	for (const TSoftObjectPtr<const ULevelStreamingDynamic>& loadedStreamLevel : mLoadedStreamLevels)
 	{
 		if (loadedStreamLevel.IsValid())
 		{
+#if UE_VERSION_OLDER_THAN(5, 1, 0)
 			if (loadedStreamLevel->PackageNameToLoad == levelPath.GetAssetPathName())
+#else
+			if (loadedStreamLevel->PackageNameToLoad == levelPath.GetAssetPath().GetPackageName())
+#endif			
+			{
 				return loadedStreamLevel;
+			}
 		}
 	}
 	return nullptr;
+}
+
+void CDungeonGeneratorCore::LoadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const FTransform& transform)
+{
+#if UE_VERSION_NEWER_THAN(5, 0, 0)
+	const FName& longPackageName = path.GetLongPackageFName();
+#else
+	const FName& longPackageName = FName(path.GetLongPackageName());
+#endif
+	ULevelStreaming* levelStreaming;
+
+	levelStreaming = UGameplayStatics::GetStreamingLevel(world, longPackageName);
+	if (IsValid(levelStreaming))
+	{
+		UnloadStreamLevelImplement(world, path, true);
+	}
+
+	FLatentActionInfo LatentInfo;
+	UGameplayStatics::LoadStreamLevel(world, longPackageName, false, false, LatentInfo);
+
+	levelStreaming = UGameplayStatics::GetStreamingLevel(world, longPackageName);
+	if (IsValid(levelStreaming))
+	{
+		levelStreaming->LevelTransform = transform;
+		levelStreaming->SetShouldBeVisible(true);
+	}
+}
+
+void CDungeonGeneratorCore::UnloadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const bool shouldBlockOnUnload)
+{
+#if UE_VERSION_NEWER_THAN(5, 0, 0)
+	const FName& longPackageName = path.GetLongPackageFName();
+#else
+	const FName& longPackageName = FName(path.GetLongPackageName());
+#endif
+	FLatentActionInfo LatentInfo;
+	UGameplayStatics::UnloadStreamLevel(world, longPackageName, LatentInfo, shouldBlockOnUnload);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

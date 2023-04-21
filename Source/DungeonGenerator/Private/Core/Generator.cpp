@@ -807,19 +807,19 @@ namespace dungeon
 		// 部屋を生成
 		for (const auto& room : mRooms)
 		{
-			const FIntVector min(room->GetLeft(), room->GetTop(), room->GetBackground());
-			const FIntVector max(room->GetRight(), room->GetBottom(), room->GetForeground());
-			mVoxel->Rectangle(min, max
-				, Grid::CreateFloor(parameter.GetRandom(), room->GetIdentifier().Get())
-				, Grid::CreateDeck(parameter.GetRandom(), room->GetIdentifier().Get())
-			);
-
-			const FVector center = (FVector(min) + FVector(max)) / 2;
-			const FVector dataSize(room->GetDataWidth(), room->GetDataDepth(), room->GetDataHeight());
-			const FVector dataHalfSize = dataSize / 2;
-			const FIntVector dataMin = FIntVector(center - dataHalfSize);
-			const FIntVector dataMax = dataMin + FIntVector(dataSize);
-			mVoxel->NoMeshGeneration(dataMin, dataMax, room->IsNoRoofMeshGeneration(), room->IsNoFloorMeshGeneration());
+			{
+				const FIntVector min(room->GetLeft(), room->GetTop(), room->GetBackground());
+				const FIntVector max(room->GetRight(), room->GetBottom(), room->GetForeground());
+				mVoxel->Rectangle(min, max
+					, Grid::CreateFloor(parameter.GetRandom(), room->GetIdentifier().Get())
+					, Grid::CreateDeck(parameter.GetRandom(), room->GetIdentifier().Get())
+				);
+			}
+			{
+				FIntVector min, max;
+				room->GetDataBounds(min, max);
+				mVoxel->NoMeshGeneration(min, max, room->IsNoRoofMeshGeneration(), room->IsNoFloorMeshGeneration());
+			}
 		}
 
 		// 通路の距離が短い順に並べ替える

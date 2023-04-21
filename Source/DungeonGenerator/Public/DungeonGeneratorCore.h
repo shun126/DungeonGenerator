@@ -178,12 +178,17 @@ private:
 	template<typename T = AActor> const T* FindActor() const;
 
 	////////////////////////////////////////////////////////////////////////////
-	bool RequestStreamLevel(const FSoftObjectPath& levelPath, const FVector& levelLocation);
+	bool IsStreamLevelRequested(const FSoftObjectPath& levelPath) const;
+	void RequestStreamLevel(const FSoftObjectPath& levelPath, const FVector& levelLocation);
 	void AsyncLoadStreamLevels();
+#if WITH_EDITOR
 	void SyncLoadStreamLevels();
+#endif
 	void UnloadStreamLevels();
-	void UnloadStreamLevel(const FSoftObjectPath& levelPath);
 	TSoftObjectPtr<const ULevelStreamingDynamic> FindLoadedStreamLevel(const FSoftObjectPath& levelPath) const;
+
+	void LoadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const FTransform& transform);
+	void UnloadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const bool shouldBlockOnUnload);
 
 	////////////////////////////////////////////////////////////////////////////
 	UTexture2D* GenerateMiniMapTexture(uint32_t worldToTextureScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;

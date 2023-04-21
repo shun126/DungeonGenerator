@@ -299,4 +299,25 @@ namespace dungeon
 		};
 		return names[static_cast<size_t>(mItem)];
 	}
+
+	FIntVector Room::GetDataSize() const noexcept
+	{
+		return FIntVector(mDataWidth, mDataDepth, mDataHeight);
+	}
+
+	void Room::SetDataSize(const uint32_t dataWidth, const uint32_t dataDepth, const uint32_t dataHeight)
+	{
+		mDataWidth = dataWidth;
+		mDataDepth = dataDepth;
+		mDataHeight = dataHeight;
+	}
+
+	void Room::GetDataBounds(FIntVector& min, FIntVector& max) const noexcept
+	{
+		const FIntVector center(GetGroundCenter());
+		const FIntVector size = GetDataSize();
+		const FIntVector offset(size.X / 2, size.Y / 2, 0);
+		min = center - offset;
+		max = min + size;
+	}
 }
