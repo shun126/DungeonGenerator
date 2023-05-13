@@ -10,7 +10,6 @@ All Rights Reserved.
 #include <memory>
 #include "DungeonGenerateActor.generated.h"
 
-// 前方宣言
 class CDungeonGeneratorCore;
 class UDungeonGenerateParameter;
 class UDungeonMiniMapTextureLayer;
@@ -21,14 +20,13 @@ namespace dungeon
 	class Room;
 }
 
-// イベント宣言
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDungeonGeneratorActorSignature, const FTransform&, transform);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDungeonGeneratorDoorSignature, AActor*, doorActor, EDungeonRoomProps, props);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDungeonGeneratorPlayerStartSignature, const FVector&, location);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FDungeonGeneratorDelegete, bool, StreamingLevel, EDungeonRoomParts, DungeonRoomParts, const FBox&, RoomRect);
 
 /**
-dungeon generation actor
+Dungeon generation actor class
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor

@@ -14,7 +14,7 @@ class CDungeonGeneratorCore;
 class UTexture2D;
 
 /**
-Minimap Textures
+Minimap Textures class
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonMiniMapTexture : public UObject

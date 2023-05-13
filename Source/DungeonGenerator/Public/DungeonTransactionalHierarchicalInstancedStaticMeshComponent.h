@@ -10,9 +10,9 @@ All Rights Reserved.
 #include "DungeonTransactionalHierarchicalInstancedStaticMeshComponent.generated.h"
 
 /*
-連続してAddInstanceやRemoveInstanceを行う時に、開始と終了処理をまとめるためのクラス
+Class for summarizing the start and end processing when performing consecutive AddInstance and RemoveInstance.
 
-UHierarchicalInstancedStaticMeshComponentを継承しています
+Inherits from UHierarchicalInstancedStaticMeshComponent
 */
 UCLASS(Blueprintable, BlueprintType, meta = (BlueprintSpawnableComponent))
 class DUNGEONGENERATOR_API UDungeonTransactionalHierarchicalInstancedStaticMeshComponent : public UHierarchicalInstancedStaticMeshComponent
@@ -21,28 +21,29 @@ class DUNGEONGENERATOR_API UDungeonTransactionalHierarchicalInstancedStaticMeshC
 	
 public:
 	/*
-	大量のインスタンスを変更する場合に呼び出して下さい。
-	グラフィックに関する処理をEndTransactionでまとめて処理します。
-	\param[in]	collisionEnableControl	物理コリジョンが有効の場合のみ、コリジョンの有効性を制御します
+	Call this when changing a large number of instances.
+	EndTransaction handles all processing related to graphics together.
+	\param[in] collisionEnableControl collision enable only if physical collision is enabled
 	*/
 	void BeginTransaction(const bool collisionEnableControl);
 
 	/*
-	大量のインスタンスを変更する場合に呼び出して下さい。
-	グラフィックに関する処理をEndTransactionでまとめて処理します。
+	Call this when changing a large number of instances.
+	Processes related to graphics are grouped together in an EndTransaction.
 	*/
 	void EndTransaction(const bool asyncBuildTree);
 
 	/*
-	トランザクション中？
+	During transaction?
 	*/
 	bool InTransaction() const;
 
 	/*
-	トランザクション中ではない？
+	Not in transaction?
 	*/
 	bool IsImmediate() const;
 
+	// overrides
 #if UE_VERSION_OLDER_THAN(5, 0, 0)
 	virtual int32 AddInstance(const FTransform& instanceTransforms) override;
 	virtual TArray<int32> AddInstances(const TArray<FTransform>& instanceTransforms, bool bShouldReturnIndices) override;
@@ -57,10 +58,10 @@ public:
 	virtual void ClearInstances() override;
 
 private:
-	// コリジョンを無効化して物理エンジンへの通知を抑制
+	// Disable collision to suppress notifications to the physical engine
 	void CheckAndDisableCollision();
 
-	// 抑制した設定を復元
+	// Restore suppressed settings
 	void CheckAndRevertCollision();
 
 protected:

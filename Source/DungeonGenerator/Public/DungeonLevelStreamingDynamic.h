@@ -12,6 +12,10 @@ All Rights Reserved.
 
 class ULevelStreamingDynamic;
 
+/*
+Class that wraps ULevelStreamingDynamic
+No extended functionality
+*/
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonLevelStreamingDynamic : public ULevelStreamingDynamic
 {
@@ -27,6 +31,4 @@ public:
 	destructor
 	*/
 	virtual ~UDungeonLevelStreamingDynamic() = default;
-
-	//virtual bool ShouldBeAlwaysLoaded() const override { return true; }
 };

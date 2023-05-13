@@ -16,9 +16,11 @@ All Rights Reserved.
 #include "Core/Generator.h"
 #include "Core/Voxel.h"
 #include "Core/Math/Math.h"
+#include <TextureResource.h>
 #include <GameFramework/PlayerStart.h>
 #include <Engine/LevelStreamingDynamic.h>
 #include <Engine/StaticMeshActor.h>
+#include <Engine/Texture2D.h>
 #include <Kismet/GameplayStatics.h>
 #include <Misc/EngineVersionComparison.h>
 #include <NavMesh/NavMeshBoundsVolume.h>

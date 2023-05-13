@@ -17,7 +17,7 @@ enum class EDungeonRoomSizeCondition : uint8
 };
 
 /**
-Sub-level information to replace dungeon rooms
+Sub-level information to replace dungeon rooms class
 */
 USTRUCT(Blueprintable, BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonRoomLocator
@@ -25,16 +25,59 @@ struct DUNGEONGENERATOR_API FDungeonRoomLocator
 	GENERATED_BODY()
 
 public:
+	/*
+	Get sublevel paths
+	*/
 	const FSoftObjectPath& GetLevelPath() const noexcept;
+
+	/*
+	Gets the sub-level grid size
+	*/
 	FIntVector GetSize() const noexcept;
+
+	/*
+	Gets the grid width of the sublevel
+	*/
 	int32 GetWidth() const noexcept;
+
+	/*
+	Gets the grid depth of the sublevel
+	*/
 	int32 GetDepth() const noexcept;
+
+	/*
+	Gets the grid height of the sublevel
+	*/
 	int32 GetHeight() const noexcept;
+
+	/*
+	Gets the width condition for placing sublevels
+	*/
 	EDungeonRoomSizeCondition GetWidthCondition() const noexcept;
+
+	/*
+	Gets the depth condition for placing sublevels
+	*/
 	EDungeonRoomSizeCondition GetDepthCondition() const noexcept;
+
+	/*
+	Gets the height condition for placing sublevels
+	*/
 	EDungeonRoomSizeCondition GetHeightCondition() const noexcept;
+
+	/*
+	Get the parts of the dungeon (room roles) where the sublevels will be placed
+	*/
 	EDungeonRoomParts GetDungeonParts() const noexcept;
+
+	/*
+	Generates or retrieves the ceiling mesh of the grid for sublevel placement
+	*/
 	bool IsGenerateRoofMesh() const noexcept;
+
+	/*
+	Generates or retrieves the floor mesh of the grid for sublevel placement
+	*/
 	bool IsGenerateFloorMesh() const noexcept;
 
 protected:

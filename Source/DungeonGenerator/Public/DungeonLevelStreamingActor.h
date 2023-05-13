@@ -12,8 +12,7 @@ All Rights Reserved.
 class UBoxComponent;
 
 /*
-プレイヤーがOverlapVolumeに入った時に指定レベルをロードするヘルパークラス
-
+Helper class that loads the level when the player enters the OverlapVolume
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API ADungeonLevelStreamingActor : public AActor

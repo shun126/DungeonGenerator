@@ -9,7 +9,7 @@ All Rights Reserved.
 #include "DungeonRoomAsset.generated.h"
 
 /**
-Sub-level information to replace dungeon rooms
+Sub-level information to replace dungeon rooms class
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonRoomAsset : public UObject
@@ -17,10 +17,21 @@ class DUNGEONGENERATOR_API UDungeonRoomAsset : public UObject
 	GENERATED_BODY()
 
 public:
+	/*
+	constructor
+	*/
 	explicit UDungeonRoomAsset(const FObjectInitializer& ObjectInitializer);
+
+	/*
+	destructor
+	*/
 	virtual ~UDungeonRoomAsset() = default;
 
-	const TArray<const FDungeonRoomLocator>& GetDungeonRoomLocator() const;
+	/*
+	Get the dungeon room information array
+	\return		Array of FDungeonRoomLocator
+	*/
+	const TArray<const FDungeonRoomLocator>& GetDungeonRoomLocator() const noexcept;
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
@@ -32,7 +43,7 @@ inline UDungeonRoomAsset::UDungeonRoomAsset(const FObjectInitializer& ObjectInit
 {
 }
 
-inline const TArray<const FDungeonRoomLocator>& UDungeonRoomAsset::GetDungeonRoomLocator() const
+inline const TArray<const FDungeonRoomLocator>& UDungeonRoomAsset::GetDungeonRoomLocator() const noexcept
 {
 	return reinterpret_cast<const TArray<const FDungeonRoomLocator>&>(DungeonRoomLocator);
 }

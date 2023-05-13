@@ -159,7 +159,7 @@ public:
 };
 
 /**
-Dungeon generation parameters
+Dungeon generation parameter class
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonGenerateParameter : public UObject

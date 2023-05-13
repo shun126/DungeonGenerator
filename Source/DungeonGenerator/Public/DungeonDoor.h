@@ -9,6 +9,9 @@ All Rights Reserved.
 #include <GameFramework/Actor.h>
 #include "DungeonDoor.generated.h"
 
+/*
+Dungeon door actor class
+*/
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API ADungeonDoor : public AActor
 {

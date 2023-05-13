@@ -8,6 +8,9 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include <Modules/ModuleManager.h>
 
+/*
+Dungeon generator module class
+*/
 class FDungeonGeneratorModule : public IModuleInterface
 {
 public:

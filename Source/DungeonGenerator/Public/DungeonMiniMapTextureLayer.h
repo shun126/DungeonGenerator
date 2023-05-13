@@ -21,7 +21,7 @@ namespace dungeon
 }
 
 /**
-Minimap Texture Layer
+Minimap texture layer class
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API UDungeonMiniMapTextureLayer : public UObject
