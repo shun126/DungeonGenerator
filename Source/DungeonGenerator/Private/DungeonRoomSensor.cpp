@@ -11,6 +11,7 @@ All Rights Reserved.
 #include <random>
 
 #if WITH_EDITOR
+#include <DrawDebugHelpers.h>
 #include <Kismet/KismetSystemLibrary.h>
 
 namespace
@@ -82,7 +83,7 @@ void ADungeonRoomSensor::Tick(float DeltaSeconds)
 		static constexpr double offsetHeight = 100;
 		location.Z -= Bounding->GetScaledBoxExtent().Z;
 		location.Z += offsetHeight;
-		UKismetSystemLibrary::DrawDebugString(GetWorld(), location, message, nullptr, FLinearColor::White);
+		DrawDebugString(GetWorld(), location, message, nullptr, FColor::White, 0, true, 1.f);
 	}
 }
 #endif

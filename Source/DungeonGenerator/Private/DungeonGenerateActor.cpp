@@ -28,6 +28,7 @@ All Rights Reserved.
 #include <NavMesh/RecastNavMesh.h>
 
 #if WITH_EDITOR
+#include <DrawDebugHelpers.h>
 #include <Kismet/KismetSystemLibrary.h>
 #endif
 
@@ -656,7 +657,7 @@ void ADungeonGenerateActor::DrawDebugInformation()
 				message.Append(line);
 				message.Append(TEXT("\n"));
 			}
-			UKismetSystemLibrary::DrawDebugString(playerPawn->GetWorld(), playerPawn->GetPawnViewLocation(), message, nullptr, FLinearColor::White);
+			DrawDebugString(playerPawn->GetWorld(), playerPawn->GetPawnViewLocation(), message, nullptr, FColor::White, 0, true, 1.f);
 		}
 	}
 }

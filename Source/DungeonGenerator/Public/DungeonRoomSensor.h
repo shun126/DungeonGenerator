@@ -118,6 +118,13 @@ public:
 		float GetDepthRatioFromStart() const;
 
 	/*
+	Gets the tag of the interior of the room to be generated.
+	For example, if the creator returns the tag `kitchen`, the interior with the kitchen tag will be selected
+	*/
+	UFUNCTION(BlueprintImplementableEvent)
+		TArray<FString> OnDecorateInteria() const;
+
+	/*
 	Get the DungeonGenerator tag name.
 	*/
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator")

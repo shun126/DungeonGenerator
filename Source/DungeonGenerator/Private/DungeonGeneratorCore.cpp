@@ -100,6 +100,10 @@ bool CDungeonGeneratorCore::Create(const UDungeonGenerateParameter* parameter)
 	generateParameter.mVerticalRoomMargin = parameter->VerticalRoomMargin;
 	mParameter = parameter;
 
+	mAisleInteriorDecorator.Initialize(mParameter->DungeonInteriorAsset);
+	mSlopeInteriorDecorator.Initialize(mParameter->DungeonInteriorAsset);
+	mRoomInteriorDecorator.Initialize(mParameter->DungeonInteriorAsset);
+
 	mGenerator = std::make_shared<dungeon::Generator>();
 	mGenerator->OnQueryParts([this, parameter](const std::shared_ptr<dungeon::Room>& room)
 	{
@@ -226,6 +230,10 @@ void CDungeonGeneratorCore::AddTerrain()
 		return;
 	}
 
+	mAisleInteriorDecorator.ClearDecorationLocation();
+	mSlopeInteriorDecorator.ClearDecorationLocation();
+	mRoomInteriorDecorator.ClearDecorationLocation();
+
 	mGenerator->GetVoxel()->Each([this, parameter](const FIntVector& location, const dungeon::Grid& grid)
 		{
 			const size_t gridIndex = mGenerator->GetVoxel()->Index(location);
@@ -272,6 +280,11 @@ void CDungeonGeneratorCore::AddTerrain()
 						FVector wallPosition = centerPosition;
 						wallPosition.Y -= halfGridSize;
 						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 0.f));
+
+						if (grid.IsKindOfAisleType())
+							mAisleInteriorDecorator.AddDecorationLocation(wallPosition, 0.f);
+						else if (grid.GetType() == dungeon::Grid::Type::Deck)
+							mRoomInteriorDecorator.AddDecorationLocation(wallPosition, 0.f);
 					}
 					if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X, location.Y + 1, location.Z), dungeon::Direction::South, parameter->MergeRooms))
 					{
@@ -279,6 +292,11 @@ void CDungeonGeneratorCore::AddTerrain()
 						FVector wallPosition = centerPosition;
 						wallPosition.Y += halfGridSize;
 						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 180.f));
+
+						if (grid.IsKindOfAisleType())
+							mAisleInteriorDecorator.AddDecorationLocation(wallPosition, 180.f);
+						else if (grid.GetType() == dungeon::Grid::Type::Deck)
+							mRoomInteriorDecorator.AddDecorationLocation(wallPosition, 180.f);
 					}
 					if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X + 1, location.Y, location.Z), dungeon::Direction::East, parameter->MergeRooms))
 					{
@@ -286,6 +304,11 @@ void CDungeonGeneratorCore::AddTerrain()
 						FVector wallPosition = centerPosition;
 						wallPosition.X += halfGridSize;
 						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 90.f));
+
+						if (grid.IsKindOfAisleType())
+							mAisleInteriorDecorator.AddDecorationLocation(wallPosition, 90.f);
+						else if (grid.GetType() == dungeon::Grid::Type::Deck)
+							mRoomInteriorDecorator.AddDecorationLocation(wallPosition, 90.f);
 					}
 					if (grid.CanBuildWall(mGenerator->GetVoxel()->Get(location.X - 1, location.Y, location.Z), dungeon::Direction::West, parameter->MergeRooms))
 					{
@@ -293,6 +316,11 @@ void CDungeonGeneratorCore::AddTerrain()
 						FVector wallPosition = centerPosition;
 						wallPosition.X -= halfGridSize;
 						mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, -90.f));
+
+						if (grid.IsKindOfAisleType())
+							mAisleInteriorDecorator.AddDecorationLocation(wallPosition, -90.f);
+						else if (grid.GetType() == dungeon::Grid::Type::Deck)
+							mRoomInteriorDecorator.AddDecorationLocation(wallPosition, -90.f);
 					}
 				}
 			}
@@ -461,13 +489,26 @@ void CDungeonGeneratorCore::AddTerrain()
 			return true;
 		}
 	);
+	{
+		mAisleInteriorDecorator.ShuffleDecorationLocation(dungeon::Random::Instance());
+		mAisleInteriorDecorator.SpawnActors(mWorld.Get(), TArray<FString>({ TEXT("aisle"), TEXT("wall"), TEXT("major") }), dungeon::Random::Instance());
+		mAisleInteriorDecorator.SpawnActors(mWorld.Get(), TArray<FString>({ TEXT("aisle"), TEXT("wall") }), dungeon::Random::Instance());
+		mAisleInteriorDecorator.ClearDecorationLocation();
+	}
+
+	{
+		mSlopeInteriorDecorator.ShuffleDecorationLocation(dungeon::Random::Instance());
+		mSlopeInteriorDecorator.SpawnActors(mWorld.Get(), TArray<FString>({ TEXT("slope"), TEXT("wall"), TEXT("major") }), dungeon::Random::Instance());
+		mSlopeInteriorDecorator.SpawnActors(mWorld.Get(), TArray<FString>({ TEXT("slope"), TEXT("wall") }), dungeon::Random::Instance());
+		mSlopeInteriorDecorator.ClearDecorationLocation();
+	}
 
 	// RoomSensorActorを生成
 	mGenerator->ForEach([this, parameter](const std::shared_ptr<const dungeon::Room>& room)
 		{
 			const FVector center = room->GetCenter() * parameter->GetGridSize();
 			const FVector extent = room->GetExtent() * parameter->GetGridSize();
-			SpawnRoomSensorActor(
+			ADungeonRoomSensor* roomSensorActor = SpawnRoomSensorActor(
 				parameter->GetRoomSensorClass(),
 				room->GetIdentifier(),
 				center,
@@ -478,8 +519,51 @@ void CDungeonGeneratorCore::AddTerrain()
 				room->GetDepthFromStart(),
 				mGenerator->GetDeepestDepthFromStart()	//!< TODO:適切な関数名に変えて下さい
 			);
+
+			// center
+			{
+				FVector C = center + FVector(0, 0, -extent.Z);
+				FIntVector location = parameter->ToGrid(C);
+				const auto& grid = mGenerator->GetVoxel()->Get(location.X, location.Y, location.Z);
+				if (grid.IsKindOfRoomTypeWithoutGate())
+				{
+					FDungeonInteriorDecorator localRoomCenterInteriorDecorator(mRoomInteriorDecorator.GetAsset());
+					localRoomCenterInteriorDecorator.AddDecorationLocation(C, 0.f);
+					{
+						TArray<FString> tags = { TEXT("center"), TEXT("major") };
+						tags.Add(FString(room->GetPartsName().size(), room->GetPartsName().data()));
+						tags.Append(roomSensorActor->OnDecorateInteria());
+						localRoomCenterInteriorDecorator.SpawnActors(mWorld.Get(), tags, dungeon::Random::Instance());
+					}
+					{
+						TArray<FString> tags = { TEXT("center") };
+						tags.Add(FString(room->GetPartsName().size(), room->GetPartsName().data()));
+						tags.Append(roomSensorActor->OnDecorateInteria());
+						localRoomCenterInteriorDecorator.SpawnActors(mWorld.Get(), tags, dungeon::Random::Instance());
+					}
+				}
+			}
+			// wall
+			{
+				const std::shared_ptr<FDungeonInteriorDecorator> localRoomWallInteriorDecorator = mRoomInteriorDecorator.Room(FBox(center - extent, center + extent));
+				localRoomWallInteriorDecorator->ShuffleDecorationLocation(dungeon::Random::Instance());
+				{
+					TArray<FString> tags = { TEXT("wall"), TEXT("major") };
+					tags.Add(FString(room->GetPartsName().size(), room->GetPartsName().data()));
+					tags.Append(roomSensorActor->OnDecorateInteria());
+					localRoomWallInteriorDecorator->SpawnActors(mWorld.Get(), tags, dungeon::Random::Instance());
+				}
+				{
+					TArray<FString> tags = { TEXT("wall") };
+					tags.Add(FString(room->GetPartsName().size(), room->GetPartsName().data()));
+					tags.Append(roomSensorActor->OnDecorateInteria());
+					localRoomWallInteriorDecorator->SpawnActors(mWorld.Get(), tags, dungeon::Random::Instance());
+				}
+			}
 		}
 	);
+
+	mRoomInteriorDecorator.ClearDecorationLocation();
 
 	SpawnRecastNavMesh();
 #if 0
@@ -602,6 +686,9 @@ void CDungeonGeneratorCore::AddObject()
 void CDungeonGeneratorCore::Clear()
 {
 	mGenerator.reset();
+	mAisleInteriorDecorator.Finalize();
+	mSlopeInteriorDecorator.Finalize();
+	mRoomInteriorDecorator.Finalize();
 	mParameter = nullptr;
 }
 
@@ -782,7 +869,7 @@ void CDungeonGeneratorCore::SpawnDoorActor(UClass* actorClass, const FTransform&
 	}
 }
 
-void CDungeonGeneratorCore::SpawnRoomSensorActor(
+ADungeonRoomSensor* CDungeonGeneratorCore::SpawnRoomSensorActor(
 	UClass* actorClass,
 	const dungeon::Identifier& identifier,
 	const FVector& center,
@@ -798,11 +885,9 @@ void CDungeonGeneratorCore::SpawnRoomSensorActor(
 	if (IsValid(actor))
 	{
 		actor->Initialize(identifier.Get(), extent, parts, item, branchId, depthFromStart, deepestDepthFromStart);
-	}
-	if (IsValid(actor))
-	{
 		actor->FinishSpawning(transform);
 	}
+	return actor;
 };
 
 void CDungeonGeneratorCore::DestroySpawnedActors() const

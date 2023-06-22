@@ -8,7 +8,7 @@ All Rights Reserved.
 #include "../../DungeonGenerator/Public/DungeonGenerateParameter.h"
 
 UDungeonGenerateParameterTypeActions::UDungeonGenerateParameterTypeActions(EAssetTypeCategories::Type InAssetCategory)
-	: MyAssetCategory(InAssetCategory)
+	: mAssetCategory(InAssetCategory)
 {
 }
 
@@ -34,5 +34,5 @@ UClass* UDungeonGenerateParameterTypeActions::GetSupportedClass() const
 
 uint32 UDungeonGenerateParameterTypeActions::GetCategories()
 {
-	return MyAssetCategory;
+	return mAssetCategory;
 }

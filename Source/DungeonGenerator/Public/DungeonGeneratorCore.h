@@ -5,6 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
+#include "DungeonInteriorDecorator.h"
 #include "DungeonRoomItem.h"
 #include "DungeonRoomParts.h"
 #include "DungeonRoomProps.h"
@@ -18,6 +19,7 @@ All Rights Reserved.
 class UDungeonGenerateParameter;
 class ULevelStreamingDynamic;
 class UStaticMesh;
+class ADungeonRoomSensor;
 class ANavMeshBoundsVolume;
 class AStaticMeshActor;
 
@@ -151,6 +153,9 @@ private:
 	void AddObject();
 
 	////////////////////////////////////////////////////////////////////////////
+	// Interior
+
+	////////////////////////////////////////////////////////////////////////////
 	AActor* SpawnActor(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
 	template<typename T = AActor> T* SpawnActor(const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
 	template<typename T = AActor> T* SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
@@ -158,7 +163,7 @@ private:
 	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
 	void SpawnActorOnFloor(UClass* actorClass, const FTransform& transform) const;
 	void SpawnDoorActor(UClass* actorClass, const FTransform& transform, EDungeonRoomProps props) const;
-	void SpawnRoomSensorActor(
+	ADungeonRoomSensor* SpawnRoomSensorActor(
 		UClass* actorClass,
 		const dungeon::Identifier& identifier,
 		const FVector& center,
@@ -212,8 +217,11 @@ private:
 	AddPillarStaticMeshEvent mOnResetPillar;
 
 	ResetActorEvent mOnResetTorch;
-	//ResetActorEvent mOnResetChandelier;
 	ResetDoorEvent mOnResetDoor;
+
+	FDungeonInteriorDecorator mAisleInteriorDecorator;
+	FDungeonInteriorDecorator mSlopeInteriorDecorator;
+	FDungeonInteriorDecorator mRoomInteriorDecorator;
 
 	struct LoadStreamLevelParameter
 	{

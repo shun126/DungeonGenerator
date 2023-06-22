@@ -8,11 +8,11 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include <AssetTypeActions_Base.h>
 
-class UDungeonGenerateParameterTypeActions : public FAssetTypeActions_Base
+class FDungeonInteriorAssetTypeActions : public FAssetTypeActions_Base
 {
 public:
-	UDungeonGenerateParameterTypeActions(EAssetTypeCategories::Type InAssetCategory);
-	virtual ~UDungeonGenerateParameterTypeActions() = default;
+	FDungeonInteriorAssetTypeActions(EAssetTypeCategories::Type InAssetCategory);
+	virtual ~FDungeonInteriorAssetTypeActions() = default;
 
 	// FAssetTypeActions_Base overrides
 	virtual FColor GetTypeColor() const override;

@@ -281,11 +281,11 @@ namespace dungeon
 	const std::string_view& Room::GetPartsName() const noexcept
 	{
 		static const std::array<std::string_view, PartsSize> names = {
-			"Unidentified",
-			"Start",
-			"Goal",
-			"Hall",
-			"Hanare",
+			"unidentified",
+			"start",
+			"goal",
+			"hall",
+			"hanare",
 		};
 		return names[static_cast<size_t>(mParts)];
 	}

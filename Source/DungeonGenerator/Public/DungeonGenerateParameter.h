@@ -11,6 +11,7 @@ All Rights Reserved.
 #include "DungeonGenerateParameter.generated.h"
 
 // forward declaration
+class UDungeonInteriorAsset;
 class UDungeonRoomAsset;
 
 namespace dungeon
@@ -388,6 +389,11 @@ protected:
 	// Room Sensor Class
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (AllowedClasses = "DungeonRoomSensor"))
 		UClass* DungeonRoomSensorClass = ADungeonRoomSensor::StaticClass();
+
+	// Interior Asset
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
+		UDungeonInteriorAsset* DungeonInteriorAsset;
+	// TObjectPtr<UDungeonInteriorAsset> not used for UE4 compatibility
 
 	//! sublevel placement
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")

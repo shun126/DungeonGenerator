@@ -8,7 +8,7 @@ All Rights Reserved.
 #include "../../DungeonGenerator/Public/DungeonRoomAsset.h"
 
 FDungeonRoomAssetTypeActions::FDungeonRoomAssetTypeActions(EAssetTypeCategories::Type InAssetCategory)
-	: MyAssetCategory(InAssetCategory)
+	: mAssetCategory(InAssetCategory)
 {
 }
 
@@ -34,5 +34,5 @@ UClass* FDungeonRoomAssetTypeActions::GetSupportedClass() const
 
 uint32 FDungeonRoomAssetTypeActions::GetCategories()
 {
-	return MyAssetCategory;
+	return mAssetCategory;
 }

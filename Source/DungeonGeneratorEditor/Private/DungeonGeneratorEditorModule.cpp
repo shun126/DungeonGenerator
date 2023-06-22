@@ -8,6 +8,7 @@ All Rights Reserved.
 #include "DungeonGeneratorStyle.h"
 #include "DungeonGeneratorCommands.h"
 #include "DungeonGenerateParameterTypeActions.h"
+#include "DungeonInteriorAssetTypeActions.h"
 #include "DungeonRoomAssetTypeActions.h"
 #include "BuildInfomation.h"
 #include "../../DungeonGenerator/Public/DungeonGenerateParameter.h"
@@ -67,6 +68,12 @@ void FDungeonGenerateEditorModule::StartupModule()
 			FName(TEXT("DungeonGeneratorAssets")),
 			FText::FromName(TEXT("DungeonGenerator"))
 		);
+
+		// FDungeonInteriorAssetTypeActionsを追加
+		{
+			TSharedPtr<IAssetTypeActions> actionType = MakeShareable(new FDungeonInteriorAssetTypeActions(gameAssetCategory));
+			AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
+		}
 
 		// FDungeonRoomAssetTypeActionsを追加
 		{
