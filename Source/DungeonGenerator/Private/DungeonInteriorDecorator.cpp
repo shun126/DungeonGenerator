@@ -100,7 +100,10 @@ void FDungeonInteriorDecorator::SpawnActorsImplement(UWorld* world, const TArray
 	const int32 partsIndex = random.Get(parts.Num());
 	const FDungeonInteriorParts& selectedParts = parts[partsIndex];
 	if (selectedParts.Class == nullptr)
+	{
+		DUNGEON_GENERATOR_LOG(TEXT("Set the class of interior parts"));
 		return;
+	}
 
 	// Placement angle error
 	double spawnYaw = 0;
@@ -134,18 +137,29 @@ void FDungeonInteriorDecorator::SpawnActorsImplement(UWorld* world, const TArray
 	actorSpawnParameters.bDeferConstruction = true;
 	AActor* actor = world->SpawnActor(selectedParts.Class, &spawnTransform, actorSpawnParameters);
 	if (!::IsValid(actor))
+	{
+		DUNGEON_GENERATOR_LOG(TEXT("Failed to spawn interior actor %s"), *selectedParts.Class->GetName());
 		return;
+	}
 
 	actor->Tags.Add(CDungeonGeneratorCore::GetDungeonGeneratorTag());
 #if WITH_EDITOR
 	actor->SetFolderPath(TEXT("Dungeon/Interiors"));
 #endif
 
-	if (const USceneComponent* rootComponent = GetValid(actor->GetRootComponent()))
+	actor->FinishSpawning(spawnTransform, true);
+
+	FBox bounds = actor->GetComponentsBoundingBox();
+	if (!bounds.IsValid)
+	{
+		DUNGEON_GENERATOR_LOG(TEXT("Overlap with other collisions, destroy %s"), *actor->GetName());
+		actor->Destroy();
+		return;
+	}
+
 	{
 		// Bounding box size away from the generation position
-		const FBox& bounds = rootComponent->Bounds.GetBox();
-		const FVector& boundsCenter = bounds.GetCenter();
+		FVector boundsCenter = bounds.GetCenter();
 		const FVector& boundsExtent = bounds.GetExtent();
 		const FVector& wallPosition = parentTransform.GetLocation();
 		FVector movementDirection = (depth == 0)
@@ -153,30 +167,21 @@ void FDungeonInteriorDecorator::SpawnActorsImplement(UWorld* world, const TArray
 			: FVector::Zero();
 		movementDirection.Z = boundsExtent.Z;
 
-		const FVector targetPosition = wallPosition + movementDirection;
-		FVector spawnOffset = targetPosition - boundsCenter;
-
 		// Placement position error
 		if (selectedParts.PercentageOfErrorInPlacement > 0)
 		{
-			const FVector& extent = rootComponent->Bounds.GetBox().GetExtent();
 			const float percentageOfErrorInPlacement = static_cast<float>(selectedParts.PercentageOfErrorInPlacement) / 100.f;
-			spawnOffset.X += extent.X * (random.Get<float>() * percentageOfErrorInPlacement);
-			spawnOffset.Y += extent.Y * (random.Get<float>() * percentageOfErrorInPlacement);
+			boundsCenter.X += boundsExtent.X * (random.Get<float>() * percentageOfErrorInPlacement);
+			boundsCenter.Y += boundsExtent.Y * (random.Get<float>() * percentageOfErrorInPlacement);
 		}
 
 		// Calculate new transform
-		spawnTransform.AddToTranslation(spawnOffset);
+		const FVector targetPosition = wallPosition + movementDirection;
+		const FVector spawnOffset = targetPosition - boundsCenter;
+		bounds = bounds.ShiftBy(spawnOffset);
 	}
 
-	actor->FinishSpawning(spawnTransform);
-
-	// Decorating Decorations (Fillables)
-	// http://www.archmagerises.com/news/2021/6/12/how-to-procedurally-generate-and-decorate-3d-dungeon-rooms-in-unity-c
-	if (const USceneComponent* rootComponent = GetValid(actor->GetRootComponent()))
 	{
-		FBox bounds = rootComponent->Bounds.GetBox();
-
 		// Collision check
 		FCollisionQueryParams queryParams(TEXT("FDungeonInteriorDecorator:SpawnActorsImplement"), false, actor);
 		queryParams.bFindInitialOverlaps = true;
@@ -187,6 +192,9 @@ void FDungeonInteriorDecorator::SpawnActorsImplement(UWorld* world, const TArray
 		}
 		else
 		{
+			// Decorating Decorations (Fillables)
+			// http://www.archmagerises.com/news/2021/6/12/how-to-procedurally-generate-and-decorate-3d-dungeon-rooms-in-unity-c
+
 			if (selectedParts.AdditionalExtentToProhibitPlacement > 0)
 			{
 				bounds.Min.X -= selectedParts.AdditionalExtentToProhibitPlacement;
@@ -202,6 +210,8 @@ void FDungeonInteriorDecorator::SpawnActorsImplement(UWorld* world, const TArray
 			}
 			else
 			{
+				actor->SetActorLocation(bounds.GetCenter());
+
 				Asset->EachInteriorLocation(actor, [this, world, &tags, &random, depth](UDungeonInteriorLocationComponent* component)
 					{
 						SpawnActorsImplement(world, component->GetInteriorTags(), component->GetComponentTransform(), random, depth + 1);
@@ -211,11 +221,6 @@ void FDungeonInteriorDecorator::SpawnActorsImplement(UWorld* world, const TArray
 				mSensors.Emplace(bounds);
 			}
 		}
-	}
-	else
-	{
-		DUNGEON_GENERATOR_ERROR(TEXT("Interior actor %s does not contain a SceneComponent"), *actor->GetName());
-		actor->Destroy();
 	}
 }
 
