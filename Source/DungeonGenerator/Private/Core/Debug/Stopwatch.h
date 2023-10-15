@@ -1,20 +1,41 @@
 #pragma once
 #include <chrono>
 
-class Stopwatch
+namespace dungeon
 {
-public:
-	Stopwatch()
+	/**
+	@addtogroup Debug
+	@{
+	*/
+
+	//! Measure time
+	class Stopwatch
+	{
+	public:
+		//! Start time measurement
+		Stopwatch();
+
+		//! Start time measurement
+		void Start();
+
+		//! Get elapsed time
+		double Lap();
+
+	private:
+		std::chrono::system_clock::time_point mStartTime;
+	};
+
+	inline Stopwatch::Stopwatch()
 	{
 		Start();
 	}
 
-	void Start()
+	inline void Stopwatch::Start()
 	{
 		mStartTime = std::chrono::system_clock::now();
 	}
 
-	double Lap()
+	inline double Stopwatch::Lap()
 	{
 		const auto now = std::chrono::system_clock::now();
 		const auto delta = now - mStartTime;
@@ -23,6 +44,7 @@ public:
 		return static_cast<double>(nano) / 1000000000.0;
 	}
 
-private:
-	std::chrono::system_clock::time_point mStartTime;
-};
+	/**
+	@}
+	*/
+}

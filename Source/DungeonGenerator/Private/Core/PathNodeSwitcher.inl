@@ -9,6 +9,7 @@ All Rights Reserved.
 #pragma once
 #include "PathFinder.h"
 #include "PathNodeSwitcher.h"
+#include <algorithm>
 
 namespace dungeon
 {
@@ -51,12 +52,11 @@ namespace dungeon
 
 	inline bool PathNodeSwitcher::IsUsing(const uint64_t key) const
 	{
-		for (const auto& node : mUsed)
-		{
-			if (node.second->Contain(key))
-				return true;
-		}
-		return false;
+		return std::any_of(mUsed.begin(), mUsed.end(), [key](const std::pair<uint64_t, std::shared_ptr<Node>>& node)
+			{
+				return node.second->Contain(key);
+			}
+		);
 	}
 
 	inline void PathNodeSwitcher::Clear()

@@ -13,10 +13,11 @@ All Rights Reserved.
 #include "PathGoalCondition.h"
 #include "Debug/BuildInfomation.h"
 #include "Debug/Debug.h"
+#include "Helper/Crc.h"
 #include "Math/Math.h"
 #include <array>
 
-#if WITH_EDITOR && JENKINS_FOR_DEVELOP
+#if WITH_EDITOR & JENKINS_FOR_DEVELOP
 // 定義するとデバッグに便利なログを出力します
 //#define DEBUG_SHOW_DEVELOP_LOG
 #endif
@@ -130,7 +131,6 @@ namespace dungeon
 						gateFinder.Entry(openLocation, goal);
 					}
 				}
-
 			}
 		}
 
@@ -146,11 +146,11 @@ namespace dungeon
 			return false;
 		}
 
-		// パス検索開始
+		// Start of path search
 		PathFinder pathFinder;
 		pathFinder.Start(start, idealGoal, PathFinder::SearchDirection::Any);
 
-		// 最も有望な位置を取得します
+		// Get the most promising positions
 		uint64_t nextKey;
 		PathFinder::NodeType nextNodeType;
 		uint32_t nextCost;
@@ -159,7 +159,7 @@ namespace dungeon
 		PathFinder::SearchDirection nextSearchDirection;
 		while (pathFinder.Pop(nextKey, nextNodeType, nextCost, nextLocation, nextDirection, nextSearchDirection))
 		{
-			// ゴールに到達？
+			// Reaching the goal?
 			if (IsReachedGoal(nextLocation, idealGoal.Z, goalCondition))
 			{
 				if (nextNodeType == PathFinder::NodeType::Aisle && nextSearchDirection == PathFinder::SearchDirection::Any)
@@ -168,7 +168,7 @@ namespace dungeon
 					continue;
 			}
 
-			// 水平方向へ探索
+			// Search horizontally
 			for (auto i = Direction::Begin(); i != Direction::End(); ++i)
 			{
 				if (
@@ -187,10 +187,10 @@ namespace dungeon
 				}
 			}
 
-			// 垂直方向へ探索
+			// Vertical search
 			if (nextNodeType == PathFinder::NodeType::Aisle)
 			{
-				// 上
+				// up
 				const FIntVector upstairsOpenLocationU = nextLocation + FIntVector(0, 0, 1);
 				const FIntVector upstairsOpenLocationF = nextLocation + nextDirection.GetVector();
 				const FIntVector upstairsOpenLocationUF = upstairsOpenLocationF + FIntVector(0, 0, 1);
@@ -208,7 +208,7 @@ namespace dungeon
 					pathFinder.ReserveOpenNode(upstairsOpenLocationUF, useNode);
 				}
 
-				// 下
+				// down
 				const FIntVector downstairsOpenLocationD = nextLocation + FIntVector(0, 0, -1);
 				const FIntVector downstairsOpenLocationF = nextLocation + nextDirection.GetVector();
 				const FIntVector downstairsOpenLocationDF = downstairsOpenLocationF + FIntVector(0, 0, -1);
@@ -335,6 +335,17 @@ namespace dungeon
 		return mGrids.get()[index];
 	}
 
+	const Grid& Voxel::Get(const FIntVector& location) const noexcept
+	{
+		return Get(location.X, location.Y, location.Z);
+	}
+
+	const Grid& Voxel::Get(const size_t index) const noexcept
+	{
+		check(index < static_cast<size_t>(mWidth) * mDepth * mHeight);
+		return mGrids.get()[index];
+	}
+
 	void Voxel::Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) noexcept
 	{
 		if (x < mWidth && y < mDepth && z < mHeight)
@@ -458,5 +469,12 @@ namespace dungeon
 	uint32_t Voxel::GetHeight() const noexcept
 	{
 		return mHeight;
+	}
+
+	uint32_t Voxel::CalculateCRC32() const noexcept
+	{
+		const size_t size = static_cast<size_t>(mWidth) * mDepth * mHeight;
+		const uint32_t crc32 = GenerateCrc32(mGrids.get(), size);
+		return crc32;
 	}
 }

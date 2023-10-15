@@ -14,6 +14,10 @@ All Rights Reserved.
 
 namespace dungeon
 {
+	/**
+	@addtogroup PathGeneration
+	@{
+	*/
 	/*
 	パス検索ノードの予約・使用中切り替えクラス
 	*/
@@ -49,6 +53,9 @@ namespace dungeon
 		std::unordered_map<uint64_t, std::shared_ptr<Node>> mReserved;
 		std::unordered_map<uint64_t, std::shared_ptr<Node>> mUsed;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "PathNodeSwitcher.inl"

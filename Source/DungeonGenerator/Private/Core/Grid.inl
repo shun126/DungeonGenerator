@@ -41,12 +41,12 @@ namespace dungeon
 	{
 	}
 
-	inline Grid Grid::CreateFloor(Random& random, const uint16_t identifier) noexcept
+	inline Grid Grid::CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept
 	{
 		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier);
 	}
 
-	inline Grid Grid::CreateDeck(Random& random, const uint16_t identifier) noexcept
+	inline Grid Grid::CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept
 	{
 		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier);
 	}
@@ -98,17 +98,24 @@ namespace dungeon
 
 	inline void Grid::SetNoMeshGeneration(const bool noRoofMeshGeneration, const bool noFloorMeshGeneration)
 	{
-		mNoMeshGeneration.set(static_cast<uint8_t>(NoMeshGeneration::Roof), noRoofMeshGeneration);
-		mNoMeshGeneration.set(static_cast<uint8_t>(NoMeshGeneration::Floor), noFloorMeshGeneration);
+		if(noRoofMeshGeneration)
+			mNoMeshGeneration |= NoMeshGenerationRoofMask;
+		else
+			mNoMeshGeneration &= ~NoMeshGenerationRoofMask;
+
+		if (noFloorMeshGeneration)
+			mNoMeshGeneration |= NoMeshGenerationFloorMask;
+		else
+			mNoMeshGeneration &= ~NoMeshGenerationFloorMask;
 	}
 
 	inline bool Grid::IsNoFloorMeshGeneration() const noexcept
 	{
-		return mNoMeshGeneration.test(static_cast<uint8_t>(NoMeshGeneration::Floor));
+		return (mNoMeshGeneration & NoMeshGenerationFloorMask) != 0;
 	}
 
 	inline bool Grid::IsNoRoofMeshGeneration() const noexcept
 	{
-		return mNoMeshGeneration.test(static_cast<uint8_t>(NoMeshGeneration::Roof));
+		return (mNoMeshGeneration & NoMeshGenerationRoofMask) != 0;
 	}
 }

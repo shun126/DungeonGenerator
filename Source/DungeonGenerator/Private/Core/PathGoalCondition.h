@@ -13,6 +13,10 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
+	@addtogroup PathGeneration
+	@{
+	*/
+	/**
 	ゴール条件クラス
 	*/
 	class PathGoalCondition final
@@ -73,6 +77,9 @@ namespace dungeon
 	private:
 		FIntRect mRect;
 	};
+	/**
+	@}
+	*/
 
 	inline PathGoalCondition::PathGoalCondition(const FIntRect& rect) noexcept
 		: mRect(rect)

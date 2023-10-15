@@ -13,7 +13,7 @@ All Rights Reserved.
 // 定義するとマンハッタン距離で計算する。未定義ならユークリッド距離で計算する
 #define CALCULATE_IN_MANHATTAN_DISTANCE
 
-#if WITH_EDITOR && JENKINS_FOR_DEVELOP
+#if WITH_EDITOR & JENKINS_FOR_DEVELOP
 // 定義すると経路を調べるため、中間データを開放しない
 //#define CHECK_ROUTE
 #endif
@@ -103,13 +103,13 @@ namespace dungeon
 		// コスト計算
 		const uint32_t newCost = TotalCost(cost, location, goal);
 
-		// Openリスト内を検索
+		// オープンリスト内を検索
 		const auto openNode = mOpen.find(key);
 
-		// Closeリスト内を検索
+		// クローズリスト内を検索
 		const auto closeNode = mClose.find(key);
 
-		// OpenとClose両方に存在する事はありえない
+		// オープンとクローズ両方に存在する事はありえない
 		check((openNode != mOpen.end() && closeNode != mClose.end()) == false);
 
 		// オープンリストに追加するノードがある。かつ、新しいノードの方がトータルコストが低い
@@ -117,7 +117,7 @@ namespace dungeon
 		{
 			if (openNode->second.mCost > newCost)
 			{
-				// Openリストを更新
+				// Replace node with open list
 				openNode->second.mNodeType = nodeType;
 				openNode->second.mDirection = direction;
 				openNode->second.mParentKey = parentKey;
@@ -130,18 +130,18 @@ namespace dungeon
 		{
 			if (closeNode->second.mCost > newCost)
 			{
-				// Closeリストから消す
+				// Delete from close list
 				mClose.erase(closeNode);
-				// Openリストに再登録
+				// Re-register on open list
 				mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
 
 				RevertOpenNode(key);
 			}
 		}
-		// オープンとクローズリストに追加するノードがない
+		// No nodes on open and closed list
 		else
 		{
-			// Openリストに登録
+			// Register open List
 			mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
 		}
 
@@ -158,7 +158,7 @@ namespace dungeon
 		if (mOpen.empty())
 			return false;
 
-		// 最もコストの低いノードを検索
+		// Find the node with the lowest cost
 		std::unordered_map<uint64_t, OpenNode>::iterator result = mOpen.begin();
 		uint32_t minimumCost = std::numeric_limits<uint32_t>::max();
 		for (std::unordered_map<uint64_t, OpenNode>::iterator i = mOpen.begin(); i != mOpen.end(); ++i)
@@ -168,7 +168,7 @@ namespace dungeon
 				minimumCost = (*i).second.mCost;
 				result = i;
 			}
-			// タイブレーク（コストが同じならば上下移動を優先）
+			// Tiebreaker (if costs are the same, up/down movement is preferred)
 			else if (minimumCost == (*i).second.mCost)
 			{
 				if ((*i).second.mNodeType == NodeType::Downstairs || (*i).second.mNodeType == NodeType::Upstairs)

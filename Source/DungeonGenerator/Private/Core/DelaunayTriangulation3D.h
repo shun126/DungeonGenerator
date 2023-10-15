@@ -18,6 +18,10 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
+	@addtogroup PathSelection
+	@{
+	*/
+	/**
 	三次元ドロネー三角形分割クラス
 
 	コンストラクタに与えられた座標を元に三角形を生成します
@@ -64,6 +68,9 @@ namespace dungeon
 	private:
 		std::vector<Triangle> mTriangles;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "DelaunayTriangulation3D.inl"

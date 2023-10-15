@@ -19,6 +19,10 @@ namespace dungeon
 	struct GenerateParameter;
 
 	/**
+	@addtogroup PathGeneration
+	@{
+	*/
+	/**
 	グリッドクラス
 	*/
 	class Voxel final
@@ -65,6 +69,22 @@ namespace dungeon
 		\return		グリッド
 		*/
 		const Grid& Get(const uint32_t x, const uint32_t y, const uint32_t z) const noexcept;
+
+		/**
+		グリッド内のグリッドを取得します
+		グリッド内のグリッドを取得します
+		\param[in]	index	配列番号
+		\return		グリッド
+		*/
+		const Grid& Get(const FIntVector& location) const noexcept;
+
+		/**
+		グリッド内のグリッドを取得します
+		グリッド内のグリッドを取得します
+		\param[in]	index	配列番号
+		\return		グリッド
+		*/
+		const Grid& Get(const size_t index) const noexcept;
 
 		/**
 		グリッド内のグリッドを設定します
@@ -169,6 +189,12 @@ namespace dungeon
 		*/
 		Error GetLastError() const noexcept;
 
+		/**
+		Calculate CRC32
+		\return		CRC32
+		*/
+		uint32_t CalculateCRC32() const noexcept;
+
 	private:
 		/**
 		空きグリッドか調べます
@@ -209,6 +235,9 @@ namespace dungeon
 
 		Error mLastError = Error::Success;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "Voxel.inl"

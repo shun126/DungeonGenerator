@@ -53,9 +53,10 @@ namespace dungeon
 			keyRooms = mGenerator->FindByRoute(connectingRoom);
 			if (keyRooms.size() > 0)
 			{
-				// TODO:DrawLots内で乱数を使っています
+				const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
+
 				const uint8_t roomBranch = room->GetBranchId();
-				const auto keyRoom = DrawLots(keyRooms.begin(), keyRooms.end(), [roomBranch](const std::shared_ptr<const Room>& room)
+				const auto keyRoom = DrawLots(random, keyRooms.begin(), keyRooms.end(), [roomBranch](const std::shared_ptr<const Room>& room)
 					{
 						uint32_t weight = room->GetDepthFromStart();
 						if (room->GetBranchId() - roomBranch)
@@ -86,9 +87,6 @@ namespace dungeon
 		}
 	}
 
-	/*
-	TODO:乱数を共通化して下さい
-	*/
 	void MissionGraph::Generate(const std::shared_ptr<const Room>& room) noexcept
 	{
 #if 0
@@ -111,52 +109,18 @@ namespace dungeon
 			keyRooms = mGenerator->FindByRoute(room == room0 ? room1 : room0);
 			if (keyRooms.size() > 0)
 			{
-#if 0
-				// TODO:DrawLots内で乱数を使っています
-				const uint8_t roomBranch = room->GetBranchId();
-				const auto keyRoom = DrawLots(keyRooms.begin(), keyRooms.end(), [roomBranch](const std::shared_ptr<const Room>& room)
-					{
-						const uint32_t deltaBranch = std::abs(roomBranch - room->GetBranchId());
-						const uint32_t depthFromStart = room->GetDepthFromStart();
-						uint32_t weight = deltaBranch + depthFromStart;
-						//if (room->GetParts() == Room::Parts::Hanare)
-						//	weight *= 2;
-						return weight;
-					}
-				);
-				if (keyRoom != keyRooms.end())
-				{
-					// That's the room where I'm supposed to put the key.
-					check((*keyRoom)->GetItem() == Room::Item::Empty);
-					(*keyRoom)->SetItem(Room::Item::Key);
-#if 0
-					Generate(*keyRoom);
-#else
-					//const auto lockRoom = keyRooms[std::rand() % keyRooms.size()];
-					const auto lockRoom = DrawLots(keyRooms.begin(), keyRooms.end(), [](const std::shared_ptr<const Room>& room)
-						{
-							return room->GetDepthFromStart();
-						}
-					);
-					Generate(*lockRoom);
-#endif
-				}
-				else
-				{
-					// It did not decide on a room to put the key, so it will be unlocked
-					aisle->SetLock(false);
-				}
-#else
+				const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
+
 				// That's the room where I'm supposed to put the key.
 				{
-					// TODO:共通の乱数を使用してください
-					const auto keyRoom = keyRooms[std::rand() % keyRooms.size()];
+					const size_t index = random->Get<size_t>(keyRooms.size());
+					const auto keyRoom = keyRooms[index];
 					check(keyRoom->GetItem() == Room::Item::Empty);
 					keyRoom->SetItem(Room::Item::Key);
 				}
 
 				// TODO:DrawLots内で乱数を使っています
-				const auto lockRoom = DrawLots(keyRooms.begin(), keyRooms.end(), [](const std::shared_ptr<const Room>& room)
+				const auto lockRoom = DrawLots(random, keyRooms.begin(), keyRooms.end(), [](const std::shared_ptr<const Room>& room)
 					{
 						const uint32_t depthFromStart = room->GetDepthFromStart();
 						return depthFromStart * 10;
@@ -166,7 +130,6 @@ namespace dungeon
 				{
 					Generate(*lockRoom);
 				}
-#endif
 			}
 			else
 			{

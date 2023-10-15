@@ -1,17 +1,17 @@
 {
 	"FileVersion": 3,
-	"Version": 7,
-	"VersionName": "1.4.2",
-	"FriendlyName": "DungeonGenerator",
+	"Version": 14,
+	"VersionName": "1.5.0",
+	"FriendlyName": "Procedural 3D Dungeon Generator",
 	"Description": "Procedural 3D dungeon generator plugin. Easy generation of levels, mini-maps and missions.",
 	"Category": "Procedural",
 	"CreatedBy": "Narcis Software",
-	"CreatedByURL": "https://happy-game-dev.undo.jp/",
-	"DocsURL": "https://github.com/shun126/DungeonGenerator/wiki/",
+	"CreatedByURL": "https://github.com/shun126/UE5-DungeonGeneratorDemo",
+	"DocsURL": "https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/36a8b87d859f44439cfe1515975d7197",
-	"SupportURL": "https://github.com/shun126/DungeonGenerator/discussions/",
+	"SupportURL": "https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions/",
 	"CanContainContent": false,
-	"IsBetaVersion": false,
+	"IsBetaVersion": true,
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"Modules": [
@@ -19,9 +19,6 @@
 			"Name": "DungeonGenerator",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [
-				"Win64"
-			],
 			"PlatformAllowList": [
 				"Win64"
 			]
@@ -30,9 +27,6 @@
 			"Name": "DungeonGeneratorEditor",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [
-				"Win64"
-			],
 			"PlatformAllowList": [
 				"Win64"
 			]

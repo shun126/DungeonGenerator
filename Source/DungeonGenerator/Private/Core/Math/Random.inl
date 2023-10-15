@@ -1,5 +1,4 @@
 /**
-乱数クラス
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
 All Rights Reserved.
@@ -14,7 +13,7 @@ All Rights Reserved.
 namespace dungeon
 {
 	/*
-	constexpr if内のブロックの評価を遅延させるためのテンプレート
+	constexpr Template for delaying evaluation of blocks in if
 	*/
 	template <typename T>
 	constexpr bool RandamFalse_v = false;
@@ -70,7 +69,7 @@ namespace dungeon
 		mZ = 521288629;
 		mW = 88675123;
 
-		// 全て0にならないようにする
+		// Make sure it doesn't all go to zero.
 		do
 		{
 			mX ^= seed; mX ^= mX >> 21;	mX ^= mX >> 4; mX *= 1332534557;
@@ -92,8 +91,11 @@ namespace dungeon
 	{
 		if constexpr (std::is_same<T, bool>())
 		{
-			// 線形合同法と異なり、XorShiftは最下位ビットの短周期の規則性はない。
-			// 0または1を直接得ることができるため、最下位ビットを取る実装としている。
+			/*
+			Unlike linear congruence, XorShift has no short - period regularity
+			in the least significant bit. Implementation that takes the least
+			significant bit because it is possible to obtain 0 or 1 directly.
+			*/
 			return static_cast<bool>(GetU32() & 0x1);
 		}
 		else if constexpr (std::is_same<T, double>())
@@ -108,15 +110,15 @@ namespace dungeon
 		}
 		else if constexpr (std::is_same<T, uint64_t>())
 		{
-			const uint64_t hight = static_cast<uint64_t>(GetU32()) << 32ULL;
+			const uint64_t high = static_cast<uint64_t>(GetU32()) << 32ULL;
 			const uint64_t low = static_cast<uint64_t>(GetU32());
-			return hight | low;
+			return high | low;
 		}
 		else if constexpr (std::is_same<T, int64_t>())
 		{
-			const uint64_t hight = static_cast<uint64_t>(GetU32()) << 32ULL;
+			const uint64_t high = static_cast<uint64_t>(GetU32()) << 32ULL;
 			const uint64_t low = static_cast<uint64_t>(GetU32());
-			return static_cast<int64_t>(hight | low);
+			return static_cast<int64_t>(high | low);
 		}
 		else if constexpr (std::is_integral<T>::value)
 		{
@@ -133,14 +135,14 @@ namespace dungeon
 	{
 		if constexpr (std::is_floating_point<T>::value)
 		{
-			const auto value = Get<T>();
+			const T value = Get<T>();
 			return value * to;
 		}
 		else
 		{
 			if (to != 0)
 			{
-				const size_t value = Get<T>();
+				const std::make_unsigned_t<T> value = Get<T>();
 				return value % to;
 			}
 			else
@@ -156,14 +158,14 @@ namespace dungeon
 		check(from <= to);
 		if constexpr (std::is_floating_point<T>::value)
 		{
-			const auto value = Get<T>();
+			const T value = Get<T>();
 			return from + value * (to - from);
 		}
 		else
 		{
 			if (from != to)
 			{
-				const size_t value = Get<T>();
+				const std::make_unsigned_t<T> value = Get<T>();
 				return from + value % (to - from);
 			}
 			else

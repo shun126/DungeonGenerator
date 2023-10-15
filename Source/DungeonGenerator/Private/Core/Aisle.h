@@ -9,6 +9,7 @@ All Rights Reserved.
 #pragma once
 #include "Identifier.h"
 #include <array>
+#include <memory>
 
 namespace dungeon
 {

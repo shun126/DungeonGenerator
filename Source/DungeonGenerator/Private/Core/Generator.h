@@ -50,14 +50,14 @@ namespace dungeon
 		/**
 		コンストラクタ
 		*/
-		Generator() noexcept;
+		Generator() = default;
 		Generator(const Generator&) = delete;
 		Generator& operator=(const Generator&) = delete;
 
 		/**
 		デストラクタ
 		*/
-		virtual ~Generator() noexcept;
+		virtual ~Generator() = default;
 
 		/**
 		生成
@@ -89,24 +89,12 @@ namespace dungeon
 		/**
 		生成された部屋を更新します
 		*/
-		void ForEach(std::function<void(const std::shared_ptr<Room>&)> func) noexcept
-		{
-			for (const auto& room : mRooms)
-			{
-				func(room);
-			}
-		}
+		void ForEach(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
 
 		/**
 		生成された部屋を参照します
 		*/
-		void ForEach(std::function<void(const std::shared_ptr<const Room>&)> func) const noexcept
-		{
-			for (const auto& room : mRooms)
-			{
-				func(room);
-			}
-		}
+		void ForEach(std::function<void(const std::shared_ptr<const Room>&)> func) const noexcept;
 
 		// 深度による検索
 		std::vector<std::shared_ptr<Room>> FindByDepth(const uint8_t depth) const noexcept;
@@ -133,48 +121,16 @@ namespace dungeon
 	public:
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Aisle
-		void EachAisle(std::function<void(const Aisle& edge)> func) const noexcept
-		{
-			for (const auto& aisle : mAisles)
-			{
-				func(aisle);
-			}
-		}
+		void EachAisle(std::function<void(const Aisle& edge)> func) const noexcept;
 
 		// 部屋に接続している通路を検索
-		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(Aisle& edge)> func) noexcept
-		{
-			for (auto& aisle : mAisles)
-			{
-				const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
-				const auto& room1 = aisle.GetPoint(1)->GetOwnerRoom();
-				if (room == room0 || room == room1)
-				{
-					if (func(aisle))
-						break;
-				}
-			}
-		} 
+		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(Aisle& edge)> func) noexcept;
 
-		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(const Aisle& edge)> func) const noexcept
-		{
-			for (const auto& aisle : mAisles)
-			{
-				const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
-				const auto& room1 = aisle.GetPoint(1)->GetOwnerRoom();
-				if (room == room0 || room == room1)
-				{
-					if (func(aisle))
-						break;
-				}
-			}
-		}
+		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(const Aisle& edge)> func) const noexcept;
 
-		void OnQueryParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept
-		{
-			mQueryParts = func;
-		}
-
+		void OnQueryParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
+		void OnStartParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
+		void OnGoalParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Point
@@ -198,50 +154,44 @@ namespace dungeon
 		開始地点にふさわしい点を取得します
 		\return		開始地点にふさわしい点
 		*/
-		const std::shared_ptr<const Point>& GetStartPoint() const noexcept
-		{
-			return mStartPoint;
-		}
+		const std::shared_ptr<const Point>& GetStartPoint() const noexcept;
 
 		/**
 		ゴール地点にふさわしい点を取得します
 		\return		ゴール地点にふさわしい点
 		*/
-		const std::shared_ptr<const Point>& GetGoalPoint() const noexcept
-		{
-			return mGoalPoint;
-		}
+		const std::shared_ptr<const Point>& GetGoalPoint() const noexcept;
 
 		/**
 		行き止まりの点を更新します
 		\param[in]	func	点を元に更新する関数
 		*/
-		void EachLeafPoint(std::function<void(const std::shared_ptr<const Point>& point)> func) const noexcept
-		{
-			for (auto& point : mLeafPoints)
-			{
-				func(point);
-			}
-		}
+		void EachLeafPoint(std::function<void(const std::shared_ptr<const Point>& point)> func) const noexcept;
 
 
 
 
 
 
+		////////////////////////////////////////////////////////////////////////////////////////////
 
 		void DumpRoomDiagram(const std::string& path) const noexcept;
 		void DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<const Room>& room) const noexcept;
 
 		void DumpAisle(const std::string& path) const noexcept;
 
+		////////////////////////////////////////////////////////////////////////////////////////////
 		bool Branch() noexcept;
 		bool Branch(std::unordered_set<const Aisle*>& generatedEdges, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept;
 
-		uint8_t GetDeepestDepthFromStart() const noexcept
-		{
-			return mDistance;
-		}
+		uint8_t GetDeepestDepthFromStart() const noexcept;
+
+		////////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		Calculate CRC32
+		\return		CRC32
+		*/
+		uint32_t CalculateCRC32() const noexcept;
 
 	private:
 		/**
@@ -264,11 +214,6 @@ namespace dungeon
 		*/
 		bool ExpandSpace(GenerateParameter& parameter) noexcept;
 
-		/**
-		重複した部屋や範囲外の部屋を除去をします
-		*/
-		bool RemoveInvalidRooms(const GenerateParameter& parameter) noexcept;
-
 		/*
 		階層の高さを検出
 		*/	
@@ -278,6 +223,11 @@ namespace dungeon
 		通路の抽出
 		*/
 		bool ExtractionAisles(const GenerateParameter& parameter) noexcept;
+
+		/**
+		開始部屋と終了部屋のサブレベルを配置する隙間を調整
+		*/
+		bool AdjustedStartAndGoalSublevel(GenerateParameter& parameter) noexcept;
 
 		/**
 		ボクセル情報を生成
@@ -312,7 +262,10 @@ namespace dungeon
 		GenerateParameter mGenerateParameter;
 
 		std::shared_ptr<Voxel> mVoxel;
+
 		std::list<std::shared_ptr<Room>> mRooms;
+		std::shared_ptr<Room> mStartRoom;
+		std::shared_ptr<Room> mGoalRoom;
 
 		std::vector<int32_t> mFloorHeight;
 
@@ -322,7 +275,9 @@ namespace dungeon
 
 		std::vector<Aisle> mAisles;
 
-		std::function<void(const std::shared_ptr<Room>&)> mQueryParts;
+		std::function<void(const std::shared_ptr<Room>&)> mOnQueryParts;
+		std::function<void(const std::shared_ptr<Room>&)> mOnStartParts;
+		std::function<void(const std::shared_ptr<Room>&)> mOnGoalParts;
 
 		uint8_t mDistance = 0;
 

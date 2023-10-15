@@ -15,14 +15,7 @@ class DUNGEONGENERATOREDITOR_API UDungeonGenerateParameterFactory : public UFact
 	GENERATED_BODY()
 
 public:
-	/*
-	constructor
-	*/
 	UDungeonGenerateParameterFactory();
-
-	/*
-	destructor
-	*/
 	virtual ~UDungeonGenerateParameterFactory() = default;
 
 	// UFactory overrides

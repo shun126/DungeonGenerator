@@ -11,6 +11,10 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
+	@addtogroup PathGeneration
+	@{
+	*/
+	/**
 	識別子クラス
 	*/
 	class Identifier final
@@ -47,6 +51,11 @@ namespace dungeon
 		Type GetType() const noexcept;
 		bool IsType(const Type type) const noexcept;
 
+		/*
+		Reset counter to identify
+		*/
+		static void ResetCounter();
+
 		// TODO:移行が完了したら削除して下さい
 		uint16_t Get() const noexcept { return mIdentifier; }
 
@@ -58,6 +67,9 @@ namespace dungeon
 		static constexpr IdentifierType maskCounter = static_cast<IdentifierType>(~0) >> bitCount;
 		static IdentifierType mCounter;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "Identifier.inl"

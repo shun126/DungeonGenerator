@@ -6,7 +6,8 @@
 All Rights Reserved.
 */
 
-#include <random>
+#include "Math/Random.h"
+#include <memory>
 #include <vector>
 
 namespace dungeon
@@ -15,9 +16,8 @@ namespace dungeon
 	重み付き抽選
 	*/
 	template <class InputIterator, class Predicate>
-	InputIterator DrawLots(InputIterator first, InputIterator last, Predicate pred) noexcept
+	InputIterator DrawLots(const std::shared_ptr<Random>& random, InputIterator first, InputIterator last, Predicate pred) noexcept
 	{
-		std::random_device random;
 		std::size_t totalWeight = 0;
 
 		struct Entry final
@@ -42,15 +42,12 @@ namespace dungeon
 		}
 
 		// TODO: specify random numbers externally.
-		const std::size_t rnd = random() % totalWeight;
-
-		for (const auto& weight : weights)
-		{
-			// cppcheck-suppress [useStlAlgorithm]
-			if (rnd < weight.mWeight)
-				return weight.mBody;
-		}
-
-		return last;
+		const std::size_t rnd = random->Get<size_t>(totalWeight);
+		const auto i = std::find_if(weights.begin(), weights.end(), [rnd](const Entry& weight)
+			{
+				return rnd < weight.mWeight;
+			}
+		);
+		return i != weights.end() ? i->mBody : last;
 	}
 }

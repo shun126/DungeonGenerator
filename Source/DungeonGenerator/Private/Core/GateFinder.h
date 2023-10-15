@@ -13,6 +13,10 @@ All Rights Reserved.
 
 namespace dungeon
 {
+	/**
+	@addtogroup PathGeneration
+	@{
+	*/
 	class GateFinder
 	{
 	public:
@@ -36,4 +40,7 @@ namespace dungeon
 		std::vector<std::shared_ptr<const Gate>> mOpenGates;
 		std::vector<std::shared_ptr<const Gate>> mCloseGates;
 	};
+	/**
+	@}
+	*/
 }

@@ -9,6 +9,7 @@ All Rights Reserved.
 #pragma once
 #include <array>
 #include <cstdint>
+#include <memory>
 
 namespace dungeon
 {
@@ -20,11 +21,11 @@ namespace dungeon
 	class PerlinNoise final
 	{
 	public:
-		explicit PerlinNoise(Random& random);
+		explicit PerlinNoise(const std::shared_ptr<Random>& random);
 		~PerlinNoise() = default;
 
 		// SEED値を設定する
-		void SetSeed(Random& random);
+		void SetSeed(const std::shared_ptr<Random>& random);
 
 		// オクターブ無しノイズを取得する
 		float Noise(float x, float y) const noexcept;

@@ -14,7 +14,11 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
-	最小スパニングツリークラス
+	@addtogroup PathSelection
+	@{
+	*/
+	/**
+	Minimum Spanning Tree Class
 	*/
 	class MinimumSpanningTree final
 	{
@@ -221,6 +225,9 @@ namespace dungeon
 
 		uint8_t mDistance = 0;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "MinimumSpanningTree.inl"

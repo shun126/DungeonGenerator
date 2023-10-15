@@ -66,6 +66,17 @@ namespace dungeon
 		return super::operator==(other);
 	}
 
+	void Point::ResetByRoomGroundCenter() noexcept
+	{
+		if (mRoom)
+		{
+			const Point& groundCenter = mRoom->GetGroundCenter();
+			X = groundCenter.X;
+			Y = groundCenter.Y;
+			Z = groundCenter.Z;
+		}
+	}
+
 	double Point::Dist(const Point& v0, const Point& v1) noexcept
 	{
 		return std::sqrt(Point::DistSquared(v0, v1));

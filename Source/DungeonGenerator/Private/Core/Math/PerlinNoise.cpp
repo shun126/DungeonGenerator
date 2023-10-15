@@ -8,15 +8,16 @@ All Rights Reserved.
 
 #include "PerlinNoise.h"
 #include "Random.h"
+#include <cmath>
 
 namespace dungeon
 {
-	PerlinNoise::PerlinNoise(Random& random)
+	PerlinNoise::PerlinNoise(const std::shared_ptr<Random>& random)
 	{
 		SetSeed(random);
 	}
 
-	void PerlinNoise::SetSeed(Random& random)
+	void PerlinNoise::SetSeed(const std::shared_ptr<Random>& random)
 	{
 		for (std::size_t i = 0; i < 256; ++i)
 		{
@@ -24,7 +25,7 @@ namespace dungeon
 		}
 		for (std::size_t i = 256 - 2; i >= 1; --i)
 		{
-			const std::size_t j = random.Get(256);
+			const std::size_t j = random->Get(256);
 			const uint8_t t = mHash[i];
 			mHash[i] = mHash[j];
 			mHash[j] = t;

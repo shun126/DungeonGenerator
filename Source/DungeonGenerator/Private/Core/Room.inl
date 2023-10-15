@@ -10,6 +10,16 @@ All Rights Reserved.
 
 namespace dungeon
 {
+	inline bool Room::IsUndeletable() const noexcept
+	{
+		return mUndeletable;
+	}
+
+	inline void Room::SetUndeletables(const bool undeletable) noexcept
+	{
+		mUndeletable = undeletable;
+	}
+
 	inline void Room::SetNoMeshGeneration(const bool noRoofMeshGeneration, const bool noFloorMeshGeneration)
 	{
 		mNoMeshGeneration.set(static_cast<uint8_t>(NoMeshGeneration::Roof), noRoofMeshGeneration);

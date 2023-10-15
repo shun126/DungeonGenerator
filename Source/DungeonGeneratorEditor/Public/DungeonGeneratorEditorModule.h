@@ -13,6 +13,7 @@ class FToolBarBuilder;
 class FMenuBuilder;
 class CDungeonGeneratorCore;
 class UDungeonGenerateParameter;
+class UDungeonMiniMap;
 class UDungeonMiniMapTextureLayer;
 class UStaticMesh;
 
@@ -47,7 +48,9 @@ private:
 	FReply OnClickedGenerateTextureWithSizeButton();
 	FReply OnClickedGenerateTextureWithScaleButton();
 
-	FReply SaveTextures(const UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer) const;
+	bool SavePackages(const UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer);
+	bool SaveLayerInfoPackage(const FString& basePath, const FString& worldName, const UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer);
+	bool SaveTexturePackage(UDungeonMiniMap* dungeonMiniMapLayerInfo, TArray<UPackage*>& packages, const FString& basePath, const FString& worldName, const UDungeonMiniMapTextureLayer* dungeonMiniMapTextureLayer);
 
 	static UWorld* GetWorldFromGameViewport();
 
@@ -61,7 +64,8 @@ private:
 	TSharedPtr<SButton> mGenerateTextureScaleButton;
 	TWeakObjectPtr<UDungeonGenerateParameter> mDungeonGenerateParameter = nullptr;
 	int32 mGenerateTextureSize = 512;
-	int32 mGenerateTextureScale = 1;
+	int32 mGenerateTextureScale = 3;
+	TSharedPtr<SEditableTextBox> mWorldToTextureScale;
 };
 
 inline TOptional<int32> FDungeonGenerateEditorModule::OnGetGenerateTextureSize() const

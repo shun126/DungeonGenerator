@@ -160,7 +160,7 @@ namespace dungeon
 	/*
 	自身からtoGridを見た時に壁が生成されるか判定します
 	*/
-	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
+	bool Grid::CanBuildWall(const Grid& toGrid, const Grid& underGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
 	{
 		// 部屋と部屋の間に壁を生成する？
 		if (!mergeRooms)
@@ -171,7 +171,7 @@ namespace dungeon
 			*/
 			if (IsKindOfRoomTypeWithoutGate() && toGrid.IsKindOfRoomTypeWithoutGate())
 			{
-				return mIdentifier != toGrid.mIdentifier;
+				return GetIdentifier() != toGrid.GetIdentifier();
 			}
 		}
 
@@ -204,9 +204,7 @@ namespace dungeon
 				return toGrid.GetIdentifier() != GetIdentifier();
 			}
 
-			return
-				toGrid.IsKindOfRoomTypeWithoutGate() ||
-				toGrid.IsKindOfSpatialType();
+			return toGrid.IsKindOfSpatialType() || toGrid.IsKindOfRoomTypeWithoutGate();
 		}
 		else if (mType == Type::Slope)
 		{
@@ -216,10 +214,10 @@ namespace dungeon
 				// グリッドの識別番号が不一致なら壁がある
 				return
 					(toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction)) ||
-					(toGrid.mIdentifier != mIdentifier);
+					(toGrid.GetIdentifier() != GetIdentifier());
 			}
 
-			return toGrid.IsKindOfSpatialType();
+			return toGrid.IsKindOfSpatialType() || toGrid.IsKindOfRoomTypeWithoutGate();
 		}
 		else if (mType == Type::Atrium)
 		{
@@ -227,11 +225,20 @@ namespace dungeon
 			{
 				// 方向が交差していたら壁
 				// グリッドの識別番号が不一致なら壁がある
-				return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction) ||
-					(toGrid.mIdentifier != mIdentifier);
+				return
+					(toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction)) ||
+					(toGrid.GetIdentifier() != GetIdentifier());
 			}
 
-			return toGrid.IsKindOfSpatialType();
+			if (toGrid.IsKindOfSpatialType())
+			{
+				if (GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction))
+					return true;
+
+				return underGrid.mType == Type::Slope;
+			}
+
+			return toGrid.IsKindOfRoomTypeWithoutGate();
 		}
 
 		return false;
@@ -322,17 +329,38 @@ namespace dungeon
 	*/
 	bool Grid::CanBuildPillar(const Grid& toGrid) const noexcept
 	{
-		/*
-		判定が怪しいので見直してください
-		*/
+#if 0
+		// 部屋と部屋の間に壁を生成する？
+		//if (!mergeRooms)
+		{
+			/*
+			部屋と部屋が隣接している場合、
+			グリッドの識別番号（＝部屋の識別番号）が不一致なら壁がある
+			*/
+			if (IsKindOfRoomTypeWithoutGate() && toGrid.IsKindOfRoomTypeWithoutGate())
+			{
+				return GetIdentifier() != toGrid.GetIdentifier();
+			}
+		}
+
+		if (!toGrid.IsHorizontallyPassable())
+			return false;
+		if (toGrid.GetType() == dungeon::Grid::Type::Empty)
+			return false;
+		if (toGrid.GetType() == dungeon::Grid::Type::Atrium || toGrid.GetType() == dungeon::Grid::Type::Slope)
+		{
+			// 通路の識別子が違うなら壁
+			return toGrid.GetIdentifier() != GetIdentifier();
+		}
+#else
+		// 判定が怪しいので見直してください
 		return
-			toGrid.IsHorizontallyPassable() &&
+			toGrid.IsHorizontallyPassable() /* &&
 			(
-				toGrid.GetType() != dungeon::Grid::Type::Empty &&
-				/*result.GetType() != dungeon::Grid::Type::Gate &&*/
 				toGrid.GetType() != dungeon::Grid::Type::Atrium &&
 				toGrid.GetType() != dungeon::Grid::Type::Slope
-			);
+				)*/;
+#endif
 	}
 
 	/*
@@ -415,5 +443,23 @@ namespace dungeon
 		static_assert(NameSize == static_cast<size_t>(PropsSize));
 		const size_t index = static_cast<size_t>(mProps);
 		return names[index];
+	}
+
+	FString Grid::GetNoMeshGenerationName() const noexcept
+	{
+		FString noMeshGenerationName(TEXT("NoMeshGeneration: "));
+
+		if (mNoMeshGeneration & NoMeshGenerationRoofMask)
+		{
+			noMeshGenerationName += TEXT("Roof");
+		}
+		if (mNoMeshGeneration & NoMeshGenerationFloorMask)
+		{
+			if (!noMeshGenerationName.IsEmpty())
+				noMeshGenerationName += TEXT(",");
+			noMeshGenerationName += TEXT("Floor");
+		}
+
+		return noMeshGenerationName;
 	}
 }

@@ -88,6 +88,11 @@ namespace dungeon
 		bool operator==(const Point& other) const noexcept;
 
 		/**
+		オーナーの部屋の中心にリセットします
+		*/
+		void ResetByRoomGroundCenter() noexcept;
+
+		/**
 		2点間の距離を求めます
 		\param[in]	v0		点0
 		\param[in]	v1		点1

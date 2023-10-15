@@ -7,12 +7,14 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "Core/Math/Random.h"
 #include "Direction.h"
-#include <bitset>
 
 namespace dungeon
 {
+	/**
+	@addtogroup PathGeneration
+	@{
+	*/
 	/**
 	グリッドクラス
 	*/
@@ -185,12 +187,12 @@ namespace dungeon
 		/**
 		床（部屋）グリッドを生成します
 		*/
-		static Grid CreateFloor(Random& random, const uint16_t identifier) noexcept;
+		static Grid CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept;
 
 		/**
 		デッキ（部屋の周辺）グリッドを生成します
 		*/
-		static Grid CreateDeck(Random& random, const uint16_t identifier) noexcept;
+		static Grid CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept;
 
 		// 判定補助関数
 		/**
@@ -222,7 +224,7 @@ namespace dungeon
 		\param[in]	mergeRooms	部屋と部屋を結合する
 		\return		trueならば壁の生成が可能
 		*/
-		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
+		bool CanBuildWall(const Grid& toGrid, const Grid& underGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
 
 		/**
 		自身からtoGridを見た時に壁が生成されるか判定します
@@ -278,22 +280,28 @@ namespace dungeon
 
 		const FString& GetTypeName() const noexcept;
 		const FString& GetPropsName() const noexcept;
+		FString GetNoMeshGenerationName() const noexcept;
 
 	private:
-		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
-
 		Type mType;
 		Props mProps;
 		Direction mDirection;
-		uint16_t mIdentifier = InvalidIdentifier;
 
 		enum class NoMeshGeneration : uint8_t
 		{
 			Floor,
 			Roof
 		};
-		std::bitset<2> mNoMeshGeneration = 0;
+		static constexpr uint8_t NoMeshGenerationRoofMask = 1 << static_cast<uint8_t>(NoMeshGeneration::Roof);
+		static constexpr uint8_t NoMeshGenerationFloorMask = 1 << static_cast<uint8_t>(NoMeshGeneration::Floor);
+		uint8_t mNoMeshGeneration = 0;
+
+		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
+		uint16_t mIdentifier = InvalidIdentifier;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "Grid.inl"

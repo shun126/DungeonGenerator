@@ -10,6 +10,7 @@ All Rights Reserved.
 #pragma once
 #include "Circle.h"
 #include <array>
+#include <memory>
 
 namespace dungeon
 {

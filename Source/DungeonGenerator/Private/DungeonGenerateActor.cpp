@@ -7,7 +7,6 @@ All Rights Reserved.
 #include "DungeonGenerateActor.h"
 #include "DungeonGenerateParameter.h"
 #include "DungeonGeneratorCore.h"
-#include "DungeonMiniMapTextureLayer.h"
 #include "DungeonTransactionalHierarchicalInstancedStaticMeshComponent.h"
 #include "Core/Grid.h"
 #include "Core/Generator.h"
@@ -16,16 +15,17 @@ All Rights Reserved.
 #include "Core/Debug/BuildInfomation.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Vector.h"
-
-//#include <EngineUtils.h>
+#include "MiniMap/DungeonMiniMapTextureLayer.h"
 #include <Components/CapsuleComponent.h>
 #include <Engine/LevelStreaming.h>
-//#include <GameFramework/PlayerStart.h>
 #include <GameFramework/Character.h>
 #include <Kismet/GameplayStatics.h>
 #include <NavigationSystem.h>
 #include <NavMesh/NavMeshBoundsVolume.h>
 #include <NavMesh/RecastNavMesh.h>
+
+#include <Engine/NetDriver.h>
+#include <Net/UnrealNetwork.h>
 
 #if WITH_EDITOR
 #include <DrawDebugHelpers.h>
@@ -38,13 +38,17 @@ ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializ
 	, LicenseTag(TEXT(JENKINS_LICENSE))
 	, LicenseId(TEXT(JENKINS_UUID))
 {
-	// ティック有効化
+	// Tick Enable
 	PrimaryActorTick.bCanEverTick = PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// ルートシーンコンポーネントを生成
-	RootComponent = initializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("Scene"), true);
+	// Replicates
+	bReplicates = ReplicatedServerDungeon;
 
-	// デフォルトパラメータを生成
+	// Create root scene component
+	RootComponent = initializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("Scene"), true);
+	check(RootComponent);
+
+	// Create default parameters
 	DungeonGenerateParameter = NewObject<UDungeonGenerateParameter>();
 	check(DungeonGenerateParameter);
 }
@@ -69,13 +73,10 @@ void ADungeonGenerateActor::AddInstance(TArray<UDungeonTransactionalHierarchical
 {
 	for (auto mesh : meshs)
 	{
-		if (IsValid(mesh))
+		if (IsValid(mesh) && mesh->GetStaticMesh() == staticMesh)
 		{
-			if (mesh->GetStaticMesh() == staticMesh)
-			{
-				mesh->AddInstance(transform);
-				break;
-			}
+			mesh->AddInstance(transform);
+			break;
 		}
 	}
 }
@@ -91,7 +92,7 @@ void ADungeonGenerateActor::EndAddInstance(TArray<UDungeonTransactionalHierarchi
 	}
 }
 
-/**
+/*
 2D空間は（X軸:前 Y軸:右）
 3D空間は（X軸:前 Y軸:右 Z軸:上）である事に注意
 */
@@ -119,142 +120,149 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 		return;
 	}
 
+	// Reset
+	mDungeonGeneratorCore->OnResetDoor([this](AActor* actor, EDungeonRoomProps props)
+		{
+			OnResetDoor.Broadcast(actor, props);
+		}
+	);
+
 	if (InstancedStaticMesh)
 	{
-		DestroyImplementation();
-
 		DungeonGenerateParameter->EachFloorParts([this](const FDungeonMeshParts& meshParts)
 			{
-				auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+				for (const UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* mesh : FloorMeshs)
+				{
+					if (IsValid(mesh) && mesh->GetStaticMesh() == meshParts.StaticMesh)
+						return;
+				}
+				UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* component
+					= NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 				if (IsValid(component))
 				{
 					AddInstanceComponent(component);
 					component->RegisterComponent();
 					component->SetStaticMesh(meshParts.StaticMesh);
+					FloorMeshs.Add(component);
 				}
-				FloorMeshs.Add(component);
-			}
-		);
-		DungeonGenerateParameter->EachSlopeParts([this](const FDungeonMeshParts& meshParts)
-			{
-				auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
-				if (IsValid(component))
-				{
-					AddInstanceComponent(component);
-					component->RegisterComponent();
-					component->SetStaticMesh(meshParts.StaticMesh);
-				}
-				SlopeMeshs.Add(component);
 			}
 		);
 		DungeonGenerateParameter->EachWallParts([this](const FDungeonMeshParts& meshParts)
 			{
-				auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+				for (const UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* mesh : WallMeshs)
+				{
+					if (IsValid(mesh) && mesh->GetStaticMesh() == meshParts.StaticMesh)
+						return;
+				}
+				UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* component
+					= NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 				if (IsValid(component))
 				{
 					AddInstanceComponent(component);
 					component->RegisterComponent();
 					component->SetStaticMesh(meshParts.StaticMesh);
+					WallMeshs.Add(component);
 				}
-				WallMeshs.Add(component);
 			}
 		);
-		DungeonGenerateParameter->EachRoomRoofParts([this](const FDungeonMeshParts& meshParts)
+		DungeonGenerateParameter->EachRoofParts([this](const FDungeonMeshParts& meshParts)
 			{
-				auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+				for (const UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* mesh : RoofMeshs)
+				{
+					if (IsValid(mesh) && mesh->GetStaticMesh() == meshParts.StaticMesh)
+						return;
+				}
+				UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* component
+					= NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 				if (IsValid(component))
 				{
 					AddInstanceComponent(component);
 					component->RegisterComponent();
 					component->SetStaticMesh(meshParts.StaticMesh);
+					RoofMeshs.Add(component);
 				}
-				RoomRoofMeshs.Add(component);
 			}
 		);
-		DungeonGenerateParameter->EachAisleRoofParts([this](const FDungeonMeshParts& meshParts)
+		DungeonGenerateParameter->EachSlopeParts([this](const FDungeonMeshParts& meshParts)
 			{
-				auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+				for (const UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* mesh : SlopeMeshs)
+				{
+					if (IsValid(mesh) && mesh->GetStaticMesh() == meshParts.StaticMesh)
+						return;
+				}
+				UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* component
+					= NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 				if (IsValid(component))
 				{
 					AddInstanceComponent(component);
 					component->RegisterComponent();
 					component->SetStaticMesh(meshParts.StaticMesh);
+					SlopeMeshs.Add(component);
 				}
-				AisleRoofMeshs.Add(component);
 			}
 		);
 		DungeonGenerateParameter->EachPillarParts([this](const FDungeonMeshParts& meshParts)
 			{
-				auto component = NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
+				for (const UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* mesh : PillarMeshs)
+				{
+					if (IsValid(mesh) && mesh->GetStaticMesh() == meshParts.StaticMesh)
+						return;
+				}
+				UDungeonTransactionalHierarchicalInstancedStaticMeshComponent* component
+					= NewObject<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent>(this);
 				if (IsValid(component))
 				{
 					AddInstanceComponent(component);
 					component->RegisterComponent();
 					component->SetStaticMesh(meshParts.StaticMesh);
+					PillarMeshs.Add(component);
 				}
-				PillarMeshs.Add(component);
 			}
 		);
 
 		BeginAddInstance(FloorMeshs);
-		BeginAddInstance(SlopeMeshs);
 		BeginAddInstance(WallMeshs);
-		BeginAddInstance(RoomRoofMeshs);
-		BeginAddInstance(AisleRoofMeshs);
+		BeginAddInstance(RoofMeshs);
+		BeginAddInstance(SlopeMeshs);
 		BeginAddInstance(PillarMeshs);
 
-		// Add
-		mDungeonGeneratorCore->OnAddFloor([this](UStaticMesh* staticMesh, const FTransform& transform)
+		mDungeonGeneratorCore->OnAddFloor([this](const UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(FloorMeshs, staticMesh, transform);
 				OnCreateFloor.Broadcast(transform);
 			}
 		);
-		mDungeonGeneratorCore->OnAddSlope([this](UStaticMesh* staticMesh, const FTransform& transform)
+		mDungeonGeneratorCore->OnAddSlope([this](const UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(SlopeMeshs, staticMesh, transform);
 				OnCreateSlope.Broadcast(transform);
 			}
 		);
-		mDungeonGeneratorCore->OnAddWall([this](UStaticMesh* staticMesh, const FTransform& transform)
+		mDungeonGeneratorCore->OnAddWall([this](const UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(WallMeshs, staticMesh, transform);
 				OnCreateWall.Broadcast(transform);
 			}
 		);
-		mDungeonGeneratorCore->OnAddRoomRoof([this](UStaticMesh* staticMesh, const FTransform& transform)
+		mDungeonGeneratorCore->OnAddRoof([this](const UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(RoomRoofMeshs, staticMesh, transform);
-				OnCreateAisleRoof.Broadcast(transform);
+				AddInstance(RoofMeshs, staticMesh, transform);
+				OnCreateRoomRoof.Broadcast(transform);
 			}
 		);
-		mDungeonGeneratorCore->OnAddAisleRoof([this](UStaticMesh* staticMesh, const FTransform& transform)
-			{
-				AddInstance(AisleRoofMeshs, staticMesh, transform);
-				OnCreateAisleRoof.Broadcast(transform);
-			}
-		);
-		mDungeonGeneratorCore->OnAddPillar([this](uint32_t gridHeight, UStaticMesh* staticMesh, const FTransform& transform)
+		mDungeonGeneratorCore->OnAddPillar([this](uint32_t gridHeight, const UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(PillarMeshs, staticMesh, transform);
 				OnCreatePillar.Broadcast(transform);
 			}
 		);
 
-		// Reset
-		mDungeonGeneratorCore->OnResetDoor([this](AActor* actor, EDungeonRoomProps props)
-			{
-				OnResetDoor.Broadcast(actor, props);
-			}
-		);
-
 		if (mDungeonGeneratorCore->Create(DungeonGenerateParameter))
 		{
 			EndAddInstance(FloorMeshs);
-			EndAddInstance(SlopeMeshs);
 			EndAddInstance(WallMeshs);
-			EndAddInstance(RoomRoofMeshs);
-			EndAddInstance(AisleRoofMeshs);
+			EndAddInstance(RoofMeshs);
+			EndAddInstance(SlopeMeshs);
 			EndAddInstance(PillarMeshs);
 			MovePlayerStart();
 		}
@@ -278,8 +286,9 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 	}
 
 #if WITH_EDITOR
-	// ダンジョン生成した乱数を記録
+	// Record dungeon-generated random numbers
 	GeneratedRandomSeed = DungeonGenerateParameter->GetGeneratedRandomSeed();
+	GeneratedDungeonCRC32 = CalculateCRC32();
 #endif
 }
 
@@ -320,71 +329,119 @@ void ADungeonGenerateActor::PostGenerateImplementation()
 void ADungeonGenerateActor::DestroyImplementation()
 {
 	if (mDungeonGeneratorCore != nullptr)
-	{
-		mDungeonGeneratorCore->DestroySpawnedActors();
-		mDungeonGeneratorCore->UnloadStreamLevels();
 		mDungeonGeneratorCore.reset();
-	}
 
 	FloorMeshs.Empty();
 	SlopeMeshs.Empty();
 	WallMeshs.Empty();
-	RoomRoofMeshs.Empty();
-	AisleRoofMeshs.Empty();
+	RoofMeshs.Empty();
 	PillarMeshs.Empty();
 
 	DungeonMiniMapTextureLayer = nullptr;
 }
 
 /*
-開始位置PlayerStart,終了位置ADungeonPlayerGoalの位置および
-プレイヤー操作のキャラクターを移動します
+The starting position PlayerStart, the ending position ADungeonPlayerGoal,
+and the position of the Moves the player-controlled character.
 */
 void ADungeonGenerateActor::MovePlayerStart()
 {
-	if (DungeonGenerateParameter && DungeonGenerateParameter->IsMovePlayerStartToStartingPoint())
-	{
-		if (mDungeonGeneratorCore)
-		{
-			if (OnMovePlayerStart.IsBound())
-			{
-				OnMovePlayerStart.Broadcast(mDungeonGeneratorCore->GetStartLocation());
-			}
-			else
-			{
-				mDungeonGeneratorCore->MovePlayerStart();
-			}
-		}
-	}
+	mDungeonGeneratorCore->MovePlayerStart();
 }
 
 void ADungeonGenerateActor::PreInitializeComponents()
 {
-	// 親クラスの呼び出し
+	// Calling the parent class
 	Super::PreInitializeComponents();
 
-	PreGenerateImplementation();
+	if (AutoGenerateAtStart)
+	{
+		if (ReplicatedServerDungeon)
+		{
+			if (HasAuthority() == false)
+			{
+				if (IsValid(DungeonGenerateParameter))
+				{
+#if WITH_EDITOR
+					DUNGEON_GENERATOR_LOG(TEXT("PreInitializeComponents: RandomSeed=%d, GeneratedRandomSeed=%d"),
+						DungeonGenerateParameter->GetRandomSeed(),
+						DungeonGenerateParameter->GetGeneratedRandomSeed()
+					);
+#endif
+					DungeonGenerateParameter->SetRandomSeed(DungeonGenerateParameter->GetGeneratedRandomSeed());
+				}
+				else
+				{
+					DUNGEON_GENERATOR_ERROR(TEXT("DungeonGenerateParameter is not set"));
+				}
+			}
+			else
+			{
+				DUNGEON_GENERATOR_LOG(TEXT("Has Authority"));
+			}
+		}
+
+		PreGenerateImplementation();
+
+#if WITH_EDITOR
+		if (IsValid(DungeonGenerateParameter))
+		{
+			DUNGEON_GENERATOR_LOG(TEXT("PreInitializeComponents: RandomSeed=%d, GeneratedRandomSeed=%d"),
+				DungeonGenerateParameter->GetRandomSeed(),
+				DungeonGenerateParameter->GetGeneratedRandomSeed()
+			);
+		}
+#endif
+	}
+}
+
+void ADungeonGenerateActor::PostInitializeComponents()
+{
+	// Calling the parent class
+	Super::PostInitializeComponents();
+
+	if (mDungeonGeneratorCore)
+	{
+		mDungeonGeneratorCore->FlushLoadStreamLevels();
+	}
 }
 
 void ADungeonGenerateActor::BeginPlay()
 {
-	// 親クラスの呼び出し
+	// Calling the parent class
 	Super::BeginPlay();
 
-	mPostGenerated = false;
+	if (AutoGenerateAtStart)
+	{
+		mPostGenerated = false;
+	}
 }
 
 void ADungeonGenerateActor::Tick(float DeltaSeconds)
 {
+	// Calling the parent class
 	Super::Tick(DeltaSeconds);
 
 	if (!mPostGenerated)
 	{
 		mPostGenerated = true;
+
 		PostGenerateImplementation();
+
+#if WITH_EDITOR
+		if (IsValid(DungeonGenerateParameter))
+		{
+			DUNGEON_GENERATOR_LOG(TEXT("PostGenerateImplementation: RandomSeed=%d, GeneratedRandomSeed=%d, CRC32=%d"),
+				DungeonGenerateParameter->GetRandomSeed(),
+				DungeonGenerateParameter->GetGeneratedRandomSeed(),
+				GeneratedRandomSeed,
+				CalculateCRC32()
+			);
+		}
+#endif
 	}
 
-	// 部屋の生成通知
+	// Room generation notification
 	if (mDungeonGeneratorCore != nullptr)
 	{
 		mDungeonGeneratorCore->AsyncLoadStreamLevels();
@@ -399,8 +456,17 @@ void ADungeonGenerateActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	DestroyImplementation();
 
-	// 親クラスの呼び出し
+	// Calling the parent class
 	Super::EndPlay(EndPlayReason);
+}
+
+void ADungeonGenerateActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	// Calling the parent class
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// Set variables to be replicated
+	//DOREPLIFETIME(ADungeonGenerateActor, GeneratedRandomSeed);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -409,6 +475,19 @@ void ADungeonGenerateActor::GenerateDungeon()
 {
 	PreGenerateImplementation();
 	PostGenerateImplementation();
+}
+
+void ADungeonGenerateActor::GenerateDungeonWithSeed(const int32 generatedRandomSeed)
+{
+	if (IsValid(DungeonGenerateParameter))
+	{
+		//DungeonGenerateParameter->SetGeneratedRandomSeed(generatedRandomSeed);
+		GenerateDungeon();
+	}
+	else
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("DungeonGenerateParameter is not set"));
+	}
 }
 
 void ADungeonGenerateActor::DestroyDungeon()
@@ -479,6 +558,11 @@ UDungeonMiniMapTextureLayer* ADungeonGenerateActor::GetGeneratedMiniMapTextureLa
 	return DungeonMiniMapTextureLayer;
 }
 
+int32 ADungeonGenerateActor::CalculateCRC32() const noexcept
+{
+	return mDungeonGeneratorCore ? static_cast<int32>(mDungeonGeneratorCore->CalculateCRC32()) : 0;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // for debug
 #if WITH_EDITOR
@@ -503,9 +587,10 @@ void ADungeonGenerateActor::DrawDebugInformation()
 	
 	const float gridSize = DungeonGenerateParameter->GetGridSize();
 
-	// 部屋と接続情報のデバッグ情報を表示します
+	// Displays debugging information on room and connection information
 	if (ShowRoomAisleInformation)
 	{
+		// Debugging information by room
 		generator->ForEach([this, gridSize](const std::shared_ptr<const dungeon::Room>& room)
 			{
 				UKismetSystemLibrary::DrawDebugBox(
@@ -530,6 +615,7 @@ void ADungeonGenerateActor::DrawDebugInformation()
 			}
 		);
 
+		// Debugging information per grid
 		generator->EachAisle([this, gridSize](const dungeon::Aisle& edge)
 			{
 				UKismetSystemLibrary::DrawDebugLine(
@@ -565,60 +651,80 @@ void ADungeonGenerateActor::DrawDebugInformation()
 		);
 	}
 
-	// ボクセルグリッドのデバッグ情報を表示します
+	// Displays voxel grid debugging information
 	if (ShowVoxelGridType)
 	{
-		generator->GetVoxel()->Each([this, gridSize](const FIntVector& location, const dungeon::Grid& grid)
-			{
-				static const FColor colors[] = {
-					FColor::Blue,		// Floor
-					FColor::Yellow,		// Deck
-					FColor::Red,		// Gate
-					FColor::Green,		// Aisle
-					FColor::Magenta,	// Slope
-					FColor::Cyan,		// Atrium
-					FColor::Black,		// Empty
-					FColor::Black,		// OutOfBounds
-				};
-				static constexpr size_t colorSize = sizeof(colors) / sizeof(colors[0]);
-				static_assert(colorSize == dungeon::Grid::TypeSize);
-
-				//if (grid.mType == dungeon::Grid::Type::Aisle || grid.mType == dungeon::Grid::Type::Slope)
-				if (grid.GetType() != dungeon::Grid::Type::Empty && grid.GetType() != dungeon::Grid::Type::OutOfBounds)
+		const APawn* playerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+		if (IsValid(playerPawn))
+		{
+			const FVector playerLocation = playerPawn->GetActorLocation();
+			generator->GetVoxel()->Each([this, gridSize, &playerLocation](const FIntVector& location, const dungeon::Grid& grid)
 				{
-					const double halfGridSize = gridSize / 2.;
-					const FVector halfGrid(halfGridSize, halfGridSize, halfGridSize);
-					const FVector center = dungeon::ToVector(location) * gridSize + halfGrid;
+					static const FColor colors[] = {
+						FColor::Blue,		// Floor
+						FColor::Yellow,		// Deck
+						FColor::Red,		// Gate
+						FColor::Green,		// Aisle
+						FColor::Magenta,	// Slope
+						FColor::Cyan,		// Atrium
+						FColor::Black,		// Empty
+						FColor::Black,		// OutOfBounds
+					};
+					static constexpr size_t colorSize = sizeof(colors) / sizeof(colors[0]);
+					static_assert(colorSize == dungeon::Grid::TypeSize);
 
-					const size_t index = static_cast<size_t>(grid.GetType());
-					UKismetSystemLibrary::DrawDebugBox(
-						GetWorld(),
-						center,
-						halfGrid * 0.95,
-						colors[index],
-						FRotator::ZeroRotator,
-						0.f,
-						10.f
-					);
+					//if (grid.mType == dungeon::Grid::Type::Aisle || grid.mType == dungeon::Grid::Type::Slope)
+					if (grid.GetType() != dungeon::Grid::Type::Empty && grid.GetType() != dungeon::Grid::Type::OutOfBounds)
+					{
+						const double halfGridSize = gridSize / 2.;
+						const FVector halfGrid(halfGridSize, halfGridSize, halfGridSize);
+						const FVector center = dungeon::ToVector(location) * gridSize + halfGrid;
 
-					const FVector direction = dungeon::ToVector(grid.GetDirection().GetVector());
-					UKismetSystemLibrary::DrawDebugArrow(
-						GetWorld(),
-						center,
-						center + direction * halfGridSize,
-						gridSize,
-						colors[index],
-						0.f,
-						5.f);
+						const size_t index = static_cast<size_t>(grid.GetType());
+						UKismetSystemLibrary::DrawDebugBox(
+							GetWorld(),
+							center,
+							halfGrid * 0.95,
+							colors[index],
+							FRotator::ZeroRotator,
+							0.f,
+							10.f
+						);
+
+						const FVector direction = dungeon::ToVector(grid.GetDirection().GetVector());
+						UKismetSystemLibrary::DrawDebugArrow(
+							GetWorld(),
+							center,
+							center + direction * halfGridSize,
+							gridSize,
+							colors[index],
+							0.f,
+							5.f
+						);
+
+						if (FVector::Distance(center, playerLocation) < 10 * 100)
+						{
+							DrawDebugString(
+								GetWorld(),
+								center,
+								grid.GetNoMeshGenerationName(),
+								nullptr,
+								FColor::White,
+								0.f,
+								true,
+								1.f
+							);
+						}
+					}
+
+					return true;
 				}
-
-				return true;
-			}
-		);
+			);
+		}
 	}
 
 #if 0
-	// ダンジョン全体の領域を可視化
+	// Visualization of the entire dungeon area
 	{
 		const FBox& bounding = BoundingBox();
 		UKismetSystemLibrary::DrawDebugBox(
@@ -633,7 +739,7 @@ void ADungeonGenerateActor::DrawDebugInformation()
 	}
 #endif
 
-	// プレイヤーの位置のボクセルグリッドのデバッグ情報を表示します
+	// Displays debugging information for the voxel grid at the player's position
 	if (ShowVoxelGridTypeAtPlayerLocation)
 	{
 		APawn* playerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
@@ -650,14 +756,25 @@ void ADungeonGenerateActor::DrawDebugInformation()
 			//Direction GetDirection() const noexcept;
 			output.Add(TEXT(" Props : ") + grid.GetPropsName());
 
-			// 文字列を展開
 			FString message;
 			for (const FString& line : output)
 			{
 				message.Append(line);
 				message.Append(TEXT("\n"));
 			}
-			DrawDebugString(playerPawn->GetWorld(), playerPawn->GetPawnViewLocation(), message, nullptr, FColor::White, 0, true, 1.f);
+
+			message.Append(grid.GetNoMeshGenerationName() + TEXT("\n"));
+
+			DrawDebugString(
+				playerPawn->GetWorld(),
+				playerPawn->GetPawnViewLocation(),
+				message,
+				nullptr,
+				FColor::White,
+				0,
+				true,
+				1.f
+			);
 		}
 	}
 }

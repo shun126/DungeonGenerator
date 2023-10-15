@@ -1,5 +1,8 @@
 /**
-デバッグに関するソースファイル
+Debug function source files
+
+To prevent conflicts with other Windows macros,
+do not include this file from the header.
 
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
@@ -9,7 +12,7 @@ All Rights Reserved.
 #include "Debug.h"
 #include <algorithm>
 
-// ログマクロ
+// log macro
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING > 0
 DEFINE_LOG_CATEGORY(DungeonGeneratorLogger);
 #else
@@ -22,8 +25,9 @@ namespace dungeon
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING == 0
 #if defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
 	/**
-	VisualStudioの出力ウィンドウに出力します
-	ソースファイルからのみincludeされる前提なのでstatic関数で良い
+	Output to VisualStudio output window
+	Assumed to be included only from source files,
+	so static functions are fine.
 	*/
 	extern void OutputDebugStringWithArgument(const char* pszFormat, ...)
 	{
@@ -41,9 +45,6 @@ namespace dungeon
 #endif
 #endif
 
-	/**
-	BMPファイル生成
-	*/
 	namespace bmp
 	{
 		Canvas::Canvas() noexcept
@@ -104,11 +105,11 @@ namespace dungeon
 				return 0;
 			}
 
-			// ヘッダ部分を生成、書き込み
+			// Generate and write header section
 			fwrite(&mBmpHeader, sizeof(BMPFILEHEADER), 1, fp);
 			fwrite(&mBmpInfo, sizeof(BMPINFOHEADER), 1, fp);
 
-			// データ部分を一行ずつ書き込み
+			// Write the data part line by line
 			for (int64_t i = static_cast<int64_t>(mHeight) - 1; i >= 0; --i)
 			{
 				fwrite(&mRgbImage.get()[i * mWidth], sizeof(RGBCOLOR), mWidth, fp);

@@ -7,11 +7,17 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "Core/Math/Random.h"
 #include <array>
+#include <memory>
 
 namespace dungeon
 {
+	class Random;
+
+	/**
+	@addtogroup PathGeneration
+	@{
+	*/
 	/**
 	方向クラス
 	*/
@@ -128,11 +134,14 @@ namespace dungeon
 		ランダムな方向を取得します
 		\return		ランダムな方向
 		*/
-		static Direction CreateFromRandom(Random& random) noexcept;
+		static Direction CreateFromRandom(const std::shared_ptr<Random>& random) noexcept;
 
 	private:
 		Index mIndex;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "Direction.inl"

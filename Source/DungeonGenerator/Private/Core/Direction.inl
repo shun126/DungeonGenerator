@@ -7,6 +7,7 @@ All Rights Reserved.
 */
 
 #pragma once
+#include "Core/Math/Random.h"
 
 namespace dungeon
 {
@@ -82,8 +83,8 @@ namespace dungeon
 		return GetVector(mIndex);
 	}
 
-	inline Direction Direction::CreateFromRandom(Random& random) noexcept
+	inline Direction Direction::CreateFromRandom(const std::shared_ptr<Random>& random) noexcept
 	{
-		return Direction(static_cast<Direction::Index>(random.Get<int32_t>() % 4));
+		return Direction(static_cast<Direction::Index>(random->Get<int32_t>(4)));
 	}
 }

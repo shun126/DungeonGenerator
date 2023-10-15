@@ -230,7 +230,7 @@ namespace dungeon
 		mStartPoint = FindStartPoint();
 
 		size_t startPointIndex = verteces.Find(mStartPoint);
-		// cppcheck-suppress [knownConditionTrueFalse, unmatchedSuppression]
+		// cppcheck-suppress [knownConditionTrueFalse]
 		if (startPointIndex != static_cast<size_t>(~0))
 		{
 			// スタートから各部屋の深さ（部屋の数）を設定

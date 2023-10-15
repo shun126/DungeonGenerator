@@ -17,6 +17,11 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
+	@addtogroup PathGeneration
+	@{
+	*/
+
+	/**
 	A*によるパス検索クラス
 	*/
 	class PathFinder
@@ -307,6 +312,9 @@ namespace dungeon
 		std::unordered_map<uint64_t, CloseNode> mClose;
 		std::vector<BaseNode> mRoute;
 	};
+	/**
+	@}
+	*/
 }
 
 #include "PathFinder.inl"

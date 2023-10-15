@@ -57,4 +57,9 @@ namespace dungeon
 	{
 		return type == GetType();
 	}
+
+	inline void Identifier::ResetCounter()
+	{
+		mCounter = 0;
+	}
 }

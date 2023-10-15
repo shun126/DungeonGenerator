@@ -8,91 +8,83 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	/**
-	乱数クラス
-	*/
+	//! Generates random numbers by xorshift32
 	class Random
 	{
 	public:
-		//! コンストラクタ
+		//! Default constructor
 		Random();
 
 		/**
-		コンストラクタ
+		Constructor
 		\param[in]	seed	乱数の種
 		*/
 		explicit Random(const uint32_t seed);
 
 		/**
-		コピーコンストラクタ
+		copy constructor
 		*/
 		explicit Random(const Random& other);
 
 		/**
-		ムーブコンストラクタ
+		move constructor
 		*/
 		explicit Random(Random&& other) noexcept;
 
 		/**
-		コピー代入
+		copy assignment
 		*/
 		Random& operator = (const Random& other);
 
 		/**
-		ムーブ代入
+		move assignment
 		*/
 		Random& operator = (Random&& other) noexcept;
 
 		/**
-		乱数の種を設定します
-		\param[in]	seed	乱数の種
+		Sets the random number seed
+		\param[in]	seed	Random number seeds
 		*/
 		void SetSeed(const uint32_t seed);
 
 		/**
-		符号の乱数を取得します
-		\return	-1または1
+		\return	-1 or 1
+		T must be a signed type.
 		*/
 		template <typename T>
 		T GetSign();
 
 		/**
-		乱数を取得します
-		\return		整数では[type_min,type_max]、実数では[0,1]の範囲を等確率で返す
+		Get a random number
+		\return		Returns the range [type_min,type_max) if T is an integer,
+					or [0,1] with equal probability if T is a real number.
 		*/
 		template <typename T>
 		T Get();
 
 		/**
-		乱数を取得します
-		\param[in]	to	範囲
-		\return		整数では[0,to)、実数では[0,to]の範囲を等確率で返す
+		Get a random number
+		\param[in]	to	Upper value
+		\return		Returns the range [0,to) if T is an integer,
+					or [0,to] with equal probability if T is a real number.
 		*/
 		template <typename T>
 		T Get(const T to);
 
 		/**
-		乱数を取得します
-		\param[in]	from	開始範囲
-		\param[in]	to		終了範囲
-		\return		整数では[from,to)、実数では[from,to]の範囲を等確率で返す
+		Get a random number
+		\param[in]	from	Lower value
+		\param[in]	to		Upper value
+		\return		Returns the range [from,to) if T is an integer,
+					or [from,to] with equal probability if T is a real number.
 		*/
 		template <typename T>
 		T Get(const T from, const T to);
 
-		/**
-		インスタンスを取得します
-		*/
-		static Random& Instance()
-		{
-			static Random instance;
-			return instance;
-		}
-
 	private:
 		/**
-		uint32_t型の乱数を取得します
-		\return		[0,std::numeric_limits<int32_t>::max]の範囲を返す
+		Get a random number of type uint32_t
+		\return		Returns a range of [0,std::numeric_limits<int32_t>::max
 		*/
 		uint32_t GetU32();
 

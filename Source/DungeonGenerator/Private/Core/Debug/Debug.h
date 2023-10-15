@@ -1,7 +1,8 @@
 /**
-デバッグに関するヘッダーファイル
+Debug function header files
 
-他のWindowsマクロと衝突を防ぐため、このファイルをヘッダーからincludeしないで下さい。
+To prevent conflicts with other Windows macros,
+do not include this file from the header.
 
 \author		Shun Moriya
 \copyright	2023- Shun Moriya
@@ -27,7 +28,7 @@ All Rights Reserved.
 #define UE_BUILD_SHIPPING 0
 #endif
 
-// ログマクロ
+// log macro
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING > 0
 #include <CoreMinimal.h>
 DECLARE_LOG_CATEGORY_EXTERN(DungeonGeneratorLogger, Log, All);
@@ -53,11 +54,17 @@ DECLARE_LOG_CATEGORY_EXTERN(DungeonGeneratorLogger, Log, All);
 namespace dungeon
 {
 	/**
-	VisualStudioの出力ウィンドウに出力します
-	ソースファイルからのみincludeされる前提なのでstatic関数で良い
+	@addtogroup Debug
+	@{
+	*/
+
+	/*!
+	Output to VisualStudio output window
+	Assumed to be included only from source files, so static functions are fine.
 	*/
 	extern void OutputDebugStringWithArgument(const char* pszFormat, ...);
 
+	//! Microsoft Windows Bitmap Image Implementation 
 	namespace bmp
 	{
 #pragma pack(1)
@@ -94,55 +101,42 @@ namespace dungeon
 #pragma pack()
 
 		/**
-		キャンバスクラス
+		Microsoft Windows Bitmap canvas class
 		*/
 		class Canvas
 		{
 		public:
-			// コントラクタ
 			Canvas() noexcept;
-
-			/**
-			コンストラクタ
-			*/
 			Canvas(const uint32_t width, const uint32_t height) noexcept;
-
-			// デストラクタ
 			virtual ~Canvas() = default;
 
-			/**
-			画像データの生成
-			*/
+			//! Generate image data
 			void Create(const uint32_t width, const uint32_t height) noexcept;
 
-			/*
-			画像データの吐き出し
-			*/
+			//! Saves image data to a file
 			int Write(const std::string& filename) noexcept;
 
-			/**
-			点の描画
-			*/
+			//! Draw point
 			void Put(int32_t x, int32_t y, const RGBCOLOR color) noexcept;
 
-			/**
-			矩形の描画
-			*/
+			//! Draw rectangle
 			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;
 
-			/**
-			フレームの描画
-			*/
+			//! Draw frame 
 			void Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;
 
 		private:
 			BMPFILEHEADER mBmpHeader;
 			BMPINFOHEADER mBmpInfo;
 
-			uint32_t mWidth;	// 横幅
-			uint32_t mHeight;	// 縦幅
+			uint32_t mWidth;
+			uint32_t mHeight;
 
-			std::unique_ptr<RGBCOLOR[]> mRgbImage;	// 画像データの本体
+			std::unique_ptr<RGBCOLOR[]> mRgbImage;
 		};
 	}
+
+	/**
+	@}
+	*/
 }

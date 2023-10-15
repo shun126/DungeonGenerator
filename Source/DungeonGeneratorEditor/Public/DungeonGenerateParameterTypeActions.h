@@ -26,3 +26,28 @@ public:
 private:
 	EAssetTypeCategories::Type mAssetCategory;
 };
+
+inline UDungeonGenerateParameterTypeActions::UDungeonGenerateParameterTypeActions(EAssetTypeCategories::Type InAssetCategory)
+	: mAssetCategory(InAssetCategory)
+{
+}
+
+inline FColor UDungeonGenerateParameterTypeActions::GetTypeColor() const
+{
+	return FColor::Emerald;
+}
+
+inline void UDungeonGenerateParameterTypeActions::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
+{
+	FSimpleAssetEditor::CreateEditor(EToolkitMode::Standalone, EditWithinLevelEditor, InObjects);
+}
+
+inline FText UDungeonGenerateParameterTypeActions::GetName() const
+{
+	return FText::FromName(TEXT("DungeonGenerateParameter"));
+}
+
+inline uint32 UDungeonGenerateParameterTypeActions::GetCategories()
+{
+	return mAssetCategory;
+}

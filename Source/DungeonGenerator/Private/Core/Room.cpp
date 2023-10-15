@@ -22,22 +22,33 @@ namespace
 	\param[in]	maximum		最大値
 	\return		乱数で決めたサイズ
 	*/
-	static uint32_t randSize(dungeon::Random& random, const uint32_t minimum, const uint32_t maximum)
+	static uint32_t randSize(const std::shared_ptr<dungeon::Random>& random, const uint32_t minimum, const uint32_t maximum)
 	{
-		return random.Get<uint32_t>(minimum, maximum);
+		return random->Get<uint32_t>(minimum, maximum + 1);
 	}
 }
 
 namespace dungeon
 {
 	Room::Room(const GenerateParameter& parameter, const FIntVector& location) noexcept
+		: mX(location.X)
+		, mY(location.Y)
+		, mZ(location.Z)
 	{
-		mX = location.X;
-		mY = location.Y;
-		mZ = location.Z;
 		mWidth = randSize(parameter.GetRandom(), parameter.GetMinRoomWidth(), parameter.GetMaxRoomWidth());
 		mDepth = randSize(parameter.GetRandom(), parameter.GetMinRoomDepth(), parameter.GetMaxRoomDepth());
 		mHeight = randSize(parameter.GetRandom(), parameter.GetMinRoomHeight(), parameter.GetMaxRoomHeight());
+	}
+
+	Room::Room(const FIntVector& location, const FIntVector& size, const bool undeletable) noexcept
+		: mX(location.X)
+		, mY(location.Y)
+		, mZ(location.Z)
+		, mWidth(size.X)
+		, mDepth(size.Y)
+		, mHeight(size.Z)
+		, mUndeletable(undeletable)
+	{
 	}
 
 	Room::Room(const Room& other) noexcept
@@ -282,10 +293,10 @@ namespace dungeon
 	{
 		static const std::array<std::string_view, PartsSize> names = {
 			"unidentified",
-			"start",
-			"goal",
 			"hall",
 			"hanare",
+			"start",
+			"goal",
 		};
 		return names[static_cast<size_t>(mParts)];
 	}

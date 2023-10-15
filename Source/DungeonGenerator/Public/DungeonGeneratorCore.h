@@ -5,10 +5,11 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "DungeonInteriorDecorator.h"
-#include "DungeonRoomItem.h"
-#include "DungeonRoomParts.h"
-#include "DungeonRoomProps.h"
+#include "Decorator/DungeonInteriorDecorator.h"
+#include "Mission/DungeonRoomItem.h"
+#include "Mission/DungeonRoomParts.h"
+#include "Mission/DungeonRoomProps.h"
+#include "SubLevel/DungeonRoomRegister.h"
 #include <EngineUtils.h>
 #include <algorithm>
 #include <functional>
@@ -16,6 +17,7 @@ All Rights Reserved.
 #include <memory>
 
 // Forward declaration
+class CDungeonInteriorUnplaceableBounds;
 class UDungeonGenerateParameter;
 class ULevelStreamingDynamic;
 class UStaticMesh;
@@ -27,6 +29,7 @@ namespace dungeon
 {
 	class Identifier;
 	class Generator;
+	class Random;
 	class Room;
 }
 
@@ -58,14 +61,13 @@ public:
 	/**
 	destructor
 	*/
-	~CDungeonGeneratorCore() = default;
+	~CDungeonGeneratorCore();
 
 	// event
 	void OnAddFloor(const AddStaticMeshEvent& func);
 	void OnAddSlope(const AddStaticMeshEvent& func);
 	void OnAddWall(const AddStaticMeshEvent& func);
-	void OnAddRoomRoof(const AddStaticMeshEvent& func);
-	void OnAddAisleRoof(const AddStaticMeshEvent& func);
+	void OnAddRoof(const AddStaticMeshEvent& func);
 	void OnAddPillar(const AddPillarStaticMeshEvent& func);
 	void OnResetTorch(const ResetActorEvent& func);
 	//void OnAddChandelier(const ResetActorEvent& func);
@@ -138,6 +140,12 @@ public:
 	UTexture2D* GenerateMiniMapTextureWithScale(uint32_t& worldToTextureScale, uint32_t textureScale, uint32_t currentLevel) const;
 
 	/**
+	Calculate CRC32
+	\return		CRC32
+	*/
+	uint32_t CalculateCRC32() const noexcept;
+
+	/**
 	Get dungeon generation core object.
 	\return		dungeon::Generator
 	*/
@@ -148,9 +156,14 @@ public:
 #endif
 
 private:
-	bool CreateImpl_AddRoomAsset(const UDungeonGenerateParameter* parameter, const std::shared_ptr<dungeon::Room>& room);
-	void AddTerrain();
-	void AddObject();
+	bool CreateImplement_AddRoomAsset(const UDungeonGenerateParameter* parameter, const std::shared_ptr<dungeon::Room>& room);
+	bool CreateImplement_AddRoomAsset(const FDungeonRoomRegister& roomRegister, const std::shared_ptr<dungeon::Room>& room, const float gridSize);
+	void CreateImplement_AddTerrain();
+	void CreateImplement_AddFloorAndSlope(const UDungeonGenerateParameter* parameter, const FIntVector& location);
+	void CreateImplement_AddWall(const UDungeonGenerateParameter* parameter, const FIntVector& location);
+	void CreateImplement_AddPillarAndTorch(std::vector<FSphere>& spawnedTorchBounds, const UDungeonGenerateParameter* parameter, const FIntVector& location);
+	void CreateImplement_AddDoor(const UDungeonGenerateParameter* parameter, const FIntVector& location);
+	void CreateImplement_AddRoof(const UDungeonGenerateParameter* parameter, const FIntVector& location);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Interior
@@ -163,6 +176,7 @@ private:
 	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
 	void SpawnActorOnFloor(UClass* actorClass, const FTransform& transform) const;
 	void SpawnDoorActor(UClass* actorClass, const FTransform& transform, EDungeonRoomProps props) const;
+	AActor* SpawnTorchActor(std::vector<FSphere>& spawnedTorchBounds, const FVector& wallNormal, UClass* actorClass, const FName& folderPath, const FTransform& transform, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
 	ADungeonRoomSensor* SpawnRoomSensorActor(
 		UClass* actorClass,
 		const dungeon::Identifier& identifier,
@@ -179,24 +193,33 @@ private:
 	void DestroySpawnedActors() const;
 	static void DestroySpawnedActors(UWorld* world);
 
+	////////////////////////////////////////////////////////////////////////////
 	template<typename T = AActor> T* FindActor();
 	template<typename T = AActor> const T* FindActor() const;
 
 	////////////////////////////////////////////////////////////////////////////
+	template<typename T = AActor> void EachActors(std::function<void(T*)> function);
+	template<typename T = AActor> void EachActors(std::function<void(const T*)> function) const;
+
+	////////////////////////////////////////////////////////////////////////////
 	bool IsStreamLevelRequested(const FSoftObjectPath& levelPath) const;
 	void RequestStreamLevel(const FSoftObjectPath& levelPath, const FVector& levelLocation);
-	void AsyncLoadStreamLevels();
+	void FlushLoadStreamLevels();
+	void AsyncLoadStreamLevels(const bool bShouldBlockOnLoad = false);
 #if WITH_EDITOR
 	void SyncLoadStreamLevels();
 #endif
 	void UnloadStreamLevels();
-	TSoftObjectPtr<const ULevelStreamingDynamic> FindLoadedStreamLevel(const FSoftObjectPath& levelPath) const;
 
 	void LoadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const FTransform& transform);
 	void UnloadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const bool shouldBlockOnUnload);
 
 	////////////////////////////////////////////////////////////////////////////
 	UTexture2D* GenerateMiniMapTexture(uint32_t worldToTextureScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
+
+	////////////////////////////////////////////////////////////////////////////
+	std::shared_ptr<dungeon::Random> GetRandom() noexcept;
+	std::shared_ptr<dungeon::Random> GetRandom() const noexcept;
 
 	////////////////////////////////////////////////////////////////////////////
 #if WITH_EDITOR
@@ -212,18 +235,18 @@ private:
 	AddStaticMeshEvent mOnAddFloor;
 	AddStaticMeshEvent mOnAddSlope;
 	AddStaticMeshEvent mOnAddWall;
-	AddStaticMeshEvent mOnAddRoomRoof;
-	AddStaticMeshEvent mOnAddAisleRoof;
+	AddStaticMeshEvent mOnAddRoof;
 	AddPillarStaticMeshEvent mOnResetPillar;
 
 	ResetActorEvent mOnResetTorch;
 	ResetDoorEvent mOnResetDoor;
 
+	std::shared_ptr<CDungeonInteriorUnplaceableBounds> mInteriorUnplaceableBounds;
 	FDungeonInteriorDecorator mAisleInteriorDecorator;
 	FDungeonInteriorDecorator mSlopeInteriorDecorator;
 	FDungeonInteriorDecorator mRoomInteriorDecorator;
 
-	struct LoadStreamLevelParameter
+	struct LoadStreamLevelParameter final
 	{
 		FSoftObjectPath mPath;
 		FVector mLocation;
@@ -259,14 +282,9 @@ inline void CDungeonGeneratorCore::OnAddWall(const AddStaticMeshEvent& func)
 	mOnAddWall = func;
 }
 
-inline void CDungeonGeneratorCore::OnAddRoomRoof(const AddStaticMeshEvent& func)
+inline void CDungeonGeneratorCore::OnAddRoof(const AddStaticMeshEvent& func)
 {
-	mOnAddRoomRoof = func;
-}
-
-inline void CDungeonGeneratorCore::OnAddAisleRoof(const AddStaticMeshEvent& func)
-{
-	mOnAddAisleRoof = func;
+	mOnAddRoof = func;
 }
 
 inline void CDungeonGeneratorCore::OnAddPillar(const AddPillarStaticMeshEvent& func)
@@ -341,4 +359,30 @@ inline const T* CDungeonGeneratorCore::FindActor() const
 			return *iterator;
 	}
 	return nullptr;
+}
+
+template<typename T>
+inline void CDungeonGeneratorCore::EachActors(std::function<void(T*)> function)
+{
+	UWorld* world = mWorld.Get();
+	if (IsValid(world))
+	{
+		for (TActorIterator<T> iterator(world); iterator; ++iterator)
+		{
+			function(*iterator);
+		}
+	}
+}
+
+template<typename T>
+inline void CDungeonGeneratorCore::EachActors(std::function<void(const T*)> function) const
+{
+	UWorld* world = mWorld.Get();
+	if (IsValid(world))
+	{
+		for (TActorIterator<const T> iterator(world); iterator; ++iterator)
+		{
+			function(*iterator);
+		}
+	}
 }

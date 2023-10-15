@@ -32,12 +32,12 @@ namespace dungeon
 		enum class Parts : uint8_t
 		{
 			Unidentified,	//!< 未識別
-			Start,			//!< スタート地点
-			Goal,			//!< ゴール地点
 			Hall,			//!< 広間（通路が複数つながっている）
 			Hanare,			//!< 離れ（通路が一つだけつながっている）
+			Start,			//!< スタート地点
+			Goal,			//!< ゴール地点
 		};
-		static constexpr uint8_t PartsSize = static_cast<uint8_t>(Parts::Hanare) + 1;
+		static constexpr uint8_t PartsSize = static_cast<uint8_t>(Parts::Goal) + 1;
 
 		/**
 		変更した場合はGetItemNameもあわせて修正して下さい
@@ -55,6 +55,11 @@ namespace dungeon
 		コンストラクタ
 		*/
 		Room(const GenerateParameter& parameter, const FIntVector& location) noexcept;
+
+		/**
+		コンストラクタ
+		*/
+		Room(const FIntVector& location, const FIntVector& size, const bool undeletable) noexcept;
 
 		/**
 		コピーコンストラクタ
@@ -311,6 +316,10 @@ namespace dungeon
 		*/
 		void GetDataBounds(FIntVector& min, FIntVector& max) const noexcept;
 
+		bool IsUndeletable() const noexcept;
+
+		void SetUndeletables(const bool undeletable) noexcept;
+
 		/**
 		Sets mesh generation prohibition
 		\param[in]	noRoofMeshGeneration	No roof mesh generation
@@ -348,6 +357,8 @@ namespace dungeon
 		Item mItem = Item::Empty;
 		uint8_t mDepthFromStart = std::numeric_limits<uint8_t>::max();
 		uint8_t mBranchId = std::numeric_limits<uint8_t>::max();
+
+		bool mUndeletable = false;
 
 		enum class NoMeshGeneration : uint8_t
 		{
