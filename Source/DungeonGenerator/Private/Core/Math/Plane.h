@@ -1,8 +1,8 @@
 /**
 平面に関するヘッダーファイル
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -38,6 +38,7 @@ namespace dungeon
 		double Distance(const FVector& point) const noexcept;
 		double Distance(const Plane& plane) const noexcept;
 
+		bool Intersect(const FVector& rayDirection, FVector& q) const noexcept;
 		bool Intersect(const FVector& rayOrigin, const FVector& rayDirection, FVector& q) const noexcept;
 
 		void Normalize() noexcept;

@@ -1,6 +1,7 @@
-# Dungeon generator plugin for Unreal Engine
+# Dungeon generator plugin for Unreal Engine 5
 > Easy generation of levels, mini-maps and missions.
 
+[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.0%7C5.1%7C5.2%7C5.3%7C5.4-9455CE?logo=unrealengine)](https://github.com/shun126/UE5-DungeonGeneratorDemo/releases)
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
@@ -16,6 +17,7 @@ Trailer: [YouTube](https://youtu.be/HIW4mRt2_AA)
 - [Demo](#-demo)
 - [Requirements](#-requirements)
 - [License](#-license)
+- [See also](#-see-also)
 - [Author](#-authors)
 
 # 🤔 Why Dungeon Generator?
@@ -29,24 +31,28 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 
 # 🎨 Features
 
-* DungeonGenerator is a plug-in for UnrealEngine.
-* Tiled Dungeon Generation both In-Editor & Runtime
+* DungeonGenerator is a plug-in for UnrealEngine5.
+* Tiled Dungeon Generation both In-Editor & Runtime.
 * Users can easily generate dungeons by preparing meshes for floors, walls, ceilings, and stairs.
-* A mini-map of the dungeon can be generated. [beta version]
+* Supports dungeon replication
 * Generates actors for doors and keys by MissionGraph. [beta version]
-* Supported Development Platforms: Windows (should be possible to build on all platforms)
-* Supported Target Build Platforms: Windows (should be possible to target all platforms)
+* The following features are supported only in the UnrealEngine marketplace version
+  * Sub-levels can be applied as dungeon rooms
+  * Interior decoration. [beta version]
+  * A mini-map of the dungeon can be generated. [beta version]
+* Supported Development Platforms: Windows,Android (should be possible to build on all platforms)
+* Supported Target Build Platforms: Windows,Android (should be possible to target all platforms)
 
 # 👾 Demo
 
-[DungeonGenerator Demo](https://github.com/shun126/DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
+[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
 
-![DungeonGeneratorDemo Screenshot](https://github.com/shun126/DungeonGeneratorDemo/raw/main/Document/Screenshot.gif)
+![DungeonGeneratorDemo Screenshot](https://github.com/shun126/UE5-DungeonGeneratorDemo/raw/main/Document/Screenshot.gif)
 
-This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/DungeonGenerator/wiki) for more information.
+This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
 
 # 🔧 Requirements
-* [Unreal Engine 5.3.1 or Unreal Engine 4.27.2](https://www.unrealengine.com/)
+* [Unreal Engine 5.0 ~ Unreal Engine 5.4](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 # 📜 License
@@ -56,10 +62,20 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 Or, [UnrealEngine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
-## This is the screenshot of our game
+The UnrealEngine marketplace version includes the following enhancements.
+* Sub-levels can be applied as dungeon rooms
+* Interior decoration. [beta version]
+* A mini-map of the dungeon can be generated. [beta version]
 
+# 👀 See also
+* [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
+* [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
+* [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
+* [UnrealEngine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197)
+
+## Screenshot of our game
 ![Out game Screenshot](https://github.com/shun126/DungeonGenerator/raw/main/Document/DungeonGenerator02.gif)
 
 # 👾 Authors
-* [Shun Moriya](https://twitter.com/moriya_zx25r)
 * [Nonbiri](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q)
+* [Shun Moriya](https://twitter.com/moriya_zx25r)

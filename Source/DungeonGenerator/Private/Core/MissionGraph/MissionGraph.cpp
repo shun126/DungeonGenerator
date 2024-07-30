@@ -21,14 +21,14 @@ Algorithm for generating keys and doors
 
 部屋の装飾アルゴリズム
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #include "MissionGraph.h"
 #include "../Generator.h"
-#include "../DrawLots.h"
+#include "../Helper/DrawLots.h"
 #include <vector>
 
 namespace dungeon
@@ -90,10 +90,7 @@ namespace dungeon
 	void MissionGraph::Generate(const std::shared_ptr<const Room>& room) noexcept
 	{
 #if 0
-		{
-			const FString path = FPaths::ProjectSavedDir() + TEXT("/dungeon_aisle.txt");
-			mGenerator->DumpAisle(TCHAR_TO_UTF8(*path));
-		}
+		mGenerator->DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_aisle.md");
 #endif
 		// Choose an aisle close to the entrance
 		if (Aisle* aisle = SelectAisle(room))
@@ -119,7 +116,6 @@ namespace dungeon
 					keyRoom->SetItem(Room::Item::Key);
 				}
 
-				// TODO:DrawLots内で乱数を使っています
 				const auto lockRoom = DrawLots(random, keyRooms.begin(), keyRooms.end(), [](const std::shared_ptr<const Room>& room)
 					{
 						const uint32_t depthFromStart = room->GetDepthFromStart();
@@ -141,6 +137,7 @@ namespace dungeon
 
 	/*
 	Choose an aisle close to the entrance.
+	入り口に近い通路を選ぶ。
 	*/
 	Aisle* MissionGraph::SelectAisle(const std::shared_ptr<const Room>& room) const noexcept
 	{
@@ -160,8 +157,19 @@ namespace dungeon
 			}
 		);
 
-		// TODO:抽選してください
-		const size_t size = aisles.size();
-		return size > 0 ? aisles[0] : nullptr;
+		if (aisles.size() <= 0)
+		{
+			return nullptr;
+		}
+		else if (aisles.size() == 1)
+		{
+			return aisles[0];
+		}
+		else
+		{
+			const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
+			const size_t index = random->Get(aisles.size());
+			return aisles[index];
+		}
 	}
 }

@@ -1,6 +1,6 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -62,6 +62,14 @@ namespace dungeon
 		return *this;
 	}
 
+	inline void Random::GetSeeds(uint32_t& x, uint32_t& y, uint32_t& z, uint32_t& w) const noexcept
+	{
+		x = mX;
+		y = mY;
+		z = mZ;
+		w = mW;
+	}
+
 	inline void Random::SetSeed(const uint32_t seed)
 	{
 		mX = 123456789;
@@ -110,15 +118,11 @@ namespace dungeon
 		}
 		else if constexpr (std::is_same<T, uint64_t>())
 		{
-			const uint64_t high = static_cast<uint64_t>(GetU32()) << 32ULL;
-			const uint64_t low = static_cast<uint64_t>(GetU32());
-			return high | low;
+			return GetU64();
 		}
 		else if constexpr (std::is_same<T, int64_t>())
 		{
-			const uint64_t high = static_cast<uint64_t>(GetU32()) << 32ULL;
-			const uint64_t low = static_cast<uint64_t>(GetU32());
-			return static_cast<int64_t>(high | low);
+			return static_cast<int64_t>(GetU64());
 		}
 		else if constexpr (std::is_integral<T>::value)
 		{
@@ -155,7 +159,6 @@ namespace dungeon
 	template <typename T>
 	inline T Random::Get(const T from, const T to)
 	{
-		check(from <= to);
 		if constexpr (std::is_floating_point<T>::value)
 		{
 			const T value = Get<T>();
@@ -183,5 +186,12 @@ namespace dungeon
 		mZ = mW;
 		mW = (mW ^ (mW >> 19)) ^ (t ^ (t >> 8));
 		return mW;
+	}
+
+	inline uint64_t Random::GetU64()
+	{
+		const uint64_t upper = static_cast<uint64_t>(GetU32()) << 32ULL;
+		const uint64_t lower = static_cast<uint64_t>(GetU32());
+		return upper | lower;
 	}
 }

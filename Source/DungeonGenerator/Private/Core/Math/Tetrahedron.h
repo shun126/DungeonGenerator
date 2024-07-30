@@ -1,9 +1,9 @@
 /**
 四面体 ヘッダーファイル
 
-\cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -52,7 +52,7 @@ namespace dungeon
 
 		/**
 		値のハッシュ値を取得します
-		\return		値のハッシュ値
+		@return		値のハッシュ値
 		*/
 		uint32_t GetHash() const noexcept;
 
@@ -65,6 +65,11 @@ namespace dungeon
 		等価性の判定
 		*/
 		bool operator!=(const Tetrahedron& t) const noexcept;
+
+		/**
+		等価性の判定
+		*/
+		bool operator<(const Tetrahedron& t) const noexcept;
 
 		/**
 		頂点を取得します

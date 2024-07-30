@@ -1,48 +1,52 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #pragma once
-#include "Decorator/DungeonInteriorDecorator.h"
+#include "DungeonGridSize.h"
 #include "Mission/DungeonRoomItem.h"
 #include "Mission/DungeonRoomParts.h"
 #include "Mission/DungeonRoomProps.h"
-#include "SubLevel/DungeonRoomRegister.h"
+#include <CoreMinimal.h>
 #include <EngineUtils.h>
 #include <algorithm>
 #include <functional>
 #include <list>
 #include <memory>
+#include <unordered_map>
 
 // Forward declaration
-class CDungeonInteriorUnplaceableBounds;
+class ADungeonDoorBase;
+class ADungeonRoomSensorBase;
 class UDungeonGenerateParameter;
+class ANavMeshBoundsVolume;
+class APlayerStart;
+class AStaticMeshActor;
 class ULevelStreamingDynamic;
 class UStaticMesh;
-class ADungeonRoomSensor;
-class ANavMeshBoundsVolume;
-class AStaticMeshActor;
 
 namespace dungeon
 {
 	class Identifier;
 	class Generator;
+	class Grid;
 	class Random;
 	class Room;
+	class Voxel;
 }
 
-/*
-Dungeon generate class
+/**
+Dungeon generate
+ダンジョン生成
 */
 class DUNGEONGENERATOR_API CDungeonGeneratorCore final : public std::enable_shared_from_this<CDungeonGeneratorCore>
 {
 public:
 	using AddStaticMeshEvent = std::function<void(UStaticMesh*, const FTransform&)>;
-	using AddPillarStaticMeshEvent = std::function<void(uint32_t, UStaticMesh*, const FTransform&)>;
+	using AddPillarStaticMeshEvent = std::function<void(UStaticMesh*, const FTransform&)>;
 	using ResetActorEvent = std::function<void(UClass*, const FTransform&)>;
-	using ResetDoorEvent = std::function<void(AActor*, EDungeonRoomProps)>;
 
 public:
 	/**
@@ -69,17 +73,15 @@ public:
 	void OnAddWall(const AddStaticMeshEvent& func);
 	void OnAddRoof(const AddStaticMeshEvent& func);
 	void OnAddPillar(const AddPillarStaticMeshEvent& func);
-	void OnResetTorch(const ResetActorEvent& func);
-	//void OnAddChandelier(const ResetActorEvent& func);
-	void OnResetDoor(const ResetDoorEvent& func);
-
 
 	/**
 	Generate dungeon
-	\param[in]	asset	UDungeonGenerateParameter
-	\return		If false, generation fails
+	@param[in]	parameter		UDungeonGenerateParameter
+	@param[in]	origin			原点にする座標
+	@param[in]	hasAuthority	HasAuthority
+	@return		If false, generation fails
 	*/
-	bool Create(const UDungeonGenerateParameter* asset);
+	bool Create(const UDungeonGenerateParameter* parameter, const FVector& origin, const bool hasAuthority);
 
 	/**
 	Clear added terrain and objects
@@ -88,66 +90,51 @@ public:
 
 	/**
 	Get start position
-	\return		Coordinates of start position
+	@return		Coordinates of start position
 	*/
 	FVector GetStartLocation() const;
 
 	/**
 	Get start Transform
-	\return		Transform of starting position
+	@return		Transform of starting position
 	*/
 	FTransform GetStartTransform() const;
 
 	/**
 	Get goal position
-	\return		Goal position coordinates
+	@return		Goal position coordinates
 	*/
 	FVector GetGoalLocation() const;
 
 	/**
 	Get goal Transform
-	\return		Transform of goal position
+	@return		Transform of goal position
 	*/
 	FTransform GetGoalTransform() const;
 
 	/**
 	Get a bounding box covering the entire generated dungeon
-	\return		bounding box
+	@return		bounding box
 	*/
 	FBox CalculateBoundingBox() const;
 
 	/**
 	Move APlayerStart to the starting point
 	*/
-	void MovePlayerStart();
+	void MovePlayerStart(TArray<APlayerStart*>& startPoints);
 
-	/**
-	Generates a minimap texture of the generated dungeon
-	\param[out]		worldToTextureScale		Scale value to convert from world coordinates to texture coordinates
-	\param[in]		textureWidthHeight		Width of texture to be generated (height equals width)
-	\param[in]		currentLevel			Criteria for floor height to be generated
-	\return			texture object
-	*/
-	UTexture2D* GenerateMiniMapTextureWithSize(uint32_t& worldToTextureScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
+	void MovePlayerStartPIE(const FVector& origin, const TArray<APlayerStart*>& startPoints);
 
-	/**
-	Generates a minimap texture of the generated dungeon
-	\param[out]		worldToTextureScale		Scale value to convert from world coordinates to texture coordinates
-	\param[in]		textureScale			Scale of texture to be generated (height equals width)
-	\param[in]		currentLevel			Criteria for floor height to be generated
-	\return			texture object
-	*/
-	UTexture2D* GenerateMiniMapTextureWithScale(uint32_t& worldToTextureScale, uint32_t textureScale, uint32_t currentLevel) const;
 
 	/**
 	Calculate CRC32
-	\return		CRC32
+	@return		CRC32
 	*/
 	uint32_t CalculateCRC32() const noexcept;
 
 	/**
 	Get dungeon generation core object.
-	\return		dungeon::Generator
+	@return		dungeon::Generator
 	*/
 	std::shared_ptr<const dungeon::Generator> GetGenerator() const;
 
@@ -156,28 +143,57 @@ public:
 #endif
 
 private:
-	bool CreateImplement_AddRoomAsset(const UDungeonGenerateParameter* parameter, const std::shared_ptr<dungeon::Room>& room);
-	bool CreateImplement_AddRoomAsset(const FDungeonRoomRegister& roomRegister, const std::shared_ptr<dungeon::Room>& room, const float gridSize);
-	void CreateImplement_AddTerrain();
-	void CreateImplement_AddFloorAndSlope(const UDungeonGenerateParameter* parameter, const FIntVector& location);
-	void CreateImplement_AddWall(const UDungeonGenerateParameter* parameter, const FIntVector& location);
-	void CreateImplement_AddPillarAndTorch(std::vector<FSphere>& spawnedTorchBounds, const UDungeonGenerateParameter* parameter, const FIntVector& location);
-	void CreateImplement_AddDoor(const UDungeonGenerateParameter* parameter, const FIntVector& location);
-	void CreateImplement_AddRoof(const UDungeonGenerateParameter* parameter, const FIntVector& location);
+	////////////////////////////////////////////////////////////////////////////
+	// Terrain
+	void CreateImplement_AddTerrain(const FVector& origin, std::unordered_map<const dungeon::Room*, ADungeonRoomSensorBase*>& roomSensorCache, const bool hasAuthority);
+		struct CreateImplementParameter final
+	{
+		const UDungeonGenerateParameter* mParameter;
+		const FIntVector& mGridLocation;
+		size_t mGridIndex;
+		const dungeon::Grid& mGrid;
+		const FVector& mPosition;
+		const FVector& mGridSize;
+		const FVector& mGridHalfSize;
+		const FVector& mCenterPosition;
+	};
+	void CreateImplement_AddFloorAndSlope(const CreateImplementParameter& cp);
+	void CreateImplement_AddWall(const CreateImplementParameter& cp);
+	void CreateImplement_AddRoof(const CreateImplementParameter& cp);
+	void CreateImplement_AddPillarAndTorch(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority);
+	void CreateImplement_AddDoor(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority);
+	bool CanAddDoor(ADungeonRoomSensorBase* dungeonRoomSensorBase, const FIntVector& location, const dungeon::Grid& grid) const;
+
+	////////////////////////////////////////////////////////////////////////////
+	// Room sensor
+	void CreateImplement_PrepareSpawnRoomSensor(const FVector& origin, std::unordered_map<const dungeon::Room*, ADungeonRoomSensorBase*>& roomSensorCache);
+	void CreateImplement_FinishSpawnRoomSensor(std::unordered_map<const dungeon::Room*, ADungeonRoomSensorBase*>& roomSensorCache);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Interior
 
 	////////////////////////////////////////////////////////////////////////////
-	AActor* SpawnActor(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
-	template<typename T = AActor> T* SpawnActor(const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
-	template<typename T = AActor> T* SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+	// Navigation
+	void CreateImplement_Navigation(const FVector& origin);
 
-	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
-	void SpawnActorOnFloor(UClass* actorClass, const FTransform& transform) const;
-	void SpawnDoorActor(UClass* actorClass, const FTransform& transform, EDungeonRoomProps props) const;
-	AActor* SpawnTorchActor(std::vector<FSphere>& spawnedTorchBounds, const FVector& wallNormal, UClass* actorClass, const FName& folderPath, const FTransform& transform, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn) const;
-	ADungeonRoomSensor* SpawnRoomSensorActor(
+
+	////////////////////////////////////////////////////////////////////////////
+	// アクターのスポーンと破棄
+	static AActor* SpawnActorImpl(UWorld* world, UClass* actorClass, const FName& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters);
+
+	AActor* SpawnActorImpl(UClass* actorClass, const FName& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters) const;
+	template<typename T = AActor> T* SpawnActorImpl(UClass* actorClass, const FName& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+	template<typename T = AActor> T* SpawnActorDeferredImpl(UClass* actorClass, const FName& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+
+	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+
+	AActor* SpawnActorOnFloor(UClass* actorClass, const FTransform& transform) const;
+
+	ADungeonDoorBase* SpawnDoorActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const EDungeonRoomProps props) const;
+
+	AActor* SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+
+	ADungeonRoomSensorBase* SpawnRoomSensorActorDeferred(
 		UClass* actorClass,
 		const dungeon::Identifier& identifier,
 		const FVector& center,
@@ -187,41 +203,35 @@ private:
 		uint8 branchId,
 		const uint8 depthFromStart,
 		const uint8 deepestDepthFromStart) const;
-
-	void SpawnRecastNavMesh();
+	static void FinishRoomSensorActorSpawning(ADungeonRoomSensorBase* dungeonRoomSensor);
 
 	void DestroySpawnedActors() const;
 	static void DestroySpawnedActors(UWorld* world);
 
+	void SpawnRecastNavMesh();
+
 	////////////////////////////////////////////////////////////////////////////
+	// アクターの検索と更新
 	template<typename T = AActor> T* FindActor();
 	template<typename T = AActor> const T* FindActor() const;
+	template<typename T = AActor> void EachActors(std::function<bool(T*)> function);
+	template<typename T = AActor> void EachActors(std::function<bool(const T*)> function) const;
 
 	////////////////////////////////////////////////////////////////////////////
-	template<typename T = AActor> void EachActors(std::function<void(T*)> function);
-	template<typename T = AActor> void EachActors(std::function<void(const T*)> function) const;
+	// Streaming Level
 
 	////////////////////////////////////////////////////////////////////////////
-	bool IsStreamLevelRequested(const FSoftObjectPath& levelPath) const;
-	void RequestStreamLevel(const FSoftObjectPath& levelPath, const FVector& levelLocation);
-	void FlushLoadStreamLevels();
-	void AsyncLoadStreamLevels(const bool bShouldBlockOnLoad = false);
-#if WITH_EDITOR
-	void SyncLoadStreamLevels();
-#endif
-	void UnloadStreamLevels();
-
-	void LoadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const FTransform& transform);
-	void UnloadStreamLevelImplement(UWorld* world, const FSoftObjectPath& path, const bool shouldBlockOnUnload);
+	// ミニマップ
 
 	////////////////////////////////////////////////////////////////////////////
-	UTexture2D* GenerateMiniMapTexture(uint32_t worldToTextureScale, uint32_t textureWidthHeight, uint32_t currentLevel) const;
+	// 乱数
+	std::shared_ptr<dungeon::Random> GetSynchronizedRandom() noexcept;
+	std::shared_ptr<dungeon::Random> GetSynchronizedRandom() const noexcept;
+	const std::shared_ptr<dungeon::Random>& GetRandom() noexcept;
+	const std::shared_ptr<dungeon::Random>& GetRandom() const noexcept;
 
 	////////////////////////////////////////////////////////////////////////////
-	std::shared_ptr<dungeon::Random> GetRandom() noexcept;
-	std::shared_ptr<dungeon::Random> GetRandom() const noexcept;
-
-	////////////////////////////////////////////////////////////////////////////
+	// デバッグ情報
 #if WITH_EDITOR
 	void DrawRoomAisleInformation() const;
 	void DrawVoxelGridType() const;
@@ -231,41 +241,28 @@ private:
 	TWeakObjectPtr<UWorld> mWorld;
 	TWeakObjectPtr<const UDungeonGenerateParameter> mParameter;
 	std::shared_ptr<dungeon::Generator> mGenerator;
+	std::shared_ptr<dungeon::Random> mLocalRandom;
 
 	AddStaticMeshEvent mOnAddFloor;
 	AddStaticMeshEvent mOnAddSlope;
 	AddStaticMeshEvent mOnAddWall;
 	AddStaticMeshEvent mOnAddRoof;
-	AddPillarStaticMeshEvent mOnResetPillar;
+	AddPillarStaticMeshEvent mOnAddPillar;
 
-	ResetActorEvent mOnResetTorch;
-	ResetDoorEvent mOnResetDoor;
 
-	std::shared_ptr<CDungeonInteriorUnplaceableBounds> mInteriorUnplaceableBounds;
-	FDungeonInteriorDecorator mAisleInteriorDecorator;
-	FDungeonInteriorDecorator mSlopeInteriorDecorator;
-	FDungeonInteriorDecorator mRoomInteriorDecorator;
-
-	struct LoadStreamLevelParameter final
-	{
-		FSoftObjectPath mPath;
-		FVector mLocation;
-
-		LoadStreamLevelParameter() = default;
-		LoadStreamLevelParameter(const FSoftObjectPath& path, const FVector& location)
-			: mPath(path), mLocation(location)
-		{
-		}
-	};
-
-	std::list<LoadStreamLevelParameter> mRequestLoadStreamLevels;
-	TArray<TSoftObjectPtr<ULevelStreamingDynamic>> mLoadedStreamLevels;
-
+	// 生成時のCRC32
+	mutable uint32_t mCrc32AtCreation = ~0;
 
 	// friend class
 	friend class ADungeonGenerateActor;
 	friend class FDungeonGenerateEditorModule;
 };
+
+inline const FName& CDungeonGeneratorCore::GetDungeonGeneratorTag()
+{
+	static const FName DungeonGeneratorTag(TEXT("DungeonGenerator"));
+	return DungeonGeneratorTag;
+}
 
 inline void CDungeonGeneratorCore::OnAddFloor(const AddStaticMeshEvent& func)
 {
@@ -289,50 +286,31 @@ inline void CDungeonGeneratorCore::OnAddRoof(const AddStaticMeshEvent& func)
 
 inline void CDungeonGeneratorCore::OnAddPillar(const AddPillarStaticMeshEvent& func)
 {
-	mOnResetPillar = func;
+	mOnAddPillar = func;
 }
 
-inline void CDungeonGeneratorCore::OnResetTorch(const ResetActorEvent& func)
+inline AActor* CDungeonGeneratorCore::SpawnActorImpl(UClass* actorClass, const FName& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters) const
 {
-	mOnResetTorch = func;
-}
-
-#if 0
-inline void CDungeonGeneratorCore::OnAddChandelier(const ResetActorEvent& func)
-{
-	mOnResetChandelier = func;
-}
-#endif
-
-inline void CDungeonGeneratorCore::OnResetDoor(const ResetDoorEvent& func)
-{
-	mOnResetDoor = func;
+	return SpawnActorImpl(mWorld.Get(), actorClass, folderPath, transform, actorSpawnParameters);
 }
 
 template<typename T>
-inline T* CDungeonGeneratorCore::SpawnActor(const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+inline T* CDungeonGeneratorCore::SpawnActorImpl(UClass* actorClass, const FName& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
-	return Cast<T>(SpawnActor(T::StaticClass(), folderPath, transform, spawnActorCollisionHandlingMethod));
+	FActorSpawnParameters actorSpawnParameters;
+	actorSpawnParameters.Owner = ownerActor;
+	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
+	return Cast<T>(SpawnActorImpl(actorClass, folderPath, transform, actorSpawnParameters));
 }
 
 template<typename T>
-inline T* CDungeonGeneratorCore::SpawnActorDeferred(UClass* actorClass, const FName& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+inline T* CDungeonGeneratorCore::SpawnActorDeferredImpl(UClass* actorClass, const FName& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
-	UWorld* world = mWorld.Get();
-	if (!IsValid(world))
-		return nullptr;
-
-	T* actor = world->SpawnActorDeferred<T>(actorClass, transform, nullptr, nullptr, spawnActorCollisionHandlingMethod);
-	if (!IsValid(actor))
-		return nullptr;
-
-#if WITH_EDITOR
-	actor->SetFolderPath(folderPath);
-#endif
-
-	actor->Tags.Add(GetDungeonGeneratorTag());
-
-	return actor;
+	FActorSpawnParameters actorSpawnParameters;
+	actorSpawnParameters.Owner = ownerActor;
+	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
+	actorSpawnParameters.bDeferConstruction = true;
+	return Cast<T>(SpawnActorImpl(actorClass, folderPath, transform, actorSpawnParameters));
 }
 
 template<typename T>
@@ -362,27 +340,29 @@ inline const T* CDungeonGeneratorCore::FindActor() const
 }
 
 template<typename T>
-inline void CDungeonGeneratorCore::EachActors(std::function<void(T*)> function)
+inline void CDungeonGeneratorCore::EachActors(std::function<bool(T*)> function)
 {
 	UWorld* world = mWorld.Get();
 	if (IsValid(world))
 	{
 		for (TActorIterator<T> iterator(world); iterator; ++iterator)
 		{
-			function(*iterator);
+			if (!function(*iterator))
+				break;
 		}
 	}
 }
 
 template<typename T>
-inline void CDungeonGeneratorCore::EachActors(std::function<void(const T*)> function) const
+inline void CDungeonGeneratorCore::EachActors(std::function<bool(const T*)> function) const
 {
 	UWorld* world = mWorld.Get();
 	if (IsValid(world))
 	{
 		for (TActorIterator<const T> iterator(world); iterator; ++iterator)
 		{
-			function(*iterator);
+			if (!function(*iterator))
+				break;
 		}
 	}
 }

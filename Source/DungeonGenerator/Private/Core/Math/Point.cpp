@@ -1,14 +1,14 @@
 /**
 点に関するソースファイル
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #include "Point.h"
 #include "Math.h"
-#include "../Room.h"
+#include "../RoomGeneration/Room.h"
 #include <cmath>
 #include <string>
 

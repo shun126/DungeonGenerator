@@ -8,12 +8,12 @@ All Rights Reserved.
 #pragma once
 #if !defined(DUNGENERATOR_PLUGIN_INFOMATION_DETECTED)
 #define DUNGENERATOR_PLUGIN_INFOMATION_DETECTED
-#define DUNGENERATOR_PLUGIN_FILE_VERSION "3"
-#define DUNGENERATOR_PLUGIN_VERSION "14"
-#define DUNGENERATOR_PLUGIN_VERSION_NAME "1.5.0"
+#define DUNGENERATOR_PLUGIN_FILE_VERSION 3
+#define DUNGENERATOR_PLUGIN_VERSION 0
+#define DUNGENERATOR_PLUGIN_VERSION_NAME "1.0.0"
 #define DUNGENERATOR_PLUGIN_FRIENDLY_NAME "Procedural 3D Dungeon Generator"
 #define DUNGENERATOR_PLUGIN_DESCRIPTION "Procedural 3D dungeon generator plugin. Easy generation of levels, mini-maps and missions."
 #define DUNGENERATOR_PLUGIN_DOCS_URL "https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki"
 #define DUNGENERATOR_PLUGIN_SUPPORT_URL "https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions/"
-#define DUNGENERATOR_PLUGIN_BETA_VERSION "true"
+#define DUNGENERATOR_PLUGIN_BETA_VERSION true
 #endif
