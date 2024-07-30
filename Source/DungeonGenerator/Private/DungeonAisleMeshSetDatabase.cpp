@@ -1,13 +1,23 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #include "DungeonAisleMeshSetDatabase.h"
 #include "Core/Math/Random.h"
 
-const FDungeonAisleMeshSet* UDungeonAisleMeshSetDatabase::Select(const std::shared_ptr<dungeon::Random>& random) const
+#if WITH_EDITOR
+#include "Helper/DungeonDebugUtility.h"
+#endif
+
+const FDungeonMeshSet* UDungeonAisleMeshSetDatabase::AtImplement(const size_t index) const
+{
+	const int32 size = Parts.Num();
+	return (size > 0) ? &Parts[index % size] : nullptr;
+}
+
+const FDungeonMeshSet* UDungeonAisleMeshSetDatabase::SelectImplement(const std::shared_ptr<dungeon::Random>& random) const
 {
 	const int32 size = Parts.Num();
 	if (size <= 0)
@@ -17,7 +27,19 @@ const FDungeonAisleMeshSet* UDungeonAisleMeshSetDatabase::Select(const std::shar
 	return &Parts[index];
 }
 
-const FDungeonRoomMeshSet* UDungeonAisleMeshSetDatabase::SelectImplement(const std::shared_ptr<dungeon::Random>& random) const
+#if WITH_EDITOR
+FString UDungeonAisleMeshSetDatabase::DumpToJson(const uint32 indent) const
 {
-	return Select(random);
+	FString json = dungeon::Indent(indent) + TEXT("\"Parts\":[\n");
+	for (int32 i = 0; i < Parts.Num(); ++i)
+	{
+		if (i != 0)
+			json += TEXT(",");
+		json += dungeon::Indent(indent + 1) + TEXT("{\n");
+		json += Parts[i].DumpToJson(indent + 2) + TEXT("\n");
+		json += dungeon::Indent(indent + 1) + TEXT("}\n");
+	}
+	json += dungeon::Indent(indent) + TEXT("]");
+	return json;
 }
+#endif

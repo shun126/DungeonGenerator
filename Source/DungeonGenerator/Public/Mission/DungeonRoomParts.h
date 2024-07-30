@@ -1,15 +1,19 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #pragma once
 #include <CoreMinimal.h>
+#include "DungeonRoomParts.generated.h"
 
 /**
 Type of room parts
 Same content as dungeon::Room::Parts
+
+ルームパーツの種類
+dungeon::Room::Parts と同じ内容です。
 */
 UENUM(BlueprintType)
 enum class EDungeonRoomParts : uint8
@@ -24,6 +28,9 @@ enum class EDungeonRoomParts : uint8
 /**
 Type of room parts
 Same content as dungeon::Room::Parts
+
+ルームパーツの種類
+dungeon::Room::Parts と同じ内容です。
 */
 UENUM(BlueprintType)
 enum class EDungeonRoomLocatorParts : uint8
@@ -41,8 +48,8 @@ static constexpr uint8 DungeonRoomPartsSize = static_cast<uint8>(EDungeonRoomPar
 /**
 Get the symbol name of a room part.
 Same content as dungeon::Room::Parts
-\param[in]	parts	EDungeonRoomParts
-\return		Symbol name for EDungeonRoomParts
+@param[in]	parts	EDungeonRoomParts
+@return		Symbol name for EDungeonRoomParts
 */
 extern const FString& GetDungeonRoomPartsName(const EDungeonRoomParts parts);
 

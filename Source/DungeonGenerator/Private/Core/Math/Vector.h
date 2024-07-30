@@ -1,8 +1,8 @@
 /**
 ベクターに関するヘッダーファイル
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 

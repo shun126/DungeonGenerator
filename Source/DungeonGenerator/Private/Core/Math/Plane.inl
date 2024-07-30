@@ -1,8 +1,8 @@
 /**
 平面に関するヘッダーファイル
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -107,6 +107,23 @@ namespace dungeon
 	inline double Plane::Distance(const FVector& vector) const noexcept
 	{
 		return mD + FVector::DotProduct(mNormal, vector);
+	}
+
+	inline bool Plane::Intersect(const FVector& rayDirection, FVector& q) const noexcept
+	{
+		const double denom = FVector::DotProduct(rayDirection, mNormal);
+		if (denom != 0.f)
+		{
+			const FVector planeOrigin = mNormal * mD;
+			const double t = FVector::DotProduct(planeOrigin, mNormal) / denom;
+			if (t >= 0.0f)
+			{
+				q = rayDirection * t;
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	inline bool Plane::Intersect(const FVector& rayOrigin, const FVector& rayDirection, FVector& q) const noexcept

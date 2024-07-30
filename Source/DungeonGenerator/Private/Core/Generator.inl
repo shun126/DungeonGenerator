@@ -1,8 +1,8 @@
 /**
 ダンジョン生成ヘッダーファイル
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -35,11 +35,12 @@ namespace dungeon
 	}
 
 
-	inline void Generator::EachAisle(std::function<void(const Aisle& edge)> func) const noexcept
+	inline void Generator::EachAisle(std::function<bool(const Aisle& edge)> func) const noexcept
 	{
 		for (const auto& aisle : mAisles)
 		{
-			func(aisle);
+			if (!func(aisle))
+				break;
 		}
 	}
 
@@ -108,5 +109,15 @@ namespace dungeon
 	inline uint8_t Generator::GetDeepestDepthFromStart() const noexcept
 	{
 		return mDistance;
+	}
+
+	inline void Generator::PreGenerateVoxel(std::function<void(const std::shared_ptr<Voxel>&)> func) noexcept
+	{
+		mOnPreGenerateVoxel = func;
+	}
+
+	inline void Generator::PostGenerateVoxel(std::function<void(const std::shared_ptr<Voxel>&)> func) noexcept
+	{
+		mOnPostGenerateVoxel = func;
 	}
 }

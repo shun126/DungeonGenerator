@@ -1,11 +1,11 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #include "DungeonRoomMeshSetDatabaseFactory.h"
-#include "../../DungeonGenerator/Public/DungeonRoomMeshSetDatabase.h"
+#include "DungeonRoomMeshSetDatabase.h"
 
 UDungeonRoomMeshSetDatabaseFactory::UDungeonRoomMeshSetDatabaseFactory()
 {

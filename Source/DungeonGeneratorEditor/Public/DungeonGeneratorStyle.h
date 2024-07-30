@@ -1,6 +1,6 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -8,9 +8,12 @@ All Rights Reserved.
 #include "CoreMinimal.h"
 #include "Styling/SlateStyle.h"
 
-class FDungeonGeneratorStyle
+class FDungeonGeneratorStyle final
 {
 public:
+	FDungeonGeneratorStyle() = default;
+	~FDungeonGeneratorStyle() = default;
+
 	static void Initialize();
 	static void Shutdown();
 	static void ReloadTextures();

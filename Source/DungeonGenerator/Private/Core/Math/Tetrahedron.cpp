@@ -1,9 +1,9 @@
 /**
 四面体 ソースファイル
 
-\cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -162,6 +162,19 @@ namespace dungeon
 	bool Tetrahedron::operator!=(const Tetrahedron& other) const noexcept
 	{
 		return !(*this == other);
+	}
+
+	bool Tetrahedron::operator<(const Tetrahedron& t) const noexcept
+	{
+		double selfLength = 0.;
+		for (const auto& sp : mPoints)
+			selfLength += sp->SquaredLength();
+
+		double otherLength = 0.;
+		for (const auto& sp : t.mPoints)
+			otherLength += sp->SquaredLength();
+
+		return selfLength < otherLength;
 	}
 
 	const std::shared_ptr<const Point>& Tetrahedron::operator[](const size_t index) const noexcept
