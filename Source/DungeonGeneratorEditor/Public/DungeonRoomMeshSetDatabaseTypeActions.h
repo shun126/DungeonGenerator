@@ -1,6 +1,6 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -11,7 +11,7 @@ All Rights Reserved.
 class FDungeonRoomMeshSetDatabaseTypeActions : public FAssetTypeActions_Base
 {
 public:
-	FDungeonRoomMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory);
+	explicit FDungeonRoomMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory);
 	virtual ~FDungeonRoomMeshSetDatabaseTypeActions() = default;
 
 	// FAssetTypeActions_Base overrides
@@ -26,28 +26,3 @@ public:
 private:
 	EAssetTypeCategories::Type mAssetCategory;
 };
-
-inline FDungeonRoomMeshSetDatabaseTypeActions::FDungeonRoomMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory)
-	: mAssetCategory(InAssetCategory)
-{
-}
-
-inline FColor FDungeonRoomMeshSetDatabaseTypeActions::GetTypeColor() const
-{
-	return FColor::Emerald;
-}
-
-inline void FDungeonRoomMeshSetDatabaseTypeActions::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
-{
-	FSimpleAssetEditor::CreateEditor(EToolkitMode::Standalone, EditWithinLevelEditor, InObjects);
-}
-
-inline FText FDungeonRoomMeshSetDatabaseTypeActions::GetName() const
-{
-	return FText::FromName(TEXT("DungeonRoomMeshSetDatabase"));
-}
-
-inline uint32 FDungeonRoomMeshSetDatabaseTypeActions::GetCategories()
-{
-	return mAssetCategory;
-}

@@ -1,11 +1,12 @@
 /**
-Debug function header files
+@brief	Debug function header files
 
 To prevent conflicts with other Windows macros,
 do not include this file from the header.
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@file		Debug.h
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -53,21 +54,23 @@ DECLARE_LOG_CATEGORY_EXTERN(DungeonGeneratorLogger, Log, All);
 
 namespace dungeon
 {
-	/**
-	@addtogroup Debug
-	@{
-	*/
-
 	/*!
 	Output to VisualStudio output window
 	Assumed to be included only from source files, so static functions are fine.
 	*/
 	extern void OutputDebugStringWithArgument(const char* pszFormat, ...);
 
+	extern const FString& GetDebugDirectory();
+
+	extern const std::string& GetDebugDirectoryString();
+
+	extern void CreateDebugDirectory();
+
 	//! Microsoft Windows Bitmap Image Implementation 
 	namespace bmp
 	{
 #pragma pack(1)
+		//! Microsoft Windows Bitmap file header
 		struct BMPFILEHEADER
 		{
 			char bfType[2];
@@ -77,6 +80,7 @@ namespace dungeon
 			uint32_t bfOffBits;
 		};
 
+		//! Microsoft Windows Bitmap infomation header
 		struct BMPINFOHEADER
 		{
 			uint32_t biSize;
@@ -92,6 +96,7 @@ namespace dungeon
 			uint32_t biClrImportant;
 		};
 
+		//! Microsoft Windows Bitmap pixel
 		struct RGBCOLOR
 		{
 			uint8_t rgbBlue;
@@ -101,13 +106,18 @@ namespace dungeon
 #pragma pack()
 
 		/**
-		Microsoft Windows Bitmap canvas class
+		@brief Windows Bitmap canvas class
 		*/
 		class Canvas
 		{
 		public:
+			//! Create Canvas class
 			Canvas() noexcept;
+
+			//! Create Canvas class
 			Canvas(const uint32_t width, const uint32_t height) noexcept;
+
+			//! Delete Canvas class
 			virtual ~Canvas() = default;
 
 			//! Generate image data
@@ -135,8 +145,4 @@ namespace dungeon
 			std::unique_ptr<RGBCOLOR[]> mRgbImage;
 		};
 	}
-
-	/**
-	@}
-	*/
 }

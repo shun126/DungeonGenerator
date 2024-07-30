@@ -1,12 +1,15 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #include "DungeonBlueprint.h"
 #include "PluginInfomation.h"
+#include "SubActor/DungeonRoomSensorBase.h"
 #include "Core/Debug/BuildInfomation.h"
+#include <GameFramework/Pawn.h>
+#include <Kismet/GameplayStatics.h>
 #include <Math/UnrealMathUtility.h>
 
 const FString& UDungeonBlueprint::GetPluginVersion() noexcept
@@ -54,4 +57,24 @@ const FString& UDungeonBlueprint::GetLicenseType() noexcept
 FVector2D UDungeonBlueprint::TransformWorldToTexture(const FVector worldLocation, const float worldToTextureScale) noexcept
 {
 	return FVector2D(worldLocation.X, worldLocation.Y) * worldToTextureScale;
+}
+
+ADungeonRoomSensorBase* UDungeonBlueprint::FindDungeonRoomSensorByLocation(const UObject* worldContextObject, const FVector location) noexcept
+{
+	TArray<AActor*> actors;
+	UGameplayStatics::GetAllActorsOfClass(worldContextObject, ADungeonRoomSensorBase::StaticClass(), actors);
+	for (AActor* actor : actors)
+	{
+		ADungeonRoomSensorBase* dungeonRoomSensorBase = static_cast<ADungeonRoomSensorBase*>(actor);
+		const FBox& bounding = dungeonRoomSensorBase->GetRoomSize();
+		if (bounding.IsInsideOrOn(location))
+			return dungeonRoomSensorBase;
+	}
+	return nullptr;
+}
+
+ADungeonRoomSensorBase* UDungeonBlueprint::FindDungeonRoomSensorFromPlayer(const UObject* worldContextObject, const int32 playerIndex) noexcept
+{
+	const APawn* pawn = UGameplayStatics::GetPlayerPawn(worldContextObject, playerIndex);
+	return IsValid(pawn) ? FindDungeonRoomSensorByLocation(worldContextObject, pawn->GetActorLocation()) : nullptr;
 }

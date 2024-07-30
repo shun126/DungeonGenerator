@@ -1,6 +1,6 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
@@ -9,6 +9,9 @@ All Rights Reserved.
 #include <Factories/Factory.h>
 #include "DungeonAisleMeshSetDatabaseFactory.generated.h"
 
+/*
+UDungeonAisleMeshSetDatabaseを生成するファクトリークラス
+*/
 UCLASS()
 class DUNGEONGENERATOREDITOR_API UDungeonAisleMeshSetDatabaseFactory : public UFactory
 {

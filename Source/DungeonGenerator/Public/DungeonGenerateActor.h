@@ -1,12 +1,13 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #pragma once
 #include "Mission/DungeonRoomParts.h"
 #include "Mission/DungeonRoomProps.h"
+#include <CoreMinimal.h>
 #include <GameFramework/Actor.h>
 #include <memory>
 #include "DungeonGenerateActor.generated.h"
@@ -14,19 +15,31 @@ All Rights Reserved.
 class CDungeonGeneratorCore;
 class UDungeonGenerateParameter;
 class UDungeonMiniMapTextureLayer;
-class UDungeonTransactionalHierarchicalInstancedStaticMeshComponent;
+class UInstancedStaticMeshComponent;
+class UHierarchicalInstancedStaticMeshComponent;
 
 namespace dungeon
 {
 	class Room;
 }
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDungeonGeneratorActorSignature, const FTransform&, transform);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDungeonGeneratorDoorSignature, AActor*, doorActor, EDungeonRoomProps, props);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FDungeonGeneratorDelegete, bool, StreamingLevel, EDungeonRoomParts, DungeonRoomParts, const FBox&, RoomRect);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGeneratorActorNotifyGenerationSuccessSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGeneratorActorNotifyGenerationFailureSignature);
 
 /**
-Dungeon generation actor class
+メッシュの生成方法
+*/
+UENUM()
+enum class EDungeonMeshGenerationMethod : uint8
+{
+	StaticMesh,
+	InstancedStaticMesh,
+	HierarchicalInstancedStaticMesh
+};
+
+/**
+Dungeon generation actor
+ダンジョン生成アクター
 */
 UCLASS(Blueprintable, BlueprintType)
 class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor
@@ -46,200 +59,209 @@ public:
 
 	/**
 	Generate new dungeon
+	ダンジョンを生成します
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		void GenerateDungeon();
+	void GenerateDungeon();
 
 	/**
 	Generate new dungeon
+	ダンジョンを生成します
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		void GenerateDungeonWithSeed(const int32 generatedRandomSeed);
+	void GenerateDungeonWithParameter(UDungeonGenerateParameter* DungeonGenerateParameter);
 
 	/**
 	Destroy  dungeon
+	ダンジョンを破棄します
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		void DestroyDungeon();
+	void DestroyDungeon();
 
 	/**
 	Finds the floor from the world Z coordinate
-	\param[in]	z	Z coordinate of world
-	\return		floor
+	高さからダンジョンの階層を検索します
+	@param[in]	z	Z coordinate of world
+	@return			floor
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		int32 FindFloorHeight(const float z) const;
+	int32 FindFloorHeight(const float z) const;
 
 	/**
 	Finds the Z coordinate of the grid from the world Z coordinate
-	\param[in]	z	Z coordinate of world
-	\return		Z coordinate of the grid
+	ワールドのZ座標からボクセルのZ座標を検索します
+	@param[in]	z	Z coordinate of world
+	@return		Z coordinate of the grid
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		int32 FindVoxelHeight(const float z) const;
+	int32 FindVoxelHeight(const float z) const;
 
-	/**
-	Generates a texture layer for the minimap
-	*/
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		UDungeonMiniMapTextureLayer* GenerateMiniMapTextureLayerWithSize(const int32 textureWidth = 512);
-
-	/**
-	Generates a texture layer for the minimap
-	*/
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		UDungeonMiniMapTextureLayer* GenerateMiniMapTextureLayerWithScale(const int32 dotScale = 1);
-
-	/**
-	Get a texture layer for a generated minimap
-	*/
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		UDungeonMiniMapTextureLayer* GetGeneratedMiniMapTextureLayer() const;
 
 	/**
 	Calculate CRC32
-	\return		CRC32
+	ダンジョンのCRC32を計算します
+	@return		CRC32
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-		int32 CalculateCRC32() const noexcept;
+	int32 CalculateCRC32() const noexcept;
+
+#if WITH_EDITOR
+	/*
+	Get CRC32 at generation
+	生成時のCRC32を取得します
+	*/
+	int32 GetGeneratedDungeonCRC32() const noexcept;
+#endif
+
+	/*
+	Calculate the bounding box for the dungeon
+	ダンジョン全体のバウンディングボックスを計算します
+	*/
+	FBox CalculateBoundingBox() const;
+
+	/*
+	Get the largest room size
+	最も大きい部屋のサイズを取得します
+	*/
+	FVector GetRoomMaxSize() const;
+
+	/*
+	Sets the culling distance for InstancedMesh
+	InstancedMeshのカリング距離を設定します
+	*/
+	void SetInstancedMeshCullDistance(const double cullDistance);
 
 	// AActor overrides
 	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;
-
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 #if WITH_EDITOR
 	virtual bool ShouldTickIfViewportsOnly() const override;
 #endif
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
-	static void BeginAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
-
-	static void AddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs, const UStaticMesh* staticMesh, const FTransform& transform);
-
-	static void EndAddInstance(TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*>& meshs);
+	void CreateInstancedMeshComponent(UStaticMesh* staticMesh);
+	void ClearInstancedMeshComponents();
+	void AddInstance(const UStaticMesh* staticMesh, const FTransform& transform);
+	void CommitAddInstance();
 
 	static inline FBox ToWorldBoundingBox(const std::shared_ptr<const dungeon::Room>& room, const float gridSize);
 
 	void PreGenerateImplementation();
-	void PostGenerateImplementation();
 	void DestroyImplementation();
-	void MovePlayerStart();
 
 protected:
+	/*
+	Dungeon generation parameters
+	ダンジョン生成パラメータ
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-		UDungeonGenerateParameter* DungeonGenerateParameter;
-	// TObjectPtr not used for UE4 compatibility
+	TObjectPtr<UDungeonGenerateParameter> DungeonGenerateParameter;
 
 #if WITH_EDITORONLY_DATA
-	//! Generated random number seeds
+	/*
+	Generated random number seeds
+	生成時の乱数の種
+	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
-		int32 GeneratedRandomSeed = 0;
+	int32 GeneratedRandomSeed = 0;
 
-	//! Generated dungeon hash
+	/*
+	Generated dungeon hash
+	生成時のCRC32
+	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
-		int32 GeneratedDungeonCRC32 = 0;
+	int32 GeneratedDungeonCRC32 = 0;
 #endif
 
+	/*
+	PlayerStart is automatically moved to the start room at the start
+	開始時にPlayerStartを自動的にスタート部屋に移動します
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-		bool ReplicatedServerDungeon = false;
+	bool AutoGenerateAtStart = true;
 
+	/*
+	Type of mesh used for dungeon generation
+	ダンジョン生成に使用するメッシュの種類
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-		bool AutoGenerateAtStart = true;
+	EDungeonMeshGenerationMethod DungeonMeshGenerationMethod = EDungeonMeshGenerationMethod::StaticMesh;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-		bool InstancedStaticMesh = false;
-
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator|InstancedStaticMesh")
-		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> FloorMeshs;
-	// TObjectPtr not used for UE4 compatibility
-
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator|InstancedStaticMesh")
-		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> SlopeMeshs;
-	// TObjectPtr not used for UE4 compatibility
-
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator|InstancedStaticMesh")
-		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> WallMeshs;
-	// TObjectPtr not used for UE4 compatibility
-
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator|InstancedStaticMesh")
-		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> RoofMeshs;
-	// TObjectPtr not used for UE4 compatibility
-
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "DungeonGenerator|InstancedStaticMesh")
-		TArray<UDungeonTransactionalHierarchicalInstancedStaticMeshComponent*> PillarMeshs;
-	// TObjectPtr not used for UE4 compatibility
-
-	// event
-	UPROPERTY(BlueprintAssignable, Category = "Event", meta = (DeprecatedProperty, DeprecationMessage = "remove it in the next version."))
-		FDungeonGeneratorActorSignature OnCreateFloor;
-
-	UPROPERTY(BlueprintAssignable, Category = "Event", meta = (DeprecatedProperty, DeprecationMessage = "remove it in the next version."))
-		FDungeonGeneratorActorSignature OnCreateSlope;
-
-	UPROPERTY(BlueprintAssignable, Category = "Event", meta = (DeprecatedProperty, DeprecationMessage = "remove it in the next version."))
-		FDungeonGeneratorActorSignature OnCreateWall;
-
-	UPROPERTY(BlueprintAssignable, Category = "Event", meta = (DeprecatedProperty, DeprecationMessage = "remove it in the next version."))
-		FDungeonGeneratorActorSignature OnCreateRoomRoof;
-
-	UPROPERTY(BlueprintAssignable, Category = "Event", meta = (DeprecatedProperty, DeprecationMessage = "remove it in the next version."))
-		FDungeonGeneratorActorSignature OnCreateAisleRoof;
-
-	UPROPERTY(BlueprintAssignable, Category = "Event", meta = (DeprecatedProperty, DeprecationMessage = "remove it in the next version."))
-		FDungeonGeneratorActorSignature OnCreatePillar;
-
-
-	UPROPERTY(BlueprintAssignable, Category = "Event")
-		FDungeonGeneratorDoorSignature OnResetDoor;
-
-
-
-
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UInstancedStaticMeshComponent>> InstancedStaticMeshes;
 
 
 	/*
-	部屋の生成通知
-	通知先で敵アクターなどを生成する事を想定しています
-	最初のTickで呼び出されます
-	（検討中の機能）
+	build job tag
+	ビルドジョブのタグ
 	*/
-	UPROPERTY(BlueprintAssignable, Category = "Event")
-		FDungeonGeneratorDelegete OnRoomCreated;
-
-	// Cache of the UIDungeonMiniMapTextureLayer
-	UPROPERTY(BlueprintReadOnly, Transient, Category = "DungeonGenerator")
-		UDungeonMiniMapTextureLayer* DungeonMiniMapTextureLayer;
-	// TObjectPtr not used for UE4 compatibility
-
-	// build job tag
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
-		FString BuildJobTag;
+	FString BuildJobTag;
 
-	// license tag
+	/*
+	license tag
+	ライセンスタグ
+	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
-		FString LicenseTag;
+	FString LicenseTag;
 
-	// License ID
+	/*
+	License ID
+	ライセンスID
+	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
-		FString LicenseId;
+	FString LicenseId;
 
-#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
-	// Displays debugging information on room and connection information
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
-		bool ShowRoomAisleInformation = false;
+#if WITH_EDITORONLY_DATA
+	/*
+	Displays voxel grid debugging information
+	ボクセルグリッドのデバッグ情報を表示する
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Debug")
+	bool ShowVoxelGridType = false;
 
-	// Displays voxel grid debugging information
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
-		bool ShowVoxelGridType = false;
+	/*
+	Displays debugging information for the voxel grid at the player's position
+	プレイヤーの位置にあるボクセルグリッドのデバッグ情報を表示します。
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Debug")
+	bool ShowVoxelGridTypeAtPlayerLocation = false;
+#endif
 
-	// Displays debugging information for the voxel grid at the player's position
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
-		bool ShowVoxelGridTypeAtPlayerLocation = false;
+	/*
+	Notification when a dungeon is successfully created
+	ダンジョンの生成に成功した時の通知
+	*/
+	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
+	FDungeonGeneratorActorNotifyGenerationSuccessSignature OnGenerationSuccess;
 
+	/*
+	Notification when dungeon creation fails
+	ダンジョンの生成に失敗した時の通知
+	*/
+	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
+	FDungeonGeneratorActorNotifyGenerationFailureSignature OnGenerationFailure;
+
+	/*
+	Location of the starting room of the dungeon
+	PlayerStart location can be found in Get All Actors of Class
+	ダンジョンのスタート部屋の位置
+	PlayerStartの位置はGet All Actors of Classで検索して下さい
+	*/
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	FVector StartRoomLocation;
+
+	/*
+	Location of the goal room in the dungeon
+	ダンジョンのゴール部屋の位置
+	*/
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	FVector GoalRoomLocation;
+
+#if WITH_EDITOR
 private:
 	void DrawDebugInformation();
 #endif
@@ -247,6 +269,4 @@ private:
 private:
 	// Cache of the UIDungeonMiniMapTextureLayer
 	std::shared_ptr<CDungeonGeneratorCore> mDungeonGeneratorCore;
-
-	bool mPostGenerated = false;
 };

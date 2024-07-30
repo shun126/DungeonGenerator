@@ -9,8 +9,8 @@ Algorithm for generating keys and doors
 4. place a door somewhere in the reachable aisle
 5. if more keys and doors can be placed, go back to 2.
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 

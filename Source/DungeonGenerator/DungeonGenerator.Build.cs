@@ -26,7 +26,8 @@ public class DungeonGenerator : ModuleRules
 			new string[]
 			{
 				"Core",
-			});
+                "AIModule"
+            });
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
@@ -34,13 +35,16 @@ public class DungeonGenerator : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"NavigationSystem",
-                "JsonUtilities"
+                "NetCore",
+                "JsonUtilities",
+				"SlateCore",
+				"UMG"
             });
 		if (Target.bBuildEditor)
 		{
 			PrivateDependencyModuleNames.AddRange(
 				new string[] {
-					"UnrealEd",
+					"UnrealEd"
                 });
 		}
 

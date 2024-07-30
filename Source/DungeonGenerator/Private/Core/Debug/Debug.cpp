@@ -4,12 +4,15 @@ Debug function source files
 To prevent conflicts with other Windows macros,
 do not include this file from the header.
 
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
+@author		Shun Moriya
+@copyright	2023- Shun Moriya
 All Rights Reserved.
 */
 
 #include "Debug.h"
+#include <GenericPlatform/GenericPlatformFile.h>
+#include <HAL/PlatformFileManager.h>
+#include <Misc/Paths.h>
 #include <algorithm>
 
 // log macro
@@ -44,6 +47,46 @@ namespace dungeon
 	}
 #endif
 #endif
+
+	extern const FString& GetDebugDirectory()
+	{
+		static const auto path = FPaths::ProjectSavedDir() + TEXT("DungeonGenerator");
+		return path;
+	}
+
+	extern const std::string& GetDebugDirectoryString()
+	{
+		static const std::string directoryName = TCHAR_TO_ANSI(*GetDebugDirectory());
+		return directoryName;
+	}
+
+	extern void CreateDebugDirectory()
+	{
+		IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
+		const FString& directoryPath = GetDebugDirectory();
+		if (!platformFile.DirectoryExists(*directoryPath))
+		{
+			platformFile.CreateDirectory(*directoryPath);
+		}
+
+		const FString debugDirectoryPath = directoryPath + TEXT("/debug");
+		if (!platformFile.DirectoryExists(*debugDirectoryPath))
+		{
+			platformFile.CreateDirectory(*debugDirectoryPath);
+		}
+		else
+		{
+			TArray<FString> foundFiles;
+
+			platformFile.FindFiles(foundFiles, *debugDirectoryPath, TEXT("bmp"));
+			for (const FString& foundFile : foundFiles)
+				platformFile.DeleteFile(*foundFile);
+
+			platformFile.FindFiles(foundFiles, *debugDirectoryPath, TEXT("md"));
+			for (const FString& foundFile : foundFiles)
+				platformFile.DeleteFile(*foundFile);
+		}
+	}
 
 	namespace bmp
 	{
