@@ -1339,7 +1339,7 @@ ESCAPE_DOUBLE_LOOP:
 		result.reserve(mRooms.size());
 
 		if (IsRoutePassable(room))
-			result.push_back(room);
+			result.emplace_back(room);
 
 		std::unordered_set<const Aisle*> passableAisles;
 		FindByRoute(result, passableAisles, room);
@@ -1373,13 +1373,13 @@ ESCAPE_DOUBLE_LOOP:
 				if (room == room0)
 				{
 					if (IsRoutePassable(room1))
-						passableRooms.push_back(room1);
+						passableRooms.emplace_back(room1);
 					FindByRoute(passableRooms, passableAisles, room1);
 				}
 				else
 				{
 					if (IsRoutePassable(room0))
-						passableRooms.push_back(room0);
+						passableRooms.emplace_back(room0);
 					FindByRoute(passableRooms, passableAisles, room0);
 				}
 			}

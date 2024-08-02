@@ -414,7 +414,7 @@ namespace dungeon
 			if (index < 2)
 			{
 				// 追跡するルートを記録
-				routes.push_back(
+				routes.emplace_back(
 					std::pair<size_t, float>(
 						edge->GetEdge((index + 1) & 1),		// 次の頂点インデックスを取得
 						cost + edge->GetLength()			// 今回のコストを追加

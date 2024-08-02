@@ -4,9 +4,15 @@
 ### Changes
 ### 変更点
 
-## Unreleased-1.6.3 (32)
+## 20240803-1.6.3 (32)
 ### Changes
+* Fixed incorrect spawn positions for small items used for interior decoration
+* Fixed minimap textures not being output
+* Trial version support
+* Fixed several bugs
 ### 変更点
+* 内装に使う小物のスポーン位置が不正になる問題を修正
+* ミニマップテクスチャが出力されない問題を修正
 * 体験版対応
 * いくつかの不具合を修正
 
