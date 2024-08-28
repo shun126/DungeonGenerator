@@ -38,7 +38,8 @@ public class DungeonGenerator : ModuleRules
                 "NetCore",
                 "JsonUtilities",
 				"SlateCore",
-				"UMG"
+				"UMG",
+                "Foliage"
             });
 		if (Target.bBuildEditor)
 		{

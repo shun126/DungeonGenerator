@@ -4,21 +4,11 @@
 All Rights Reserved.
 */
 
-#include "DungeonAisleMeshSet.h"
+#include "Parameter/DungeonAisleMeshSet.h"
 
 #if WITH_EDITOR
 #include "Helper/DungeonDebugUtility.h"
 #endif
-
-const FDungeonMeshParts* FDungeonAisleMeshSet::SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
-{
-	return FDungeonRoomMeshSet::SelectParts(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
-}
-
-void FDungeonAisleMeshSet::EachSlopeParts(std::function<void(const FDungeonMeshParts&)> func) const
-{
-	FDungeonRoomMeshSet::EachParts(SlopeParts, func);
-}
 
 #if WITH_EDITOR
 FString FDungeonAisleMeshSet::DumpToJson(const uint32 indent) const

@@ -26,7 +26,7 @@ class DUNGEONGENERATOR_API UDungeonPartiation : public UObject
 {
 	GENERATED_BODY()
 
-	/*
+	/**
 	Time from inactivity target to deactivation.
 	非アクティブ化対象になってから実際に非アクティブ化するまでの秒数。
 	*/
@@ -34,7 +34,7 @@ class DUNGEONGENERATOR_API UDungeonPartiation : public UObject
 
 public:
 	explicit UDungeonPartiation(const FObjectInitializer& objectInitializer);
-	virtual ~UDungeonPartiation() = default;
+	virtual ~UDungeonPartiation() override = default;
 
 private:
 	void RegisterActivatorComponent(UDungeonComponentActivatorComponent* component);

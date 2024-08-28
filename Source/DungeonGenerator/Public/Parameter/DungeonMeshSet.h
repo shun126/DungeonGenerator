@@ -9,7 +9,6 @@ All Rights Reserved.
 #include "Parameter/DungeonRandomActorParts.h"
 #include "Parameter/DungeonPartsSelectionMethod.h"
 #include <CoreMinimal.h>
-#include <functional>
 #include <memory>
 #include "DungeonMeshSet.generated.h"
 
@@ -50,12 +49,12 @@ public:
 		return const_cast<T*>(&parts[index]);
 	}
 
-	template<typename T = FDungeonMeshParts>
-	static void EachParts(const TArray<T>& parts, std::function<void(const T&)> func)
+	template<typename T = FDungeonMeshParts, typename Function>
+	static void EachParts(const TArray<T>& parts, Function&& function)
 	{
 		for (const T& part : parts)
 		{
-			func(part);
+			std::forward<Function>(function)(part);
 		}
 	}
 

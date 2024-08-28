@@ -12,10 +12,6 @@ All Rights Reserved.
 #include "Core/Math/Random.h"
 #include "Core/Voxelization/Grid.h"
 
-#if WITH_EDITOR
-#include "Helper/DungeonDebugUtility.h"
-#endif
-
 int32 FDungeonMeshSet::SelectDungeonMeshPartsIndex(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod)
 {
 	switch (partsSelectionMethod)

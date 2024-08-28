@@ -8,6 +8,7 @@ All Rights Reserved.
 
 #pragma once
 #include "../Math/Point.h"
+#include <fstream>
 
 namespace dungeon
 {

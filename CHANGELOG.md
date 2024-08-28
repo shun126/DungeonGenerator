@@ -1,8 +1,22 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (33)
+## Unreleased-1.6.* (35)
 ### Changes
 ### 変更点
+
+## Unreleased-1.6.5 (34)
+### Changes
+* Fixed layer calculation for TransformWorldToRadarWithLayer
+* Some refactoring
+### 変更点
+* TransformWorldToRadarWithLayerのレイヤー計算を修正
+* いくつかのリファクタリングを実施
+
+## 20240806-1.6.4 (33)
+### Changes
+* Fixed crash during minimap generation in UE5.3
+### 変更点
+* UE5.3以前でミニマップの生成時にクラッシュする問題を修正
 
 ## 20240803-1.6.3 (32)
 ### Changes

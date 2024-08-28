@@ -8,7 +8,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include "DungeonGridSize.generated.h"
 
-/*
+/**
 Dungeon grid size
 ダンジョンのグリッドサイズ
 */
@@ -18,13 +18,13 @@ struct DUNGEONGENERATOR_API FDungeonGridSize
     GENERATED_BODY()
 
 public:
-    /*
+    /**
     コンストラクタ
     constructor
     */
     FDungeonGridSize() = default;
 
-    /*
+    /**
     コンストラクタ
     constructor
     */
@@ -34,7 +34,7 @@ public:
     {
     }
 
-    /*
+    /**
     コピーコンストラクタ
     copy constructor
     */
@@ -44,7 +44,7 @@ public:
     {
     }
 
-    /*
+    /**
     ムーブコンストラクタ
     move constructor
     */
@@ -54,13 +54,13 @@ public:
     {
     }
 
-    /*
+    /**
     デストラクタ
     destructor
     */
     virtual ~FDungeonGridSize() = default;
 
-    /*
+    /**
     コピー代入
     copy assignment
     */
@@ -71,7 +71,7 @@ public:
         return *this;
     }
 
-    /*
+    /**
     ムーブ代入
     move assignment
     */
@@ -82,7 +82,7 @@ public:
         return *this;
     }
 
-    /*
+    /**
     一致か調べます
     equal
     */
@@ -91,7 +91,7 @@ public:
         return HorizontalSize == other.HorizontalSize && VerticalSize == other.VerticalSize;
     }
 
-    /*
+    /**
     不一致か調べます
     not equal
     */
@@ -100,7 +100,7 @@ public:
         return HorizontalSize != other.HorizontalSize || VerticalSize != other.VerticalSize;
     }
 
-    /*
+    /**
     FVector2Dにキャストします
     Cast to FVector2D
     */
@@ -109,7 +109,7 @@ public:
         return FVector2D(HorizontalSize, VerticalSize);
     }
 
-    /*
+    /**
     FVectorにキャストします
     Cast to FVector
     */
@@ -119,11 +119,15 @@ public:
     }
 
 public:
-    // 水平サイズ
+    /**
+     * 水平サイズ
+     */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
     float HorizontalSize = 400.f;
 
-    // 垂直サイズ
+    /**
+     * 垂直サイズ
+     */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
     float VerticalSize = 400.f;
 };

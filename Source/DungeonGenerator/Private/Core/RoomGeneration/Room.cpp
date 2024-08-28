@@ -11,7 +11,6 @@ All Rights Reserved.
 #include "../Math/Random.h"
 #include <array>
 #include <string>
-#include <string_view>
 
 namespace
 {
@@ -40,7 +39,7 @@ namespace dungeon
 		mDepth = randSize(parameter.GetRandom(), parameter.GetMinRoomDepth(), parameter.GetMaxRoomDepth());
 	}
 
-	Room::Room(const FIntVector& location, const FIntVector& size, const bool undeletable) noexcept
+	Room::Room(const FIntVector& location, const FIntVector& size) noexcept
 		: mX(location.X)
 		, mY(location.Y)
 		, mZ(location.Z)
@@ -66,6 +65,8 @@ namespace dungeon
 		, mItem(other.mItem)
 		, mDepthFromStart(other.mDepthFromStart)
 		, mBranchId(other.mBranchId)
+		, mNumberOfGates(other.mNumberOfGates)
+		, mVerticalRoomMargin(other.mVerticalRoomMargin)
 	{
 	}
 
@@ -85,6 +86,8 @@ namespace dungeon
 		mItem = other.mItem;
 		mDepthFromStart = other.mDepthFromStart;
 		mBranchId = other.mBranchId;
+		mNumberOfGates = other.mNumberOfGates;
+		mVerticalRoomMargin = other.mVerticalRoomMargin;
 		return *this;
 	}
 
@@ -102,7 +105,6 @@ namespace dungeon
 		const int32_t otherMaxY = other.GetBottom();
 		const int32_t otherMinZ = other.GetBackground();
 		const int32_t otherMaxZ = other.GetForeground();
-#if 1
 		if (selfMaxX <= otherMinX || selfMinX >= otherMaxX)
 			return false;
 		if (selfMaxY <= otherMinY || selfMinY >= otherMaxY)
@@ -110,15 +112,23 @@ namespace dungeon
 		if (selfMaxZ <= otherMinZ || selfMinZ >= otherMaxZ)
 			return false;
 		return true;
-#else
-		return
-			selfMaxX >= otherMinX &&
-			selfMinX <= otherMaxX &&
-			selfMaxY >= otherMinY &&
-			selfMinY <= otherMaxY &&
-			selfMinZ <= otherMaxZ &&
-			selfMaxZ >= otherMinZ;
-#endif
+	}
+
+	bool Room::HorizontalIntersect(const Room& other, const uint32_t horizontalMargin) const noexcept
+	{
+		const int32_t selfMinX = GetLeft() - horizontalMargin;
+		const int32_t selfMaxX = GetRight() + horizontalMargin;
+		const int32_t selfMinY = GetTop() - horizontalMargin;
+		const int32_t selfMaxY = GetBottom() + horizontalMargin;
+		const int32_t otherMinX = other.GetLeft();
+		const int32_t otherMaxX = other.GetRight();
+		const int32_t otherMinY = other.GetTop();
+		const int32_t otherMaxY = other.GetBottom();
+		if (selfMaxX <= otherMinX || selfMinX >= otherMaxX)
+			return false;
+		if (selfMaxY <= otherMinY || selfMinY >= otherMaxY)
+			return false;
+		return true;
 	}
 
 	bool Room::Contain(const int32_t x, const int32_t y, const int32_t z) const noexcept
@@ -133,6 +143,42 @@ namespace dungeon
 			(minX <= x && x < maxX) &&
 			(minY <= y && y < maxY) &&
 			(minZ <= z && z < maxZ);
+	}
+
+	uint8_t Room::GetHorizontalRoomMargin() const noexcept
+	{
+		return mHorizontalRoomMargin;
+	}
+
+	void Room::SetHorizontalRoomMargin(const uint8_t horizontalRoomMargin) noexcept
+	{
+		mHorizontalRoomMargin = horizontalRoomMargin;
+	}
+
+	bool Room::SetVerticalRoomMargin(const std::shared_ptr<Room>& otherRoom, const uint8_t horizontalRoomMargin, const uint8_t verticalRoomMargin) noexcept
+	{
+		check(otherRoom);
+		if (Intersect(*otherRoom, horizontalRoomMargin, verticalRoomMargin) == true)
+		{
+			mVerticalRoomMargin = otherRoom->mVerticalRoomMargin = verticalRoomMargin;
+
+			mHorizontalRoomMargin = otherRoom->mHorizontalRoomMargin = horizontalRoomMargin;
+
+			/*			if (otherRoom->GetZ() - mZ >= 0)
+			{
+				// 相手が上
+				mHorizontalRoomMargin = horizontalRoomMargin;
+				return true;
+			}
+			else
+			{
+				// 自分が上
+				otherRoom->mHorizontalRoomMargin = horizontalRoomMargin;
+				return true;
+			}
+			*/
+		}
+		return false;
 	}
 
 	std::string Room::GetName() const noexcept

@@ -12,7 +12,7 @@ class FDungeonRoomMeshSetDatabaseTypeActions : public FAssetTypeActions_Base
 {
 public:
 	explicit FDungeonRoomMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory);
-	virtual ~FDungeonRoomMeshSetDatabaseTypeActions() = default;
+	virtual ~FDungeonRoomMeshSetDatabaseTypeActions() override = default;
 
 	// FAssetTypeActions_Base overrides
 	virtual FColor GetTypeColor() const override;

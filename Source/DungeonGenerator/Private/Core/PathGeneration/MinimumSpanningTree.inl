@@ -11,22 +11,6 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	inline void MinimumSpanningTree::ForEach(std::function<void(Edge&)> func) noexcept
-	{
-		for (auto& node : mEdges)
-		{
-			func(node);
-		}
-	}
-
-	inline void MinimumSpanningTree::ForEach(std::function<void(const Edge&)> func) const noexcept
-	{
-		for (auto& node : mEdges)
-		{
-			func(node);
-		}
-	}
-
 	inline size_t MinimumSpanningTree::Size() const noexcept
 	{
 		return mEdges.size();
@@ -42,12 +26,9 @@ namespace dungeon
 		return mGoalPoint;
 	}
 
-	inline void MinimumSpanningTree::EachLeafPoint(std::function<void(const std::shared_ptr<const Point>& point)> func) const noexcept
+	inline const std::vector<std::shared_ptr<const Point>>& MinimumSpanningTree::GetLeafPoints() const noexcept
 	{
-		for (const auto& point : mLeafPoints)
-		{
-			func(point);
-		}
+		return mLeafPoints;
 	}
 
 	inline uint8_t MinimumSpanningTree::GetDistance() const noexcept

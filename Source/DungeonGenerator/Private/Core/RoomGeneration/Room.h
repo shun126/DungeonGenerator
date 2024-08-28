@@ -8,7 +8,6 @@ All Rights Reserved.
 
 #pragma once
 #include "../Helper/Identifier.h"
-#include "../Math/Math.h"
 #include "../Math/Point.h"
 #include <Math/IntRect.h>
 #include <Math/IntVector.h>
@@ -60,7 +59,7 @@ namespace dungeon
 		/**
 		コンストラクタ
 		*/
-		Room(const FIntVector& location, const FIntVector& size, const bool undeletable) noexcept;
+		Room(const FIntVector& location, const FIntVector& size) noexcept;
 
 		/**
 		コピーコンストラクタ
@@ -236,6 +235,14 @@ namespace dungeon
 		bool Intersect(const Room& other, const uint32_t horizontalMargin, const uint32_t verticalMargin) const noexcept;
 
 		/**
+		 * 水平方向に交差しているか調べます
+		 * @param[in]	other				調べる部屋
+		 * @param[in]	horizontalMargin	水平方向のマージン
+		 * @return		trueならば交差している
+		 */
+		bool HorizontalIntersect(const Room& other, const uint32_t horizontalMargin) const noexcept;
+
+		/**
 		点が含まれるか調べます
 		@param[in]		point		調べる点
 		*/
@@ -302,10 +309,7 @@ namespace dungeon
 		*/
 		uint8_t GetGateCount() const noexcept;
 
-		/*
-		部屋に生成する門の数を設定します
-		*/
-		void SetGateCount(const uint8_t count) noexcept;
+		void ResetGateCount() noexcept;
 
 		/*
 		部屋に生成する門の数を加算します
@@ -313,6 +317,32 @@ namespace dungeon
 		void AddGateCount(const uint8_t count) noexcept;
 
 
+
+		uint8_t GetHorizontalRoomMargin() const noexcept;
+		void SetHorizontalRoomMargin(const uint8_t horizontalRoomMargin) noexcept;
+
+
+
+
+		/**
+		 * 垂直方向の余白を取得します
+		 * @return 垂直方向の余白
+		 */
+		uint8_t GetVerticalRoomMargin() const noexcept;
+
+		/**
+		 * 上側の部屋にと垂直方向の余白を設定します
+		 * @param otherRoom 比較する部屋
+		 * @param horizontalRoomMargin	水平方向の余白
+		 * @param verticalRoomMargin	垂直方向の余白
+		 * @return trueならば部屋の再配置が必要
+		 */
+		bool SetVerticalRoomMargin(const std::shared_ptr<Room>& otherRoom, const uint8_t horizontalRoomMargin, const uint8_t verticalRoomMargin) noexcept;
+
+		/**
+		 * 部屋の名前を取得します
+		 * @return 部屋の名前
+		 */
 		std::string GetName() const noexcept;
 
 		/**
@@ -364,6 +394,8 @@ namespace dungeon
 		uint8_t mBranchId = std::numeric_limits<uint8_t>::max();
 
 		uint8_t mNumberOfGates = 0;
+		uint8_t mHorizontalRoomMargin = 0;
+		uint8_t mVerticalRoomMargin = 0;
 	};
 }
 

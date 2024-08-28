@@ -8,7 +8,7 @@ All Rights Reserved.
 
 #include "PathFinder.h"
 #include "../Debug/BuildInfomation.h"
-#include <cassert>
+#include <CoreMinimal.h>
 
 // 定義するとマンハッタン距離で計算する。未定義ならユークリッド距離で計算する
 #define CALCULATE_IN_MANHATTAN_DISTANCE
@@ -20,20 +20,6 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	PathFinder::CloseNode::CloseNode(const CloseNode& other) noexcept
-		: BaseNode(other)
-		, mParentKey(other.mParentKey)
-		, mCost(other.mCost)
-	{
-	}
-
-	PathFinder::CloseNode::CloseNode(CloseNode&& other) noexcept
-		: BaseNode(std::move(other))
-		, mParentKey(std::move(other.mParentKey))
-		, mCost(std::move(other.mCost))
-	{
-	}
-
 	uint64_t PathFinder::Start(const FIntVector& location, const FIntVector& goal, const SearchDirection searchDirection) noexcept
 	{
 		// キーを生成
@@ -54,12 +40,6 @@ namespace dungeon
 		// オープンリスト内を検索
 		const auto openNode = mOpen.find(key);
 
-		// クローズリスト内を検索
-		const auto closeNode = mClose.find(key);
-
-		// オープンとクローズ両方に存在する事はありえない
-		check((openNode != mOpen.end() && closeNode != mClose.end()) == false);
-
 		// オープンリストに追加するノードがある。かつ、新しいノードの方がトータルコストが低い
 		if (openNode != mOpen.end())
 		{
@@ -74,47 +54,61 @@ namespace dungeon
 			}
 		}
 		// クローズリストに追加するノードがある。かつ、新しいノードの方がトータルコストが低い
-		else if (closeNode != mClose.end())
-		{
-			if (closeNode->second.mCost > newCost)
-			{
-				// Delete from close list
-				mClose.erase(closeNode);
-				// Re-register on open list
-				mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
-
-				RevertOpenNode(key);
-			}
-		}
-		// No nodes on open and closed list
 		else
 		{
-			// Register open List
-			mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
+			// クローズリスト内を検索
+			const auto closeNode = mClose.find(key);
+
+			// オープンとクローズ両方に存在する事はありえない
+			check((openNode != mOpen.end() && closeNode != mClose.end()) == false);
+
+			if (closeNode != mClose.end())
+			{
+				if (closeNode->second.mCost > newCost)
+				{
+					// Delete from close list
+					mClose.erase(closeNode);
+					// Re-register on open list
+					mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
+
+					// 使用中のOpenノードを予約中に変更します
+					RevertOpenNode(key);
+				}
+			}
+			// No nodes on open and closed list
+			else
+			{
+				// Register open List
+				mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
+			}
 		}
 
 		return key;
 	}
 
-	bool PathFinder::Pop(uint64_t& key, NodeType& nodeType, uint32_t& cost, FIntVector& location, Direction& direction, SearchDirection& searchDirection) noexcept
+	bool PathFinder::Pop(uint64_t& nextKey, NodeType& nextNodeType, uint32_t& nextCost, FIntVector& nextLocation, Direction& nextDirection, SearchDirection& nextSearchDirection) noexcept
 	{
 		if (mOpen.empty())
 			return false;
 
-		// Find the node with the lowest cost
+		/*
+		最も安いコストのノードを探す
+		*/
 		std::unordered_map<uint64_t, OpenNode>::iterator result = mOpen.begin();
 		uint32_t minimumCost = std::numeric_limits<uint32_t>::max();
 		for (std::unordered_map<uint64_t, OpenNode>::iterator i = mOpen.begin(); i != mOpen.end(); ++i)
 		{
-			if (minimumCost > (*i).second.mCost)
+			if (minimumCost > i->second.mCost)
 			{
-				minimumCost = (*i).second.mCost;
+				minimumCost = i->second.mCost;
 				result = i;
 			}
-			// Tiebreaker (if costs are the same, up/down movement is preferred)
-			else if (minimumCost == (*i).second.mCost)
+			/*
+			コストが同じ場合、上下移動を優先する
+			*/
+			else if (minimumCost == i->second.mCost)
 			{
-				if ((*i).second.mNodeType == NodeType::Downstairs || (*i).second.mNodeType == NodeType::Upstairs)
+				if (i->second.mNodeType == NodeType::Downstairs || i->second.mNodeType == NodeType::Upstairs)
 				{
 					result = i;
 				}
@@ -123,20 +117,21 @@ namespace dungeon
 		check(result != mOpen.end());
 
 		// 結果をコピー
-		key = result->first;
-		location = result->second.mLocation;
-		nodeType = result->second.mNodeType;
-		direction = result->second.mDirection;
-		cost = result->second.mCost;
-		searchDirection = result->second.mSearchDirection;
+		nextKey = result->first;
+		nextLocation = result->second.mLocation;
+		nextNodeType = result->second.mNodeType;
+		nextDirection = result->second.mDirection;
+		nextCost = result->second.mCost;
+		nextSearchDirection = result->second.mSearchDirection;
 
 		// Closeノードに追加
-		mClose.emplace(key, CloseNode(result->second.mParentKey, nodeType, location, direction, result->second.mCost));
+		mClose.emplace(nextKey, CloseNode(result->second.mParentKey, nextNodeType, nextLocation, nextDirection, result->second.mCost));
 
 		// Openノードを削除
 		mOpen.erase(result);
 
-		UseOpenNode(key);
+		// Openノードを使用中に指定
+		UseOpenNode(nextKey);
 
 		return true;
 	}
@@ -145,10 +140,11 @@ namespace dungeon
 
 	bool PathFinder::Commit(const FIntVector& goal) noexcept
 	{
+		// 使用中と予約中のOpenノードをクリアします
 		ClearOpenNode();
 
-		if (!mRoute.empty())
-			return false;
+		// 結果オブジェクトを生成
+		mResult = std::make_shared<Result>();
 
 #if !defined(CHECK_ROUTE)
 		// Openノードは不要なのでクリア
@@ -165,13 +161,16 @@ namespace dungeon
 			switch (current->second.mNodeType)
 			{
 			case NodeType::Downstairs:
-				mRoute.emplace_back(NodeType::UpSpace, current->second.mLocation + FIntVector(0, 0, 1), current->second.mDirection);
-				mRoute.emplace_back(NodeType::DownSpace, current->second.mLocation - current->second.mDirection.GetVector(), current->second.mDirection);
+				mResult->mRoute.emplace_back(NodeType::UpSpace, current->second.mLocation + FIntVector(0, 0, 1), current->second.mDirection);
+				mResult->mRoute.emplace_back(NodeType::DownSpace, current->second.mLocation - current->second.mDirection.GetVector(), current->second.mDirection);
 				break;
 			
 			case NodeType::Upstairs:
-				mRoute.emplace_back(NodeType::DownSpace, current->second.mLocation + FIntVector(0, 0, -1), current->second.mDirection);
-				mRoute.emplace_back(NodeType::UpSpace, current->second.mLocation - current->second.mDirection.GetVector(), current->second.mDirection);
+				mResult->mRoute.emplace_back(NodeType::DownSpace, current->second.mLocation + FIntVector(0, 0, -1), current->second.mDirection);
+				mResult->mRoute.emplace_back(NodeType::UpSpace, current->second.mLocation - current->second.mDirection.GetVector(), current->second.mDirection);
+				break;
+
+			default:
 				break;
 			}
 
@@ -182,7 +181,7 @@ namespace dungeon
 			}
 
 			// ノードを記録する
-			mRoute.emplace_back(current->second);
+			mResult->mRoute.emplace_back(current->second);
 
 			// スタートノード？
 			if (current->first == current->second.mParentKey)
@@ -191,16 +190,18 @@ namespace dungeon
 				スタートノードの方向は仮に北を設定していたので、
 				ここで修正する
 				*/
-				if (mRoute.size() > 1)
+				if (mResult->mRoute.size() > 1)
 				{
-					mRoute[mRoute.size() - 1].mDirection = mRoute[mRoute.size() - 2].mDirection;
+					const Direction previousDirection = mResult->mRoute[mResult->mRoute.size() - 2].mDirection;
+					mResult->mRoute[mResult->mRoute.size() - 1].mDirection = previousDirection;
 				}
+
 				break;
 			}
 		}
 
 		// 経路生成に失敗
-		if (mRoute.empty())
+		if (mResult->mRoute.empty())
 			return false;
 
 #if !defined(CHECK_ROUTE)
@@ -209,15 +210,16 @@ namespace dungeon
 #endif
 
 		// 階段ノードを修正
-		for (auto current = mRoute.rbegin(); current != mRoute.rend(); ++current)
+		// TODO: Resultクラスに含められるか検討して下さい
+		for (auto current = mResult->mRoute.rbegin(); current != mResult->mRoute.rend(); ++current)
 		{
 			switch (current->mNodeType)
 			{
 			case NodeType::Downstairs:
 			{
-				check(current != mRoute.rbegin());
-				check((current + 1) != mRoute.rend());
-				check((current + 2) != mRoute.rend());
+				check(current != mResult->mRoute.rbegin());
+				check((current + 1) != mResult->mRoute.rend());
+				check((current + 2) != mResult->mRoute.rend());
 				check((current - 1)->mNodeType == NodeType::Aisle || (current - 1)->mNodeType == NodeType::Gate);
 				(current - 1)->mNodeType = NodeType::UpSpace;
 				(current + 2)->mNodeType = NodeType::Stairwell;
@@ -229,8 +231,8 @@ namespace dungeon
 			}
 			case NodeType::Upstairs:
 			{
-				check(current != mRoute.rbegin());
-				check((current + 1) != mRoute.rend());
+				check(current != mResult->mRoute.rbegin());
+				check((current + 1) != mResult->mRoute.rend());
 				check((current - 1)->mNodeType == NodeType::Aisle || (current - 1)->mNodeType == NodeType::Gate);
 				(current - 1)->mNodeType = NodeType::Upstairs;
 				(current + 0)->mNodeType = NodeType::UpSpace;
@@ -249,14 +251,30 @@ namespace dungeon
 	{
 #if defined(CALCULATE_IN_MANHATTAN_DISTANCE)
 		// マンハッタン距離
-		auto dx = std::abs(goal.X - location.X);
-		auto dy = std::abs(goal.Y - location.Y);
-		auto dz = std::abs(goal.Z - location.Z);
+		const auto dx = std::abs(goal.X - location.X);
+		const auto dy = std::abs(goal.Y - location.Y);
+		const auto dz = std::abs(goal.Z - location.Z);
 		const uint32_t heuristics = dx + dy + dz;
 #else
 		// ユークリッド距離
 		const FIntVector delta = goal - location;
 		const int32_t heuristics = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z;
+#endif
+		return heuristics;
+	}
+
+	double PathFinder::Heuristics(const FVector& location, const FVector& goal) noexcept
+	{
+#if defined(CALCULATE_IN_MANHATTAN_DISTANCE)
+		// マンハッタン距離
+		const auto dx = std::abs(goal.X - location.X);
+		const auto dy = std::abs(goal.Y - location.Y);
+		const auto dz = std::abs(goal.Z - location.Z);
+		const double heuristics = dx + dy + dz;
+#else
+		// ユークリッド距離
+		const FVector delta = goal - location;
+		const double heuristics = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z;
 #endif
 		return heuristics;
 	}

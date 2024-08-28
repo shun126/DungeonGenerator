@@ -7,7 +7,6 @@ All Rights Reserved.
 #include "DungeonGeneratorStyle.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Interfaces/IPluginManager.h"
-#include "Slate/SlateGameResources.h"
 #include "Styling/SlateStyleRegistry.h"
 
 #include <Misc/EngineVersionComparison.h>
@@ -21,7 +20,7 @@ All Rights Reserved.
 
 TSharedPtr<FSlateStyleSet> FDungeonGeneratorStyle::StyleInstance = nullptr;
 
-static const FVector2D Icon16x16(16.0f, 16.0f);
+//static const FVector2D Icon16x16(16.0f, 16.0f);
 static const FVector2D Icon20x20(20.0f, 20.0f);
 
 void FDungeonGeneratorStyle::Initialize()

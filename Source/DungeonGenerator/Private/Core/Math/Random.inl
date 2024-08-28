@@ -5,7 +5,6 @@ All Rights Reserved.
 */
 
 #pragma once
-#include <cassert>
 #include <cstdint>
 #include <ctime>
 #include <limits>
@@ -131,6 +130,7 @@ namespace dungeon
 		else
 		{
 			static_assert(RandamFalse_v<T>, "Type T is unsupported type");
+			return 0;
 		}
 	}
 

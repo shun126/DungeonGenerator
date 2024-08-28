@@ -24,7 +24,7 @@ public:
 #endif
 
 public:
-	/*
+	/**
 	Production frequency
 	配置する頻度
 	*/

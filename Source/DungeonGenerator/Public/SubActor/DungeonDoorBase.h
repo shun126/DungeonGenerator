@@ -19,7 +19,7 @@ namespace dungeon
 	class Random;
 }
 
-/*
+/**
 Dungeon Door Actor
 DungeonDoorBase is an actor intended to be replicated.
 Please be very careful with server-client synchronization.
@@ -35,21 +35,21 @@ class DUNGEONGENERATOR_API ADungeonDoorBase : public ADungeonActorBase
 
 public:
 	explicit ADungeonDoorBase(const FObjectInitializer& initializer);
-	virtual ~ADungeonDoorBase() = default;
+	virtual ~ADungeonDoorBase() override = default;
 
-	/*
+	/**
 	Get DungeonRoomProps
 	DungeonRoomPropsを取得します
 	*/
 	EDungeonRoomProps GetRoomProps() const;
 
-	/*
+	/**
 	Set DungeonRoomProps
 	DungeonRoomPropsを設定します
 	*/
 	void SetRoomProps(const EDungeonRoomProps props);
 
-	/*
+	/**
 	Is locked door?
 	鍵付きドアか？
 	*/
@@ -63,7 +63,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator", meta = (CallInEditor = "true"))
 	void OnInitialize(const EDungeonRoomProps props);
 
-	/*
+	/**
 	Finalize function called before object destruction
 	オブジェクト破棄前に呼び出される終了用関数
 	*/
@@ -74,7 +74,7 @@ public:
 	virtual uint32_t GenerateCrc32(uint32_t crc = 0xffffffffU) const noexcept override;
 
 protected:
-	/*
+	/**
 	Functions for initialization after object creation
 	オブジェクト生成後の初期化用関数
 	*/
@@ -86,7 +86,7 @@ protected:
 	*/
 	virtual void OnNativeFinalize();
 
-	/*
+	/**
 	Get random numbers common to dungeon generation systems
 	ダンジョン生成システム共通の乱数を取得します
 	*/
@@ -97,7 +97,7 @@ private:
 	void InvokeFinalize(const bool finish);
 
 private:
-	/*
+	/**
 	Types of props attached to the door
 	ドアに付属する小道具の種類
 	*/
@@ -115,7 +115,7 @@ private:
 	};
 	State mState = State::Invalid;
 
-	friend class CDungeonGeneratorCore;
+	friend class ADungeonActor;
 };
 
 inline EDungeonRoomProps ADungeonDoorBase::GetRoomProps() const
