@@ -6,21 +6,17 @@ All Rights Reserved.
 
 #include "SubActor/DungeonRoomSensorBase.h"
 #include "SubActor/DungeonDoorBase.h"
-#include "DungeonGeneratorCore.h"
+#include "DungeonActor.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Helper/Crc.h"
-#include "Core/Helper/Identifier.h"
 #include "Core/Math/Random.h"
 #include <Components/BoxComponent.h>
 #include <Engine/World.h>
 #include <GameFramework/Pawn.h>
-#include <Kismet/GameplayStatics.h>
-#include <Misc/EngineVersionComparison.h>
 #include <cmath>
 
 #if WITH_EDITOR
 #include <DrawDebugHelpers.h>
-#include <Kismet/KismetSystemLibrary.h>
 
 namespace
 {
@@ -30,7 +26,7 @@ namespace
 
 const FName& ADungeonRoomSensorBase::GetDungeonGeneratorTag()
 {
-	return CDungeonGeneratorCore::GetDungeonGeneratorTag();
+	return ADungeonActor::GetDungeonGeneratorTag();
 }
 
 const TArray<FName>& ADungeonRoomSensorBase::GetDungeonGeneratorTags()
@@ -202,14 +198,6 @@ void ADungeonRoomSensorBase::AddDungeonDoor(ADungeonDoorBase* dungeonDoorBase)
 	DungeonDoors.Add(dungeonDoorBase);
 }
 
-void ADungeonRoomSensorBase::EachDungeonDoors(std::function<void(ADungeonDoorBase*)> function) const noexcept
-{
-	for (ADungeonDoorBase* dungeonDoorBase : DungeonDoors)
-	{
-		function(dungeonDoorBase);
-	}
-}
-
 bool ADungeonRoomSensorBase::HasLockedDoor() const
 {
 	for (const auto& door : DungeonDoors)
@@ -223,14 +211,6 @@ bool ADungeonRoomSensorBase::HasLockedDoor() const
 void ADungeonRoomSensorBase::AddDungeonTorch(AActor* actor)
 {
 	DungeonTorchs.Add(actor);
-}
-
-void ADungeonRoomSensorBase::EachDungeonTorch(std::function<void(AActor*)> function) const noexcept
-{
-	for (AActor* actor : DungeonTorchs)
-	{
-		function(actor);
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

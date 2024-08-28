@@ -12,7 +12,7 @@ class FDungeonAisleMeshSetDatabaseTypeActions : public FAssetTypeActions_Base
 {
 public:
 	explicit FDungeonAisleMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory);
-	virtual ~FDungeonAisleMeshSetDatabaseTypeActions() = default;
+	virtual ~FDungeonAisleMeshSetDatabaseTypeActions() override = default;
 
 	// FAssetTypeActions_Base overrides
 	virtual FColor GetTypeColor() const override;

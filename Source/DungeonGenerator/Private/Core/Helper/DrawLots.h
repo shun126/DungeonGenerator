@@ -6,6 +6,7 @@
 All Rights Reserved.
 */
 
+#pragma once
 #include "../Math/Random.h"
 #include <memory>
 #include <vector>

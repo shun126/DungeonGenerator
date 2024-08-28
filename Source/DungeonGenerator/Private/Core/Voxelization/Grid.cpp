@@ -7,12 +7,10 @@ All Rights Reserved.
 */
 
 #include "Grid.h"
-#include "../Debug/Debug.h"
-#include <cassert>
 
 namespace dungeon
 {
-	/*
+	/**
 	自身からtoGridを見た時に床が生成されるか判定します
 	*/
 	bool Grid::CanBuildFloor(const bool checkNoMeshGeneration) const noexcept
@@ -23,7 +21,7 @@ namespace dungeon
 		return Is(Type::Deck) || Is(Type::Gate) || Is(Type::Aisle);
 	}
 
-	/*
+	/**
 	斜面が生成されるか判定します
 	*/
 	bool Grid::CanBuildSlope() const noexcept
@@ -31,7 +29,7 @@ namespace dungeon
 		return Is(Type::Slope);
 	}
 
-	/*
+	/**
 	自身からtoGridを見た時に屋根が生成されるか判定します
 	*/
 	bool Grid::CanBuildRoof(const Grid& toUpperGrid, const bool checkNoMeshGeneration) const noexcept
@@ -54,7 +52,7 @@ namespace dungeon
 		return false;
 	}
 
-	/*
+	/**
 	自身からtoGridを見た時に扉が生成されるか判定します
 	*/
 	bool Grid::CanBuildGate(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
@@ -70,6 +68,7 @@ namespace dungeon
 		{
 			return
 				mergeRooms == false &&
+				GetIdentifier() != toGrid.GetIdentifier() &&
 				GetDirection() == toGrid.GetDirection() &&
 				GetDirection().Inverse() == Direction(direction);
 		}
@@ -97,12 +96,12 @@ namespace dungeon
 		return false;
 	}
 
-	/*
+	/**
 	自身からtoGridを見た時に壁が生成されるか判定します
 	*/
 	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
 	{
-		//TODO:NoWallMeshGenerationフラグは進入禁止に使用されている別途生成禁止フラグが必要
+		// TODO:NoWallMeshGenerationフラグは進入禁止に使用されている別途生成禁止フラグが必要
 		if (IsNoWallMeshGeneration(direction))
 			return false;
 		/*

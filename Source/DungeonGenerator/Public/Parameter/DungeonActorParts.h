@@ -24,7 +24,7 @@ public:
 #endif
 
 public:
-	/*
+	/**
 	Class of actor to spawn
 	スポーンするアクターのクラス
 	*/

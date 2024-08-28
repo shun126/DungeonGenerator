@@ -5,7 +5,6 @@ All Rights Reserved.
 */
 
 #include "MainLevel/DungeonMainLevelScriptActor.h"
-#include "MainLevel/DungeonComponentActivatorComponent.h"
 #include "MainLevel/DungeonPartiation.h"
 #include "DungeonGenerateActor.h"
 #include "Core/Debug/Debug.h"
@@ -32,7 +31,7 @@ void ADungeonMainLevelScriptActor::BeginPlay()
 	Super::BeginPlay();
 
 	mBounding.Init();
-	mActiveExtents.Set(ActiveExtentHorizontalitySize, ActiveExtentHorizontalitySize, ActiveExtentVerticalSize);
+	mActiveExtents.Set(ActiveExtentHorizontalSize, ActiveExtentHorizontalSize, ActiveExtentVerticalSize);
 
 	ULevel* level = GetLevel();
 	if (IsValid(level))

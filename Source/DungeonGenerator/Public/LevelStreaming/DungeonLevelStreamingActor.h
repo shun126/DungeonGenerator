@@ -11,7 +11,7 @@ All Rights Reserved.
 
 class UBoxComponent;
 
-/*
+/**
 Helper class that loads the level when the player enters the OverlapVolume
 プレイヤーが OverlapVolume に入るときにレベルをロードするヘルパークラス
 */
@@ -21,15 +21,15 @@ class DUNGEONGENERATOR_API ADungeonLevelStreamingActor : public AActor
 	GENERATED_BODY()
 
 public:
-	/*
+	/**
 	constructor
 	*/
 	explicit ADungeonLevelStreamingActor(const FObjectInitializer& initializer);
 
-	/*
+	/**
 	destructor
 	*/
-	virtual ~ADungeonLevelStreamingActor() = default;
+	virtual ~ADungeonLevelStreamingActor() override = default;
 
 protected:
 	UFUNCTION()
@@ -39,11 +39,15 @@ protected:
 	void OverlapEnds(UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex);
 
 protected:
-	// Overlap volume to trigger level streaming
+	/**
+	 * Overlap volume to trigger level streaming
+	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	TObjectPtr<UBoxComponent> OverlapVolume;
 
-	// Level streaming path
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "World"))
+	/**
+	 * Level streaming path
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowedClasses = "World"))
 	FSoftObjectPath Path;
 };

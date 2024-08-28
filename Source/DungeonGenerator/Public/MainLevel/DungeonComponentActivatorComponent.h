@@ -39,7 +39,7 @@ class DUNGEONGENERATOR_API UDungeonComponentActivatorComponent : public UActorCo
 
 public:
 	explicit UDungeonComponentActivatorComponent(const FObjectInitializer& objectInitializer);
-	virtual ~UDungeonComponentActivatorComponent() = default;
+	virtual ~UDungeonComponentActivatorComponent() override = default;
 
 	bool IsEnableOwnerActorTickControl() const noexcept;
 	bool IsEnableOwnerActorAiControl() const noexcept;
@@ -84,14 +84,14 @@ public:
 	virtual void TickComponent(float deltaTime, enum ELevelTick tickType, FActorComponentTickFunction* thisTickFunction) override;
 
 protected:
-	/*
+	/**
 	所属しているDungeonPartiationがプレイヤー周辺に近づいたら呼び出されます。
 	The DungeonPartiation will be called when it approaches the player's vicinity.
 	*/
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPartiationActivate();
 
-	/*
+	/**
 	所属しているDungeonPartiationがプレイヤー周辺から離れたら呼び出されます。
 	It is called when the DungeonPartiation to which it belongs leaves the player's vicinity.
 	*/
@@ -119,35 +119,35 @@ private:
 	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason, APawn* owner);
 
 protected:
-	/*
+	/**
 	If enabled, controls the validity of the owner actor's Tick
 	有効にするとオーナーアクターのTickの有効性を制御します
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableOwnerActorTickControl = true;
 
-	/*
+	/**
 	If enabled, controls the effectiveness of the owner actor's AI
 	有効にするとオーナーアクターのAIの有効性を制御します
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableOwnerActorAiControl = true;
 
-	/*
+	/**
 	If enabled, controls the activation of the owner actor's components
 	有効にするとオーナーアクターのコンポーネントのアクティブ性を制御します
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableComponentActivationControl = true;
 
-	/*
+	/**
 	If enabled, controls the visibility of the owner actor's components
 	有効にするとオーナーアクターのコンポーネントの表示を制御します
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableComponentVisibilityControl = true;
 
-	/*
+	/**
 	If enabled, controls the enable of the collision component of the owner actor
 	有効にするとオーナーアクターのコリジョンコンポーネントの有効性を制御します
 	*/
@@ -157,7 +157,7 @@ protected:
 private:
 	// Actor
 	std::bitset<DungeonComponentActivateReasonSize> mIsTickEnabled = ~0;
-	bool mTickSaver;
+	bool mTickSaver = false;
 
 	// Component
 	std::bitset<DungeonComponentActivateReasonSize> mComponentActivation = ~0;

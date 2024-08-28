@@ -30,7 +30,7 @@ struct DUNGEONGENERATOR_API FDungeonPartsTransform
 	GENERATED_BODY()
 
 public:
-	/*
+	/**
 	Set the relative transform of the static mesh
 	スタティックメッシュの相対トランスフォームを設定して下さい
 	*/

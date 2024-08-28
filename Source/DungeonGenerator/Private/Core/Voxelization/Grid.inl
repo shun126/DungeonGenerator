@@ -26,14 +26,14 @@ namespace dungeon
 		SetDirection(Direction(Direction::North));
 	}
 
-	inline Grid::Grid(const Type type, const Direction direction) noexcept
+	inline Grid::Grid(const Type type, const Direction& direction) noexcept
 	{
 		SetType(type);
 		SetProps(Props::None);
 		SetDirection(direction);
 	}
 
-	inline Grid::Grid(const Type type, const Direction direction, const uint16_t identifier) noexcept
+	inline Grid::Grid(const Type type, const Direction& direction, const uint16_t identifier) noexcept
 		: mIdentifier(identifier)
 	{
 		SetType(type);

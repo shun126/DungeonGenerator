@@ -16,7 +16,7 @@ class FDungeonGeneratorModule : public IModuleInterface
 {
 public:
 	FDungeonGeneratorModule() = default;
-	virtual ~FDungeonGeneratorModule() = default;
+	virtual ~FDungeonGeneratorModule() override = default;
 
 	// IModuleInterface implementation
 	virtual void StartupModule() override;

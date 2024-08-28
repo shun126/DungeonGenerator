@@ -16,7 +16,7 @@ class DUNGEONGENERATOREDITOR_API UDungeonRoomMeshSetDatabaseFactory : public UFa
 
 public:
 	UDungeonRoomMeshSetDatabaseFactory();
-	virtual ~UDungeonRoomMeshSetDatabaseFactory() = default;
+	virtual ~UDungeonRoomMeshSetDatabaseFactory() override = default;
 
 	// UFactory overrides
 	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;

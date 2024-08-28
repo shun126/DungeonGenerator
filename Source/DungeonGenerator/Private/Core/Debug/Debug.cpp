@@ -48,16 +48,22 @@ namespace dungeon
 #endif
 #endif
 
+	extern const FString& GetBaseDirectoryName()
+	{
+		static const FString Name = BaseDirectoryName;
+		return Name;		
+	}
+
 	extern const FString& GetDebugDirectory()
 	{
-		static const auto path = FPaths::ProjectSavedDir() + TEXT("DungeonGenerator");
-		return path;
+		static const auto Path = FPaths::ProjectSavedDir() + BaseDirectoryName;
+		return Path;
 	}
 
 	extern const std::string& GetDebugDirectoryString()
 	{
-		static const std::string directoryName = TCHAR_TO_ANSI(*GetDebugDirectory());
-		return directoryName;
+		static const std::string DirectoryName = TCHAR_TO_ANSI(*GetDebugDirectory());
+		return DirectoryName;
 	}
 
 	extern void CreateDebugDirectory()
@@ -110,7 +116,7 @@ namespace dungeon
 			mHeight = height;
 			mWidth = width;
 
-			const size_t linedsize = (static_cast<size_t>(mWidth) + 3) / 4 * 4;
+			const size_t linedSize = (static_cast<size_t>(mWidth) + 3) / 4 * 4;
 
 			// file header
 			mBmpHeader.bfType[0] = 'B';
@@ -127,14 +133,14 @@ namespace dungeon
 			mBmpInfo.biPlanes = 1;
 			mBmpInfo.biBitCount = 24;
 			mBmpInfo.biCompression = 0;
-			mBmpInfo.biSizeImage = linedsize * mHeight * 3;
+			mBmpInfo.biSizeImage = linedSize * mHeight * 3;
 			mBmpInfo.biXPelsPerMeter = 1;
 			mBmpInfo.biYPelsPerMeter = 1;
 			mBmpInfo.biClrUsed = 0;
 			mBmpInfo.biClrImportant = 0;
 		}
 
-		int Canvas::Write(const std::string& filename) noexcept
+		int Canvas::Write(const std::string& filename) const noexcept
 		{
 #if defined(_WINDOWS) || defined(_WIN32)
 			FILE* fp;
@@ -157,22 +163,22 @@ namespace dungeon
 			{
 				fwrite(&mRgbImage.get()[i * mWidth], sizeof(RGBCOLOR), mWidth, fp);
 
-				static const char buf[4] = { 0 };
-				fwrite(buf, sizeof(char), mWidth % 4, fp);
+				static constexpr char Padding[4] = { 0, 0, 0, 0 };
+				fwrite(Padding, sizeof(char), mWidth % 4, fp);
 			}
 
 			fclose(fp);
 			return 1;
 		}
 
-		void Canvas::Put(int32_t x, int32_t y, const RGBCOLOR color) noexcept
+		void Canvas::Put(int32_t x, int32_t y, const RGBCOLOR color) const noexcept
 		{
 			x = std::max(0, std::min(x, static_cast<int32_t>(mWidth - 1)));
 			y = std::max(0, std::min(y, static_cast<int32_t>(mHeight - 1)));
 			mRgbImage.get()[y * mWidth + x] = color;
 		}
 
-		void Canvas::Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept
+		void Canvas::Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) const noexcept
 		{
 			left = std::max(0, std::min(left, static_cast<int32_t>(mWidth - 1)));
 			top = std::max(0, std::min(top, static_cast<int32_t>(mHeight - 1)));
@@ -192,7 +198,7 @@ namespace dungeon
 			}
 		}
 
-		void Canvas::Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept
+		void Canvas::Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) const noexcept
 		{
 			left = std::max(0, std::min(left, static_cast<int32_t>(mWidth - 1)));
 			top = std::max(0, std::min(top, static_cast<int32_t>(mHeight - 1)));

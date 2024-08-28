@@ -18,7 +18,7 @@ struct DUNGEONGENERATOR_API FDungeonMeshPartsWithDirection : public FDungeonMesh
 	GENERATED_BODY()
 
 public:
-	/*
+	/**
 	Direction of placement
 	配置する方向
 	*/

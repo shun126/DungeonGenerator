@@ -5,6 +5,7 @@ All Rights Reserved.
 */
 
 #include "DungeonGeneratorCommands.h"
+#include "DungeonGeneratorStyle.h"
 
 #define LOCTEXT_NAMESPACE "FDungeonGenerateEditorModule"
 

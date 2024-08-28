@@ -8,7 +8,6 @@ All Rights Reserved.
 #include "DungeonMeshSetDatabase.h"
 #include "DungeonAisleMeshSet.h"
 #include <CoreMinimal.h>
-#include <functional>
 #include <memory>
 #include "DungeonAisleMeshSetDatabase.generated.h"
 
@@ -23,9 +22,16 @@ class DUNGEONGENERATOR_API UDungeonAisleMeshSetDatabase : public UDungeonMeshSet
 
 public:
 	explicit UDungeonAisleMeshSetDatabase(const FObjectInitializer& ObjectInitializer);
-	virtual ~UDungeonAisleMeshSetDatabase() = default;
+	virtual ~UDungeonAisleMeshSetDatabase() override = default;
 
-	void Each(std::function<void(const FDungeonAisleMeshSet&)> func) const;
+	template<typename Function>
+	void Each(Function&& function) const
+	{
+		for (const FDungeonAisleMeshSet& parts : Parts)
+		{
+			std::forward<Function>(function)(parts);
+		}
+	}
 
 	// UDungeonMeshSetDatabase overrides
 	virtual const FDungeonMeshSet* AtImplement(const size_t index) const override;
@@ -38,7 +44,7 @@ public:
 #endif
 
 protected:
-	/*
+	/**
 	Set the DungeonAisleMeshSet; multiple DungeonAisleMeshSet can be set.
 	DungeonAisleMeshSetを設定して下さい。DungeonAisleMeshSetは複数設定する事ができます。
 	*/
@@ -49,12 +55,4 @@ protected:
 inline UDungeonAisleMeshSetDatabase::UDungeonAisleMeshSetDatabase(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
-}
-
-inline void UDungeonAisleMeshSetDatabase::Each(std::function<void(const FDungeonAisleMeshSet&)> func) const
-{
-	for (const FDungeonAisleMeshSet& parts : Parts)
-	{
-		func(parts);
-	}
 }

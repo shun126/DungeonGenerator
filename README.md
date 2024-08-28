@@ -1,9 +1,10 @@
 # Dungeon generator plugin for Unreal Engine 5
 > Easy generation of levels, mini-maps and missions.
 
-[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.0%7C5.1%7C5.2%7C5.3%7C5.4-9455CE?logo=unrealengine)](https://github.com/shun126/UE5-DungeonGeneratorDemo/releases)
+[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.0~5.4-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
+[![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
 [![youtube](https://img.shields.io/youtube/views/HIW4mRt2_AA?style=social)](https://youtu.be/HIW4mRt2_AA)
 
@@ -14,9 +15,9 @@ Trailer: [YouTube](https://youtu.be/HIW4mRt2_AA)
 # 🚩 Table of Contents
 - [Why Dungeon Generator?](#-why-dungeon-generator)
 - [Features](#-features)
-- [Demo](#-demo)
 - [Requirements](#-requirements)
 - [License](#-license)
+- [Demo](#-demo)
 - [See also](#-see-also)
 - [Author](#-authors)
 
@@ -35,21 +36,13 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 * Tiled Dungeon Generation both In-Editor & Runtime.
 * Users can easily generate dungeons by preparing meshes for floors, walls, ceilings, and stairs.
 * Supports dungeon replication
-* Generates actors for doors and keys by MissionGraph. [beta version]
-* The following features are supported only in the UnrealEngine marketplace version
+* Generates actors for doors and keys by MissionGraph.
+* The following features are supported only in the [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version
   * Sub-levels can be applied as dungeon rooms
+  * A mini-map of the dungeon can be generated.
   * Interior decoration. [beta version]
-  * A mini-map of the dungeon can be generated. [beta version]
-* Supported Development Platforms: Windows,Android (should be possible to build on all platforms)
+* Supported Development Platforms: Windows,Android
 * Supported Target Build Platforms: Windows,Android (should be possible to target all platforms)
-
-# 👾 Demo
-
-[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
-
-![DungeonGeneratorDemo Screenshot](https://github.com/shun126/UE5-DungeonGeneratorDemo/raw/main/Document/Screenshot.gif)
-
-This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
 
 # 🔧 Requirements
 * [Unreal Engine 5.0 ~ Unreal Engine 5.4](https://www.unrealengine.com/)
@@ -60,12 +53,20 @@ you can redistribute it and/or modify it under the terms of the GNU General Publ
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied arranty of MERCHANTABILITY or FITNESS FOR A ARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-Or, [UnrealEngine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
+Or, [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
-The UnrealEngine marketplace version includes the following enhancements.
+The [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version includes the following enhancements.
 * Sub-levels can be applied as dungeon rooms
+* A mini-map of the dungeon can be generated.
 * Interior decoration. [beta version]
-* A mini-map of the dungeon can be generated. [beta version]
+
+# 👾 Demo
+
+[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
+
+![DungeonGeneratorDemo Screenshot](https://github.com/shun126/UE5-DungeonGeneratorDemo/raw/main/Document/Screenshot.gif)
+
+This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
 
 # 👀 See also
 * [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)

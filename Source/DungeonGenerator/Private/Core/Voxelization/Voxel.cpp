@@ -13,155 +13,121 @@ All Rights Reserved.
 #include "../Helper/Crc.h"
 #include "../Math/Math.h"
 #include "../PathGeneration/PathFinder.h"
-#include "../PathGeneration/PathGoalCondition.h"
+
+#if defined(BUILD_TARGET_UNREAL_ENGINE)
+#include <Async/ParallelFor.h>
+#endif
+
 #include <array>
-#include <bitset>
+#include <map>
+#include <vector>
+
+#include "Core/RoomGeneration/Room.h"
 
 namespace dungeon
 {
 	Voxel::Voxel(const GenerateParameter& parameter) noexcept
-		: mGrids(std::make_unique<Grid[]>(static_cast<size_t>(parameter.GetWidth()) * parameter.GetDepth() * parameter.GetHeight()))
+		: mGrids(std::make_unique<Grid[]>(static_cast<size_t>(parameter.GetWidth())* parameter.GetDepth()* parameter.GetHeight()))
 		, mWidth(parameter.GetWidth())
 		, mDepth(parameter.GetDepth())
 		, mHeight(parameter.GetHeight())
 	{
 	}
 
-	void Voxel::NoRoofMeshGeneration(const FIntVector& location, const bool noRoofMeshGeneration) noexcept
+	/**
+	 * 部屋の内部から部屋の外郭を検索します。
+	 * 部屋の外のグリッドは Grid::Type::Empty である必要があります。
+	 */
+	bool Voxel::SearchGateLocation(std::vector<CandidateLocation>& result, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) const noexcept
 	{
-		if (Contain(location))
+		result.clear();
+
+#if defined(JENKINS_FOR_DEVELOP)
 		{
-			const size_t index = Index(location);
-			mGrids.get()[index].NoRoofMeshGeneration(noRoofMeshGeneration);
+			const auto startIdentifier = mGrids.get()[Index(start)].GetIdentifier();
+			check(startIdentifier == identifier.Get());
 		}
-	}
-
-	void Voxel::NoFloorMeshGeneration(const FIntVector& location, const bool noFloorMeshGeneration) noexcept
-	{
-		if (Contain(location))
-		{
-			const size_t index = Index(location);
-			mGrids.get()[index].NoFloorMeshGeneration(noFloorMeshGeneration);
-		}
-	}
-
-	void Voxel::NoNorthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept
-	{
-		if (Contain(location))
-		{
-			const size_t index = Index(location);
-			mGrids.get()[index].NoNorthWallMeshGeneration(noWallMeshGeneration);
-		}
-	}
-
-	void Voxel::NoSouthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept
-	{
-		if (Contain(location))
-		{
-			const size_t index = Index(location);
-			mGrids.get()[index].NoSouthWallMeshGeneration(noWallMeshGeneration);
-		}
-	}
-
-	void Voxel::NoEastWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept
-	{
-		if (Contain(location))
-		{
-			const size_t index = Index(location);
-			mGrids.get()[index].NoEastWallMeshGeneration(noWallMeshGeneration);
-		}
-	}
-
-	void Voxel::NoWestWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept
-	{
-		if (Contain(location))
-		{
-			const size_t index = Index(location);
-			mGrids.get()[index].NoWestWallMeshGeneration(noWallMeshGeneration);
-		}
-	}
-
-	static int32 SquareDistance(const FIntVector& a, const FIntVector& b)
-	{
-		const auto delta = a - b;
-		const int32 squareDistance = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z;
-		return squareDistance;
-	}
-
-	/*
-	部屋の内部から部屋の外郭を検索します。
-	部屋の外のグリッドは Grid::Type::Empty である必要があります。
-	*/
-	bool Voxel::SearchGateLocation(std::map<size_t, FIntVector>& result, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) noexcept
-	{
-		check(mGrids.get()[Index(start)].GetIdentifier() == identifier.Get());
+#endif
 
 		/*
-		最も近い位置を調べる関数
-		戻り値がfalseならば検索を終了する。
-		*/
+		 * 最も近い位置を調べる関数
+		 * 戻り値がfalseならば検索を終了する。
+		 */
 		auto checker = [this, &result, &goal, identifier, shared](const FIntVector& location) -> bool
-			{
-				const auto& grid = mGrids.get()[Index(location)];
-				if (grid.GetIdentifier() != identifier.Get())
-					return false;
+		{
+			// 指定位置のグリッドを取得
+			const auto gridIndex = Index(location);
+			const auto& grid = mGrids.get()[gridIndex];
+			if (grid.GetIdentifier() != identifier.Get())
+				return false;
 
-				const Grid::Type currentGridType = grid.GetType();
+			// 門にできないグリッドなら次の検索へ
+			if (shared)
+			{
+				if (grid.Is(Grid::Type::Deck) == false && grid.IsKindOfGateType() == false)
+					return true;
+			}
+			else
+			{
+				if (grid.Is(Grid::Type::Deck) == false)
+					return true;
+			}
+
+			bool validLocation = false;
+			for (std::uint_fast8_t i = 0; i < 4; ++i)
+			{
+				// 壁の生成が出来ないなら他のグリッドへ
+				const Direction direction(static_cast<Direction::Index>(i));
+				if (grid.IsNoWallMeshGeneration(direction))
+					continue;
+
+				const Grid& aroundGrid = Get(location + direction.GetVector());
+				// 部屋の中心と同じ識別子なら他のグリッドへ
+				if (aroundGrid.GetIdentifier() == identifier.Get())
+					continue;
+
+				// 空白なら接続を許可
+				if (aroundGrid.Is(Grid::Type::Empty) == true)
+				{
+					validLocation = true;
+					break;
+				}
+
+				// 門や通路を共通で使用する場合
 				if (shared)
 				{
-					if (currentGridType != Grid::Type::Deck && currentGridType != Grid::Type::Gate)
+					// スロープにつながるグリッド
+					// 門を上書きするとスロープを破壊するので次の検索へ
+					if (aroundGrid.IsKindOfSlopeType() && (aroundGrid.GetDirection().IsNorthSouth() == direction.IsNorthSouth()))
 						return true;
-				}
-				else
-				{
-					if (currentGridType != Grid::Type::Deck)
-						return true;
-				}
 
-				/*
-				四方向のいずれかにEmptyタイプがあれば合格
-				四方向のいずれかにAisle/Slopeタイプがあれば失格
-				*/
-				bool validLocation = false;
-				for (std::uint_fast8_t i = 0; i < 4; ++i)
-				{
-					// 壁の生成が出来ないならcontinue
-					const Direction direction(static_cast<Direction::Index>(i));
-					if (grid.IsNoWallMeshGeneration(direction))
-						continue;
-
-					const FIntVector& offset = direction.GetVector();
-					const Grid& aroundGrid = Get(location + offset);
-					const Grid::Type aroundGridType = aroundGrid.GetType();
-					if (aroundGrid.GetIdentifier() == identifier.Get())
-						continue;
-					if (shared)
+					// 通路なら接続を許可
+					if (aroundGrid.IsKindOfAisleType())
 					{
-						if (aroundGrid.IsKindOfSlopeType() && (aroundGrid.GetDirection().IsNorthSouth() == direction.IsNorthSouth()))
-							return true;
-						if (aroundGrid.GetType() == Grid::Type::Empty || aroundGrid.IsKindOfAisleType() /* || aroundGrid.IsKindOfGateType() || aroundGrid.Is(Grid::Type::Deck)*/)
-							validLocation = true;
-					}
-					else
-					{
-						if (aroundGrid.IsKindOfAisleType())
-							return true;
-						if (aroundGrid.IsKindOfSlopeType() && (aroundGrid.GetDirection().IsNorthSouth() == direction.IsNorthSouth()))
-							return true;
-						if (aroundGrid.GetType() == Grid::Type::Empty)
-							validLocation = true;
+						validLocation = true;
+						break;
 					}
 				}
-				if (validLocation)
-				{
-					const int32 squareDistance = SquareDistance(location, goal);
-					result[squareDistance] = location;
-				}
+			}
 
-				return true;
-			};
+			// 門の候補として登録
+			if (validLocation)
+			{
+				uint32_t squareDistance = PathFinder::Heuristics(location, goal);
+				if (shared == true && grid.IsKindOfGateType() == false)
+					squareDistance |= 0x80000000;
+				result.emplace_back(squareDistance, location);
+			}
 
-		// スタート位置周辺で門にできそうな場所を検索
+			return true;
+		};
+
+		/*
+		 * スタート位置周辺で門にできそうな場所を検索
+		 * （スタート位置は部屋の中心）
+		 * 部屋の中心から外側に向かって門を作れそうなグリッドを検索
+		 * テストが成功したグリッドはresultに集められる。
+		 */
 		for (int32 x = start.X; x >= 0; --x)
 		{
 			if (!checker(FIntVector(x, start.Y, start.Z)))
@@ -193,28 +159,154 @@ namespace dungeon
 			}
 		}
 
+		std::sort(result.begin(), result.end(), [](const CandidateLocation& l, const CandidateLocation& r)
+			{
+				return l.mPriority < r.mPriority;
+			}
+		);
+
 		return result.empty() == false;
 	}
 
-	bool Voxel::Aisle(const FIntVector& start, const FIntVector& idealGoal, const PathGoalCondition& goalCondition, const Identifier& identifier, const bool mergeRooms, const bool generateIntersections) noexcept
+	bool Voxel::Aisle(const std::vector<CandidateLocation>& startToGoal, const std::vector<CandidateLocation>& goalToStart, const AisleParameter& aisleParameter) noexcept
 	{
-		constexpr uint32_t PriorityConnectingCost = 1;
-		constexpr uint32_t NormalConnectingCost = 2;
-		constexpr uint32_t SlopeConnectingCost = 3;
-
-		if (!goalCondition.Contains(idealGoal))
+		// 経路の一覧を準備
+		bool terminate = false;
+		std::vector<Route> route;
+		if (aisleParameter.mGenerateIntersections == true)
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("Voxel: include the finish line in the goal range. (%d,%d,%d)"), idealGoal.X, idealGoal.Y, idealGoal.Z);
-			mLastError = Error::GoalPointIsOutsideGoalRange;
-			return false;
+			// ドア～ドアを優先的に検索
+			route.reserve(startToGoal.size() * goalToStart.size());
+			for (const auto& startLocation : startToGoal)
+			{
+				if ((startLocation.mPriority & 0x80000000) == 0)
+					continue;
+				for (const auto& goalLocation : goalToStart)
+				{
+					if ((goalLocation.mPriority & 0x80000000) == 0)
+						continue;
+					route.emplace_back(startLocation.mLocation, goalLocation.mLocation);
+				}
+			}
+			terminate = AisleImpl(route, aisleParameter);
 		}
 
-		// Start of path search
-		// パス検索開始
-		PathFinder pathFinder;
-		pathFinder.Start(start, idealGoal, PathFinder::SearchDirection::Any);
+		if (terminate == false)
+		{
+			// 非ドア～非ドアを検索
+			route.clear();
+			route.reserve(startToGoal.size() * goalToStart.size());
+			for (const auto& startLocation : startToGoal)
+			{
+				if ((startLocation.mPriority & 0x80000000) != 0)
+					continue;
+				for (const auto& goalLocation : goalToStart)
+				{
+					if ((goalLocation.mPriority & 0x80000000) != 0)
+						continue;
+					route.emplace_back(startLocation.mLocation, goalLocation.mLocation);
+				}
+			}
+			terminate = AisleImpl(route, aisleParameter);
+		}
 
-		// Get the most promising positions
+		// terminateがfalseならば経路検索は失敗している
+		return terminate;
+	}
+
+	bool Voxel::AisleImpl(const std::vector<Route>& route, const AisleParameter& aisleParameter) noexcept
+	{
+		std::mutex pathResultsMutex;
+		std::map<size_t, std::shared_ptr<PathFinder::Result>> pathResults;
+
+#if defined(BUILD_TARGET_UNREAL_ENGINE)
+		ParallelFor(route.size(), [this, &route, &aisleParameter, &pathResultsMutex, &pathResults](const int32 index)
+#else
+		for (size_t index = 0; index < route.size(); ++index)
+#endif
+			{
+				const Route& currentRoute = route[index];
+
+				/*
+				理想的なゴール位置がゴール条件に含まれていないなら
+				検索できないのでエラーを表示して中断する。
+				*/
+				if (aisleParameter.mGoalCondition.Contains(route[index].mIdealGoal) == false)
+				{
+					DUNGEON_GENERATOR_ERROR(TEXT("Voxel: Task %d: include the finish line in the goal range. (%d,%d,%d)")
+						, index, currentRoute.mIdealGoal.X, currentRoute.mIdealGoal.Y, currentRoute.mIdealGoal.Z);
+					mLastError = Error::GoalPointIsOutsideGoalRange;
+					return;
+				}
+
+				// パス検索開始
+				const auto pathResult = FindAisle(currentRoute, aisleParameter, index);
+				if (pathResult == nullptr)
+					return;
+
+				size_t key = pathResult->GetPathLength() << 8;
+				key |= index & 0xFF;
+				std::lock_guard lock(pathResultsMutex);
+				pathResults[key] = pathResult;
+#if defined(BUILD_TARGET_UNREAL_ENGINE)
+			},
+			EParallelForFlags::Unbalanced
+			//EParallelForFlags::ForceSingleThread
+		);
+#else
+		}
+#endif
+
+		if (pathResults.empty() == true)
+			return false;
+
+		const std::shared_ptr<PathFinder::Result>& pathResult = pathResults.begin()->second;
+		
+#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG)
+		const size_t index = pathResults.begin()->first & 0xFF;
+		const FIntVector& startLocation = pathResult->GetStartLocation();
+		const FIntVector& goalLocation = pathResult->GetGoalLocation();
+		DUNGEON_GENERATOR_LOG(TEXT("Voxel: Task %d: Pathfinding succeeded. (%d,%d,%d)-(%d,%d,%d)")
+			, index
+			, startLocation.X, startLocation.Y, startLocation.Z
+			, goalLocation.X, goalLocation.Y, goalLocation.Z
+		);
+#endif
+
+		// パスをグリッドに書き込む
+		WriteAisleToGrid(pathResult, aisleParameter);
+
+		return true;
+	}
+
+	/**
+	 * A*による通路検索
+	 * 条件によってはマルチスレッド下で実行されるのでスレッドセーフを徹底して下さい
+	 * @param route				通路の開始と終了位置
+	 * @param aisleParameter	通路検索パラメーター
+	 * @param index				通路配列番号
+	 * @return 通路検索結果。nullptrなら検索失敗。
+	 */
+	std::shared_ptr<PathFinder::Result> Voxel::FindAisle(const Route& route, const AisleParameter& aisleParameter, const size_t index) const noexcept
+	{
+		static constexpr uint32_t PriorityConnectingCost = 1;
+		static constexpr uint32_t NormalConnectingCost = 2;
+		static constexpr uint32_t SlopeConnectingCost = 3;
+
+		PathFinder pathFinder;
+		int32 maximumNumberToFinding;
+		{
+			const FIntVector delta = route.mStart - route.mIdealGoal;
+			const int32 deltaX = std::max(1, std::abs(delta.X));
+			const int32 deltaY = std::max(1, std::abs(delta.Y));
+			const int32 deltaZ = std::max(6, std::abs(delta.Z)) * 6; // 一段上がる（下がる）のに6グリッド必要を考えて5倍
+			maximumNumberToFinding = deltaX * deltaY * deltaZ;
+			maximumNumberToFinding *= 16; // 根拠は無い
+		}
+
+		// パス検索開始
+		pathFinder.Start(route.mStart, route.mIdealGoal, PathFinder::SearchDirection::Any);
+
 		// 最も有望なポジションを得る
 		uint64_t nextKey;
 		PathFinder::NodeType nextNodeType;
@@ -224,17 +316,14 @@ namespace dungeon
 		PathFinder::SearchDirection nextSearchDirection;
 		while (pathFinder.Pop(nextKey, nextNodeType, nextCost, nextLocation, nextDirection, nextSearchDirection))
 		{
-			// Reaching the goal?
 			// ゴールに到達？
-			if (IsReachedGoal(nextLocation, idealGoal.Z, goalCondition))
+			if (IsReachedGoal(nextLocation, route.mIdealGoal.Z, aisleParameter.mGoalCondition))
 			{
 				if (nextNodeType == PathFinder::NodeType::Aisle && nextSearchDirection == PathFinder::SearchDirection::Any)
 					break;
-				else
-					continue;
+				continue;
 			}
 
-			// Search horizontally
 			// 水平方向に検索する
 			for (uint_fast8_t i = 0; i < 4; ++i)
 			{
@@ -245,19 +334,17 @@ namespace dungeon
 					const FIntVector& offset = Direction::GetVector(static_cast<Direction::Index>(i));
 					const FIntVector openLocation = nextLocation + offset;
 					const Direction direction(static_cast<Direction::Index>(i));
-					const auto& openGrid = Get(openLocation);
-					if (pathFinder.IsUsingOpenNode(openLocation) == false)
+					if (IsPassable(openLocation, aisleParameter.mGenerateIntersections) || IsReachedGoalWithDirection(openLocation, route.mIdealGoal.Z, aisleParameter.mGoalCondition, direction))
 					{
-						if (IsPassable(openLocation, generateIntersections) || IsReachedGoalWithDirection(openLocation, idealGoal.Z, goalCondition, direction))
+						if (pathFinder.IsUsingOpenNode(openLocation) == false)
 						{
 							const uint32_t connectingCost = (i == nextDirection.Get()) ? PriorityConnectingCost : NormalConnectingCost;
-							pathFinder.Open(nextKey, PathFinder::NodeType::Aisle, nextCost + connectingCost, openLocation, idealGoal, direction, PathFinder::SearchDirection::Any);
+							pathFinder.Open(nextKey, PathFinder::NodeType::Aisle, nextCost + connectingCost, openLocation, route.mIdealGoal, direction, PathFinder::SearchDirection::Any);
 						}
 					}
 				}
 			}
 
-			// Vertical search
 			// 垂直方向に検索する
 			if (nextNodeType == PathFinder::NodeType::Aisle)
 			{
@@ -268,15 +355,16 @@ namespace dungeon
 					const FIntVector upstairsOpenLocationF = nextLocation + nextDirection.GetVector();
 					const FIntVector upstairsOpenLocationUF = upstairsOpenLocationF + FIntVector(0, 0, 1);
 					if (
-						IsPassable(upstairsOpenLocationU, false) && IsReachedGoal(upstairsOpenLocationU, idealGoal.Z, goalCondition) == false && pathFinder.IsUsingOpenNode(upstairsOpenLocationU) == false &&
-						IsPassable(upstairsOpenLocationF, false) && IsReachedGoal(upstairsOpenLocationF, idealGoal.Z, goalCondition) == false && pathFinder.IsUsingOpenNode(upstairsOpenLocationF) == false &&
-						IsPassable(upstairsOpenLocationUF, false) && IsReachedGoal(upstairsOpenLocationUF, idealGoal.Z, goalCondition) == false)
+						IsPassable(upstairsOpenLocationU, false) && IsReachedGoal(upstairsOpenLocationU, route.mIdealGoal.Z, aisleParameter.mGoalCondition) == false && pathFinder.IsUsingOpenNode(upstairsOpenLocationU) == false &&
+						IsPassable(upstairsOpenLocationF, false) && IsReachedGoal(upstairsOpenLocationF, route.mIdealGoal.Z, aisleParameter.mGoalCondition) == false && pathFinder.IsUsingOpenNode(upstairsOpenLocationF) == false &&
+						IsPassable(upstairsOpenLocationUF, false) && IsReachedGoal(upstairsOpenLocationUF, route.mIdealGoal.Z, aisleParameter.mGoalCondition) == false)
 					{
-						pathFinder.Open(nextKey, PathFinder::NodeType::Upstairs, nextCost + SlopeConnectingCost, upstairsOpenLocationUF, idealGoal, nextDirection, PathFinder::Cast(nextDirection));
+						pathFinder.Open(nextKey, PathFinder::NodeType::Upstairs, nextCost + SlopeConnectingCost, upstairsOpenLocationUF, route.mIdealGoal, nextDirection, PathFinder::Cast(nextDirection));
 
-						auto useNode = std::make_shared<PathNodeSwitcher::Node>();
-						useNode->Add(PathFinder::Hash(upstairsOpenLocationU));
-						useNode->Add(PathFinder::Hash(upstairsOpenLocationF));
+						const PathNodeSwitcher::Node useNode(
+							PathFinder::Hash(upstairsOpenLocationU),
+							PathFinder::Hash(upstairsOpenLocationF)
+						);
 						pathFinder.ReserveOpenNode(upstairsOpenLocationUF, useNode);
 					}
 
@@ -285,47 +373,192 @@ namespace dungeon
 					const FIntVector downstairsOpenLocationF = nextLocation + nextDirection.GetVector();
 					const FIntVector downstairsOpenLocationDF = downstairsOpenLocationF + FIntVector(0, 0, -1);
 					if (
-						IsPassable(downstairsOpenLocationD, false) && IsReachedGoal(downstairsOpenLocationD, idealGoal.Z, goalCondition) == false && pathFinder.IsUsingOpenNode(downstairsOpenLocationD) == false &&
-						IsPassable(downstairsOpenLocationF, false) && IsReachedGoal(downstairsOpenLocationF, idealGoal.Z, goalCondition) == false && pathFinder.IsUsingOpenNode(downstairsOpenLocationF) == false &&
-						IsPassable(downstairsOpenLocationDF, false) && IsReachedGoal(downstairsOpenLocationDF, idealGoal.Z, goalCondition) == false)
+						IsPassable(downstairsOpenLocationD, false) && IsReachedGoal(downstairsOpenLocationD, route.mIdealGoal.Z, aisleParameter.mGoalCondition) == false && pathFinder.IsUsingOpenNode(downstairsOpenLocationD) == false &&
+						IsPassable(downstairsOpenLocationF, false) && IsReachedGoal(downstairsOpenLocationF, route.mIdealGoal.Z, aisleParameter.mGoalCondition) == false && pathFinder.IsUsingOpenNode(downstairsOpenLocationF) == false &&
+						IsPassable(downstairsOpenLocationDF, false) && IsReachedGoal(downstairsOpenLocationDF, route.mIdealGoal.Z, aisleParameter.mGoalCondition) == false)
 					{
-						pathFinder.Open(nextKey, PathFinder::NodeType::Downstairs, nextCost + SlopeConnectingCost, downstairsOpenLocationDF, idealGoal, nextDirection, PathFinder::Cast(nextDirection));
+						pathFinder.Open(nextKey, PathFinder::NodeType::Downstairs, nextCost + SlopeConnectingCost, downstairsOpenLocationDF, route.mIdealGoal, nextDirection, PathFinder::Cast(nextDirection));
 
-						auto useNode = std::make_shared<PathNodeSwitcher::Node>();
-						useNode->Add(PathFinder::Hash(downstairsOpenLocationD));
-						useNode->Add(PathFinder::Hash(upstairsOpenLocationF));
+						PathNodeSwitcher::Node useNode(
+							PathFinder::Hash(downstairsOpenLocationD),
+							PathFinder::Hash(upstairsOpenLocationF)
+						);
 						pathFinder.ReserveOpenNode(downstairsOpenLocationDF, useNode);
 					}
 				}
 			}
+
+			// 検索を断念
+			if (pathFinder.CloseSize() >= maximumNumberToFinding/*aisleParameter.mMaximumNumberToFinding*/)
+			{
+#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG)
+				DUNGEON_GENERATOR_LOG(TEXT("Voxel: Task %d: Suspend route search. (%d,%d,%d)-(%d,%d,%d)"), index
+					, route.mStart.X, route.mStart.Y, route.mStart.Z, route.mIdealGoal.X, route.mIdealGoal.Y, route.mIdealGoal.Z);
+#endif
+				return nullptr;
+			}
 		}
 
-		if (!goalCondition.Contains(nextLocation))
+		if (!aisleParameter.mGoalCondition.Contains(nextLocation))
 		{
-			DUNGEON_GENERATOR_LOG(TEXT("Voxel: Failed to search route. (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, idealGoal.X, idealGoal.Y, idealGoal.Z);
-			return false;
+			DUNGEON_GENERATOR_ERROR(TEXT("Voxel: Task %d: Failed to search route. (%d,%d,%d)-(%d,%d,%d)"), index
+				, route.mStart.X, route.mStart.Y, route.mStart.Z, route.mIdealGoal.X, route.mIdealGoal.Y, route.mIdealGoal.Z);
+			return nullptr;
+		}
+
+		if (!aisleParameter.mGoalCondition.Contains(nextLocation))
+		{
+			DUNGEON_GENERATOR_ERROR(TEXT("Voxel: Task %d: Failed to search route. (%d,%d,%d)-(%d,%d,%d)"), index
+				, route.mStart.X, route.mStart.Y, route.mStart.Z, route.mIdealGoal.X, route.mIdealGoal.Y, route.mIdealGoal.Z);
+			return nullptr;
 		}
 
 		// nextLocationが実際に到達した場所
 		if (!pathFinder.Commit(nextLocation))
 		{
-			DUNGEON_GENERATOR_LOG(TEXT("Voxel: Failed to generate route. (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, idealGoal.X, idealGoal.Y, idealGoal.Z);
-			return false;
+			DUNGEON_GENERATOR_ERROR(TEXT("Voxel: Task %d: Failed to generate route. (%d,%d,%d)-(%d,%d,%d)"), index
+				, route.mStart.X, route.mStart.Y, route.mStart.Z, route.mIdealGoal.X, route.mIdealGoal.Y, route.mIdealGoal.Z);
+			return nullptr;
 		}
 
-#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG)
-		DUNGEON_GENERATOR_LOG(TEXT("Voxel: Pathfinding succeeded. (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, nextLocation.X, nextLocation.Y, nextLocation.Z);
-#endif
+		/*
+		 * 通路を共有する時に、門グリッド周辺に同じ方向の門と通路があるなら
+		 * 同じ通路の門が並ぶので今回の門は生成する必要が無い
+		 */
+		if (aisleParameter.mGenerateIntersections)
+		{
+			if (const auto& pathResult = pathFinder.GetResult())
+			{
+				check(route.mStart == pathResult->GetStartLocation());
+				check(nextLocation == pathResult->GetGoalLocation());
+				check(nextDirection == pathResult->GetGoalDirection());
+
+				if (CheckDoorAligned(pathResult->GetStartLocation(), pathResult->GetStartDirection()) == true)
+				{
+					pathResult->InvalidateStartLocationType();
+				}
+				if (CheckDoorAligned(pathResult->GetGoalLocation(), pathResult->GetGoalDirection()) == true)
+				{
+					pathResult->InvalidateGoalLocationType();
+				}
+			}
+		}
+
 #if 0
 		// 部屋を結合する場合ドアが不要なので、短すぎる通路を失敗扱いにする
 		if (mergeRooms && pathFinder.GetPathLength() <= 2)
 		{
-			DUNGEON_GENERATOR_LOG(TEXT("Voxel: 探索した経路が短すぎました (%d,%d,%d)-(%d,%d,%d)"), start.X, start.Y, start.Z, idealGoal.X, idealGoal.Y, idealGoal.Z);
+			DUNGEON_GENERATOR_LOG(TEXT("Voxel: 探索した経路が短すぎました (%d,%d,%d)-(%d,%d,%d)"), index
+				, route.mStart.X, route.mStart.Y, route.mStart.Z, route.mIdealGoal.X, route.mIdealGoal.Y, route.mIdealGoal.Z);
 			return false;
 		}
 #endif
+
+		return pathFinder.GetResult();
+	}
+
+// #define ___DUNGEON_DEBUG___
+
+	bool Voxel::CheckDoorAligned(const FIntVector& location, const Direction& direction) const noexcept
+	{
+		if (direction.IsNorthSouth())
+		{
+			// 南北に向いた門
+			const Grid& w = Get(location.X - 1, location.Y, location.Z);
+			const Grid& e = Get(location.X + 1, location.Y, location.Z);
+
+#if defined(___DUNGEON_DEBUG___)
+			const auto wType = w.GetType();
+			const auto eType = e.GetType();
+			const auto wDirection = w.GetDirection();
+			const auto eDirection = e.GetDirection();
+#endif
+
+			if (w.IsKindOfGateType() && w.GetDirection().IsNorthSouth() == true)
+			{
+				const Grid& n = Get(location.X - 1, location.Y - 1, location.Z);
+				const Grid& s = Get(location.X - 1, location.Y + 1, location.Z);
+
+#if defined(___DUNGEON_DEBUG___)
+				const auto nType = n.GetType();
+				const auto sType = s.GetType();
+#endif
+
+				if (n.IsKindOfAisleType() || s.IsKindOfAisleType())
+				{
+					return true;
+				}
+			}
+			else if (e.IsKindOfGateType() && e.GetDirection().IsNorthSouth() == true)
+			{
+				const Grid& n = Get(location.X + 1, location.Y - 1, location.Z);
+				const Grid& s = Get(location.X + 1, location.Y + 1, location.Z);
+
+#if defined(___DUNGEON_DEBUG___)
+				const auto nType = n.GetType();
+				const auto sType = s.GetType();
+#endif
+
+				if (n.IsKindOfAisleType() || s.IsKindOfAisleType())
+				{
+					return true;
+				}
+			}
+		}
+		else
+		{
+			// 東西に向いた門
+			const Grid& n = Get(location.X, location.Y - 1, location.Z);
+			const Grid& s = Get(location.X, location.Y + 1, location.Z);
+
+#if defined(___DUNGEON_DEBUG___)
+			const auto nType = n.GetType();
+			const auto sType = s.GetType();
+			const auto nDirection = n.GetDirection();
+			const auto sDirection = s.GetDirection();
+#endif
+
+			if (n.IsKindOfGateType() && n.GetDirection().IsNorthSouth() == false)
+			{
+				const Grid& w = Get(location.X - 1, location.Y - 1, location.Z);
+				const Grid& e = Get(location.X + 1, location.Y - 1, location.Z);
+
+#if defined(___DUNGEON_DEBUG___)
+				const auto wType = w.GetType();
+				const auto eType = e.GetType();
+#endif
+
+				if (w.IsKindOfAisleType() || e.IsKindOfAisleType())
+				{
+					return true;
+				}
+			}
+			else if (s.IsKindOfGateType() && s.GetDirection().IsNorthSouth() == false)
+			{
+				const Grid& w = Get(location.X + 1, location.Y + 1, location.Z);
+				const Grid& e = Get(location.X - 1, location.Y + 1, location.Z);
+
+#if defined(___DUNGEON_DEBUG___)
+				const auto wType = w.GetType();
+				const auto eType = e.GetType();
+#endif
+
+				if (w.IsKindOfAisleType() || e.IsKindOfAisleType())
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+#undef ___DUNGEON_DEBUG___
+
+	void Voxel::WriteAisleToGrid(const std::shared_ptr<PathFinder::Result>& pathResult, const AisleParameter& aisleParameter) const
+	{
+		check(pathResult);
+
 		// パスをグリッドに反映します
-		pathFinder.Path([this, &identifier, generateIntersections](PathFinder::NodeType nodeType, const FIntVector& location, Direction direction)
+		pathResult->Path([this, &aisleParameter](const PathFinder::NodeType nodeType, const FIntVector& location, const Direction& direction)
 			{
 				const size_t index = Index(location);
 				Grid& grid = mGrids.get()[index];
@@ -335,34 +568,35 @@ namespace dungeon
 				{
 				case PathFinder::NodeType::UpSpace:
 					cellType = Grid::Type::UpSpace;
-					grid.MergeAisle(generateIntersections);
+					grid.MergeAisle(aisleParameter.mGenerateIntersections);
 					break;
 
 				case PathFinder::NodeType::DownSpace:
 					cellType = Grid::Type::DownSpace;
-					grid.MergeAisle(generateIntersections);
+					grid.MergeAisle(aisleParameter.mGenerateIntersections);
 					break;
 
 				case PathFinder::NodeType::Downstairs:
 				case PathFinder::NodeType::Upstairs:
 					cellType = Grid::Type::Slope;
-					grid.MergeAisle(generateIntersections);
+					grid.MergeAisle(aisleParameter.mGenerateIntersections);
 					break;
 
 				case PathFinder::NodeType::Stairwell:
 					cellType = Grid::Type::Stairwell;
-					grid.MergeAisle(generateIntersections);
+					grid.MergeAisle(aisleParameter.mGenerateIntersections);
 					break;
-						
+
 				case PathFinder::NodeType::Gate:
 					cellType = Grid::Type::Gate;
 					break;
 
 				case PathFinder::NodeType::Aisle:
 					cellType = Grid::Type::Aisle;
-					grid.MergeAisle(generateIntersections);
+					grid.MergeAisle(aisleParameter.mGenerateIntersections);
 					break;
 
+				case PathFinder::NodeType::Invalid:
 				default:
 					return;
 				}
@@ -370,37 +604,29 @@ namespace dungeon
 				// 識別子が無効なら通路として設定する
 				if (grid.IsInvalidIdentifier())
 				{
-					grid.SetIdentifier(identifier.Get());
+					grid.SetIdentifier(aisleParameter.mIdentifier.Get());
 				}
 
 				grid.SetType(cellType);
 				grid.SetDirection(direction);
-
-#if defined(DEBUG_ENABLE_INFOMATION_FOR_REPRECATION)
-				DUNGEON_GENERATOR_LOG(TEXT("pathFinder: Identifier=%d"), grid.GetIdentifier());
-#endif
 			}
 		);
 
-		return true;
-	}
-
-	size_t Voxel::Index(const uint32_t x, const uint32_t y, const uint32_t z) const noexcept
-	{
-		const size_t index
-			= static_cast<size_t>(z) * mWidth * mDepth
-			+ static_cast<size_t>(y) * mWidth
-			+ static_cast<size_t>(x);
-		return index;
-	}
-
-	size_t Voxel::Index(const FIntVector& location) const noexcept
-	{
-		const size_t index
-			= static_cast<size_t>(location.Z) * mWidth * mDepth
-			+ static_cast<size_t>(location.Y) * mWidth
-			+ static_cast<size_t>(location.X);
-		return index;
+		// 必要であれば、奥の部屋の門に鍵をかける
+		if (aisleParameter.mGenerateIntersections == false)
+		{
+			const FIntVector& startLocation = pathResult->GetStartLocation();
+			Grid grid = Get(startLocation.X, startLocation.Y, startLocation.Z);
+			check(grid.GetProps() == Grid::Props::None);
+			if (grid.GetProps() == Grid::Props::None)
+			{
+				if (aisleParameter.mUniqueLocked)
+					grid.SetProps(Grid::Props::UniqueLock);
+				else if (aisleParameter.mLocked)
+					grid.SetProps(Grid::Props::Lock);
+				Set(startLocation.X, startLocation.Y, startLocation.Z, grid);
+			}
+		}
 	}
 
 	const Grid& Voxel::Get(const uint32_t x, const uint32_t y, const uint32_t z) const noexcept
@@ -415,18 +641,7 @@ namespace dungeon
 		return mGrids.get()[index];
 	}
 
-	const Grid& Voxel::Get(const FIntVector& location) const noexcept
-	{
-		return Get(location.X, location.Y, location.Z);
-	}
-
-	const Grid& Voxel::Get(const size_t index) const noexcept
-	{
-		check(index < static_cast<size_t>(mWidth) * mDepth * mHeight);
-		return mGrids.get()[index];
-	}
-
-	void Voxel::Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) noexcept
+	void Voxel::Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) const noexcept
 	{
 		if (x < mWidth && y < mDepth && z < mHeight)
 		{
@@ -435,7 +650,7 @@ namespace dungeon
 		}
 	}
 
-	void Voxel::Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) noexcept
+	void Voxel::Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) const noexcept
 	{
 		FIntVector min_;
 		min_.X = math::Clamp(min.X, 0, static_cast<int32_t>(mWidth));
@@ -475,60 +690,6 @@ namespace dungeon
 		}
 	}
 
-	bool Voxel::Contain(const FIntVector& location) const noexcept
-	{
-		return
-			(0 <= location.X && location.X < static_cast<int32_t>(mWidth)) &&
-			(0 <= location.Y && location.Y < static_cast<int32_t>(mDepth)) &&
-			(0 <= location.Z && location.Z < static_cast<int32_t>(mHeight));
-	}
-
-	Grid& Voxel::operator[](const size_t index) noexcept
-	{
-		check(index < static_cast<size_t>(mWidth)* mDepth* mHeight);
-		return mGrids.get()[index];
-	}
-
-	const Grid& Voxel::operator[](const size_t index) const noexcept
-	{
-		check(index < static_cast<size_t>(mWidth)* mDepth* mHeight);
-		return mGrids.get()[index];
-	}
-
-	void Voxel::Each(std::function<bool(const FIntVector& location, Grid& grid)> func) noexcept
-	{
-		for (uint32_t z = 0; z < mHeight; ++z)
-		{
-			for (uint32_t y = 0; y < mDepth; ++y)
-			{
-				for (uint32_t x = 0; x < mWidth; ++x)
-				{
-					const size_t index = Index(x, y, z);
-					Grid& grid = mGrids.get()[index];
-					if (!func(FIntVector(x, y, z), grid))
-						return;
-				}
-			}
-		}
-	}
-
-	void Voxel::Each(std::function<bool(const FIntVector& location, const Grid& grid)> func) const noexcept
-	{
-		for (uint32_t z = 0; z < mHeight; ++z)
-		{
-			for (uint32_t y = 0; y < mDepth; ++y)
-			{
-				for (uint32_t x = 0; x < mWidth; ++x)
-				{
-					const size_t index = Index(x, y, z);
-					Grid& grid = mGrids.get()[index];
-					if (!func(FIntVector(x, y, z), grid))
-						return;
-				}
-			}
-		}
-	}
-
 	bool Voxel::IsPassable(const FIntVector& location, const bool includeAisle) const noexcept
 	{
 		// 範囲内？
@@ -555,7 +716,7 @@ namespace dungeon
 		return reachTheGoal;
 	}
 
-	bool Voxel::IsReachedGoalWithDirection(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition, const Direction& enteringDirection) noexcept
+	bool Voxel::IsReachedGoalWithDirection(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition, const Direction& enteringDirection) const noexcept
 	{
 		// ゴールの高さが違う？
 		if (goalAltitude != location.Z)
@@ -580,25 +741,88 @@ namespace dungeon
 		return true;
 	}
 
-	uint32_t Voxel::GetWidth() const noexcept
-	{
-		return mWidth;
-	}
-
-	uint32_t Voxel::GetDepth() const noexcept
-	{
-		return mDepth;
-	}
-
-	uint32_t Voxel::GetHeight() const noexcept
-	{
-		return mHeight;
-	}
-
-	uint32_t Voxel::CalculateCRC32(uint32_t hash) const noexcept
+	uint32_t Voxel::CalculateCRC32(const uint32_t hash) const noexcept
 	{
 		const size_t size = static_cast<size_t>(mWidth) * mDepth * mHeight;
 		const uint32_t crc32 = GenerateCrc32FromData(mGrids.get(), size, hash);
 		return crc32;
 	}
+
+#if 0
+	/*
+	 * 部屋の端に４グリッド空いていて門が作れるか？
+	 *
+	 */
+	bool Voxel::Test(const std::shared_ptr<Room>& room)
+	{
+		const auto checkH = [this](const int32 x, const int32 y)
+			{
+				for (int32 ox = x; ox < x + 4; ++ox)
+				{
+					if (Get(ox).Is(Grid::Type::Deck) == false)
+						return false;
+				}
+				return true;
+			};
+
+		if (room->GetWidth() >= 4)
+		{
+			for (int32 x = room->GetLeft() + 1; x < room->GetRight() - 3; ++x)
+			{
+				if (checkH(x, room->GetTop()) == true)
+				{
+					Grid a = Get(x, room->GetTop(), room->GetBackground());
+					a.SetDirection(Direction(Direction::East));
+					Set(x, room->GetTop(), room->GetBackground(), a);
+
+					Grid b = Get(x + 1, room->GetTop() - 1, room->GetBackground());
+					b.SetDirection(Direction(Direction::West));
+					b.SetType(Grid::Type::DownSpace);
+					Set(x + 1, room->GetTop() - 1, room->GetBackground(), a);
+
+					Grid c = Get(x + 2, room->GetTop() - 1, room->GetBackground());
+					c.SetDirection(Direction(Direction::West));
+					c.SetType(Grid::Type::Slope);
+					Set(x + 2, room->GetTop() - 1, room->GetBackground(), a);
+
+					Grid d = Get(x + 3, room->GetTop() - 1, room->GetBackground());
+					d.SetDirection(Direction(Direction::North));
+					d.SetType(Grid::Type::Gate);
+					Set(x + 3, room->GetTop() - 1, room->GetBackground(), a);
+
+					return true;
+				}
+
+				if (checkH(x, room->GetBottom()) == true)
+				{
+					Grid a = Get(x, room->GetBottom(), room->GetBackground());
+					a.SetDirection(Direction(Direction::East));
+					Set(x, room->GetBottom(), room->GetBackground(), a);
+
+					Grid b = Get(x + 1, room->GetBottom() - 1, room->GetBackground());
+					b.SetDirection(Direction(Direction::West));
+					b.SetType(Grid::Type::DownSpace);
+					Set(x + 1, room->GetBottom() - 1, room->GetBackground(), a);
+
+					Grid c = Get(x + 2, room->GetBottom() - 1, room->GetBackground());
+					c.SetDirection(Direction(Direction::West));
+					c.SetType(Grid::Type::Slope);
+					Set(x + 2, room->GetBottom() - 1, room->GetBackground(), a);
+
+					Grid d = Get(x + 3, room->GetBottom() - 1, room->GetBackground());
+					d.SetDirection(Direction(Direction::North));
+					d.SetType(Grid::Type::Gate);
+					Set(x + 3, room->GetBottom() - 1, room->GetBackground(), a);
+
+					return true;
+				}
+			}
+		}
+		else if (room->GetDepth() >= 4)
+		{
+		}
+
+		return false;
+	}
+#endif
 }

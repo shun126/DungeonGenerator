@@ -24,7 +24,7 @@ public:
 #endif
 
 public:
-	/*
+	/**
 	Class of static mesh to spawn
 	スポーンするスタティックメッシュ
 	*/

@@ -25,7 +25,7 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (ULevel* level = GetComponentLevel())
+	if (const ULevel* level = GetComponentLevel())
 	{
 		if (ADungeonMainLevelScriptActor* levelScript = Cast<ADungeonMainLevelScriptActor>(level->GetLevelScriptActor()))
 		{
@@ -76,7 +76,7 @@ void UDungeonComponentActivatorComponent::TickComponent(float deltaTime, enum EL
 void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 {
 	// ADungeonMainLevelScriptActorではないならTick不要
-	if (ADungeonMainLevelScriptActor* levelScript = mDungeonLevelScriptActor.Get())
+	if (const ADungeonMainLevelScriptActor* levelScript = mDungeonLevelScriptActor.Get())
 	{
 #if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 		if (levelScript->IsEnableLoadControl())

@@ -26,7 +26,7 @@ class DUNGEONGENERATOR_API UDungeonMeshSetDatabase : public UObject
 
 public:
 	explicit UDungeonMeshSetDatabase(const FObjectInitializer& objectInitializer);
-	virtual ~UDungeonMeshSetDatabase() = default;
+	virtual ~UDungeonMeshSetDatabase() override = default;
 
 	/**
 	FDungeonMeshSetを取得します

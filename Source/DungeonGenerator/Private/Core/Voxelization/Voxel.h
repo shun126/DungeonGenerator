@@ -9,14 +9,20 @@ All Rights Reserved.
 #pragma once
 #include "Grid.h"
 #include "../Helper/Identifier.h"
-#include <functional>
-#include <map>
+#include "../PathGeneration/PathGoalCondition.h"
+#include <atomic>
 #include <memory>
+#include <mutex>
+#include <vector>
+
+#include "Core/PathGeneration/PathFinder.h"
 
 namespace dungeon
 {
 	// 前方宣言
 	class PathGoalCondition;
+	class PathFinder;
+	class Room;
 	struct GenerateParameter;
 
 	/**
@@ -69,14 +75,12 @@ namespace dungeon
 
 		/**
 		グリッド内のグリッドを取得します
-		グリッド内のグリッドを取得します
-		@param[in]	index	配列番号
+		@param[in]	location	グリッド座標
 		@return		グリッド
 		*/
 		const Grid& Get(const FIntVector& location) const noexcept;
 
 		/**
-		グリッド内のグリッドを取得します
 		グリッド内のグリッドを取得します
 		@param[in]	index	配列番号
 		@return		グリッド
@@ -91,7 +95,7 @@ namespace dungeon
 		@param[in]	grid	グリッド
 		TODO:座標関連はFIntVectorに統一して下さい
 		*/
-		void Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) noexcept;
+		void Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) const noexcept;
 
 		/**
 		矩形の範囲にGridを書き込みます
@@ -100,39 +104,63 @@ namespace dungeon
 		@param[in]	fillGrid	塗りつぶすグリッド
 		@param[in]	floorGrid	一階部分のグリッド
 		*/
-		void Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) noexcept;
+		void Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) const noexcept;
 
 		/**
 		天井がメッシュ生成禁止か設定します
+		@param[in]	location				グリッドの位置
 		@param[in]	noRoofMeshGeneration	天井メッシュの生成禁止
 		*/
-		void NoRoofMeshGeneration(const FIntVector& location, const bool noRoofMeshGeneration) noexcept;
+		void NoRoofMeshGeneration(const FIntVector& location, const bool noRoofMeshGeneration) const noexcept;
 
 		/**
 		床がメッシュ生成禁止か設定します
+		@param[in]	location				グリッドの位置
 		@param[in]	noFloorMeshGeneration	床メッシュの生成禁止
 		*/
-		void NoFloorMeshGeneration(const FIntVector& location, const bool noFloorMeshGeneration) noexcept;
+		void NoFloorMeshGeneration(const FIntVector& location, const bool noFloorMeshGeneration) const noexcept;
 
-		/*
+		/**
 		北側の壁がメッシュ生成禁止か設定します
+		@param[in]	location				グリッドの位置
+		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
 		*/
-		void NoNorthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept;
+		void NoNorthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
-		/*
+		/**
 		南側の壁がメッシュ生成禁止か設定します
+		@param[in]	location				グリッドの位置
+		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
 		*/
-		void NoSouthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept;
+		void NoSouthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
-		/*
+		/**
 		東側の壁がメッシュ生成禁止か設定します
+		@param[in]	location				グリッドの位置
+		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
 		*/
-		void NoEastWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept;
+		void NoEastWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
-		/*
+		/**
 		西側の壁がメッシュ生成禁止か設定します
+		@param[in]	location				グリッドの位置
+		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
 		*/
-		void NoWestWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) noexcept;
+		void NoWestWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
+
+		/**
+		 * 候補位置
+		 */
+		struct CandidateLocation final
+		{
+			uint32_t mPriority;
+			FIntVector mLocation;
+
+			CandidateLocation(const uint32_t priority, const FIntVector& location)
+				: mPriority(priority)
+				, mLocation(location)
+			{}
+		};
 
 		/**
 		門を生成可能な場所を探します
@@ -143,31 +171,65 @@ namespace dungeon
 		@param[in]		shared				trueなら通路を共有する
 		@return			trueならば検索成功
 		*/
-		bool SearchGateLocation(std::map<size_t, FIntVector>& result, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) noexcept;
+		bool SearchGateLocation(std::vector<CandidateLocation>& result, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) const noexcept;
+
+		/**
+		 * 通路生成パラメータ
+		 */
+		struct AisleParameter final
+		{
+			PathGoalCondition mGoalCondition;	//!< 終了条件
+			Identifier mIdentifier;				//!< 通路の識別子
+			size_t mMaximumNumberToFinding;		//!< 最大検索数
+			bool mMergeRooms;					//!< 部屋を結合する
+			bool mGenerateIntersections;		//!< 交差点を生成する
+			bool mUniqueLocked;					//!< ユニーク鍵のある通路
+			bool mLocked;						//!< 鍵のある通路
+		};
 
 		/**
 		経路をGridに書き込みます
-		@param[in]	start					始点
-		@param[in]	idealGoal				理想的な終点（goalCondition範囲内に含めて下さい）
-		@param[in]	goalCondition			終了条件
-		@param[in]	identifier				通路の識別子
-		@param[in]	mergeRooms				部屋を結合する
-		@param[in]	generateIntersections	交差点を生成する	
+		@param[in]	startToGoal				始点にできる位置
+		@param[in]	goalToStart				終点に出来る位置
+		@param[in]	aisleParameter			通路生成パラメータ
 		@return		falseならば到達できなかった
 		*/
-		bool Aisle(const FIntVector& start, const FIntVector& idealGoal, const PathGoalCondition& goalCondition, const Identifier& identifier, const bool mergeRooms, const bool generateIntersections) noexcept;
+		bool Aisle(const std::vector<CandidateLocation>& startToGoal, const std::vector<CandidateLocation>& goalToStart, const AisleParameter& aisleParameter) noexcept;
 
+	private:
+		struct Route final
+		{
+			FIntVector mStart;
+			FIntVector mIdealGoal;
+			Route(const FIntVector& start, const FIntVector& idealGoal);
+		};
+		bool AisleImpl(const std::vector<Route>& route, const AisleParameter& aisleParameter) noexcept;
+		std::shared_ptr<PathFinder::Result> FindAisle(const Route& route, const AisleParameter& aisleParameter, const size_t index) const noexcept;
+		bool CheckDoorAligned(const FIntVector& location, const Direction& direction) const noexcept;
+		void WriteAisleToGrid(const std::shared_ptr<PathFinder::Result>& pathResult, const AisleParameter& aisleParameter) const;
+
+	public:
 		/**
 		グリッド内のグリッドを更新します
-		@param[in]	func	グリッドを更新する関数
+		@param[in]	function	グリッドを参照して更新する関数
 		*/
-		void Each(std::function<bool(const FIntVector& location, Grid& grid)> func) noexcept;
-
-		/**
-		グリッド内のグリッドを更新します
-		@param[in]	func	グリッドを参照して更新する関数
-		*/
-		void Each(std::function<bool(const FIntVector& location, const Grid& grid)> func) const noexcept;
+		template<typename Function>
+		void Each(Function&& function) const noexcept
+		{
+			for (uint32_t z = 0; z < mHeight; ++z)
+			{
+				for (uint32_t y = 0; y < mDepth; ++y)
+				{
+					for (uint32_t x = 0; x < mWidth; ++x)
+					{
+						const size_t index = Index(x, y, z);
+						Grid& grid = mGrids.get()[index];
+						if (std::forward<Function>(function)(FIntVector(x, y, z), grid) == false)
+							return;
+					}
+				}
+			}
+		}
 
 		/**
 		グリッド内のグリッドを取得します
@@ -215,7 +277,7 @@ namespace dungeon
 		Calculate CRC32
 		@return		CRC32
 		*/
-		uint32_t CalculateCRC32(uint32_t hash = 0xffffffffU) const noexcept;
+		uint32_t CalculateCRC32(const uint32_t hash = 0xffffffffU) const noexcept;
 
 	private:
 		/**
@@ -234,7 +296,7 @@ namespace dungeon
 		@param[in]	goalCondition	ゴールの条件
 		@return		trueならばゴールに到達
 		*/
-		bool IsReachedGoal(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition) noexcept;
+		static bool IsReachedGoal(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition) noexcept;
 
 		/**
 		ゴールに到達したか？
@@ -245,7 +307,12 @@ namespace dungeon
 		@param[in]	enteringDirection	進入方向
 		@return		trueならばゴールに到達
 		*/
-		bool IsReachedGoalWithDirection(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition, const Direction& enteringDirection) noexcept;
+		bool IsReachedGoalWithDirection(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition, const Direction& enteringDirection) const noexcept;
+
+
+
+	public:
+		bool Test(const std::shared_ptr<Room>& room);
 
 	private:
 		std::unique_ptr<Grid[]> mGrids;

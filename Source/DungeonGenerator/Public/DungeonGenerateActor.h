@@ -5,10 +5,9 @@ All Rights Reserved.
 */
 
 #pragma once
+#include "DungeonActor.h"
 #include "Mission/DungeonRoomParts.h"
 #include "Mission/DungeonRoomProps.h"
-#include <CoreMinimal.h>
-#include <GameFramework/Actor.h>
 #include <memory>
 #include "DungeonGenerateActor.generated.h"
 
@@ -42,7 +41,7 @@ Dungeon generation actor
 ダンジョン生成アクター
 */
 UCLASS(Blueprintable, BlueprintType)
-class DUNGEONGENERATOR_API ADungeonGenerateActor : public AActor
+class DUNGEONGENERATOR_API ADungeonGenerateActor : public ADungeonActor
 {
 	GENERATED_BODY()
 
@@ -55,7 +54,7 @@ public:
 	/**
 	destructor
 	*/
-	virtual ~ADungeonGenerateActor();
+	virtual ~ADungeonGenerateActor() override = default;
 
 	/**
 	Generate new dungeon
@@ -97,35 +96,21 @@ public:
 	int32 FindVoxelHeight(const float z) const;
 
 
-	/**
-	Calculate CRC32
-	ダンジョンのCRC32を計算します
-	@return		CRC32
-	*/
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-	int32 CalculateCRC32() const noexcept;
-
 #if WITH_EDITOR
-	/*
+	/**
 	Get CRC32 at generation
 	生成時のCRC32を取得します
 	*/
 	int32 GetGeneratedDungeonCRC32() const noexcept;
 #endif
 
-	/*
-	Calculate the bounding box for the dungeon
-	ダンジョン全体のバウンディングボックスを計算します
-	*/
-	FBox CalculateBoundingBox() const;
-
-	/*
+	/**
 	Get the largest room size
 	最も大きい部屋のサイズを取得します
 	*/
 	FVector GetRoomMaxSize() const;
 
-	/*
+	/**
 	Sets the culling distance for InstancedMesh
 	InstancedMeshのカリング距離を設定します
 	*/
@@ -147,13 +132,11 @@ private:
 	void AddInstance(const UStaticMesh* staticMesh, const FTransform& transform);
 	void CommitAddInstance();
 
-	static inline FBox ToWorldBoundingBox(const std::shared_ptr<const dungeon::Room>& room, const float gridSize);
-
 	void PreGenerateImplementation();
 	void DestroyImplementation();
 
 protected:
-	/*
+	/**
 	Dungeon generation parameters
 	ダンジョン生成パラメータ
 	*/
@@ -161,14 +144,14 @@ protected:
 	TObjectPtr<UDungeonGenerateParameter> DungeonGenerateParameter;
 
 #if WITH_EDITORONLY_DATA
-	/*
+	/**
 	Generated random number seeds
 	生成時の乱数の種
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
 	int32 GeneratedRandomSeed = 0;
 
-	/*
+	/**
 	Generated dungeon hash
 	生成時のCRC32
 	*/
@@ -176,14 +159,14 @@ protected:
 	int32 GeneratedDungeonCRC32 = 0;
 #endif
 
-	/*
+	/**
 	PlayerStart is automatically moved to the start room at the start
 	開始時にPlayerStartを自動的にスタート部屋に移動します
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool AutoGenerateAtStart = true;
 
-	/*
+	/**
 	Type of mesh used for dungeon generation
 	ダンジョン生成に使用するメッシュの種類
 	*/
@@ -194,21 +177,21 @@ protected:
 	TArray<TObjectPtr<UInstancedStaticMeshComponent>> InstancedStaticMeshes;
 
 
-	/*
+	/**
 	build job tag
 	ビルドジョブのタグ
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
 	FString BuildJobTag;
 
-	/*
+	/**
 	license tag
 	ライセンスタグ
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Detail")
 	FString LicenseTag;
 
-	/*
+	/**
 	License ID
 	ライセンスID
 	*/
@@ -216,14 +199,14 @@ protected:
 	FString LicenseId;
 
 #if WITH_EDITORONLY_DATA
-	/*
+	/**
 	Displays voxel grid debugging information
 	ボクセルグリッドのデバッグ情報を表示する
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Debug")
 	bool ShowVoxelGridType = false;
 
-	/*
+	/**
 	Displays debugging information for the voxel grid at the player's position
 	プレイヤーの位置にあるボクセルグリッドのデバッグ情報を表示します。
 	*/
@@ -231,21 +214,21 @@ protected:
 	bool ShowVoxelGridTypeAtPlayerLocation = false;
 #endif
 
-	/*
+	/**
 	Notification when a dungeon is successfully created
 	ダンジョンの生成に成功した時の通知
 	*/
 	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
 	FDungeonGeneratorActorNotifyGenerationSuccessSignature OnGenerationSuccess;
 
-	/*
+	/**
 	Notification when dungeon creation fails
 	ダンジョンの生成に失敗した時の通知
 	*/
 	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
 	FDungeonGeneratorActorNotifyGenerationFailureSignature OnGenerationFailure;
 
-	/*
+	/**
 	Location of the starting room of the dungeon
 	PlayerStart location can be found in Get All Actors of Class
 	ダンジョンのスタート部屋の位置
@@ -254,7 +237,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	FVector StartRoomLocation;
 
-	/*
+	/**
 	Location of the goal room in the dungeon
 	ダンジョンのゴール部屋の位置
 	*/
@@ -263,10 +246,6 @@ protected:
 
 #if WITH_EDITOR
 private:
-	void DrawDebugInformation();
+	void DrawDebugInformation() const;
 #endif
-
-private:
-	// Cache of the UIDungeonMiniMapTextureLayer
-	std::shared_ptr<CDungeonGeneratorCore> mDungeonGeneratorCore;
 };
