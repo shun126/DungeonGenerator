@@ -10,6 +10,7 @@ All Rights Reserved.
 #include "DelaunayTriangulation3D.h"
 #include <algorithm>
 #include <cmath>
+#include <list>
 
 namespace dungeon
 {

@@ -1,8 +1,24 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (35)
+## Unreleased-1.6.* (36)
 ### Changes
 ### 変更点
+
+## Unreleased-1.6.6 (35)
+### Changes
+* Added candidate number of levels
+* Added automatic generation of Foliage
+* Fixed problem with doors lining up
+* Changed dungeon generation path
+* Extensive refactoring
+* Fixed several bugs
+### 変更点
+* 階層数の候補を追加
+* Foliageの自動生成を追加
+* ドアが並ぶ問題を修正
+* ダンジョンの生成パスを変更
+* 大規模なリファクタリングを実施
+* いくつかの不具合を修正
 
 ## Unreleased-1.6.5 (34)
 ### Changes

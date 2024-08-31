@@ -1069,14 +1069,18 @@ namespace dungeon
 			}
 		}
 
-		// 部屋の余白を調整する
-		for (const std::shared_ptr<Room>& room0 : mRooms)
+		// 水平方向の余白を追加できるか？
+		if (mGenerateParameter.GetHorizontalRoomMargin() > 0)
 		{
-			for (const std::shared_ptr<Room>& room1 : mRooms)
+			// 部屋の余白を調整する
+			for (const std::shared_ptr<Room>& room0 : mRooms)
 			{
-				if (room0 != room1)
+				for (const std::shared_ptr<Room>& room1 : mRooms)
 				{
-					room0->SetVerticalRoomMargin(room1, 2, 1);
+					if (room0 == room1)
+						continue;
+
+					room0->SetMarginIfRoomIntersect(room1, 2, 1);
 				}
 			}
 		}
