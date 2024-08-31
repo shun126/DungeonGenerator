@@ -155,30 +155,14 @@ namespace dungeon
 		mHorizontalRoomMargin = horizontalRoomMargin;
 	}
 
-	bool Room::SetVerticalRoomMargin(const std::shared_ptr<Room>& otherRoom, const uint8_t horizontalRoomMargin, const uint8_t verticalRoomMargin) noexcept
+	void Room::SetMarginIfRoomIntersect(const std::shared_ptr<Room>& otherRoom, const uint8_t horizontalRoomMargin, const uint8_t verticalRoomMargin) noexcept
 	{
 		check(otherRoom);
 		if (Intersect(*otherRoom, horizontalRoomMargin, verticalRoomMargin) == true)
 		{
 			mVerticalRoomMargin = otherRoom->mVerticalRoomMargin = verticalRoomMargin;
-
 			mHorizontalRoomMargin = otherRoom->mHorizontalRoomMargin = horizontalRoomMargin;
-
-			/*			if (otherRoom->GetZ() - mZ >= 0)
-			{
-				// 相手が上
-				mHorizontalRoomMargin = horizontalRoomMargin;
-				return true;
-			}
-			else
-			{
-				// 自分が上
-				otherRoom->mHorizontalRoomMargin = horizontalRoomMargin;
-				return true;
-			}
-			*/
 		}
-		return false;
 	}
 
 	std::string Room::GetName() const noexcept

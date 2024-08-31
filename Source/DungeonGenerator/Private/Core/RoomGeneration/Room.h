@@ -331,13 +331,12 @@ namespace dungeon
 		uint8_t GetVerticalRoomMargin() const noexcept;
 
 		/**
-		 * 上側の部屋にと垂直方向の余白を設定します
+		 * 部屋と交差していたら余白を設定します
 		 * @param otherRoom 比較する部屋
 		 * @param horizontalRoomMargin	水平方向の余白
 		 * @param verticalRoomMargin	垂直方向の余白
-		 * @return trueならば部屋の再配置が必要
 		 */
-		bool SetVerticalRoomMargin(const std::shared_ptr<Room>& otherRoom, const uint8_t horizontalRoomMargin, const uint8_t verticalRoomMargin) noexcept;
+		void SetMarginIfRoomIntersect(const std::shared_ptr<Room>& otherRoom, const uint8_t horizontalRoomMargin, const uint8_t verticalRoomMargin) noexcept;
 
 		/**
 		 * 部屋の名前を取得します
