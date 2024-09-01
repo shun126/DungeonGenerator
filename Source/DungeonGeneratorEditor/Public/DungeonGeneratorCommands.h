@@ -8,13 +8,12 @@ All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "Framework/Commands/Commands.h"
-#include "DungeonGeneratorStyle.h"
 
 class FDungeonGeneratorCommands : public TCommands<FDungeonGeneratorCommands>
 {
 public:
 	FDungeonGeneratorCommands();
-	virtual ~FDungeonGeneratorCommands() = default;
+	virtual ~FDungeonGeneratorCommands() override = default;
 
 	// TCommands<> interface
 	virtual void RegisterCommands() override;

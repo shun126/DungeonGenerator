@@ -198,14 +198,19 @@ namespace dungeon
 		return mNumberOfGates;
 	}
 
-	inline void Room::SetGateCount(const uint8_t count) noexcept
+	inline void Room::ResetGateCount() noexcept
 	{
-		mNumberOfGates = count;
+		mNumberOfGates = 0;
 	}
 
 	inline void Room::AddGateCount(const uint8_t count) noexcept
 	{
 		mNumberOfGates += count;
+	}
+
+	inline uint8_t Room::GetVerticalRoomMargin() const noexcept
+	{
+		return mVerticalRoomMargin;
 	}
 
 	inline FIntVector Room::GetDataSize() const noexcept

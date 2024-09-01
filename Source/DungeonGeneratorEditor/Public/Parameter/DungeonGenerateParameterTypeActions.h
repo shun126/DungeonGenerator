@@ -12,7 +12,7 @@ class UDungeonGenerateParameterTypeActions : public FAssetTypeActions_Base
 {
 public:
 	explicit UDungeonGenerateParameterTypeActions(EAssetTypeCategories::Type InAssetCategory);
-	virtual ~UDungeonGenerateParameterTypeActions() = default;
+	virtual ~UDungeonGenerateParameterTypeActions() override = default;
 
 	// FAssetTypeActions_Base overrides
 	virtual FColor GetTypeColor() const override;

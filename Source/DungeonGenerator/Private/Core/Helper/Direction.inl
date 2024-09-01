@@ -21,7 +21,7 @@ namespace dungeon
 	{
 	}
 
-	inline const Direction::Index Direction::Get() const noexcept
+	inline Direction::Index Direction::Get() const noexcept
 	{
 		return mIndex;
 	}

@@ -11,6 +11,7 @@ All Rights Reserved.
 #include "../RoomGeneration/Room.h"
 #include <cmath>
 #include <string>
+#include <fstream>
 
 namespace dungeon
 {

@@ -8,11 +8,10 @@ All Rights Reserved.
 #include "DungeonMeshSetDatabase.h"
 #include "Parameter/DungeonRoomMeshSet.h"
 #include <CoreMinimal.h>
-#include <functional>
 #include <memory>
 #include "DungeonRoomMeshSetDatabase.generated.h"
 
-/*
+/**
 Database of dungeon room mesh sets
 ダンジョン部屋のメッシュセットのデータベース
 */
@@ -23,9 +22,16 @@ class DUNGEONGENERATOR_API UDungeonRoomMeshSetDatabase : public UDungeonMeshSetD
 
 public:
 	explicit UDungeonRoomMeshSetDatabase(const FObjectInitializer& ObjectInitializer);
-	virtual ~UDungeonRoomMeshSetDatabase() = default;
+	virtual ~UDungeonRoomMeshSetDatabase() override = default;
 
-	void Each(std::function<void(const FDungeonRoomMeshSet&)> func) const;
+	template<typename Function>
+	void Each(Function&& function) const
+	{
+		for (const FDungeonRoomMeshSet& parts : Parts)
+		{
+			std::forward<Function>(function)(parts);
+		}
+	}
 
 	// UDungeonMeshSetDatabase overrides
 	virtual const FDungeonMeshSet* AtImplement(const size_t index) const override;
@@ -38,7 +44,7 @@ public:
 #endif
 
 protected:
-	/*
+	/**
 	Set the DungeonRoomMeshSet; multiple DungeonRoomMeshSets can be set.
 	DungeonRoomMeshSetを設定して下さい。DungeonRoomMeshSetは複数設定する事ができます。
 	*/
@@ -49,12 +55,4 @@ protected:
 inline UDungeonRoomMeshSetDatabase::UDungeonRoomMeshSetDatabase(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
-}
-
-inline void UDungeonRoomMeshSetDatabase::Each(std::function<void(const FDungeonRoomMeshSet&)> func) const
-{
-	for (const FDungeonRoomMeshSet& parts : Parts)
-	{
-		func(parts);
-	}
 }

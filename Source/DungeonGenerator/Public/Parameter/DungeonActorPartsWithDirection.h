@@ -30,7 +30,7 @@ public:
 #endif
 
 public:
-	/*
+	/**
 	Direction of placement
 	配置する方向
 	*/

@@ -41,12 +41,26 @@ namespace dungeon
 		/**
 		生成した辺を更新します
 		*/
-		void ForEach(std::function<void(Edge&)> func) noexcept;
+		template<typename Function>
+		void ForEach(Function&& function) noexcept
+		{
+			for (auto& node : mEdges)
+			{
+				std::forward<Function>(function)(node);
+			}
+		}
 
 		/**
 		生成した辺を参照します
 		*/
-		void ForEach(std::function<void(const Edge&)> func) const noexcept;
+		template<typename Function>
+		void ForEach(Function&& function) const noexcept
+		{
+			for (auto& node : mEdges)
+			{
+				std::forward<Function>(function)(node);
+			}
+		}
 
 		/**
 		最小スパニングツリーの辺の個数を取得します
@@ -67,10 +81,9 @@ namespace dungeon
 		const std::shared_ptr<const Point>& GetGoalPoint() const noexcept;
 
 		/**
-		行き止まりの点を更新します
-		@param[in]	func	点を元に更新する関数
+		行き止まりの点を取得します
 		*/
-		void EachLeafPoint(std::function<void(const std::shared_ptr<const Point>& point)> func) const noexcept;
+		const std::vector<std::shared_ptr<const Point>>& GetLeafPoints() const noexcept;
 
 		/**
 		スタート地点から最も深い距離を取得します
@@ -124,7 +137,7 @@ namespace dungeon
 			@param[in]	e1		辺の頂点番号
 			@param[in]	length	頂点間の距離
 			*/
-			IndexedEdge(const size_t e0, const size_t e1, const float length) noexcept;
+			IndexedEdge(const size_t e0, const size_t e1, const double length) noexcept;
 
 			/*
 			コピーコンストラクタ
@@ -157,7 +170,7 @@ namespace dungeon
 			辺の長さを取得します
 			@return		頂点間の距離
 			*/
-			float GetLength() const noexcept;
+			double GetLength() const noexcept;
 
 			/*
 			同じ辺か調べます
@@ -166,7 +179,7 @@ namespace dungeon
 
 		private:
 			std::array<size_t, 2> mEdges;
-			float mLength;
+			double mLength;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
@@ -212,7 +225,7 @@ namespace dungeon
 		@param[in]	depth		距離
 		@return		最も遠い距離
 		*/
-		uint8_t SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept;
+		static uint8_t SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept;
 
 	private:
 		std::vector<Aisle> mEdges;

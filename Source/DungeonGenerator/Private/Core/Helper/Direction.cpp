@@ -16,7 +16,7 @@ namespace dungeon
 		方向
 		Direction::IndexとPathFinder::SearchDirectionに並びを合わせて下さい
 		*/
-		static const std::array<FIntVector, 4> offsets = {
+		static const std::array<FIntVector, 4> Offsets = {
 			{
 				{  0, -1,  0 },	// 北
 				{  1,  0,  0 },	// 東
@@ -28,16 +28,16 @@ namespace dungeon
 
 	const FIntVector& Direction::GetVector(const Direction::Index index) noexcept
 	{
-		return detail::offsets[static_cast<size_t>(index)];
+		return detail::Offsets[static_cast<size_t>(index)];
 	}
 
 	std::array<FIntVector, 4>::const_iterator Direction::Begin() noexcept
 	{
-		return detail::offsets.cbegin();
+		return detail::Offsets.cbegin();
 	}
 
 	std::array<FIntVector, 4>::const_iterator Direction::End() noexcept
 	{
-		return detail::offsets.cend();
+		return detail::Offsets.cend();
 	}
 }

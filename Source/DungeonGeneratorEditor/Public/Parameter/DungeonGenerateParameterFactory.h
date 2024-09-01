@@ -16,7 +16,7 @@ class DUNGEONGENERATOREDITOR_API UDungeonGenerateParameterFactory : public UFact
 
 public:
 	UDungeonGenerateParameterFactory();
-	virtual ~UDungeonGenerateParameterFactory() = default;
+	virtual ~UDungeonGenerateParameterFactory() override = default;
 
 	// UFactory overrides
 	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;

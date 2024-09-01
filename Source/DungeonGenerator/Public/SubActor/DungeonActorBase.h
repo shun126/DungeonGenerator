@@ -29,7 +29,7 @@ protected:
 	destructor
 	デストラクタ
 	*/
-	virtual ~ADungeonActorBase() = default;
+	virtual ~ADungeonActorBase() override = default;
 
 public:
 	/**

@@ -34,6 +34,7 @@ public class DungeonGeneratorEditor : ModuleRules
 				"SlateCore",
                 "DesktopWidgets",
                 "PropertyEditor",
+                "Foliage",
                 "DungeonGenerator",
 			}
 		);

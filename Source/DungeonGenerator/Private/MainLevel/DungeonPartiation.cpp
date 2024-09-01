@@ -37,7 +37,9 @@ void UDungeonPartiation::CallPartiationActivate()
 		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
 		{
 			if (IsValid(component))
+			{
 				component->CallPartiationActivate();
+			}
 		}
 	}
 }
@@ -51,7 +53,9 @@ void UDungeonPartiation::CallPartiationInactivate()
 		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
 		{
 			if (IsValid(component))
+			{
 				component->CallPartiationInactivate();
+			}
 		}
 	}
 }

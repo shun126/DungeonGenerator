@@ -4,8 +4,8 @@
 All Rights Reserved.
 */
 
-#include "DungeonAisleMeshSetDatabaseFactory.h"
-#include "DungeonAisleMeshSetDatabase.h"
+#include "Parameter/DungeonAisleMeshSetDatabaseFactory.h"
+#include "Parameter/DungeonAisleMeshSetDatabase.h"
 
 UDungeonAisleMeshSetDatabaseFactory::UDungeonAisleMeshSetDatabaseFactory()
 {

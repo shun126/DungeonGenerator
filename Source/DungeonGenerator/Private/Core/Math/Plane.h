@@ -23,7 +23,7 @@ namespace dungeon
 		Plane(const double a, const double b, const double c, const double d = 1) noexcept;
 		Plane(const Plane& plane) noexcept;
 		Plane(Plane&& plane) noexcept;
-		virtual ~Plane() = default;
+		~Plane() = default;
 
 		void Identity() noexcept;
 		void Set(const double a, const double b, const double c, const double d = 1) noexcept;
