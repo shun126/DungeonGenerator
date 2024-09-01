@@ -287,29 +287,30 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 #endif
 
 	// spawn DungeonVegetationActor
-	ADungeonActor* dungeonVegetationActor = ADungeonActor::SpawnDungeonActor(world, origin);
-	if (IsValid(dungeonVegetationActor) == false)
+	ADungeonActor* dungeonActor = ADungeonActor::SpawnDungeonActor(world, origin);
+	if (IsValid(dungeonActor) == false)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to create dungeon vegetation actor"));
 		return FReply::Unhandled();
 	}
 
-	if (!dungeonVegetationActor->Create(dungeonGenerateParameter, true))
+	if (!dungeonActor->Create(dungeonGenerateParameter, true))
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to generate dungeon"));
 		OnClickedClearButton();
 		return FReply::Unhandled();
 	}
 	TArray<APlayerStart*> startPoints;
-	dungeonVegetationActor->CollectPlayerStartExceptPlayerStartPIE(startPoints);
-	dungeonVegetationActor->MovePlayerStart(startPoints);
+	dungeonActor->CollectPlayerStartExceptPlayerStartPIE(startPoints);
+	dungeonActor->MovePlayerStart(startPoints);
+
+	// ダンジョンアクターを記録
+	mDungeonActor = dungeonActor;
 
 	// Set random seeds for generated dungeons
 	const int32 value = dungeonGenerateParameter->GetGeneratedRandomSeed();
 	mRandomSeedValue->SetText(FText::FromString(FString::FromInt(value)));
 
-
-	mDungeonActor = dungeonVegetationActor;
 
 	return FReply::Handled();
 }
