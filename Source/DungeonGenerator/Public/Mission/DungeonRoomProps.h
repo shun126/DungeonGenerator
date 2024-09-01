@@ -8,7 +8,7 @@ All Rights Reserved.
 #include <CoreMinimal.h>
 #include "DungeonRoomProps.generated.h"
 
-/*
+/**
 Objects to be placed in the room
 Same content as dungeon::Grid::Props
 部屋に配置するオブジェクト
@@ -22,13 +22,13 @@ enum class EDungeonRoomProps : uint8
 	UniqueLock,
 };
 
-/*
+/**
 Number of different types of placements to be placed in the room
 室内に配置するプレースメントの種類数
 */
 static constexpr uint8 DungeonRoomPropsSize = static_cast<uint8>(EDungeonRoomProps::UniqueLock) + 1;
 
-/*
+/**
 Gets the symbolic name of the placement that should be placed in the room
 Same content as dungeon::Room::Parts
 部屋に置くべき配置のシンボル名を取得する

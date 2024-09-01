@@ -135,7 +135,7 @@ namespace dungeon
 		std::array<std::shared_ptr<const Point>, 2> mPoints;
 		double mLength;
 		Identifier mIdentifier;
-		bool mMain;
+		bool mMain = false;
 		bool mLocked = false;
 		bool mUniqueLocked = false;
 	};

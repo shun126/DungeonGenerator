@@ -144,14 +144,14 @@ namespace dungeon
 		const uint8_t roomDepth = room->GetDepthFromStart();
 
 		std::vector<Aisle*> aisles;
-		mGenerator->FindAisle(room, [&aisles, roomDepth](Aisle& edge)
+		mGenerator->FindAisle(room, [&aisles, roomDepth](const Aisle& edge)
 			{
 				if (!edge.IsLocked())
 				{
 					const auto& room0 = edge.GetPoint(0)->GetOwnerRoom();
 					const auto& room1 = edge.GetPoint(1)->GetOwnerRoom();
 					if (room0->GetDepthFromStart() <= roomDepth && room1->GetDepthFromStart() <= roomDepth)
-						aisles.emplace_back(&edge);
+						aisles.emplace_back(const_cast<Aisle*>(&edge));
 				}
 				return false;
 			}

@@ -11,7 +11,6 @@ All Rights Reserved.
 #include "Mission/DungeonRoomParts.h"
 #include <CoreMinimal.h>
 #include <GameFramework/Actor.h>
-#include <functional>
 #include <memory>
 #include "DungeonRoomSensorBase.generated.h"
 
@@ -25,12 +24,12 @@ namespace dungeon
 	class Random;
 }
 
-/*
+/**
 奈落落下 動的マルチキャストデリゲートイベントの宣言
 */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonRoomSensorBaseEventSignature);
 
-/*
+/**
 Room Area Sensor Actor
 DungeonRoomSensorBase is an actor that is not intended to be replicated.
 Please be very careful with server-client synchronization.
@@ -46,9 +45,9 @@ class DUNGEONGENERATOR_API ADungeonRoomSensorBase : public ADungeonActorBase
 
 public:
 	explicit ADungeonRoomSensorBase(const FObjectInitializer& initializer);
-	virtual ~ADungeonRoomSensorBase() = default;
+	virtual ~ADungeonRoomSensorBase() override = default;
 
-	/*
+	/**
 	Get the room identifier
 	部屋の識別子を取得します
 	*/
@@ -184,7 +183,14 @@ public:
 	Update room doors
 	部屋のドアを更新します
 	*/
-	void EachDungeonDoors(std::function<void(ADungeonDoorBase*)> function) const noexcept;
+	template<typename Function>
+	void EachDungeonDoors(Function&& function) const noexcept
+	{
+		for (ADungeonDoorBase* dungeonDoorBase : DungeonDoors)
+		{
+			std::forward<Function>(function)(dungeonDoorBase);
+		}
+	}
 
 	/**
 	Does the room have a locked door?
@@ -203,7 +209,14 @@ public:
 	Update the torch light in the room.
 	部屋の燭台を更新します
 	*/
-	void EachDungeonTorch(std::function<void(AActor*)> function) const noexcept;
+	template<typename Function>
+	void EachDungeonTorch(Function&& function) const noexcept
+	{
+		for (AActor* actor : DungeonTorchs)
+		{
+			std::forward<Function>(function)(actor);
+		}
+	}
 
 	/**
 	Gets the tag of the interior of the room to be generated.
@@ -231,7 +244,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator")
 	static const TArray<FName>& GetDungeonGeneratorTags();
 
-	/*
+	/**
 	Get a random object for synchronization
 	Make sure that the remote and client get the same number of random numbers.
 	If the counts are different, synchronization of dungeon creation will fail.
@@ -242,7 +255,7 @@ public:
 	*/
 	CDungeonRandom& GetSynchronizedRandom();
 
-	/*
+	/**
 	Get a random object that can be used locally
 	Use when using random numbers only remotely.
 
@@ -275,7 +288,7 @@ protected:
 	*/
 	virtual void OnNativeInitialize();
 
-	/***
+	/**
 	Function called before object destruction
 	オブジェクト破棄前の終了用関数
 	*/
@@ -383,7 +396,10 @@ protected:
 
 	/**
 	Depth of deepest room from starting room
+	Can be used to change the background music as you go deeper into the room, etc.
+	
 	スタート部屋から最も深い部屋の深さ
+	奥に行くほどBGMが変化するなどに利用できます
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 	uint8 DeepestDepthFromStart = 0;
@@ -446,7 +462,7 @@ private:
 	State mState = State::Invalid;
 	bool mEntered = true;
 
-	friend class CDungeonGeneratorCore;
+	friend class ADungeonActor;
 };
 
 inline int32 ADungeonRoomSensorBase::GetIdentifier() const noexcept

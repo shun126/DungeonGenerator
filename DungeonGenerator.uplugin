@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 32,
-	"VersionName": "1.6.3",
+	"Version": 35,
+	"VersionName": "1.6.6",
 	"FriendlyName": "Procedural 3D Dungeon Generator",
 	"Description": "Procedural 3D dungeon generator plugin. Easy generation of levels, mini-maps and missions.",
 	"Category": "Procedural",
@@ -10,7 +10,7 @@
 	"DocsURL": "https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/36a8b87d859f44439cfe1515975d7197",
 	"SupportURL": "https://github.com/shun126/UE5-DungeonGeneratorDemo/issues",
-	"CanContainContent": false,
+	"CanContainContent": true,
 	"IsBetaVersion": true,
 	"IsExperimentalVersion": false,
 	"Installed": false,

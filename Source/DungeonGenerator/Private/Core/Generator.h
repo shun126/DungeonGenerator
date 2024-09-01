@@ -8,15 +8,14 @@ All Rights Reserved.
 
 #pragma once 
 #include "GenerateParameter.h"
+#include "Math/PerlinNoise.h"
 #include "RoomGeneration/Aisle.h"
 #include "RoomGeneration/Room.h"
 #include <atomic>
 #include <functional>
-#include <future>
 #include <list>
 #include <memory>
 #include <string>
-#include <thread>
 #include <unordered_set>
 #include <vector>
 
@@ -25,7 +24,6 @@ namespace dungeon
 	// 前方宣言
 	class Grid;
 	class MinimumSpanningTree;
-	class PerlinNoise;
 	class Voxel;
 
 	/**
@@ -91,12 +89,26 @@ namespace dungeon
 		/**
 		生成された部屋を更新します
 		*/
-		void ForEach(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
+		template<typename Function>
+		void ForEach(Function&& function) noexcept
+		{
+			for (const auto& room : mRooms)
+			{
+				std::forward<Function>(function)(room);
+			}
+		}
 
 		/**
 		生成された部屋を参照します
 		*/
-		void ForEach(std::function<void(const std::shared_ptr<const Room>&)> func) const noexcept;
+		template<typename Function>
+		void ForEach(Function&& function) const noexcept
+		{
+			for (const auto& room : mRooms)
+			{
+				std::forward<Function>(function)(room);
+			}
+		}
 
 		// 深度による検索
 		std::shared_ptr<Room> FindByIdentifier(const Identifier& identifier) const noexcept;
@@ -117,29 +129,65 @@ namespace dungeon
 	public:
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Floor
+		/**
+		 * 階層の高さの一覧を取得
+		 * @return	階層の高さの一覧
+		 */
 		const std::vector<int32_t>& GetFloorHeight() const;
 
-		/*
+		/**
 		指定した座標が何階か検索します
+		@param[in]	height	ボクセル空間の高さ
+		@return		階層
 		*/
-		const size_t FindFloor(const int32_t height) const;
+		size_t FindFloor(const int32_t height) const;
 
 	public:
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Aisle
-		void EachAisle(std::function<bool(const Aisle& edge)> func) const noexcept;
+		/**
+		 * 全ての通路を更新
+		 * @tparam Function	更新関数
+		 * @param function	更新関数
+		 */
+		template<typename Function>
+		void EachAisle(Function&& function) const noexcept
+		{
+			for (const auto& aisle : mAisles)
+			{
+				if (std::forward<Function>(function)(aisle) == false)
+					break;
+			}
+		}
 
-		// 部屋に接続している通路を検索
-		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(Aisle& edge)> func) noexcept;
+		/**
+		 * 部屋に接続している通路を検索
+		 * @tparam	Function	一致した時の関数
+		 * @param	room		検索する部屋
+		 * @param	function	一致した時の関数
+		 */
+		template<typename Function>
+		void FindAisle(const std::shared_ptr<const Room>& room, Function&& function) const noexcept
+		{
+			for (const auto& aisle : mAisles)
+			{
+				const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
+				const auto& room1 = aisle.GetPoint(1)->GetOwnerRoom();
+				if (room == room0 || room == room1)
+				{
+					if (std::forward<Function>(function)(aisle) == true)
+						break;
+				}
+			}
+		}
 
-		void FindAisle(const std::shared_ptr<const Room>& room, std::function<bool(const Aisle& edge)> func) const noexcept;
-
-		void OnQueryParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
-		void OnStartParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
-		void OnGoalParts(std::function<void(const std::shared_ptr<Room>&)> func) noexcept;
+		void OnQueryParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
+		void OnStartParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
+		void OnGoalParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Point
+	public:
 		/**
 		位置から部屋を検索します
 		最初にヒットした部屋を返します
@@ -170,124 +218,113 @@ namespace dungeon
 
 		/**
 		行き止まりの点を更新します
-		@param[in]	func	点を元に更新する関数
+		@param[in]	function	点を元に更新する関数
 		*/
-		void EachLeafPoint(std::function<void(const std::shared_ptr<const Point>& point)> func) const noexcept;
-
+		template<typename Function>
+		void EachLeafPoint(Function&& function) const noexcept
+		{
+			for (auto& point : mLeafPoints)
+			{
+				std::forward<Function>(function)(point);
+			}
+		}
 
 		////////////////////////////////////////////////////////////////////////////////////////////
-		void PreGenerateVoxel(std::function<void(const std::shared_ptr<Voxel>&)> func) noexcept;
-		void PostGenerateVoxel(std::function<void(const std::shared_ptr<Voxel>&)> func) noexcept;
+		void PreGenerateVoxel(const std::function<void(const std::shared_ptr<Voxel>&)>& function) noexcept;
+		void PostGenerateVoxel(const std::function<void(const std::shared_ptr<Voxel>&)>& function) noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
-		/*
-		markdown + mermaidによるフローチャートを出力します
-		*/
-		void DumpRoomDiagram(const std::string& path) const noexcept;
-
-		////////////////////////////////////////////////////////////////////////////////////////////
-		/*
-		分岐番号を記録します
-		*/
+		// Branch
+	public:
+		/**
+		 * 分岐番号を記録します
+		 */
 		bool MarkBranchId() noexcept;
+
+		/**
+		 * スタートから最も遠い部屋の深さを取得します
+		 */
+		uint8_t GetDeepestDepthFromStart() const noexcept;
 
 	private:
 		bool MarkBranchId(std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept;
 
-	public:
-		/*
-		スタートから最も遠い部屋の深さを取得します
-		*/
-		uint8_t GetDeepestDepthFromStart() const noexcept;
-
 		////////////////////////////////////////////////////////////////////////////////////////////
+	public:
 		/**
 		Calculate CRC32
 		@return		CRC32
 		*/
-		uint32_t CalculateCRC32(uint32_t hash = 0xffffffffU) const noexcept;
+		uint32_t CalculateCRC32(const uint32_t hash = 0xffffffffU) const noexcept;
 
 	private:
-		/**
-		生成
-		*/
-		bool GenerateImpl(GenerateParameter& parameter) noexcept;
-
-		/**
-		部屋の生成
-		*/
-		bool GenerateRooms(const GenerateParameter& parameter) noexcept;
-
-		/**
-		部屋の重なりを解消します
-		*/
-		bool SeparateRooms(const GenerateParameter& parameter, const size_t phase) noexcept;
-
-		/**
-		全ての部屋が収まるように空間を拡張します
-		*/
-		bool ExpandSpace(GenerateParameter& parameter, const int32_t margin) noexcept;
-
-		/*
-		階層の高さを検出
-		*/	
-		bool DetectFloorHeight() noexcept;
-	
-		/**
-		通路の抽出
-		*/
-		bool ExtractionAisles(const GenerateParameter& parameter, const size_t phase) noexcept;
-
-		/**
-		部屋のパーツ（役割）を設定する
-		*/
-		void SetRoomParts(GenerateParameter& parameter) noexcept;
-
-		/**
-		開始部屋と終了部屋のサブレベルを配置する隙間を調整
-		*/
-		bool AdjustedStartAndGoalSublevel(GenerateParameter& parameter) noexcept;
-
-		/**
-		部屋のコールバックを呼ぶ
-		*/
-		void InvokeRoomCallbacks(GenerateParameter& parameter) noexcept;
-
-		/**
-		ボクセル情報を生成
-		*/
-		bool GenerateVoxel(const GenerateParameter& parameter) noexcept;
-
-		/**
-		通路の生成
-		*/
+		bool GenerateImpl() noexcept;
+		bool GenerateRooms() noexcept;
+		enum class SeparateRoomsResult : uint8_t
+		{
+			Failed,
+			Completed,
+			Moved
+		};
+		SeparateRoomsResult SeparateRooms(const size_t phase, const size_t subPhase) noexcept;
+		bool ExtractionAisles() noexcept;
 		bool GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept;
+		void SetRoomParts() noexcept;
+		bool AdjustedStartAndGoalSubLevel() const noexcept;
+		void AdjustRoomSize() const noexcept;
+		bool ExpandSpace(const int32_t margin = 3) noexcept;
+		void AdjustPoints() noexcept;
+		void InvokeRoomCallbacks() const noexcept;
+		bool DetectFloorHeight() noexcept;
+		bool GenerateVoxel() noexcept;
 
 		/**
 		リセット
 		*/
 		void Reset();
 
-		/*
-		デバッグ用に部屋の位置を画像に出力します
-		*/
-		void GenerateRoomImageForDebug(const std::string& filename) const;
-
-		/*
-		デバッグ用に高さマップを画像に出力します
-		*/
-		void GenerateHeightImageForDebug(const PerlinNoise& perlinNoise, const float noiseBoostRatio, const std::string& filename) const;
-
-		/*
-		デバッグ用に部屋の構造をダイアグラムに出力します
-		*/
-		void DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<const Room>& room) const noexcept;
 
 #if WITH_EDITOR
-		/*
+		/**
+		 * デバッグ用にパーリンノイズの画像を出力します
+		 * @param perlinNoise		パーリンノイズ
+		 * @param octaves			ノイズのオクターブ値
+		 * @param noiseBoostRatio	出力ノイズ
+		 * @param filename			ファイル名
+		 */
+		static void GenerateHeightImageForDebug(const PerlinNoise& perlinNoise, const std::size_t octaves, const float noiseBoostRatio, const std::string& filename) noexcept;
+
+		/**
+		 * デバッグ用に部屋の位置を画像に出力します
+		 * @param filename	ファイル名
+		 */
+		void GenerateRoomImageForDebug(const std::string& filename) const;
+
+	public:
+		/**
+		 * markdown + mermaidによるフローチャートを出力します
+		 * @param path		ファイル名
+		 */
+		void DumpRoomDiagram(const std::string& path) const noexcept;
+
+	private:
+		/**
+		 * デバッグ用に部屋の構造をダイアグラムに出力します
+		 * @param stream			出力先
+		 * @param passableAisles	通路
+		 * @param room				部屋
+		 */
+		void DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<const Room>& room) const noexcept;
+
+		/**
 		デバッグ用に部屋と通路の情報をダンプします
+		@param[in]	index	通路配列番号
 		*/
-		void DumpAisleAndRoomInfomation(const size_t index) const noexcept;
+		void DumpAisleAndRoomInformation(const size_t index) const noexcept;
+
+		void DumpVoxel(const std::shared_ptr<const Point>& point) const noexcept;
+		void DumpVoxel(const std::shared_ptr<Room>& room) const noexcept;
+
 #endif
 
 	private:
@@ -296,15 +333,12 @@ namespace dungeon
 		std::shared_ptr<Voxel> mVoxel;
 
 		std::list<std::shared_ptr<Room>> mRooms;
-		//std::shared_ptr<Room> mStartRoom;
-		//std::shared_ptr<Room> mGoalRoom;
 
 		std::vector<int32_t> mFloorHeight;
 
 		std::vector<std::shared_ptr<const Point>> mLeafPoints;
 		std::shared_ptr<const Point> mStartPoint;
 		std::shared_ptr<const Point> mGoalPoint;
-
 		std::vector<Aisle> mAisles;
 
 		std::function<void(const std::shared_ptr<Voxel>&)> mOnPreGenerateVoxel;

@@ -19,7 +19,7 @@ class DUNGEONGENERATOREDITOR_API UDungeonAisleMeshSetDatabaseFactory : public UF
 
 public:
 	UDungeonAisleMeshSetDatabaseFactory();
-	virtual ~UDungeonAisleMeshSetDatabaseFactory() = default;
+	virtual ~UDungeonAisleMeshSetDatabaseFactory() override = default;
 
 	// UFactory overrides
 	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;

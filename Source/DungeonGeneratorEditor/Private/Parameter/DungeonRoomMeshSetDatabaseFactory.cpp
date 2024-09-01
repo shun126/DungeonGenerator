@@ -4,8 +4,8 @@
 All Rights Reserved.
 */
 
-#include "DungeonRoomMeshSetDatabaseFactory.h"
-#include "DungeonRoomMeshSetDatabase.h"
+#include "Parameter/DungeonRoomMeshSetDatabaseFactory.h"
+#include "Parameter/DungeonRoomMeshSetDatabase.h"
 
 UDungeonRoomMeshSetDatabaseFactory::UDungeonRoomMeshSetDatabaseFactory()
 {

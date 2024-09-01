@@ -36,17 +36,17 @@ namespace dungeon
 		}
 	}
 
-	constexpr float PerlinNoise::GetFade(const float t) const noexcept
+	constexpr float PerlinNoise::GetFade(const float t) noexcept
 	{
 		return t * t * t * (t * (t * 6 - 15) + 10);
 	}
 
-	constexpr float PerlinNoise::GetLerp(const float t, const float a, const float b) const noexcept
+	constexpr float PerlinNoise::GetLerp(const float t, const float a, const float b) noexcept
 	{
 		return a + t * (b - a);
 	}
 
-	constexpr float PerlinNoise::MakeGrad(const std::uint8_t hash, const float x, const float y, const float z) const noexcept
+	constexpr float PerlinNoise::MakeGrad(const std::uint8_t hash, const float x, const float y, const float z) noexcept
 	{
 		// Source: http://riven8192.blogspot.com/2010/08/calculate-perlinnoise-twice-as-fast.html
 		if (z == 0.f)
@@ -85,16 +85,16 @@ namespace dungeon
 		}
 	}
 
-	constexpr float PerlinNoise::GetGrad(const std::uint8_t hash, const float x, const float y, const float z) const noexcept
+	constexpr float PerlinNoise::GetGrad(const std::uint8_t hash, const float x, const float y, const float z) noexcept
 	{
 		return MakeGrad(hash, x, y, z);
 	}
 	
 	float PerlinNoise::SetNoise(float x, float y, float z) const noexcept
 	{
-		const std::size_t xInt = static_cast<std::size_t>(std::floor(x)) & 255;
-		const std::size_t yInt = static_cast<std::size_t>(std::floor(y)) & 255;
-		const std::size_t zInt = static_cast<std::size_t>(std::floor(z)) & 255;
+		const std::size_t xInt = static_cast<std::size_t>(std::floor(x * 255.f)) & 255;
+		const std::size_t yInt = static_cast<std::size_t>(std::floor(y * 255.f)) & 255;
+		const std::size_t zInt = static_cast<std::size_t>(std::floor(z * 255.f)) & 255;
 		x -= std::floor(x);
 		y -= std::floor(y);
 		z -= std::floor(z);

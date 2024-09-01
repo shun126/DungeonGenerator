@@ -8,13 +8,13 @@ All Rights Reserved.
 */
 
 #include "MinimumSpanningTree.h"
+#include "PathFinder.h"
 #include "../Debug/Debug.h"
 #include "../Debug/Config.h"
 #include "../Math/Random.h"
 #include "../RoomGeneration/Room.h"
 #include <algorithm>
 #include <array>
-#include <cmath>
 
 namespace dungeon
 {
@@ -50,7 +50,7 @@ namespace dungeon
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	MinimumSpanningTree::IndexedEdge::IndexedEdge(const size_t e0, const size_t e1, const float length) noexcept
+	MinimumSpanningTree::IndexedEdge::IndexedEdge(const size_t e0, const size_t e1, const double length) noexcept
 		: mLength(length)
 	{
 		mEdges[0] = e0;
@@ -88,7 +88,7 @@ namespace dungeon
 		return mEdges.at(index);
 	}
 
-	float MinimumSpanningTree::IndexedEdge::GetLength() const noexcept
+	double MinimumSpanningTree::IndexedEdge::GetLength() const noexcept
 	{
 		return mLength;
 	}
@@ -200,15 +200,15 @@ namespace dungeon
 			const size_t v2 = verteces.Index(p2);
 			const size_t v3 = verteces.Index(p3);
 
-			const IndexedEdge e1(v1, v2, Point::Dist(*p1, *p2));
+			const IndexedEdge e1(v1, v2, PathFinder::Heuristics(*p1, *p2));
 			if (!RedundancyCheck(indexedEdges, e1))
 				indexedEdges.emplace_back(e1);
 
-			const IndexedEdge e2(v2, v3, Point::Dist(*p2, *p3));
+			const IndexedEdge e2(v2, v3, PathFinder::Heuristics(*p2, *p3));
 			if (!RedundancyCheck(indexedEdges, e2))
 				indexedEdges.emplace_back(e2);
 
-			const IndexedEdge e3(v3, v1, Point::Dist(*p3, *p1));
+			const IndexedEdge e3(v3, v1, PathFinder::Heuristics(*p3, *p1));
 			if (!RedundancyCheck(indexedEdges, e3))
 				indexedEdges.emplace_back(e3);
 		});
@@ -232,9 +232,9 @@ namespace dungeon
 			const std::shared_ptr<const Point>& p2 = points[n];
 			const size_t v1 = verteces.Index(p1);
 			const size_t v2 = verteces.Index(p2);
-			const IndexedEdge e1(v1, v2, Point::Dist(*p1, *p2));
+			const IndexedEdge e1(v1, v2, PathFinder::Heuristics(*p1, *p2));
 			if (!RedundancyCheck(indexedEdges, e1))
-				indexedEdges.emplace_back(v1, v2, Point::Dist(*p1, *p2));
+				indexedEdges.emplace_back(v1, v2, PathFinder::Heuristics(*p1, *p2));
 		}
 
 		// 初期化
@@ -253,7 +253,7 @@ namespace dungeon
 			}
 		);
 
-#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG) || defined(DEBUG_ENABLE_INFOMATION_FOR_REPRECATION)
+#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG) || defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 		for (const auto& e : edges)
 		{
 			DUNGEON_GENERATOR_LOG(TEXT("MinimumSpanningTree: in: %d-%d (%f)"), e.GetEdge(0), e.GetEdge(1), e.GetLength());
@@ -331,7 +331,7 @@ namespace dungeon
 				}
 			}
 
-#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG) || defined(DEBUG_ENABLE_INFOMATION_FOR_REPRECATION)
+#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG) || defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 			for (const auto& e : mEdges)
 			{
 				DUNGEON_GENERATOR_LOG(TEXT("MinimumSpanningTree: mix: %d %d-%d (%f)"),
@@ -497,12 +497,12 @@ namespace dungeon
 		{
 			const Point candidateStartPoint(center->X, bottom->Y, bottom->Z);
 			std::shared_ptr<const Point> resultPoint = nullptr;
-			float min = std::numeric_limits<float>::max();
+			double min = std::numeric_limits<double>::max();
 			for (const auto& edge : mEdges)
 			{
 				for (size_t i = 0; i < 2; ++i)
 				{
-					const float distance = Point::Dist(*edge.GetPoint(i), candidateStartPoint);
+					const double distance = PathFinder::Heuristics(*edge.GetPoint(i), candidateStartPoint);
 					if (min > distance)
 					{
 						min = distance;

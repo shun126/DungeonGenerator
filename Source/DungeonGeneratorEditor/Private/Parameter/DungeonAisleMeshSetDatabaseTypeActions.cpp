@@ -4,8 +4,8 @@
 All Rights Reserved.
 */
 
-#include "DungeonAisleMeshSetDatabaseTypeActions.h"
-#include "DungeonAisleMeshSetDatabase.h"
+#include "Parameter/DungeonAisleMeshSetDatabaseTypeActions.h"
+#include "Parameter/DungeonAisleMeshSetDatabase.h"
 
 FDungeonAisleMeshSetDatabaseTypeActions::FDungeonAisleMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory)
 	: mAssetCategory(InAssetCategory)

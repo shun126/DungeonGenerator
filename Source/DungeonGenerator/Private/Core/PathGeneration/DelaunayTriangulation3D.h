@@ -11,7 +11,6 @@ All Rights Reserved.
 #include "../Math/Tetrahedron.h"
 #include "../Math/Triangle.h"
 #include <functional>
-#include <list>
 #include <vector>
 
 namespace dungeon
@@ -42,18 +41,35 @@ namespace dungeon
 		/**
 		三角形を更新します
 		*/
-		void ForEach(std::function<void(const Triangle&)> func) noexcept;
+		template<typename Function>
+		void ForEach(Function&& function) noexcept
+		{
+			for (auto& triangle : mTriangles)
+			{
+				std::forward<Function>(function)(triangle);
+			}
+		}
 
 		/**
 		三角形を更新します
 		*/
-		void ForEach(std::function<void(const Triangle&)> func) const noexcept;
+		template<typename Function>
+		void ForEach(Function&& function) const noexcept
+		{
+			for (auto& triangle : mTriangles)
+			{
+				std::forward<Function>(function)(triangle);
+			}
+		}
 
 		/**
 		有効な分割か調べます
 		@return		有効ならばtrue
 		*/
-		bool IsValid() const noexcept;
+		bool IsValid() const noexcept
+		{
+			return mTriangles.empty() == false;
+		}
 
 	private:
 		// 外接する四面体を生成
@@ -66,5 +82,3 @@ namespace dungeon
 		std::vector<Triangle> mTriangles;
 	};
 }
-
-#include "DelaunayTriangulation3D.inl"

@@ -26,13 +26,13 @@ public:
 	@param[in]	actor
 	@param[in]	function
 	*/
-	void Stash(const AActor* actor, std::function<std::pair<bool, T>(UActorComponent*)> function);
+	void Stash(const AActor* actor, const std::function<std::pair<bool, T>(UActorComponent*)>& function);
 
 	/**
 	Restore the activity of recorded components
 	@param[in]	function
 	*/
-	void Pop(std::function<void(UActorComponent*, const T)> function);
+	void Pop(const std::function<void(UActorComponent*, const T)>& function);
 
 	/**
 	No records?
@@ -50,7 +50,7 @@ inline DungeonComponentActivationSaver<T>::DungeonComponentActivationSaver()
 }
 
 template<typename T>
-inline void DungeonComponentActivationSaver<T>::Stash(const AActor* actor, std::function<std::pair<bool, T>(UActorComponent*)> function)
+inline void DungeonComponentActivationSaver<T>::Stash(const AActor* actor, const std::function<std::pair<bool, T>(UActorComponent*)>& function)
 {
 	mActivations.Reset();
 
@@ -75,7 +75,7 @@ inline void DungeonComponentActivationSaver<T>::Stash(const AActor* actor, std::
 }
 
 template<typename T>
-inline void DungeonComponentActivationSaver<T>::Pop(std::function<void(UActorComponent*, const T)> function)
+inline void DungeonComponentActivationSaver<T>::Pop(const std::function<void(UActorComponent*, const T)>& function)
 {
 	for (const auto& activation : mActivations)
 	{

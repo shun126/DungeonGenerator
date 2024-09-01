@@ -1,4 +1,7 @@
 /**
+Helper class that loads the level when the player enters the OverlapVolume
+プレイヤーが OverlapVolume に入るときにレベルをロードするヘルパークラス
+
 @author		Shun Moriya
 @copyright	2023- Shun Moriya
 All Rights Reserved.
@@ -25,8 +28,8 @@ void ADungeonLevelStreamingActor::OverlapBegins(UPrimitiveComponent* overlappedC
 {
 	if (Path.IsValid())
 	{
-		ACharacter* MyCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
-		if (otherActor == Cast<AActor>(MyCharacter))
+		ACharacter* myCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
+		if (otherActor == Cast<AActor>(myCharacter))
 		{
 #if UE_VERSION_NEWER_THAN(5, 0, 0)
 			const FName& longPackageName = Path.GetLongPackageFName();
@@ -48,8 +51,8 @@ void ADungeonLevelStreamingActor::OverlapEnds(UPrimitiveComponent* overlappedCom
 {
 	if (Path.IsValid())
 	{
-		ACharacter* MyCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
-		if (otherActor == Cast<AActor>(MyCharacter))
+		ACharacter* myCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
+		if (otherActor == Cast<AActor>(myCharacter))
 		{
 #if UE_VERSION_NEWER_THAN(5, 0, 0)
 			const FName& longPackageName = Path.GetLongPackageFName();

@@ -56,7 +56,7 @@ namespace dungeon
 		方向を取得します
 		@return		方向
 		*/
-		const Index Get() const noexcept;
+		Index Get() const noexcept;
 
 		/**
 		方向を設定します
@@ -71,8 +71,8 @@ namespace dungeon
 		Direction& operator=(const Index index) noexcept;
 
 		/**
-		方向を設定します
-		@param[in]	index	方向
+		方向を代入します
+		@param[in]	other	代入するDirection
 		*/
 		Direction& operator=(const Direction& other) noexcept;
 

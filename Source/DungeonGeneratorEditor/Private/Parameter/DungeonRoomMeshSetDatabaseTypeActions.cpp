@@ -4,8 +4,8 @@
 All Rights Reserved.
 */
 
-#include "DungeonRoomMeshSetDatabaseTypeActions.h"
-#include "DungeonRoomMeshSetDatabase.h"
+#include "Parameter/DungeonRoomMeshSetDatabaseTypeActions.h"
+#include "Parameter/DungeonRoomMeshSetDatabase.h"
 
 FDungeonRoomMeshSetDatabaseTypeActions::FDungeonRoomMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory)
 	: mAssetCategory(InAssetCategory)

@@ -7,12 +7,12 @@ All Rights Reserved.
 #include "DungeonGeneratorEditorModule.h"
 #include "DungeonGeneratorStyle.h"
 #include "DungeonGeneratorCommands.h"
-#include "DungeonAisleMeshSetDatabaseTypeActions.h"
-#include "DungeonRoomMeshSetDatabaseTypeActions.h"
+#include "Parameter/DungeonAisleMeshSetDatabaseTypeActions.h"
+#include "Parameter/DungeonRoomMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
 #include "BuildInfomation.h"
 
-#include "DungeonGeneratorCore.h"
+#include "DungeonActor.h"
 #include "Helper/DungeonFinalizer.h"
 #include "Parameter/DungeonGenerateParameter.h"
 
@@ -26,9 +26,7 @@ All Rights Reserved.
 #include <GameFramework/PlayerStart.h>
 #include <Misc/EngineVersionComparison.h>
 #include <Misc/MessageDialog.h>
-#include <UObject/SavePackage.h>
 #include <UObject/UObjectGlobals.h>
-#include <Widgets/Input/SDirectoryPicker.h>
 #include <Widgets/Input/SNumericEntryBox.h>
 
 static const FName DungeonGeneratorTabName("DungeonGenerator");
@@ -114,23 +112,23 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 			.Padding(2.f)
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.VAlign(VAlign_Center)
-				.AutoWidth()
-				.Padding(2.f)
-				[
-					SNew(STextBlock)
-					.Text(LOCTEXT("DungeonGenerateParameterLabel", "DungeonGenerateParameter"))
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					//SAssignNew(EntryBox, SObjectPropertyEntryBox)
-					SNew(SObjectPropertyEntryBox)
-					.AllowedClass(UDungeonGenerateParameter::StaticClass())
-					.ObjectPath_Raw(this, &FDungeonGenerateEditorModule::GetObjectPath)
-					.OnObjectChanged_Raw(this, &FDungeonGenerateEditorModule::SetAssetData)
-				]
+					+ SHorizontalBox::Slot()
+					.VAlign(VAlign_Center)
+					.AutoWidth()
+					.Padding(2.f)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("DungeonGenerateParameterLabel", "DungeonGenerateParameter"))
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						//SAssignNew(EntryBox, SObjectPropertyEntryBox)
+						SNew(SObjectPropertyEntryBox)
+							.AllowedClass(UDungeonGenerateParameter::StaticClass())
+							.ObjectPath_Raw(this, &FDungeonGenerateEditorModule::GetObjectPath)
+							.OnObjectChanged_Raw(this, &FDungeonGenerateEditorModule::SetAssetData)
+					]
 			];
 
 		dungeonBox->AddSlot()
@@ -139,30 +137,30 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 			.Padding(2.f)
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.VAlign(VAlign_Center)
-				.AutoWidth()
-				.Padding(2.f)
-				[
-					SNew(STextBlock)
-					.Text(LOCTEXT("RandomSeedLabel", "Random seed"))
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SAssignNew(mRandomSeedValue, SEditableTextBox)
-					.Text(LOCTEXT("RandomSeedValue", ""))
-				]
+					+ SHorizontalBox::Slot()
+					.VAlign(VAlign_Center)
+					.AutoWidth()
+					.Padding(2.f)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("RandomSeedLabel", "Random seed"))
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						SAssignNew(mRandomSeedValue, SEditableTextBox)
+							.Text(LOCTEXT("RandomSeedValue", ""))
+					]
 			];
-	
+
 		dungeonBox->AddSlot()
 			.VAlign(VAlign_Center)
 			.FillHeight(1.f)
 			.Padding(2.f)
 			[
 				SAssignNew(mGenerateDungeonButton, SButton)
-				.Text(LOCTEXT("GenerateDungeonButton", "Generate dungeon"))
-				.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedGenerateButton)
+					.Text(LOCTEXT("GenerateDungeonButton", "Generate dungeon"))
+					.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedGenerateButton)
 			];
 
 		dungeonBox->AddSlot()
@@ -171,42 +169,42 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 			.Padding(2.f)
 			[
 				SNew(SButton)
-				.Text(LOCTEXT("ClearDungeonButton", "Clear dungeon"))
-				.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedClearButton)
+					.Text(LOCTEXT("ClearDungeonButton", "Clear dungeon"))
+					.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedClearButton)
 			];
 	}
 
 
-	// Plug-in infomation
-	//auto infomationBox = SNew(SVerticalBox);
-	auto infomationBox = dungeonBox;
+	// Plug-in information
 	{
-		infomationBox->AddSlot()
+		//auto informationBox = SNew(SVerticalBox);
+		const auto informationBox = dungeonBox;
+		informationBox->AddSlot()
 			.VAlign(VAlign_Center)
 			.FillHeight(1.f)
 			.Padding(2.f)
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.VAlign(VAlign_Center)
-				.AutoWidth()
-				.Padding(2.f)
-				[
-					SNew(STextBlock)
-					.Text(LOCTEXT("JenkinsBuildTagLabel", "Build tag"))
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(STextBlock)
-					.Text(LOCTEXT("JenkinsBuildTagValue", JENKINS_JOB_TAG))
-				]
+					+ SHorizontalBox::Slot()
+					.VAlign(VAlign_Center)
+					.AutoWidth()
+					.Padding(2.f)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("JenkinsBuildTagLabel", "Build tag"))
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("JenkinsBuildTagValue", JENKINS_JOB_TAG))
+					]
 			];
 	}
 
 	TSharedRef<SDockTab> dockTab = SNew(SDockTab).TabRole(ETabRole::NomadTab)
 		[
-			dungeonBox /* textureBox , infomationBox*/
+			dungeonBox /* textureBox , informationBox*/
 		];
 
 	SetAssetData(FAssetData());
@@ -222,25 +220,19 @@ void FDungeonGenerateEditorModule::PluginButtonClicked()
 void FDungeonGenerateEditorModule::RegisterMenus()
 {
 	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
-	FToolMenuOwnerScoped OwnerScoped(this);
+	FToolMenuOwnerScoped ownerScoped(this);
 
 	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
-			Section.AddMenuEntryWithCommandList(FDungeonGeneratorCommands::Get().OpenPluginWindow, PluginCommands);
-		}
+		UToolMenu* menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+		FToolMenuSection& section = menu->FindOrAddSection("WindowLayout");
+		section.AddMenuEntryWithCommandList(FDungeonGeneratorCommands::Get().OpenPluginWindow, PluginCommands);
 	}
 
 	{
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
-		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Settings");
-			{
-				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FDungeonGeneratorCommands::Get().OpenPluginWindow));
-				Entry.SetCommandList(PluginCommands);
-			}
-		}
+		UToolMenu* toolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
+		FToolMenuSection& section = toolbarMenu->FindOrAddSection("Settings");
+		FToolMenuEntry& entry = section.AddEntry(FToolMenuEntry::InitToolBarButton(FDungeonGeneratorCommands::Get().OpenPluginWindow));
+		entry.SetCommandList(PluginCommands);
 	}
 }
 
@@ -271,13 +263,13 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 		return FReply::Unhandled();
 	}
 
-	// Delete all generated actors
-	CDungeonGeneratorCore::DestroySpawnedActors(world);
 
-	// Release generated dungeons
-	if (mDungeonGeneratorCore)
-	{
-	}
+	// Delete all generated actors
+	ADungeonActor::DestroySpawnedActors(world);
+	mDungeonActor.Reset();
+
+	// Update the world
+	world->FlushLevelStreaming();
 
 	// Get dungeon generation parameters
 	const UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get();
@@ -288,27 +280,32 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 		return FReply::Unhandled();
 	}
 
-	// Generate dungeon
-	mDungeonGeneratorCore = std::make_shared<CDungeonGeneratorCore>(world);
-	if (mDungeonGeneratorCore == nullptr)
-	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to create dungeon generator object"));
-		return FReply::Unhandled();
-	}
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP
 	const FVector origin = FVector(-10000, 20000, 30000);
 #else
 	const FVector& origin = FVector::ZeroVector;
 #endif
-	if (!mDungeonGeneratorCore->Create(dungeonGenerateParameter, origin, true))
+
+	// spawn DungeonVegetationActor
+	ADungeonActor* dungeonActor = ADungeonActor::SpawnDungeonActor(world, origin);
+	if (IsValid(dungeonActor) == false)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to create dungeon vegetation actor"));
+		return FReply::Unhandled();
+	}
+
+	if (!dungeonActor->Create(dungeonGenerateParameter, true))
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to generate dungeon"));
 		OnClickedClearButton();
 		return FReply::Unhandled();
 	}
 	TArray<APlayerStart*> startPoints;
-	mDungeonGeneratorCore->MovePlayerStart(startPoints);
-	mDungeonGeneratorCore->MovePlayerStartPIE(origin, startPoints);
+	dungeonActor->CollectPlayerStartExceptPlayerStartPIE(startPoints);
+	dungeonActor->MovePlayerStart(startPoints);
+
+	// ダンジョンアクターを記録
+	mDungeonActor = dungeonActor;
 
 	// Set random seeds for generated dungeons
 	const int32 value = dungeonGenerateParameter->GetGeneratedRandomSeed();
@@ -320,14 +317,10 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 
 FReply FDungeonGenerateEditorModule::OnClickedClearButton()
 {
-	// Release generated dungeons
-	if (mDungeonGeneratorCore)
-	{
-	}
-	mDungeonGeneratorCore.reset();
 
 	// Delete all generated actors
-	CDungeonGeneratorCore::DestroySpawnedActors(GetWorldFromGameViewport());
+	ADungeonActor::DestroySpawnedActors(GetWorldFromGameViewport());
+	mDungeonActor.Reset();
 
 
 	return FReply::Handled();
@@ -336,7 +329,7 @@ FReply FDungeonGenerateEditorModule::OnClickedClearButton()
 
 UWorld* FDungeonGenerateEditorModule::GetWorldFromGameViewport()
 {
-	if (FWorldContext* worldContext = GEngine->GetWorldContextFromGameViewport(GEngine->GameViewport))
+	if (const FWorldContext* worldContext = GEngine->GetWorldContextFromGameViewport(GEngine->GameViewport))
 		return worldContext->World();
 
 	return nullptr;

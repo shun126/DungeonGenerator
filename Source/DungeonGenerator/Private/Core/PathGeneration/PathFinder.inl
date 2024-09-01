@@ -10,61 +10,19 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	inline PathFinder::BaseNode::BaseNode(const NodeType nodeType, const FIntVector& location, const Direction direction) noexcept
-		: mLocation(location)
-		, mNodeType(nodeType)
-		, mDirection(direction)
-	{
-	}
-
-	inline PathFinder::BaseNode::BaseNode(const BaseNode& other) noexcept
-		: mLocation(other.mLocation)
-		, mNodeType(other.mNodeType)
-		, mDirection(other.mDirection)
-	{
-	}
-
-	inline PathFinder::BaseNode::BaseNode(BaseNode&& other) noexcept
-		: mLocation(std::move(other.mLocation))
-		, mNodeType(std::move(other.mNodeType))
-		, mDirection(std::move(other.mDirection))
-	{
-	}
-
-	inline PathFinder::OpenNode::OpenNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction direction, const SearchDirection searchDirection, const uint32_t cost) noexcept
-		: BaseNode(nodeType, location, direction)
-		, mParentKey(parentKey)
-		, mCost(cost)
-		, mSearchDirection(searchDirection)
-	{
-	}
-
-	inline PathFinder::OpenNode::OpenNode(const OpenNode& other) noexcept
-		: BaseNode(other)
-		, mParentKey(other.mParentKey)
-		, mCost(other.mCost)
-		, mSearchDirection(other.mSearchDirection)
-	{
-	}
-
-	inline PathFinder::OpenNode::OpenNode(OpenNode&& other) noexcept
-		: BaseNode(std::move(other))
-		, mParentKey(std::move(other.mParentKey))
-		, mCost(std::move(other.mCost))
-		, mSearchDirection(std::move(other.mSearchDirection))
-	{
-	}
-
-	inline PathFinder::CloseNode::CloseNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction direction, const uint32_t cost) noexcept
-		: BaseNode(nodeType, location, direction)
-		, mParentKey(parentKey)
-		, mCost(cost)
-	{
-	}
-
 	inline bool PathFinder::Empty() const noexcept
 	{
 		return mOpen.empty();
+	}
+
+	inline size_t PathFinder::OpenSize() const noexcept
+	{
+		return mOpen.size();
+	}
+
+	inline size_t PathFinder::CloseSize() const noexcept
+	{
+		return mClose.size();
 	}
 
 	inline uint64_t PathFinder::Hash(const FIntVector& location) noexcept
@@ -85,21 +43,17 @@ namespace dungeon
 		return cost + heuristics;
 	}
 
-	inline bool PathFinder::IsValidPath() const noexcept
+	inline const std::shared_ptr<PathFinder::Result>& PathFinder::GetResult() const noexcept
 	{
-		return mRoute.empty() == false;
+		return mResult;
 	}
 
-	inline size_t PathFinder::GetPathLength() const noexcept
-	{
-		return mRoute.size();
-	}
-
-	inline void PathFinder::ReserveOpenNode(const FIntVector& parentLocation, const std::shared_ptr<PathNodeSwitcher::Node>& openNode)
+	inline void PathFinder::ReserveOpenNode(const FIntVector& parentLocation, const PathNodeSwitcher::Node& openNode)
 	{
 		const uint64_t parentHash = Hash(parentLocation);
 		// 親ノードがオープンリストにあるなら、進入禁止予約リストに登録
 		mNoEntryNodeSwitcher.Reserve(parentHash, openNode);
+
 		// クローズリストにあるなら、進入禁止リストに登録
 	}
 
@@ -124,8 +78,145 @@ namespace dungeon
 		mNoEntryNodeSwitcher.Clear();
 	}
 
-	inline size_t PathFinder::GetCloseNodeSize() const noexcept
+	/*
+	BaseNode
+	*/
+	/**
+	コンストラクタ
+	@param[in]	nodeType		ノードの種類
+	@param[in]	location		現在位置
+	@param[in]	direction		検索してきた方向
+	*/
+	inline PathFinder::BaseNode::BaseNode(const NodeType nodeType, const FIntVector& location, const Direction& direction) noexcept
+		: mLocation(location)
+		, mNodeType(nodeType)
+		, mDirection(direction)
 	{
-		return mClose.size();
+	}
+
+	inline PathFinder::BaseNode::BaseNode(const BaseNode& other) noexcept
+		: mLocation(other.mLocation)
+		, mNodeType(other.mNodeType)
+		, mDirection(other.mDirection)
+	{
+	}
+
+	inline PathFinder::BaseNode::BaseNode(BaseNode&& other) noexcept
+		: mLocation(std::move(other.mLocation))
+		, mNodeType(std::move(other.mNodeType))
+		, mDirection(std::move(other.mDirection))
+	{
+	}
+
+	/*
+	OpenNode
+	*/
+	/**
+	コンストラクタ
+	@param[in]	parentKey		親ノードのキー
+	@param[in]	nodeType		ノードの種類
+	@param[in]	location		現在位置
+	@param[in]	direction		検索してきた方向
+	@param[in]	searchDirection	検索可能な方向
+	@param[in]	cost			コスト
+	*/
+	inline PathFinder::OpenNode::OpenNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction& direction, const SearchDirection searchDirection, const uint32_t cost) noexcept
+		: BaseNode(nodeType, location, direction)
+		, mParentKey(parentKey)
+		, mCost(cost)
+		, mSearchDirection(searchDirection)
+	{
+	}
+
+	inline PathFinder::OpenNode::OpenNode(const OpenNode& other) noexcept
+		: BaseNode(other)
+		, mParentKey(other.mParentKey)
+		, mCost(other.mCost)
+		, mSearchDirection(other.mSearchDirection)
+	{
+	}
+
+	inline PathFinder::OpenNode::OpenNode(OpenNode&& other) noexcept
+		: BaseNode(std::move(other))
+		, mParentKey(std::move(other.mParentKey))
+		, mCost(std::move(other.mCost))
+		, mSearchDirection(std::move(other.mSearchDirection))
+	{
+	}
+
+	/*
+	CloseNode
+	*/
+	/**
+	コンストラクタ
+	@param[in]	parentKey		親ノードのキー
+	@param[in]	nodeType		ノードの種類
+	@param[in]	location		現在位置
+	@param[in]	direction		検索してきた方向
+	@param[in]	cost			コスト
+	*/
+	inline PathFinder::CloseNode::CloseNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction& direction, const uint32_t cost) noexcept
+		: BaseNode(nodeType, location, direction)
+		, mParentKey(parentKey)
+		, mCost(cost)
+	{
+	}
+
+	inline PathFinder::CloseNode::CloseNode(const CloseNode& other) noexcept
+		: BaseNode(other)
+		, mParentKey(other.mParentKey)
+		, mCost(other.mCost)
+	{
+	}
+
+	inline PathFinder::CloseNode::CloseNode(CloseNode&& other) noexcept
+		: BaseNode(std::move(other))
+		, mParentKey(std::move(other.mParentKey))
+		, mCost(std::move(other.mCost))
+	{
+	}
+
+	/*
+	Result
+	*/
+
+	inline bool PathFinder::Result::IsValidPath() const noexcept
+	{
+		return mRoute.empty() == false;
+	}
+
+	inline size_t PathFinder::Result::GetPathLength() const noexcept
+	{
+		return mRoute.size();
+	}
+
+	inline Direction PathFinder::Result::GetStartDirection() const noexcept
+	{
+		return mRoute.back().mDirection;
+	}
+
+	inline Direction PathFinder::Result::GetGoalDirection() const noexcept
+	{
+		return mRoute.front().mDirection;
+	}
+
+	inline const FIntVector& PathFinder::Result::GetStartLocation() const noexcept
+	{
+		return mRoute.back().mLocation;
+	}
+
+	inline const FIntVector& PathFinder::Result::GetGoalLocation() const noexcept
+	{
+		return mRoute.front().mLocation;
+	}
+
+	inline void PathFinder::Result::InvalidateStartLocationType() noexcept
+	{
+		mRoute.back().mNodeType = NodeType::Invalid;
+	}
+
+	inline void PathFinder::Result::InvalidateGoalLocationType() noexcept
+	{
+		mRoute.front().mNodeType = NodeType::Invalid;
 	}
 }

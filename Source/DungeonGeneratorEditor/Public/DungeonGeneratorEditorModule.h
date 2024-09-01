@@ -6,10 +6,9 @@ All Rights Reserved.
 
 #pragma once
 #include <Modules/ModuleManager.h>
-#include <memory>
 
 // Forward declaration
-class CDungeonGeneratorCore;
+class ADungeonActor;
 class UDungeonGenerateParameter;
 class FToolBarBuilder;
 class FMenuBuilder;
@@ -19,7 +18,7 @@ class FDungeonGenerateEditorModule : public IModuleInterface
 {
 public:
 	FDungeonGenerateEditorModule() = default;
-	virtual ~FDungeonGenerateEditorModule() = default;
+	virtual ~FDungeonGenerateEditorModule() override = default;
 
 	// IModuleInterface implementation
 	virtual void StartupModule() override;
@@ -43,8 +42,8 @@ private:
 	static UWorld* GetWorldFromGameViewport();
 
 private:
-	std::shared_ptr<CDungeonGeneratorCore> mDungeonGeneratorCore;
-	TWeakObjectPtr<UDungeonGenerateParameter> mDungeonGenerateParameter = nullptr;
+	TWeakObjectPtr<ADungeonActor> mDungeonActor;
+	TWeakObjectPtr<UDungeonGenerateParameter> mDungeonGenerateParameter;
 	TSharedPtr<FUICommandList> PluginCommands;
 	TSharedPtr<SEditableTextBox> mRandomSeedValue;
 	TSharedPtr<SButton> mGenerateDungeonButton;

@@ -123,6 +123,7 @@ namespace dungeon
 
 	inline FVector Triangle::operator[](const size_t index) const noexcept
 	{
-		return *mPoints.at(index);
+		const auto& point = mPoints.at(index);
+		return FVector(*point);
 	}
 }

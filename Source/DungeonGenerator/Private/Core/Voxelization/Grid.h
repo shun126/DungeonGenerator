@@ -65,7 +65,7 @@ namespace dungeon
 		@param[in]	type		グリッドの種類
 		@param[in]	direction	グリッドの方向
 		*/
-		Grid(const Type type, const Direction direction) noexcept;
+		Grid(const Type type, const Direction& direction) noexcept;
 
 		/**
 		コンストラクタ
@@ -73,7 +73,7 @@ namespace dungeon
 		@param[in]	direction	グリッドの方向
 		@param[in]	identifier	識別子
 		*/
-		Grid(const Type type, const Direction direction, const uint16_t identifier) noexcept;
+		Grid(const Type type, const Direction& direction, const uint16_t identifier) noexcept;
 
 		/**
 		デストラクタ
@@ -212,6 +212,7 @@ namespace dungeon
 		自身からtoGridを見た時に扉が生成されるか判定します
 		@param[in]	toGrid		参照先グリッド
 		@param[in]	direction	自身からtoGridの方向
+		@param[in]	mergeRooms	trueならば部屋を結合する
 		@return		trueならば扉の生成が可能
 		*/
 		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;

@@ -1,8 +1,38 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (33)
+## Unreleased-1.6.* (36)
 ### Changes
 ### 変更点
+
+## Unreleased-1.6.6 (35)
+### Changes
+* Added candidate number of levels
+* Added automatic generation of Foliage
+* Fixed problem with doors lining up
+* Changed dungeon generation path
+* Extensive refactoring
+* Fixed several bugs
+### 変更点
+* 階層数の候補を追加
+* Foliageの自動生成を追加
+* ドアが並ぶ問題を修正
+* ダンジョンの生成パスを変更
+* 大規模なリファクタリングを実施
+* いくつかの不具合を修正
+
+## Unreleased-1.6.5 (34)
+### Changes
+* Fixed layer calculation for TransformWorldToRadarWithLayer
+* Some refactoring
+### 変更点
+* TransformWorldToRadarWithLayerのレイヤー計算を修正
+* いくつかのリファクタリングを実施
+
+## 20240806-1.6.4 (33)
+### Changes
+* Fixed crash during minimap generation in UE5.3
+### 変更点
+* UE5.3以前でミニマップの生成時にクラッシュする問題を修正
 
 ## 20240803-1.6.3 (32)
 ### Changes

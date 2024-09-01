@@ -54,11 +54,15 @@ DECLARE_LOG_CATEGORY_EXTERN(DungeonGeneratorLogger, Log, All);
 
 namespace dungeon
 {
+	static constexpr auto BaseDirectoryName = TEXT("DungeonGenerator");
+
 	/*!
 	Output to VisualStudio output window
 	Assumed to be included only from source files, so static functions are fine.
 	*/
 	extern void OutputDebugStringWithArgument(const char* pszFormat, ...);
+
+	extern const FString& GetBaseDirectoryName();
 
 	extern const FString& GetDebugDirectory();
 
@@ -108,7 +112,7 @@ namespace dungeon
 		/**
 		@brief Windows Bitmap canvas class
 		*/
-		class Canvas
+		class Canvas final
 		{
 		public:
 			//! Create Canvas class
@@ -118,22 +122,22 @@ namespace dungeon
 			Canvas(const uint32_t width, const uint32_t height) noexcept;
 
 			//! Delete Canvas class
-			virtual ~Canvas() = default;
+			~Canvas() = default;
 
 			//! Generate image data
 			void Create(const uint32_t width, const uint32_t height) noexcept;
 
 			//! Saves image data to a file
-			int Write(const std::string& filename) noexcept;
+			int Write(const std::string& filename) const noexcept;
 
 			//! Draw point
-			void Put(int32_t x, int32_t y, const RGBCOLOR color) noexcept;
+			void Put(int32_t x, int32_t y, const RGBCOLOR color) const noexcept;
 
 			//! Draw rectangle
-			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;
+			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) const noexcept;
 
 			//! Draw frame 
-			void Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) noexcept;
+			void Frame(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) const noexcept;
 
 		private:
 			BMPFILEHEADER mBmpHeader;
