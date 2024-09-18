@@ -60,6 +60,7 @@ namespace dungeon
 		, mDataWidth(other.mDataWidth)
 		, mDataDepth(other.mDataDepth)
 		, mDataHeight(other.mDataHeight)
+		, mReservationNumber(other.mReservationNumber)
 		, mIdentifier(other.mIdentifier)
 		, mParts(other.mParts)
 		, mItem(other.mItem)
@@ -81,6 +82,7 @@ namespace dungeon
 		mDataWidth = other.mDataWidth;
 		mDataDepth = other.mDataDepth;
 		mDataHeight = other.mDataHeight;
+		mReservationNumber = other.mReservationNumber;
 		mIdentifier = other.mIdentifier;
 		mParts = other.mParts;
 		mItem = other.mItem;
@@ -172,7 +174,7 @@ namespace dungeon
 
 	const std::string_view& Room::GetPartsName() const noexcept
 	{
-		static const std::array<std::string_view, PartsSize> names = {
+		static constexpr std::array<std::string_view, PartsSize> names = {
 			"unidentified",
 			"hall",
 			"hanare",
@@ -184,7 +186,7 @@ namespace dungeon
 
 	const std::string_view& Room::GetItemName() const noexcept
 	{
-		static const std::array<std::string_view, ItemSize> names = {
+		static constexpr std::array<std::string_view, ItemSize> names = {
 			"Empty",
 			"Key",
 			"Unique key",

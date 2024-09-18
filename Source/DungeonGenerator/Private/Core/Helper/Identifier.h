@@ -34,6 +34,7 @@ namespace dungeon
 	public:
 		Identifier() noexcept;
 		explicit Identifier(const Type type) noexcept;
+		explicit Identifier(const IdentifierType other) noexcept;
 
 		explicit Identifier(const Identifier& other) noexcept;
 		Identifier(Identifier&& other) noexcept;

@@ -1,10 +1,26 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (36)
+## Unreleased-1.6.* (37)
 ### Changes
 ### 変更点
 
-## Unreleased-1.6.6 (35)
+## 20240915-1.6.7 (36)
+### Changes
+* Added support for indoor staircase generation
+* Added sublevels that prioritize generation
+* Improved passageway generation
+* Improved room separation method
+* Fixed a bug that caused MissionGraph to generate levels that could not be cleared
+* Fixed several bugs
+### 変更点
+* 室内の階段生成に対応
+* 生成を優先するサブレベルを追加
+* 通路生成の改善
+* 部屋の分離方法の改善
+* MissionGraphがクリアできないレベルを生成する不具合を修正
+* いくつかの不具合を修正
+
+## 20240901-1.6.6 (35)
 ### Changes
 * Added candidate number of levels
 * Added automatic generation of Foliage
@@ -20,7 +36,7 @@
 * 大規模なリファクタリングを実施
 * いくつかの不具合を修正
 
-## Unreleased-1.6.5 (34)
+## 20240812-1.6.5 (34)
 ### Changes
 * Fixed layer calculation for TransformWorldToRadarWithLayer
 * Some refactoring

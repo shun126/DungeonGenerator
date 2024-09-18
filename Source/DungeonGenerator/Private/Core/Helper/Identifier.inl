@@ -25,6 +25,11 @@ namespace dungeon
 		mCounter = (mCounter + 1) & maskCounter;
 	}
 
+	inline Identifier::Identifier(const IdentifierType other) noexcept
+		: mIdentifier(other)
+	{
+	}
+
 	inline Identifier::Identifier(const Identifier& other) noexcept
 		: mIdentifier(other.mIdentifier)
 	{

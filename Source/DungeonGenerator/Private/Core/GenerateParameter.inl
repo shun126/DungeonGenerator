@@ -203,6 +203,16 @@ namespace dungeon
 		return mUseMissionGraph == false && mAisleComplexity > 0;
 	}
 
+	inline bool GenerateParameter::IsGenerateSlopeInRoom() const noexcept
+	{
+		return mGenerateSlopeInRoom;
+	}
+
+	inline void GenerateParameter::SetGenerateSlopeInRoom(const bool generateSlopeInRoom) noexcept
+	{
+		mGenerateSlopeInRoom = generateSlopeInRoom;
+	}
+
 	inline const FIntVector& GenerateParameter::GetStartRoomSize() const noexcept
 	{
 		return mStartRoomSize;

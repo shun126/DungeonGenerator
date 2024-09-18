@@ -36,7 +36,6 @@ public class DungeonGenerator : ModuleRules
 				"Engine",
 				"NavigationSystem",
                 "NetCore",
-                "JsonUtilities",
 				"SlateCore",
 				"UMG",
                 "Foliage"
@@ -45,7 +44,8 @@ public class DungeonGenerator : ModuleRules
 		{
 			PrivateDependencyModuleNames.AddRange(
 				new string[] {
-					"UnrealEd"
+					"UnrealEd",
+	                "JsonUtilities",
                 });
 		}
 

@@ -16,9 +16,6 @@ All Rights Reserved.
 // 定義すると通信のためのデバッグ情報を出力します
 //#define DEBUG_ENABLE_INFORMATION_FOR_REPLICATION
 
-// 定義すると生成失敗しても生成を継続します
-#define DEBUG_FORCED_GENERATION_CONTINUES
-
 // 定義すると生成時間を計測します
 #define DEBUG_ENABLE_MEASURE_GENERATION_TIME
 
