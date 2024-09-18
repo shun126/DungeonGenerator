@@ -43,7 +43,17 @@ namespace dungeon
 
 		// 通路・スロープなら天井を生成
 		if (Is(Type::Aisle) || Is(Type::Stairwell) || Is(Type::UpSpace))
+		{
+
+
+			if (GetIdentifier() == toUpperGrid.GetIdentifier())
+			{
+				return false;
+			}
+
+
 			return true;
+		}
 
 		// 識別子が違うなら天井を生成
 		if (toUpperGrid.GetIdentifier() != GetIdentifier())
@@ -77,6 +87,13 @@ namespace dungeon
 		*/
 		else if (toGrid.IsKindOfSlopeType())
 		{
+
+			if (GetIdentifier() == toGrid.GetIdentifier())
+			{
+				return false;
+			}
+
+
 			// スロープの正面が門と同じ方向なら門
 			return
 				GetDirection().IsNorthSouth() == toGrid.GetDirection().IsNorthSouth() &&
@@ -125,6 +142,13 @@ namespace dungeon
 					toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
 			}
 
+
+			if (GetIdentifier() == toGrid.GetIdentifier())
+			{
+				return false;
+			}
+
+
 			// 以下の条件なら壁を生成
 			return
 				toGrid.IsKindOfAisleType() ||	// 通路
@@ -152,6 +176,16 @@ namespace dungeon
 			// 通路対門以外の部屋
 			if (toGrid.IsKindOfRoomTypeWithoutGate())
 			{
+
+
+
+				if (GetIdentifier() == toGrid.GetIdentifier())
+				{
+					return false;
+				}
+
+
+
 				return true;
 			}
 			// 通路対門
@@ -192,16 +226,38 @@ namespace dungeon
 			// スロープ対門以外の部屋
 			if (toGrid.IsKindOfRoomTypeWithoutGate())
 			{
+
+
+				if (GetIdentifier() == toGrid.GetIdentifier())
+				{
+					return false;
+				}
+
+
 				return CanBuildWall_SlopeVsRoom();
 			}
 			// スロープ対門
 			else if (toGrid.IsKindOfGateType())
 			{
+
+				if (GetIdentifier() == toGrid.GetIdentifier())
+				{
+					return false;
+				}
+
+
 				return CanBuildWall_SlopeVsGate(toGrid, direction);
 			}
 			// スロープ対通路
 			else if (toGrid.IsKindOfAisleType())
 			{
+
+				if (GetIdentifier() == toGrid.GetIdentifier())
+				{
+					return false;
+				}
+
+
 				return CanBuildWall_SlopeVsAisle(toGrid, direction);
 			}
 			// スロープ対スロープ
@@ -216,13 +272,13 @@ namespace dungeon
 		return false;
 	}
 
-	bool Grid::CanBuildWall_SlopeVsRoom() const noexcept
+	bool Grid::CanBuildWall_SlopeVsRoom() noexcept
 	{
 		// 横方向では常に壁（スロープの正面に部屋が来ることは無い）
 		return true;
 	}
 
-	bool Grid::CanBuildWall_SlopeVsGate(const Grid& toGrid, const Direction::Index direction) const noexcept
+	bool Grid::CanBuildWall_SlopeVsGate(const Grid& toGrid, const Direction::Index direction) noexcept
 	{
 		// 門の横から接続しているなら壁
 		return toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);

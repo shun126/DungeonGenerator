@@ -287,6 +287,13 @@ std::shared_ptr<const dungeon::Generator> ADungeonActor::GetGenerator() const
 	return mGenerator;
 }
 
+void ADungeonActor::OnPreDungeonGeneration()
+{
+}
+
+void ADungeonActor::OnPostDungeonGeneration(const bool result)
+{
+}
 
 
 
@@ -364,26 +371,34 @@ bool ADungeonActor::Create(const UDungeonGenerateParameter* parameter, const boo
 		generateParameter.SetMergeRooms(mParameter->MergeRooms);
 		generateParameter.SetMissionGraph(mParameter->EnableMissionGraph());
 		generateParameter.SetAisleComplexity(mParameter->GetAisleComplexity());
-
+		generateParameter.SetGenerateSlopeInRoom(mParameter->GenerateSlopeInRoom);
 		if (mParameter->MergeRooms)
 		{
 			generateParameter.SetHorizontalRoomMargin(0);
 			generateParameter.SetVerticalRoomMargin(0);
 			generateParameter.SetNumberOfCandidateFloors(0);
-		}
-		else if (mParameter->Flat)
-		{
-			generateParameter.SetHorizontalRoomMargin(mParameter->RoomMargin);
-			generateParameter.SetVerticalRoomMargin(0);
-			generateParameter.SetNumberOfCandidateFloors(0);
+			generateParameter.SetMissionGraph(false);
+			generateParameter.SetAisleComplexity(0);
 		}
 		else
 		{
 			generateParameter.SetHorizontalRoomMargin(mParameter->RoomMargin);
-			generateParameter.SetVerticalRoomMargin(mParameter->VerticalRoomMargin);
-			generateParameter.SetNumberOfCandidateFloors(mParameter->NumberOfCandidateFloors);
+			if (mParameter->Flat)
+			{
+				generateParameter.SetVerticalRoomMargin(0);
+				generateParameter.SetNumberOfCandidateFloors(0);
+			}
+			else
+			{
+				generateParameter.SetVerticalRoomMargin(mParameter->VerticalRoomMargin);
+				generateParameter.SetNumberOfCandidateFloors(mParameter->NumberOfCandidateFloors);
+			}
 		}
 
+
+		check(generateParameter.GetMinRoomWidth() <= generateParameter.GetMaxRoomWidth());
+		check(generateParameter.GetMinRoomDepth() <= generateParameter.GetMaxRoomDepth());
+		check(generateParameter.GetMinRoomHeight() <= generateParameter.GetMaxRoomHeight());
 	}
 
 	// クライアント用乱数生成器を初期化
@@ -413,18 +428,12 @@ bool ADungeonActor::Create(const UDungeonGenerateParameter* parameter, const boo
 #endif
 
 	// ダンジョンを生成
+	OnPreDungeonGeneration();
 	mGenerator->Generate(generateParameter);
-
-	// デバッグ情報を出力
-#if defined(DEBUG_GENERATE_MISSION_GRAPH_FILE)
-	{
-		// TODO:外部からファイル名を与えられるように変更して下さい
-		mGenerator->DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_diagram.md");
-	}
-#endif
+	dungeon::Generator::Error generatorError = mGenerator->GetLastError();
+	OnPostDungeonGeneration(dungeon::Generator::Error::Success == generatorError);
 
 	// 生成エラーを確認する
-	dungeon::Generator::Error generatorError = mGenerator->GetLastError();
 	if (dungeon::Generator::Error::Success != generatorError)
 	{
 #if WITH_EDITOR
@@ -625,7 +634,8 @@ void ADungeonActor::CreateImplement_AddFloorAndSlope(const CreateImplementParame
 	else if (mOnAddFloor && cp.mGrid.CanBuildFloor(true))
 	{
 		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-		if (cp.mGrid.IsKindOfRoomType())
+		//if (cp.mGrid.IsKindOfRoomType())
+		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
 			dungeonMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
 		else
 			dungeonMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
@@ -654,7 +664,8 @@ void ADungeonActor::CreateImplement_AddWall(const CreateImplementParameter& cp) 
 	メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面（北側の壁）になっています。
 	*/
 	const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-	if (cp.mGrid.IsKindOfRoomType())
+	//if (cp.mGrid.IsKindOfRoomType())
+	if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
 		dungeonMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
 	else
 		dungeonMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
@@ -707,7 +718,8 @@ void ADungeonActor::CreateImplement_AddRoof(const CreateImplementParameter& cp) 
 	if (cp.mGrid.CanBuildRoof(mGenerator->GetVoxel()->Get(cp.mGridLocation.X, cp.mGridLocation.Y, cp.mGridLocation.Z + 1), true))
 	{
 		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-		if (cp.mGrid.IsKindOfRoomType())
+		//if (cp.mGrid.IsKindOfRoomType())
+		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
 			dungeonMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
 		else
 			dungeonMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();

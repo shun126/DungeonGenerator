@@ -46,6 +46,16 @@ namespace dungeon
 	}
 
 	/**
+	 * FIntVectorの長さの二乗
+	 * @param vector ベクトル
+	 * @return 長さの二乗
+	 */
+	inline int32 SquaredLength(const FIntVector& vector) noexcept
+	{
+		return vector.X * vector.X + vector.Y * vector.Y + vector.Z * vector.Z;
+	}
+
+	/**
 	 * FIntVectorの距離の二乗
 	 * @param a 位置ベクトル
 	 * @param b 位置ベクトル
@@ -54,6 +64,6 @@ namespace dungeon
 	inline int32 SquaredDistance(const FIntVector& a, const FIntVector& b) noexcept
 	{
 		const FIntVector delta = a - b;
-		return delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z;
+		return SquaredLength(delta);
 	}
 }

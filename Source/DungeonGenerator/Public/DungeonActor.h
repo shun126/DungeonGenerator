@@ -157,6 +157,11 @@ protected:
 	std::shared_ptr<const dungeon::Generator> GetGenerator() const;
 
 	////////////////////////////////////////////////////////////////////////////
+protected:
+	virtual void OnPreDungeonGeneration();
+	virtual void OnPostDungeonGeneration(const bool result);
+
+	////////////////////////////////////////////////////////////////////////////
 	// Terrain
 protected:
 	// event

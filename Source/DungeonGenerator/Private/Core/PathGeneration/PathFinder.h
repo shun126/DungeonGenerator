@@ -10,6 +10,7 @@ All Rights Reserved.
 #include "../Helper/NonCopyable.h"
 #include "../Helper/Direction.h"
 #include "PathNodeSwitcher.h"
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -142,7 +143,7 @@ namespace dungeon
 		@param[in]	direction	Direction::Index
 		@return		Direction::Index
 		*/
-		static SearchDirection Cast(const Direction direction) noexcept;
+		static SearchDirection Cast(const Direction& direction) noexcept;
 
 
 
@@ -340,7 +341,7 @@ namespace dungeon
 
 	private:
 		PathNodeSwitcher mNoEntryNodeSwitcher;
-		std::unordered_map<uint64_t, OpenNode> mOpen;
+		std::map<uint64_t, OpenNode> mOpen;
 		std::unordered_map<uint64_t, CloseNode> mClose;
 		std::shared_ptr<Result> mResult;
 	};

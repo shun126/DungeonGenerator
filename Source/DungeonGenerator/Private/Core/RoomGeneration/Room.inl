@@ -178,9 +178,9 @@ namespace dungeon
 		return mDepthFromStart;
 	}
 
-	inline void Room::SetDepthFromStart(const uint8_t depthFrcomStart) noexcept
+	inline void Room::SetDepthFromStart(const uint8_t depthFromStart) noexcept
 	{
-		mDepthFromStart = depthFrcomStart;
+		mDepthFromStart = depthFromStart;
 	}
 
 	inline uint8_t Room::GetBranchId() const noexcept
@@ -223,5 +223,20 @@ namespace dungeon
 		mDataWidth = dataWidth;
 		mDataDepth = dataDepth;
 		mDataHeight = dataHeight;
+	}
+
+	inline bool Room::IsValidReservationNumber() const noexcept
+	{
+		return GetReservationNumber() != 0;
+	}
+
+	inline uint32_t Room::GetReservationNumber() const noexcept
+	{
+		return mReservationNumber;
+	}
+
+	inline void Room::SetReservationNumber(const uint32_t reservationNumber) noexcept
+	{
+		mReservationNumber = reservationNumber;
 	}
 }

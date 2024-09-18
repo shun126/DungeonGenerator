@@ -178,6 +178,34 @@ namespace dungeon
 			mRgbImage.get()[y * mWidth + x] = color;
 		}
 
+		void Canvas::HorizontalLine(int32_t startX, int32_t endX, int32_t y, const RGBCOLOR color) const noexcept
+		{
+			startX = std::max(0, std::min(startX, static_cast<int32_t>(mWidth - 1)));
+			endX = std::max(0, std::min(endX, static_cast<int32_t>(mWidth - 1)));
+			y = std::max(0, std::min(y, static_cast<int32_t>(mHeight - 1)));
+			if (startX > endX)
+				std::swap(startX, endX);
+
+			for (int32_t x = startX; x <= endX; ++x)
+			{
+				mRgbImage.get()[y * mWidth + x] = color;
+			}
+		}
+
+		void Canvas::VerticalLine(int32_t x, int32_t startY, int32_t endY, const RGBCOLOR color) const noexcept
+		{
+			x = std::max(0, std::min(x, static_cast<int32_t>(mWidth - 1)));
+			startY = std::max(0, std::min(startY, static_cast<int32_t>(mHeight - 1)));
+			endY = std::max(0, std::min(endY, static_cast<int32_t>(mHeight - 1)));
+			if (startY > endY)
+				std::swap(startY, endY);
+
+			for (int32_t y = startY; y <= endY; ++y)
+			{
+				mRgbImage.get()[y * mWidth + x] = color;
+			}
+		}
+
 		void Canvas::Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) const noexcept
 		{
 			left = std::max(0, std::min(left, static_cast<int32_t>(mWidth - 1)));
