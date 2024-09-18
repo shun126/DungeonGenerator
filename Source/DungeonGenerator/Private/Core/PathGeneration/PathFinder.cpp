@@ -10,9 +10,6 @@ All Rights Reserved.
 #include "../Debug/BuildInfomation.h"
 #include <CoreMinimal.h>
 
-// 定義するとマンハッタン距離で計算する。未定義ならユークリッド距離で計算する
-#define CALCULATE_IN_MANHATTAN_DISTANCE
-
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP
 // 定義すると経路を調べるため、中間データを開放しない
 //#define CHECK_ROUTE
@@ -34,8 +31,8 @@ namespace dungeon
 		// キーを生成
 		const uint64_t key = Hash(location);
 
-		// コスト計算
-		const uint32_t newCost = TotalCost(cost, location, goal);
+		// これまでのコストとゴールまでの予想コストを合算
+		const uint32_t totalCost = TotalCost(cost, location, goal);
 
 		// オープンリスト内を検索
 		const auto openNode = mOpen.find(key);
@@ -43,14 +40,14 @@ namespace dungeon
 		// オープンリストに追加するノードがある。かつ、新しいノードの方がトータルコストが低い
 		if (openNode != mOpen.end())
 		{
-			if (openNode->second.mCost > newCost)
+			if (openNode->second.mCost > totalCost)
 			{
 				// Replace node with open list
 				openNode->second.mNodeType = nodeType;
 				openNode->second.mDirection = direction;
 				openNode->second.mParentKey = parentKey;
 				openNode->second.mSearchDirection = searchDirection;
-				openNode->second.mCost = newCost;
+				openNode->second.mCost = totalCost;
 			}
 		}
 		// クローズリストに追加するノードがある。かつ、新しいノードの方がトータルコストが低い
@@ -64,12 +61,12 @@ namespace dungeon
 
 			if (closeNode != mClose.end())
 			{
-				if (closeNode->second.mCost > newCost)
+				if (closeNode->second.mCost > totalCost)
 				{
 					// Delete from close list
 					mClose.erase(closeNode);
 					// Re-register on open list
-					mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
+					mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, totalCost));
 
 					// 使用中のOpenノードを予約中に変更します
 					RevertOpenNode(key);
@@ -79,7 +76,7 @@ namespace dungeon
 			else
 			{
 				// Register open List
-				mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, newCost));
+				mOpen.emplace(key, OpenNode(parentKey, nodeType, location, direction, searchDirection, totalCost));
 			}
 		}
 
@@ -91,21 +88,18 @@ namespace dungeon
 		if (mOpen.empty())
 			return false;
 
-		/*
-		最も安いコストのノードを探す
-		*/
-		std::unordered_map<uint64_t, OpenNode>::iterator result = mOpen.begin();
+		// 最も安いコストのノードを探す
+		auto result = mOpen.begin();
 		uint32_t minimumCost = std::numeric_limits<uint32_t>::max();
-		for (std::unordered_map<uint64_t, OpenNode>::iterator i = mOpen.begin(); i != mOpen.end(); ++i)
+		for (auto i = mOpen.begin(); i != mOpen.end(); ++i)
 		{
 			if (minimumCost > i->second.mCost)
 			{
 				minimumCost = i->second.mCost;
 				result = i;
 			}
-			/*
-			コストが同じ場合、上下移動を優先する
-			*/
+#if 0
+			// コストが同じ場合、上下移動を優先する
 			else if (minimumCost == i->second.mCost)
 			{
 				if (i->second.mNodeType == NodeType::Downstairs || i->second.mNodeType == NodeType::Upstairs)
@@ -113,6 +107,7 @@ namespace dungeon
 					result = i;
 				}
 			}
+#endif
 		}
 		check(result != mOpen.end());
 
@@ -136,8 +131,6 @@ namespace dungeon
 		return true;
 	}
 
-//#define CHECK_ROUTE
-
 	bool PathFinder::Commit(const FIntVector& goal) noexcept
 	{
 		// 使用中と予約中のOpenノードをクリアします
@@ -146,7 +139,7 @@ namespace dungeon
 		// 結果オブジェクトを生成
 		mResult = std::make_shared<Result>();
 
-#if !defined(CHECK_ROUTE)
+#if defined(CHECK_ROUTE)
 		// Openノードは不要なのでクリア
 		mOpen.clear();
 #endif
@@ -204,7 +197,7 @@ namespace dungeon
 		if (mResult->mRoute.empty())
 			return false;
 
-#if !defined(CHECK_ROUTE)
+#if defined(CHECK_ROUTE)
 		// Closeノードは不要なのでクリア
 		mClose.clear();
 #endif
@@ -249,33 +242,29 @@ namespace dungeon
 
 	uint32_t PathFinder::Heuristics(const FIntVector& location, const FIntVector& goal) noexcept
 	{
-#if defined(CALCULATE_IN_MANHATTAN_DISTANCE)
-		// マンハッタン距離
-		const auto dx = std::abs(goal.X - location.X);
-		const auto dy = std::abs(goal.Y - location.Y);
-		const auto dz = std::abs(goal.Z - location.Z);
+		/*
+		 * マンハッタン距離をベースにスロープのルールにあわせて
+		 * 上下移動に迂回コストを加算している
+		 * 斜めの移動が無いのでユークリッド距離は使用しない
+		 */
+		const uint32_t dx = std::abs(goal.X - location.X);
+		const uint32_t dy = std::abs(goal.Y - location.Y);
+		const uint32_t dz = std::abs(goal.Z - location.Z) * 2;
 		const uint32_t heuristics = dx + dy + dz;
-#else
-		// ユークリッド距離
-		const FIntVector delta = goal - location;
-		const int32_t heuristics = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z;
-#endif
 		return heuristics;
 	}
 
 	double PathFinder::Heuristics(const FVector& location, const FVector& goal) noexcept
 	{
-#if defined(CALCULATE_IN_MANHATTAN_DISTANCE)
-		// マンハッタン距離
-		const auto dx = std::abs(goal.X - location.X);
-		const auto dy = std::abs(goal.Y - location.Y);
-		const auto dz = std::abs(goal.Z - location.Z);
+		/*
+		 * マンハッタン距離をベースにスロープのルールにあわせて
+		 * 上下移動に迂回コストを加算している
+		 * 斜めの移動が無いのでユークリッド距離は使用しない
+		 */
+		const double dx = std::abs(goal.X - location.X);
+		const double dy = std::abs(goal.Y - location.Y);
+		const double dz = std::abs(goal.Z - location.Z) * 2.0;
 		const double heuristics = dx + dy + dz;
-#else
-		// ユークリッド距離
-		const FVector delta = goal - location;
-		const double heuristics = delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z;
-#endif
 		return heuristics;
 	}
 
@@ -289,7 +278,7 @@ namespace dungeon
 		return Direction(static_cast<Direction::Index>(direction));
 	}
 
-	PathFinder::SearchDirection PathFinder::Cast(const Direction direction) noexcept
+	PathFinder::SearchDirection PathFinder::Cast(const Direction& direction) noexcept
 	{
 		check(static_cast<uint8_t>(SearchDirection::North) == static_cast<uint8_t>(Direction::North));
 		check(static_cast<uint8_t>(SearchDirection::East) == static_cast<uint8_t>(Direction::East));

@@ -155,6 +155,12 @@ namespace dungeon
 		void SetAisleComplexity(const uint8_t complexity) noexcept;
 		bool IsAisleComplexity() const noexcept;
 
+		/**
+		 * 部屋の中にスロープを生成する
+		 */
+		bool IsGenerateSlopeInRoom() const noexcept;
+		void SetGenerateSlopeInRoom(const bool generateSlopeInRoom) noexcept;
+
 		/*
 		スタート部屋のサイズ
 		*/
@@ -176,7 +182,6 @@ namespace dungeon
 		void SetGoalRoomSize(const FIntVector& size) noexcept;
 
 	private:
-
 		/**
 		ダンジョンの幅
 		*/
@@ -192,8 +197,6 @@ namespace dungeon
 		*/
 		uint32_t mHeight = 0;
 
-
-
 		/**
 		生成する階層の数の候補
 		最終的に生成される階層の数ではありません。
@@ -206,7 +209,7 @@ namespace dungeon
 		*/
 		uint8_t mNumberOfCandidateRooms = 1;
 
-		/*
+		/**
 		Horizontal room-to-room coupling
 
 		有効にすると部屋と部屋を結合します
@@ -218,11 +221,16 @@ namespace dungeon
 		*/
 		bool mUseMissionGraph = true;
 
-		/*
+		/**
 		通路の複雑さ（追加する通路の数）
 		Aisle complexity (0 being the minimum aisle)
 		*/
 		uint8_t mAisleComplexity = 0;
+
+		/**
+		 * 部屋の中にスロープを生成する
+		 */
+		bool mGenerateSlopeInRoom = true;
 
 		/**
 		部屋の最小の幅
@@ -269,12 +277,12 @@ namespace dungeon
 		*/
 		std::shared_ptr<Random> mRandom;
 
-		/*
+		/**
 		スタート部屋のサイズ
 		*/
 		FIntVector mStartRoomSize = { 0, 0, 0 };
 
-		/*
+		/**
 		ゴール部屋のサイズ
 		*/
 		FIntVector mGoalRoomSize = { 0, 0, 0 };

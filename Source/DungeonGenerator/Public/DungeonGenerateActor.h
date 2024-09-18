@@ -127,6 +127,11 @@ public:
 #endif
 
 private:
+	// ADungeonActor overrides
+	virtual void OnPreDungeonGeneration() override;
+	virtual void OnPostDungeonGeneration(const bool result) override;
+
+private:
 	void CreateInstancedMeshComponent(UStaticMesh* staticMesh);
 	void ClearInstancedMeshComponents();
 	void AddInstance(const UStaticMesh* staticMesh, const FTransform& transform);

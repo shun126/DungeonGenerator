@@ -345,51 +345,45 @@ namespace dungeon
 		}
 
 		// スタートを記録
-		{
-			mStartPoint = FindStartPoint();
-		}
+		mStartPoint = FindStartPoint();
+		mStartPoint->GetOwnerRoom()->SetParts(Room::Parts::Start);
 
 		// ゴールと各ポイントを記録
+		size_t startPointIndex = verteces.Find(mStartPoint);
+		check(startPointIndex != static_cast<size_t>(~0));
+		// cppcheck-suppress [knownConditionTrueFalse]
+		if (startPointIndex != static_cast<size_t>(~0))
 		{
-			size_t startPointIndex = verteces.Find(mStartPoint);
-			// cppcheck-suppress [knownConditionTrueFalse]
-			if (startPointIndex != static_cast<size_t>(~0))
+			// ゴールを記録
+			std::vector<RouteNode> routeNodes;
+			Cost(routeNodes, edges, startPointIndex, 0.f);
+			if (routeNodes.empty())
 			{
-				// スタートから各部屋の深さ（部屋の数）を設定
-				mDistance = SetDistanceFromStartToRoom(verteces, edges, startPointIndex, 0);
-
-				// ゴールを記録
-				std::vector<RouteNode> routeNodes;
-				Cost(routeNodes, edges, startPointIndex, 0.f);
-				if (routeNodes.empty())
+				mGoalPoint = mStartPoint;
+				mGoalPoint->GetOwnerRoom()->SetParts(Room::Parts::Goal);
+			}
+			else
+			{
+				// 最も遠いポイントをゴールとして記録
+				float maxCost = std::numeric_limits<float>::lowest();
+				size_t vertexIndex = 0;
+				for (const auto& routeNode : routeNodes)
 				{
-					mGoalPoint = mStartPoint;
-				}
-				else
-				{
-					// 最も遠いポイントをゴールとして記録
-					float maxCost = std::numeric_limits<float>::lowest();
-					size_t vertexIndex = 0;
-					for (const auto& routeNode : routeNodes)
+					if (maxCost < routeNode.mCost)
 					{
-						if (maxCost < routeNode.mCost)
-						{
-							maxCost = routeNode.mCost;
-							vertexIndex = routeNode.mVertexIndex;
-						}
+						maxCost = routeNode.mCost;
+						vertexIndex = routeNode.mVertexIndex;
 					}
-					mGoalPoint = verteces.Get(vertexIndex);
+				}
+				mGoalPoint = verteces.Get(vertexIndex);
+				mGoalPoint->GetOwnerRoom()->SetParts(Room::Parts::Goal);
 
-					// 末端のポイントを記録
-					mLeafPoints.reserve(routeNodes.size() - 1);
-					for (const auto& routeNode : routeNodes)
+				// 末端のポイントを記録
+				for (const auto& routeNode : routeNodes)
+				{
+					if (vertexIndex != routeNode.mVertexIndex)
 					{
-						if (vertexIndex != routeNode.mVertexIndex)
-						{
-							mLeafPoints.emplace_back(
-								verteces.Get(routeNode.mVertexIndex)
-							);
-						}
+						verteces.Get(routeNode.mVertexIndex)->GetOwnerRoom()->SetParts(Room::Parts::Hanare);
 					}
 				}
 			}
@@ -416,9 +410,9 @@ namespace dungeon
 				// 追跡するルートを記録
 				routes.emplace_back(
 					std::pair<size_t, float>(
-						edge->GetEdge((index + 1) & 1),		// 次の頂点インデックスを取得
-						cost + edge->GetLength()			// 今回のコストを追加
-						)
+						edge->GetEdge((index + 1) & 1),	// 次の頂点インデックスを取得
+						cost + edge->GetLength()				// 今回のコストを追加
+					)
 				);
 
 				// 今回のedgeを除去
@@ -512,39 +506,5 @@ namespace dungeon
 			}
 			return resultPoint;
 		}
-	}
-
-	// スタートから各部屋の深さ（部屋の数）を設定
-	uint8_t MinimumSpanningTree::SetDistanceFromStartToRoom(const Verteces& verteces, const std::vector<IndexedEdge>& edges, const size_t index, const uint8_t depth) noexcept
-	{
-		uint8_t distanceFromStart = depth;
-		for (auto& edge : edges)
-		{
-			for (size_t i = 0; i < 2; ++i)
-			{
-				const size_t vertexIndex = edge.GetEdge(i);
-				if (index == vertexIndex)
-				{
-					if (const std::shared_ptr<Room>& room = verteces.Get(vertexIndex)->GetOwnerRoom())
-					{
-						if (room->GetDepthFromStart() > depth)
-							room->SetDepthFromStart(depth);
-					}
-
-					// 辺の反対側の部屋を設定
-					const size_t otherIndex = edge.GetEdge((i + 1) % 2);
-					if (const std::shared_ptr<const Room>& otherRoom = verteces.Get(otherIndex)->GetOwnerRoom())
-					{
-						if (otherRoom->GetDepthFromStart() > depth)
-						{
-							uint8_t distance = SetDistanceFromStartToRoom(verteces, edges, otherIndex, depth + 1);
-							if (distanceFromStart < distance)
-								distanceFromStart = distance;
-						}
-					}
-				}
-			}
-		}
-		return distanceFromStart;
 	}
 }

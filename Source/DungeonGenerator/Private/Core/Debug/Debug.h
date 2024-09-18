@@ -133,6 +133,12 @@ namespace dungeon
 			//! Draw point
 			void Put(int32_t x, int32_t y, const RGBCOLOR color) const noexcept;
 
+			//! Draw line
+			void HorizontalLine(int32_t startX, int32_t endX, int32_t y, const RGBCOLOR color) const noexcept;
+
+			//! Draw line
+			void VerticalLine(int32_t x, int32_t startY, int32_t endY, const RGBCOLOR color) const noexcept;
+
 			//! Draw rectangle
 			void Rectangle(int32_t left, int32_t top, int32_t right, int32_t bottom, const RGBCOLOR color) const noexcept;
 
@@ -149,4 +155,25 @@ namespace dungeon
 			std::unique_ptr<RGBCOLOR[]> mRgbImage;
 		};
 	}
+
+	static constexpr float ImageScale = 10.0f;
+	static constexpr bmp::RGBCOLOR BaseDarkColor = { 95, 84, 62 };
+	static constexpr bmp::RGBCOLOR BaseLightColor = { 173, 153, 112 };
+	static constexpr bmp::RGBCOLOR StartColor = { 0, 128, 0 };
+	static constexpr bmp::RGBCOLOR GoalColor = { 0, 0, 128 };
+	static constexpr bmp::RGBCOLOR LeafColor = { 0, 128, 128 };
+	static constexpr bmp::RGBCOLOR AisleColor = LeafColor;
+	static constexpr uint8_t LightGridValue = 96;
+	static constexpr uint8_t DarkGridValue = 48;
+	static constexpr bmp::RGBCOLOR LightGridColor = { LightGridValue, LightGridValue, LightGridValue };
+	static constexpr bmp::RGBCOLOR DarkGridColor = { DarkGridValue, DarkGridValue, DarkGridValue };
+	static constexpr bmp::RGBCOLOR OriginXColor = { 0, 0, 255 };
+	static constexpr bmp::RGBCOLOR OriginYColor = { 0, 255, 0 };
+	static constexpr bmp::RGBCOLOR OriginZColor = { 255, 0, 0 };
+
+	inline uint32_t Scale(const uint32_t value)
+	{
+		return static_cast<uint32_t>(value * ImageScale);
+	}
+
 }

@@ -33,104 +33,91 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	MissionGraph::MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<const Point>& goal) noexcept
+	MissionGraph::MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<Room>& startRoom, const std::shared_ptr<Room>& goalRoom, const uint8_t maxKeyCount) noexcept
 		: mGenerator(generator)
 	{
-		const auto room = goal->GetOwnerRoom();
-
-		// Choose an aisle close to the entrance
-		if (Aisle* aisle = SelectAisle(room))
+		// 入り口に近い通路を選ぶ
+		if (Aisle* aisle = SelectNearestStartAisle(goalRoom))
 		{
-			// Locked. (to limit FindByRoute search scope)
+			// ユニーク鍵をかける
 			aisle->SetUniqueLock(true);
 
 			const auto& room0 = aisle->GetPoint(0)->GetOwnerRoom();
 			const auto& room1 = aisle->GetPoint(1)->GetOwnerRoom();
-			const auto& connectingRoom = room == room0 ? room1 : room0;
+			const auto& connectingRoom = goalRoom == room0 ? room1 : room0;
 
-			// Gathering reachable rooms
-			std::vector<std::shared_ptr<Room>> keyRooms;
-			keyRooms = mGenerator->FindByRoute(connectingRoom);
+			// 連絡可能な部屋を集める
+			const auto keyRooms = mGenerator->FindByRoute(connectingRoom);
 			if (keyRooms.size() > 0)
 			{
 				const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
 
-				const uint8_t roomBranch = room->GetBranchId();
-				const auto keyRoom = DrawLots(random, keyRooms.begin(), keyRooms.end(), [roomBranch](const std::shared_ptr<const Room>& room)
+				// 鍵を置く部屋を抽選
+				const uint8_t roomBranch = goalRoom->GetBranchId();
+				const auto keyRoom = DrawLots(random, keyRooms.begin(), keyRooms.end(), [roomBranch](const std::shared_ptr<const Room>& room) -> uint32_t
 					{
-						uint32_t weight = room->GetDepthFromStart();
-						if (room->GetBranchId() - roomBranch)
-							weight *= 3;
-						if (room->GetParts() == Room::Parts::Hanare)
-							weight *= 3;
-						return weight;
+						return DetermineUniqueKeyPlacementProbability(roomBranch, room);
 					}
 				);
 				if (keyRoom != keyRooms.end())
 				{
+					// ユニーク鍵を置く
 					check((*keyRoom)->GetItem() == Room::Item::Empty);
+					check((*keyRoom)->IsValidReservationNumber() == false);
 					(*keyRoom)->SetItem(Room::Item::UniqueKey);
 
-					Generate(connectingRoom);
+					// 鍵を置く
+					GenerateParameter parameter(startRoom, maxKeyCount);
+					Generate(parameter);
 				}
 				else
 				{
-					// It did not decide on a room to put the key, so it will be unlocked
+					// ユニーク鍵を置く部屋が決まらなかったので鍵を開ける
 					aisle->SetUniqueLock(false);
 				}
 			}
 			else
 			{
-				// It did not decide on a room to put the key, so it will be unlocked
+				// ユニーク鍵を置く部屋が決まらなかったので鍵を開ける
 				aisle->SetUniqueLock(false);
 			}
 		}
 	}
 
-	void MissionGraph::Generate(const std::shared_ptr<const Room>& room) noexcept
+	void MissionGraph::Generate(GenerateParameter& parameter) noexcept
 	{
-#if 0
-		mGenerator->DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_aisle.md");
-#endif
-		// Choose an aisle close to the entrance
-		if (Aisle* aisle = SelectAisle(room))
+		// スタートから到達可能な部屋を集める
+		auto keyRooms = mGenerator->FindByRoute(parameter.mStartRoom);
+		const auto eraseKeyRoom = std::remove_if(keyRooms.begin(), keyRooms.end(), [](const std::shared_ptr<Room>& room)
 		{
-			// Locked. (to limit FindByRoute search scope)
-			aisle->SetLock(true);
+			// はなれを除外
+			return room->GetParts() == Room::Parts::Hanare;
+		});
+		keyRooms.erase(eraseKeyRoom, keyRooms.end());
+		if (keyRooms.empty() == false)
+		{
+			// 鍵を置く部屋を抽選
+			const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
+			const auto keyRoom = keyRooms[random->Get(keyRooms.size())];
 
-			const auto& room0 = aisle->GetPoint(0)->GetOwnerRoom();
-			const auto& room1 = aisle->GetPoint(1)->GetOwnerRoom();
-
-			// Gathering reachable rooms
-			std::vector<std::shared_ptr<Room>> keyRooms;
-			keyRooms = mGenerator->FindByRoute(room == room0 ? room1 : room0);
-			if (keyRooms.size() > 0)
+			// 鍵の部屋よりも奥の部屋に鍵をかける
+			std::vector<Aisle*> lockAisles;
+			CollectDeepAisle(lockAisles, keyRoom);
+			if (lockAisles.empty() == false)
 			{
-				const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
+				// 鍵を置く
+				check((keyRoom)->GetItem() == Room::Item::Empty);
+				check((keyRoom)->IsValidReservationNumber() == false);
+				(keyRoom)->SetItem(Room::Item::Key);
 
-				// That's the room where I'm supposed to put the key.
-				{
-					const size_t index = random->Get<size_t>(keyRooms.size());
-					const auto keyRoom = keyRooms[index];
-					check(keyRoom->GetItem() == Room::Item::Empty);
-					keyRoom->SetItem(Room::Item::Key);
-				}
+				// 鍵をかける
+				const auto lockAisle = lockAisles[random->Get(lockAisles.size())];
+				lockAisle->SetLock(true);
 
-				const auto lockRoom = DrawLots(random, keyRooms.begin(), keyRooms.end(), [](const std::shared_ptr<const Room>& room)
-					{
-						const uint32_t depthFromStart = room->GetDepthFromStart();
-						return depthFromStart * 10;
-					}
-				);
-				if (lockRoom != keyRooms.end())
-				{
-					Generate(*lockRoom);
-				}
-			}
-			else
-			{
-				// It did not decide on a room to put the key, so it will be unlocked
-				aisle->SetLock(false);
+				// 配置した鍵の数を加算
+				++parameter.mKeyCount;
+				if (parameter.mKeyCount < parameter.mMaxKeyCount)
+					Generate(parameter);
 			}
 		}
 	}
@@ -139,7 +126,7 @@ namespace dungeon
 	Choose an aisle close to the entrance.
 	入り口に近い通路を選ぶ。
 	*/
-	Aisle* MissionGraph::SelectAisle(const std::shared_ptr<const Room>& room) const noexcept
+	Aisle* MissionGraph::SelectNearestStartAisle(const std::shared_ptr<const Room>& room) const noexcept
 	{
 		const uint8_t roomDepth = room->GetDepthFromStart();
 
@@ -161,15 +148,50 @@ namespace dungeon
 		{
 			return nullptr;
 		}
-		else if (aisles.size() == 1)
+		if (aisles.size() == 1)
 		{
 			return aisles[0];
 		}
-		else
-		{
-			const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
-			const size_t index = random->Get(aisles.size());
-			return aisles[index];
-		}
+
+		const std::shared_ptr<Random>& random = mGenerator->GetGenerateParameter().GetRandom();
+		const size_t index = random->Get(aisles.size());
+		return aisles[index];
+	}
+
+	void MissionGraph::CollectDeepAisle(std::vector<Aisle*>& aisles, const std::shared_ptr<const Room>& room) const noexcept
+	{
+		const uint8_t roomDepth = room->GetDepthFromStart();
+		mGenerator->FindAisle(room, [&aisles, roomDepth](const Aisle& edge)
+			{
+				if (!edge.IsLocked())
+				{
+					const auto& room0 = edge.GetPoint(0)->GetOwnerRoom();
+					const auto& room1 = edge.GetPoint(1)->GetOwnerRoom();
+					if (room0->GetDepthFromStart() >= roomDepth && room1->GetDepthFromStart() >= roomDepth)
+						aisles.emplace_back(const_cast<Aisle*>(&edge));
+				}
+				return false;
+			}
+		);
+	}
+
+	uint32_t MissionGraph::DetermineUniqueKeyPlacementProbability(const uint8_t branchId, const std::shared_ptr<const Room>& room) noexcept
+	{
+		// 予約済みの部屋はアイテムを置く事ができない
+		check(room->IsValidReservationNumber() == false);
+
+		// 違う経路ほど優先
+		uint32_t weight = 1;
+		if (room->GetBranchId() != branchId)
+			++weight;
+
+		// 奥の部屋ほど優先
+		weight *= room->GetDepthFromStart();
+
+		// はなれの部屋ほど優先
+		if (room->GetParts() == Room::Parts::Hanare)
+			weight *= 10;
+
+		return weight;
 	}
 }

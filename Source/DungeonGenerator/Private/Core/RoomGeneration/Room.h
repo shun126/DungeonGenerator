@@ -290,9 +290,9 @@ namespace dungeon
 
 		/**
 		スタート位置からの深さを取得します
-		@param[in]	depthFrcomStart		スタート位置からの深さ（部屋の数）
+		@param[in]	depthFromStart		スタート位置からの深さ（部屋の数）
 		*/
-		void SetDepthFromStart(const uint8_t depthFrcomStart) noexcept;
+		void SetDepthFromStart(const uint8_t depthFromStart) noexcept;
 
 		/*
 		通路識別子を取得します
@@ -373,6 +373,11 @@ namespace dungeon
 		*/
 		void GetDataBounds(FIntVector& min, FIntVector& max) const noexcept;
 
+		bool IsValidReservationNumber() const noexcept;
+		uint32_t GetReservationNumber() const noexcept;
+		void SetReservationNumber(const uint32_t reservationNumber) noexcept;
+
+
 	private:
 		int32_t mX;
 		int32_t mY;
@@ -384,6 +389,8 @@ namespace dungeon
 		uint32_t mDataWidth = 0;
 		uint32_t mDataDepth = 0;
 		uint32_t mDataHeight = 0;
+
+		uint32_t mReservationNumber = 0;
 
 		Identifier mIdentifier;
 

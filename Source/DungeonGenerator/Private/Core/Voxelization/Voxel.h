@@ -164,14 +164,15 @@ namespace dungeon
 
 		/**
 		門を生成可能な場所を探します
-		@param[out]		result				FIntVector
+		@param[out]		result				FIntVector配列
+		@param[in]		maxResultCount		resultの最大数
 		@param[in]		start				スタート部屋のFIntVector
 		@param[in]		identifier			スタート部屋のIdentifier
 		@param[in]		goal				ゴール部屋のFIntVector
 		@param[in]		shared				trueなら通路を共有する
 		@return			trueならば検索成功
 		*/
-		bool SearchGateLocation(std::vector<CandidateLocation>& result, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) const noexcept;
+		bool SearchGateLocation(std::vector<CandidateLocation>& result, const size_t maxResultCount, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) const noexcept;
 
 		/**
 		 * 通路生成パラメータ
@@ -180,7 +181,6 @@ namespace dungeon
 		{
 			PathGoalCondition mGoalCondition;	//!< 終了条件
 			Identifier mIdentifier;				//!< 通路の識別子
-			size_t mMaximumNumberToFinding;		//!< 最大検索数
 			bool mMergeRooms;					//!< 部屋を結合する
 			bool mGenerateIntersections;		//!< 交差点を生成する
 			bool mUniqueLocked;					//!< ユニーク鍵のある通路
@@ -309,10 +309,12 @@ namespace dungeon
 		*/
 		bool IsReachedGoalWithDirection(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition, const Direction& enteringDirection) const noexcept;
 
-
-
 	public:
-		bool Test(const std::shared_ptr<Room>& room);
+		/**
+		 * デバッグ用の画像を出力します
+		 * @param filename	ファイル名
+		 */
+		void GenerateImageForDebug(const std::string& filename) const;
 
 	private:
 		std::unique_ptr<Grid[]> mGrids;
