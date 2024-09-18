@@ -40,6 +40,24 @@ ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializ
 	check(DungeonGenerateParameter);
 }
 
+void ADungeonGenerateActor::OnPreDungeonGeneration()
+{
+	if (auto* level = GetLevel())
+	{
+		if (auto* levelScript = Cast<ADungeonMainLevelScriptActor>(level->GetLevelScriptActor()))
+			levelScript->OnPreDungeonGeneration(this);
+	}
+}
+
+void ADungeonGenerateActor::OnPostDungeonGeneration(const bool result)
+{
+	if (auto* level = GetLevel())
+	{
+		if (auto* levelScript = Cast<ADungeonMainLevelScriptActor>(level->GetLevelScriptActor()))
+			levelScript->OnPostDungeonGeneration(this, result);
+	}
+}
+
 /********** InstancedStaticMesh **********/
 void ADungeonGenerateActor::CreateInstancedMeshComponent(UStaticMesh* staticMesh)
 {

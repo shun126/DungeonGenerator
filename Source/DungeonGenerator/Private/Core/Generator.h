@@ -181,9 +181,11 @@ namespace dungeon
 			}
 		}
 
-		void OnQueryParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
-		void OnStartParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
-		void OnGoalParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
+		using QueryPartsType = std::list<std::pair<uint32_t, FIntVector>>;
+		void OnQueryParts(const std::function<void(QueryPartsType&)>& function) noexcept;
+		void OnLoadParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
+		void OnLoadStartParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
+		void OnLoadGoalParts(const std::function<void(const std::shared_ptr<Room>&)>& function) noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Point
@@ -216,19 +218,6 @@ namespace dungeon
 		*/
 		const std::shared_ptr<const Point>& GetGoalPoint() const noexcept;
 
-		/**
-		行き止まりの点を更新します
-		@param[in]	function	点を元に更新する関数
-		*/
-		template<typename Function>
-		void EachLeafPoint(Function&& function) const noexcept
-		{
-			for (auto& point : mLeafPoints)
-			{
-				std::forward<Function>(function)(point);
-			}
-		}
-
 		////////////////////////////////////////////////////////////////////////////////////////////
 		void PreGenerateVoxel(const std::function<void(const std::shared_ptr<Voxel>&)>& function) noexcept;
 		void PostGenerateVoxel(const std::function<void(const std::shared_ptr<Voxel>&)>& function) noexcept;
@@ -239,7 +228,7 @@ namespace dungeon
 		/**
 		 * 分岐番号を記録します
 		 */
-		bool MarkBranchId() noexcept;
+		bool MarkBranchIdAndDepthFromStart() noexcept;
 
 		/**
 		 * スタートから最も遠い部屋の深さを取得します
@@ -247,7 +236,7 @@ namespace dungeon
 		uint8_t GetDeepestDepthFromStart() const noexcept;
 
 	private:
-		bool MarkBranchId(std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<Room>& room, uint8_t& branchId) noexcept;
+		bool MarkBranchIdAndDepthFromStart(std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<Room>& room, uint8_t& branchId, const uint8_t depth) noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 	public:
@@ -267,12 +256,13 @@ namespace dungeon
 			Moved
 		};
 		SeparateRoomsResult SeparateRooms(const size_t phase, const size_t subPhase) noexcept;
+		void SeparateRoom(const std::shared_ptr<Room>& fixedRoom, const std::vector<std::shared_ptr<Room>>& intersectedRooms, const bool activateOuterMovement) const noexcept;
 		bool ExtractionAisles() noexcept;
 		bool GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept;
 		void SetRoomParts() noexcept;
 		bool AdjustedStartAndGoalSubLevel() const noexcept;
 		void AdjustRoomSize() const noexcept;
-		bool ExpandSpace(const int32_t margin = 3) noexcept;
+		bool ExpandSpace(const int32_t horizontalMargin = 3, const int32_t verticalMargin = 1) noexcept;
 		void AdjustPoints() noexcept;
 		void InvokeRoomCallbacks() const noexcept;
 		bool DetectFloorHeight() noexcept;
@@ -324,7 +314,6 @@ namespace dungeon
 
 		void DumpVoxel(const std::shared_ptr<const Point>& point) const noexcept;
 		void DumpVoxel(const std::shared_ptr<Room>& room) const noexcept;
-
 #endif
 
 	private:
@@ -333,22 +322,26 @@ namespace dungeon
 		std::shared_ptr<Voxel> mVoxel;
 
 		std::list<std::shared_ptr<Room>> mRooms;
-
 		std::vector<int32_t> mFloorHeight;
 
-		std::vector<std::shared_ptr<const Point>> mLeafPoints;
+		std::shared_ptr<Room> mStartRoom;
+		std::shared_ptr<Room> mGoalRoom;
+
+		// TODO: mStartRoomに置き換えてください
 		std::shared_ptr<const Point> mStartPoint;
+		// TODO: mGoalRoomに置き換えてください
 		std::shared_ptr<const Point> mGoalPoint;
 		std::vector<Aisle> mAisles;
 
 		std::function<void(const std::shared_ptr<Voxel>&)> mOnPreGenerateVoxel;
 		std::function<void(const std::shared_ptr<Voxel>&)> mOnPostGenerateVoxel;
 
-		std::function<void(const std::shared_ptr<Room>&)> mOnQueryParts;
-		std::function<void(const std::shared_ptr<Room>&)> mOnStartParts;
-		std::function<void(const std::shared_ptr<Room>&)> mOnGoalParts;
+		std::function<void(QueryPartsType&)> mOnQueryParts;
+		std::function<void(const std::shared_ptr<Room>&)> mOnLoadParts;
+		std::function<void(const std::shared_ptr<Room>&)> mOnLoadStartParts;
+		std::function<void(const std::shared_ptr<Room>&)> mOnLoadGoalParts;
 
-		uint8_t mDistance = 0;
+		uint8_t mDeepestDepthFromStart = 0;
 
 		Error mLastError = Error::Success;
 	};

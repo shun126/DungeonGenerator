@@ -16,6 +16,7 @@ All Rights Reserved.
 
 #pragma once
 #include <memory>
+#include <vector>
 
 namespace dungeon
 {
@@ -31,17 +32,40 @@ namespace dungeon
 	{
 	public:
 		// constructor
-		MissionGraph(const std::shared_ptr<Generator>& generator, const std::shared_ptr<const Point>& goal) noexcept;
+		MissionGraph(
+			const std::shared_ptr<Generator>& generator,
+			const std::shared_ptr<Room>& startRoom,
+			const std::shared_ptr<Room>& goalRoom,
+			const uint8_t maxKeyCount) noexcept;
 
 		// destructor
 		virtual ~MissionGraph() = default;
 
 	private:
-		// generate mission graph
-		void Generate(const std::shared_ptr<const Room>& room) noexcept;
+		/*
+		Generate関数パラメータ
+		*/
+		struct GenerateParameter final
+		{
+			const std::shared_ptr<Room>& mStartRoom;
+			uint8_t mMaxKeyCount;
+			uint8_t mKeyCount = 0;
 
-		// choose an aisle close to the entrance.
-		Aisle* SelectAisle(const std::shared_ptr<const Room>& room) const noexcept;
+			GenerateParameter(const std::shared_ptr<Room>& startRoom, const uint8_t maxKeyCount)
+				: mStartRoom(startRoom)
+				, mMaxKeyCount(maxKeyCount)
+			{
+			}
+		};
+
+		// generate mission graph
+		void Generate(GenerateParameter& parameter) noexcept;
+
+		
+		Aisle* SelectNearestStartAisle(const std::shared_ptr<const Room>& room) const noexcept;
+		void CollectDeepAisle(std::vector<Aisle*>& aisles, const std::shared_ptr<const Room>& room) const noexcept;
+
+		static uint32_t DetermineUniqueKeyPlacementProbability(const uint8_t branchId, const std::shared_ptr<const Room>& room) noexcept;
 
 	private:
 		std::shared_ptr<Generator> mGenerator;

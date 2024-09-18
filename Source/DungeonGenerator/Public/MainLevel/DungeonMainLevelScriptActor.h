@@ -12,6 +12,8 @@ All Rights Reserved.
 #include <Math/Box.h>
 #include "DungeonMainLevelScriptActor.generated.h"
 
+class ADungeonGenerateActor;
+
 /**
 This class manages the DungeonComponentActivatorComponent validity
 within a runtime-generated dungeon.
@@ -44,6 +46,25 @@ public:
 	explicit ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer);
 	virtual ~ADungeonMainLevelScriptActor() override = default;
 
+public:
+	/**
+	 * Called before dungeon generation
+	 * ダンジョン生成前に呼ばれます
+	 * @param dungeonGenerateActor DungeonGenerateActor
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator")
+	void OnPreDungeonGeneration(ADungeonGenerateActor* dungeonGenerateActor);
+
+	/**
+	 * Called after dungeon generation
+	 * ダンジョン生成後に呼ばれます
+	 * @param dungeonGenerateActor	DungeonGenerateActor
+	 * @param result				trueならば生成成功
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator")
+	void OnPostDungeonGeneration(ADungeonGenerateActor* dungeonGenerateActor, const bool result);
+
+public:
 	/**
 	Find DungeonPartiation by world location
 	ワールド座標からDungeonPartiationを検索します

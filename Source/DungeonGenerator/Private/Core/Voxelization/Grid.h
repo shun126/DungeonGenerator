@@ -351,8 +351,8 @@ namespace dungeon
 		FString GetNoMeshGenerationName() const noexcept;
 
 	private:
-		bool CanBuildWall_SlopeVsRoom() const noexcept;
-		bool CanBuildWall_SlopeVsGate(const Grid& toGrid, const Direction::Index direction) const noexcept;
+		static bool CanBuildWall_SlopeVsRoom() noexcept;
+		static bool CanBuildWall_SlopeVsGate(const Grid& toGrid, const Direction::Index direction) noexcept;
 		bool CanBuildWall_SlopeVsAisle(const Grid& toGrid, const Direction::Index direction) const noexcept;
 		bool CanBuildWall_SlopeVsSlope(const Grid& toGrid, const Direction::Index direction) const noexcept;
 

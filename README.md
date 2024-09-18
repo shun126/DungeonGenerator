@@ -39,11 +39,12 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
   * Sub-levels can be applied as dungeon rooms
   * A mini-map of the dungeon can be generated.
   * Interior decoration. [beta version]
+  * Foliage decoration. [beta version]
 * Supported Development Platforms: Windows,Android
 * Supported Target Build Platforms: Windows,Android (should be possible to target all platforms)
 
 # 🔧 Requirements
-* [Unreal Engine 5.0 ~ Unreal Engine 5.4](https://www.unrealengine.com/)
+* [Unreal Engine 5.1 ~ Unreal Engine 5.4](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 # 📜 License
@@ -57,6 +58,7 @@ The [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36
 * Sub-levels can be applied as dungeon rooms
 * A mini-map of the dungeon can be generated.
 * Interior decoration. [beta version]
+* Foriage decoration. [beta version]
 
 # 👾 Demo
 [DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
@@ -70,9 +72,6 @@ This is an easy to use. Simply drop the DungeonGenerateActor into your level, se
 * [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
 * [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
 * [UnrealEngine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197)
-
-## Screenshot of our game
-![Out game Screenshot](https://github.com/shun126/DungeonGenerator/raw/main/Document/DungeonGenerator02.gif)
 
 # 👾 Authors
 * [Nonbiri](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q)

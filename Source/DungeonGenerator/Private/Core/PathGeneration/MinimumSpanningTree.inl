@@ -25,14 +25,4 @@ namespace dungeon
 	{
 		return mGoalPoint;
 	}
-
-	inline const std::vector<std::shared_ptr<const Point>>& MinimumSpanningTree::GetLeafPoints() const noexcept
-	{
-		return mLeafPoints;
-	}
-
-	inline uint8_t MinimumSpanningTree::GetDistance() const noexcept
-	{
-		return mDistance;
-	}
 }

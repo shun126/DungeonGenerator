@@ -31,20 +31,7 @@ UDungeonGenerateParameter* UDungeonGenerateParameter::GenerateRandomParameter(co
 	const auto random = std::make_unique<dungeon::Random>();
 
 	UDungeonGenerateParameter* parameter = NewObject<UDungeonGenerateParameter>();
-	parameter->RoomWidth.Min = random->Get<int32>(1, 5);
-	parameter->RoomWidth.Max = parameter->RoomWidth.Min + random->Get<int32>(1, 5);
-	parameter->RoomDepth.Min = random->Get<int32>(1, 5);
-	parameter->RoomDepth.Max = parameter->RoomWidth.Min + random->Get<int32>(1, 5);
-	parameter->RoomHeight.Min = random->Get<int32>(1, 3);
-	parameter->RoomHeight.Max = parameter->RoomWidth.Min + random->Get<int32>(1, 3);
-	parameter->RoomMargin = random->Get<uint8>(1, 5);
-	parameter->VerticalRoomMargin = random->Get<uint8>(5);
-	parameter->NumberOfCandidateRooms = random->Get<uint8>(5, 50);
-	parameter->NumberOfCandidateFloors = random->Get<uint8>(30);
-	parameter->MergeRooms = random->Get<bool>();
-	parameter->Flat = random->Get<bool>();
-	parameter->UseMissionGraph = random->Get<bool>();
-	parameter->AisleComplexity = random->Get<uint8>(0, 10);
+	parameter->SetRandomParameter();
 
 	if (sourceParameter)
 	{
@@ -63,6 +50,48 @@ UDungeonGenerateParameter* UDungeonGenerateParameter::GenerateRandomParameter(co
 	}
 
 	return parameter;
+}
+
+void UDungeonGenerateParameter::SetRandomParameter() noexcept
+{
+	const auto random = std::make_unique<dungeon::Random>();
+
+	RoomWidth.Min = random->Get<int32>(1, 5);
+	RoomWidth.Max = RoomWidth.Min + random->Get<int32>(1, 5);
+	RoomDepth.Min = random->Get<int32>(1, 5);
+	RoomDepth.Max = RoomDepth.Min + random->Get<int32>(1, 5);
+	RoomHeight.Min = random->Get<int32>(1, 3);
+	RoomHeight.Max = RoomHeight.Min + random->Get<int32>(1, 3);
+	RoomMargin = random->Get<uint8>(1, 5);
+	VerticalRoomMargin = random->Get<uint8>(5);
+	NumberOfCandidateRooms = random->Get<uint8>(5, 50);
+	NumberOfCandidateFloors = random->Get<uint8>(5);
+	MergeRooms = random->Get<bool>();
+	Flat = random->Get<bool>();
+	GenerateSlopeInRoom = random->Get<bool>();
+#if 0
+	// TODO: テストパラメータ
+	NumberOfCandidateFloors = random->Get<uint8>(20, 30);
+	MergeRooms = false;
+	Flat = false;
+#endif
+	if (MergeRooms == true)
+	{
+		UseMissionGraph = false;
+		AisleComplexity = 0;
+	}
+	else
+	{
+		UseMissionGraph = random->Get<bool>();
+		if (UseMissionGraph == true)
+		{
+			AisleComplexity = 0;
+		}
+		else
+		{
+			AisleComplexity = random->Get<uint8>(0, 10);
+		}
+	}
 }
 
 void UDungeonGenerateParameter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -84,7 +113,7 @@ bool UDungeonGenerateParameter::IsSupportedForNetworking() const
 
 #if WITH_EDITOR
 
-void UDungeonGenerateParameter::Dump()
+void UDungeonGenerateParameter::Dump() const
 {
 	DumpToJson();
 }

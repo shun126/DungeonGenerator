@@ -87,6 +87,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	static UDungeonGenerateParameter* GenerateRandomParameter(const UDungeonGenerateParameter* sourceParameter) noexcept;
 
+	/**
+	 * ランダムなダンジョンのパラメータにリセットします
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	void SetRandomParameter() noexcept;
+
 public:
 #if WITH_EDITOR
 
@@ -95,7 +101,7 @@ public:
 	パラメータをJSON形式で出力します
 	*/
 	UFUNCTION(Category = "DungeonGenerator", meta = (CallInEditor = "true"))
-	void Dump();
+	void Dump() const;
 #endif
 
 private:
@@ -237,7 +243,7 @@ protected:
 	生成される階層数の候補
 	これは最終的な階層の数ではなく生成時の参考階層数として利用されます。
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "0", ClampMax = "50", EditCondition = "!Flat"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "0", ClampMax = "5", EditCondition = "!Flat"))
 	uint8 NumberOfCandidateFloors = 3;
 
 	/**
@@ -275,6 +281,16 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "10", EditCondition = "!MergeRooms && !UseMissionGraph"))
 	uint8 AisleComplexity = 5;
+
+	/**
+	Generate ramps in the room.
+	May be enabled by future forcing.
+
+	部屋の中にスロープを生成する
+	将来的強制的に有効になる可能性があります。
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "10"))
+	bool GenerateSlopeInRoom = false;
 
 	/**
 	Horizontal voxel size
