@@ -1,5 +1,4 @@
 # Dungeon generator plugin for Unreal Engine 5
-> Easy generation of levels, mini-maps and missions.
 
 [![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.4-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
@@ -8,9 +7,14 @@
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
 [![youtube](https://img.shields.io/youtube/views/HIW4mRt2_AA?style=social)](https://youtu.be/HIW4mRt2_AA)
 
-![DungeonGeneratorPlugin](https://github.com/shun126/DungeonGenerator/raw/main/Document/DungeonGenerator03.jpg)
+Please also take a look at the [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version.
 
-Trailer: [YouTube](https://youtu.be/HIW4mRt2_AA)
+* Trailer video: [YouTube](https://youtu.be/HIW4mRt2_AA)
+* Tutorial videos: [YouTube](https://www.youtube.com/playlist?list=PLlMDkSa8bQnK4PDIfkXYorQIucn47ifKO)
+
+Revolutionize your dungeon creation process with our new Unreal Engine plugin! Enjoy freedom and customize your own rulesets to offer players unique and engaging dungeon exploration experiences. Say goodbye to the hassle of manual dungeon building and welcome the new age of dungeon exploration!
+
+![Screenshot](Document/Screenshot.gif)
 
 # 🚩 Table of Contents
 - [Why Dungeon Generator?](#-why-dungeon-generator)
@@ -27,7 +31,7 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 
 ## Visualization of dungeon generation status
 
-![DungeonGeneratorStatus](https://github.com/shun126/DungeonGenerator/raw/main/Document/DungeonGenerator01.gif)
+![DungeonGeneratorStatus](Document/DungeonGenerator01.gif)
 
 # 🎨 Features
 * DungeonGenerator is a plug-in for UnrealEngine5.
@@ -54,12 +58,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 Or, [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
-The [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version includes the following enhancements.
-* Sub-levels can be applied as dungeon rooms
-* A mini-map of the dungeon can be generated.
-* Interior decoration. [beta version]
-* Foriage decoration. [beta version]
-
 # 👾 Demo
 [DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
 
@@ -71,8 +69,15 @@ This is an easy to use. Simply drop the DungeonGenerateActor into your level, se
 * [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
 * [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
 * [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
-* [UnrealEngine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197)
+
+The [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version includes the following enhancements.
+* Sub-levels can be applied as dungeon rooms
+* A mini-map of the dungeon can be generated.
+* Interior decoration. [beta version]
+* Foriage decoration. [beta version]
 
 # 👾 Authors
 * [Nonbiri](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q)
 * [Shun Moriya](https://twitter.com/moriya_zx25r)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M413XDXB)
