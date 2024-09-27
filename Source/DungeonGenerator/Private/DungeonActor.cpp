@@ -1116,7 +1116,7 @@ void ADungeonActor::FitNavMeshBoundsVolume()
 		if (USceneComponent* rootComponent = navMeshBoundsVolume->GetRootComponent())
 		{
 			const EComponentMobility::Type mobility = rootComponent->Mobility;
-			rootComponent->SetMobility(EComponentMobility::Stationary);
+			rootComponent->SetMobility(EComponentMobility::Movable);
 
 			navMeshBoundsVolume->SetActorLocation(boundingCenter);
 			navMeshBoundsVolume->SetActorScale3D(FVector::OneVector);
@@ -1317,23 +1317,33 @@ CRC32の計算を行うのでサーバーとクライアントの同期ずれを
 */
 AStaticMeshActor* ADungeonActor::SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
-	AStaticMeshActor* actor = SpawnActorImpl<AStaticMeshActor>(folderPath, transform, nullptr, spawnActorCollisionHandlingMethod);
-	if (!IsValid(actor))
+	AStaticMeshActor* actor = SpawnActorDeferredImpl<AStaticMeshActor>(folderPath, transform, nullptr, spawnActorCollisionHandlingMethod);
+	if (IsValid(actor) == false)
 		return nullptr;
 
-	UStaticMeshComponent* mesh = actor->GetStaticMeshComponent();
-	if (IsValid(mesh))
-		mesh->SetStaticMesh(staticMesh);
+	UStaticMeshComponent* staticMeshComponent = actor->GetStaticMeshComponent();
+	if (IsValid(staticMeshComponent) == true)
+	{
+		if (const UWorld* world = actor->GetWorld())
+		{
+			if (world->HasBegunPlay() == true)
+				actor->SetMobility(EComponentMobility::Movable);
+		}
+
+		staticMeshComponent->SetStaticMesh(staticMesh);
+	}
 
 	// 処理負荷制御を追加
 	UDungeonComponentActivatorComponent* dungeonComponentActivatorComponent = NewObject<UDungeonComponentActivatorComponent>(actor);
-	if (IsValid(dungeonComponentActivatorComponent))
+	if (IsValid(dungeonComponentActivatorComponent) == true)
 	{
 		dungeonComponentActivatorComponent->SetEnableCollisionEnableControl(false);
 
 		actor->AddInstanceComponent(dungeonComponentActivatorComponent);
 		dungeonComponentActivatorComponent->RegisterComponent();
 	}
+
+	actor->FinishSpawning(transform, true);
 
 	// CRC32を記録（必ずサーバーとクライアント両方で計算しないとCRC32が一致しなくなる）
 	mCrc32AtCreation = ADungeonActorBase::GenerateCrc32(transform, mCrc32AtCreation);
@@ -1351,7 +1361,7 @@ ADungeonDoorBase* ADungeonActor::SpawnDoorActor(UClass* actorClass, const FTrans
 	{
 		actor->InvokeInitialize(GetRandom(), props);
 
-		actor->FinishSpawning(transform);
+		actor->FinishSpawning(transform, true);
 
 		if (IsValid(ownerActor))
 			ownerActor->AddDungeonDoor(actor);
@@ -1448,30 +1458,34 @@ void ADungeonActor::Clear()
 
 FTransform ADungeonActor::GetStartTransform() const
 {
-	if (IsValid(mParameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
-	{
-		return FTransform(*mGenerator->GetStartPoint() * mParameter->GetGridSize().To3D());
-	}
-	return FTransform::Identity;
+	return FTransform(GetStartLocation());
 }
 
 FTransform ADungeonActor::GetGoalTransform() const
 {
-	if (IsValid(mParameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
-	{
-		return FTransform(*mGenerator->GetGoalPoint() * mParameter->GetGridSize().To3D());
-	}
-	return FTransform::Identity;
+	return FTransform(GetGoalLocation());
 }
 
 FVector ADungeonActor::GetStartLocation() const
 {
-	return GetStartTransform().GetLocation();
+	if (IsValid(mParameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
+	{
+		FVector location = *mGenerator->GetStartPoint() * mParameter->GetGridSize().To3D();
+		location += GetActorLocation();
+		return location;
+	}
+	return FVector::ZeroVector;
 }
 
 FVector ADungeonActor::GetGoalLocation() const
 {
-	return GetGoalTransform().GetLocation();
+	if (IsValid(mParameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
+	{
+		FVector location = *mGenerator->GetGoalPoint() * mParameter->GetGridSize().To3D();
+		location += GetActorLocation();
+		return location;
+	}
+	return FVector::ZeroVector;
 }
 
 FBox ADungeonActor::CalculateBoundingBox() const
