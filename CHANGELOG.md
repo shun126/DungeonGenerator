@@ -4,6 +4,14 @@
 ### Changes
 ### 変更点
 
+## 20240927-1.6.9 (38)
+### Changes
+* Fixed a bug when sublevels were not specified
+* Added assets available in the top view
+### 変更点
+* サブレベルを指定していない時の不具合を修正
+* トップビューで利用可能なアセットを追加
+
 ## 20240926-1.6.8 (37)
 ### Changes
 * Fixed a bug in the GenerateDungeon function that caused StaticMesh generation to fail.
