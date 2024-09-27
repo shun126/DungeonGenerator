@@ -1,8 +1,14 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (37)
+## Unreleased-1.6.* (38)
 ### Changes
 ### 変更点
+
+## 20240926-1.6.8 (37)
+### Changes
+* Fixed a bug in the GenerateDungeon function that caused StaticMesh generation to fail.
+### 変更点
+* GenerateDungeon関数でStaticMeshの生成に失敗する不具合を修正
 
 ## 20240915-1.6.7 (36)
 ### Changes

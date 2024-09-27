@@ -331,7 +331,7 @@ inline T* ADungeonActor::SpawnActorImpl(const FString& folderPath, const FTransf
 template<typename T>
 inline T* ADungeonActor::SpawnActorDeferredImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
-	return SpawnActorImpl(T::StaticClass(), folderPath, transform, spawnActorCollisionHandlingMethod);
+	return SpawnActorDeferredImpl<T>(T::StaticClass(), folderPath, transform, ownerActor, spawnActorCollisionHandlingMethod);
 }
 
 template<typename T>
