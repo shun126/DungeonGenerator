@@ -19,7 +19,7 @@ namespace dungeon
 Database of dungeon mesh sets
 ダンジョンのメッシュセットのデータベース
 */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API UDungeonMeshSetDatabase : public UObject
 {
 	GENERATED_BODY()

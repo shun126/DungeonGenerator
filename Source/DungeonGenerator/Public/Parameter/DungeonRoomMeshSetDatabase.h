@@ -15,7 +15,7 @@ All Rights Reserved.
 Database of dungeon room mesh sets
 ダンジョン部屋のメッシュセットのデータベース
 */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS()
 class DUNGEONGENERATOR_API UDungeonRoomMeshSetDatabase : public UDungeonMeshSetDatabase
 {
 	GENERATED_BODY()

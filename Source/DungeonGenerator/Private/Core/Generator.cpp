@@ -562,8 +562,14 @@ namespace dungeon
 				const auto limit = std::sin(math::ToRadian(11.25));
 				direction.Z = std::max(-limit, std::min(direction.Z, limit));
 			}
-			const bool normalizeResult = direction.Normalize();
-			check(normalizeResult);
+			if (direction.Normalize() == false)
+			{
+				const double ratio = mGenerateParameter.GetRandom()->Get<double>();
+				const double radian = ratio * math::Pi2();
+				direction.X = std::cos(radian);
+				direction.Y = std::sin(radian);
+				direction.Z = 0;
+			}
 
 			// 押し出す
 			FVector newRoomOffset;
@@ -934,6 +940,7 @@ namespace dungeon
 		);
 #endif
 
+		// HACK: MinimumSpanningTreeクラスにまとめた方が良いかも
 		for (const std::shared_ptr<Room>& room : mRooms)
 		{
 			if (room->GetParts() == Room::Parts::Unidentified /* && room->GetGateCount() > 1 */)

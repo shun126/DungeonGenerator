@@ -12,16 +12,6 @@ FDungeonRoomMeshSetDatabaseTypeActions::FDungeonRoomMeshSetDatabaseTypeActions(E
 {
 }
 
-FColor FDungeonRoomMeshSetDatabaseTypeActions::GetTypeColor() const
-{
-	return FColor::Cyan;
-}
-
-void FDungeonRoomMeshSetDatabaseTypeActions::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
-{
-	FSimpleAssetEditor::CreateEditor(EToolkitMode::Standalone, EditWithinLevelEditor, InObjects);
-}
-
 FText FDungeonRoomMeshSetDatabaseTypeActions::GetName() const
 {
 	return FText::FromName(TEXT("Mesh set database (Room)"));

@@ -35,7 +35,7 @@ enum class EFrequencyOfGeneration : uint8
 Dungeon generation parameter
 ダンジョン生成パラメータ
 */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API UDungeonGenerateParameter : public UObject
 {
 	GENERATED_BODY()
@@ -61,7 +61,7 @@ public:
 	bool IsMergeRooms() const noexcept;
 	bool IsMovePlayerStartToStartingPoint() const noexcept;
 	
-	bool EnableMissionGraph() const noexcept;
+	bool IsUseMissionGraph() const noexcept;
 	uint8 GetAisleComplexity() const noexcept;
 	bool IsAisleComplexity() const noexcept;
 
@@ -255,9 +255,9 @@ protected:
 	bool Flat = false;
 
 	/**
-	Move PlayerStart to the starting point.
+	PlayerStart is automatically moved to the start room at the start
 
-	有効にするとPlayerStartをスタート部屋に移動します
+	開始時にPlayerStartを自動的にスタート部屋に移動します
 	*/
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
 	bool MovePlayerStartToStartingPoint = true;
@@ -283,7 +283,7 @@ protected:
 	uint8 AisleComplexity = 5;
 
 	/**
-	Generate ramps in the room.
+	Generate slopes in the room.
 	May be enabled by future forcing.
 
 	部屋の中にスロープを生成する
@@ -399,7 +399,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	uint8 PluginVersion;
 
-	friend class ADungeonActor;
+	friend class ADungeonGenerateBase;
 	friend class ADungeonGenerateActor;
 };
 
@@ -458,9 +458,9 @@ inline bool UDungeonGenerateParameter::IsMovePlayerStartToStartingPoint() const 
 	return MovePlayerStartToStartingPoint;
 }
 
-inline bool UDungeonGenerateParameter::EnableMissionGraph() const noexcept
+inline bool UDungeonGenerateParameter::IsUseMissionGraph() const noexcept
 {
-	return UseMissionGraph;
+	return GetAisleComplexity() <= 0;
 }
 
 inline uint8 UDungeonGenerateParameter::GetAisleComplexity() const noexcept
@@ -470,7 +470,7 @@ inline uint8 UDungeonGenerateParameter::GetAisleComplexity() const noexcept
 
 inline bool UDungeonGenerateParameter::IsAisleComplexity() const noexcept
 {
-	return UseMissionGraph == false && AisleComplexity > 0;
+	return GetAisleComplexity() > 0;
 }
 
 inline EFrequencyOfGeneration UDungeonGenerateParameter::GetFrequencyOfTorchlightGeneration() const noexcept

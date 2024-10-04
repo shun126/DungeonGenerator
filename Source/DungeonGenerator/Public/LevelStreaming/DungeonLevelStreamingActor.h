@@ -15,7 +15,7 @@ class UBoxComponent;
 Helper class that loads the level when the player enters the OverlapVolume
 プレイヤーが OverlapVolume に入るときにレベルをロードするヘルパークラス
 */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API ADungeonLevelStreamingActor : public AActor
 {
 	GENERATED_BODY()

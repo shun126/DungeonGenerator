@@ -4,25 +4,25 @@
 All Rights Reserved.
 */
 
-#include "SubActor/DungeonActorBase.h"
+#include "SubActor/DungeonVerifiableActor.h"
 #include "Core/Helper/Crc.h"
 #include <Math/TransformNonVectorized.h>
 
 // 定義するとアライメント部分をCRC32の計算に含めない
 #define EXCLUDE_ALIGNMENT_FROM_CRC32
 
-ADungeonActorBase::ADungeonActorBase(const FObjectInitializer& initializer)
+ADungeonVerifiableActor::ADungeonVerifiableActor(const FObjectInitializer& initializer)
 	: Super(initializer)
 {
 	bReplicates = false;
 }
 
-uint32_t ADungeonActorBase::GenerateCrc32(uint32_t crc) const noexcept
+uint32_t ADungeonVerifiableActor::GenerateCrc32(uint32_t crc) const noexcept
 {
 	return GenerateCrc32(this, crc);
 }
 
-uint32_t ADungeonActorBase::GenerateCrc32(const AActor* actor, uint32_t crc) noexcept
+uint32_t ADungeonVerifiableActor::GenerateCrc32(const AActor* actor, uint32_t crc) noexcept
 {
 	if (IsValid(actor))
 	{
@@ -32,7 +32,7 @@ uint32_t ADungeonActorBase::GenerateCrc32(const AActor* actor, uint32_t crc) noe
 	return crc;
 }
 
-uint32_t ADungeonActorBase::GenerateCrc32(const FBox& box, uint32_t crc) noexcept
+uint32_t ADungeonVerifiableActor::GenerateCrc32(const FBox& box, uint32_t crc) noexcept
 {
 	/*
 	Padding area by alignment is indefinite, so it is calculated by Min and Max.
@@ -43,7 +43,7 @@ uint32_t ADungeonActorBase::GenerateCrc32(const FBox& box, uint32_t crc) noexcep
 	return crc;
 }
 
-uint32_t ADungeonActorBase::GenerateCrc32(const FRotator& rotator, uint32_t crc) noexcept
+uint32_t ADungeonVerifiableActor::GenerateCrc32(const FRotator& rotator, uint32_t crc) noexcept
 {
 #if defined(EXCLUDE_ALIGNMENT_FROM_CRC32)
 	crc = dungeon::GenerateCrc32FromData(&rotator.Pitch, sizeof(rotator.Pitch), crc);
@@ -55,7 +55,7 @@ uint32_t ADungeonActorBase::GenerateCrc32(const FRotator& rotator, uint32_t crc)
 #endif
 }
 
-uint32_t ADungeonActorBase::GenerateCrc32(const FQuat& rotator, uint32_t crc) noexcept
+uint32_t ADungeonVerifiableActor::GenerateCrc32(const FQuat& rotator, uint32_t crc) noexcept
 {
 #if defined(EXCLUDE_ALIGNMENT_FROM_CRC32)
 	crc = dungeon::GenerateCrc32FromData(&rotator.X, sizeof(rotator.X), crc);
@@ -68,7 +68,7 @@ uint32_t ADungeonActorBase::GenerateCrc32(const FQuat& rotator, uint32_t crc) no
 #endif
 }
 
-uint32_t ADungeonActorBase::GenerateCrc32(const FTransform& transform, uint32_t crc) noexcept
+uint32_t ADungeonVerifiableActor::GenerateCrc32(const FTransform& transform, uint32_t crc) noexcept
 {
 #if defined(EXCLUDE_ALIGNMENT_FROM_CRC32)
 	crc = GenerateCrc32(transform.GetRotation(), crc);
@@ -80,7 +80,7 @@ uint32_t ADungeonActorBase::GenerateCrc32(const FTransform& transform, uint32_t 
 #endif
 }
 
-uint32_t ADungeonActorBase::GenerateCrc32(const FVector& vector, uint32_t crc) noexcept
+uint32_t ADungeonVerifiableActor::GenerateCrc32(const FVector& vector, uint32_t crc) noexcept
 {
 #if defined(EXCLUDE_ALIGNMENT_FROM_CRC32)
 	crc = dungeon::GenerateCrc32FromData(&vector.X, sizeof(vector.X), crc);

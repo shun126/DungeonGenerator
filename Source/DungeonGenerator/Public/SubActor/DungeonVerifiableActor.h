@@ -7,14 +7,14 @@ All Rights Reserved.
 #pragma once
 #include <CoreMinimal.h>
 #include <GameFramework/Actor.h>
-#include "DungeonActorBase.generated.h"
+#include "DungeonVerifiableActor.generated.h"
 
 /**
 Verifiable Actor Class
 検証可能なアクタークラス
 */
-UCLASS(Blueprintable, BlueprintType)
-class DUNGEONGENERATOR_API ADungeonActorBase : public AActor
+UCLASS(Abstract, ClassGroup = "DungeonGenerator")
+class DUNGEONGENERATOR_API ADungeonVerifiableActor : public AActor
 {
 	GENERATED_BODY()
 
@@ -23,13 +23,13 @@ protected:
 	constructor
 	コンストラクタ
 	*/
-	explicit ADungeonActorBase(const FObjectInitializer& initializer);
+	explicit ADungeonVerifiableActor(const FObjectInitializer& initializer);
 
 	/**
 	destructor
 	デストラクタ
 	*/
-	virtual ~ADungeonActorBase() override = default;
+	virtual ~ADungeonVerifiableActor() override = default;
 
 public:
 	/**

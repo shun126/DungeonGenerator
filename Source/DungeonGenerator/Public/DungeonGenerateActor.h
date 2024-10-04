@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "DungeonActor.h"
+#include "DungeonGenerateBase.h"
 #include "Mission/DungeonRoomParts.h"
 #include "Mission/DungeonRoomProps.h"
 #include <memory>
@@ -40,8 +40,8 @@ enum class EDungeonMeshGenerationMethod : uint8
 Dungeon generation actor
 ダンジョン生成アクター
 */
-UCLASS(Blueprintable, BlueprintType)
-class DUNGEONGENERATOR_API ADungeonGenerateActor : public ADungeonActor
+UCLASS(ClassGroup = "DungeonGenerator")
+class DUNGEONGENERATOR_API ADungeonGenerateActor : public ADungeonGenerateBase
 {
 	GENERATED_BODY()
 
@@ -60,9 +60,17 @@ public:
 	Generate new dungeon
 	ダンジョンを生成します
 	*/
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "DungeonGenerator")
 	void GenerateDungeon();
 
+protected:
+	/**
+	* ダンジョン生成を全クライアントにマルチキャストします
+	*/
+	UFUNCTION(NetMulticast, Reliable, Category = "DungeonGenerator")
+	void MulticastOnGenerateDungeon();
+
+public:
 	/**
 	Generate new dungeon
 	ダンジョンを生成します
@@ -127,7 +135,7 @@ public:
 #endif
 
 private:
-	// ADungeonActor overrides
+	// ADungeonGenerateBase overrides
 	virtual void OnPreDungeonGeneration() override;
 	virtual void OnPostDungeonGeneration(const bool result) override;
 
@@ -165,8 +173,8 @@ protected:
 #endif
 
 	/**
-	PlayerStart is automatically moved to the start room at the start
-	開始時にPlayerStartを自動的にスタート部屋に移動します
+	Generates a dungeon at the start of the level
+	レベル開始時にダンジョンを生成します
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool AutoGenerateAtStart = true;

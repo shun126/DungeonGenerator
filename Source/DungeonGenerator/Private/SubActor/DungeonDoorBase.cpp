@@ -42,7 +42,7 @@ uint32_t ADungeonDoorBase::GenerateCrc32(uint32_t crc) const noexcept
 	if (IsValid(this))
 	{
 		const FTransform& transform = GetTransform();
-		crc = ADungeonActorBase::GenerateCrc32(transform, crc);
+		crc = ADungeonVerifiableActor::GenerateCrc32(transform, crc);
 		crc = dungeon::GenerateCrc32FromData(&Props, sizeof(EDungeonRoomProps), crc);
 	}
 	return crc;

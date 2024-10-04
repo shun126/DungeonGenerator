@@ -5,18 +5,13 @@ All Rights Reserved.
 */
 
 #pragma once
-#include <CoreMinimal.h>
-#include <AssetTypeActions_Base.h>
+#include "DungeonAssetTypeActionsBase.h"
 
-class FDungeonAisleMeshSetDatabaseTypeActions : public FAssetTypeActions_Base
+class FDungeonAisleMeshSetDatabaseTypeActions : public FDungeonAssetTypeActionsBase
 {
 public:
 	explicit FDungeonAisleMeshSetDatabaseTypeActions(EAssetTypeCategories::Type InAssetCategory);
 	virtual ~FDungeonAisleMeshSetDatabaseTypeActions() override = default;
-
-	// FAssetTypeActions_Base overrides
-	virtual FColor GetTypeColor() const override;
-	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor = TSharedPtr<IToolkitHost>()) override;
 
 	// IAssetTypeActions Implementation
 	virtual FText GetName() const override;
