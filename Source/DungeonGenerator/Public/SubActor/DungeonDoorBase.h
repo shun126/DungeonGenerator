@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "DungeonActorBase.h"
+#include "DungeonVerifiableActor.h"
 #include "Helper/DungeonRandom.h"
 #include "Mission/DungeonRoomProps.h"
 #include <CoreMinimal.h>
@@ -28,8 +28,8 @@ Please be very careful with server-client synchronization.
 DungeonDoorBaseはレプリケーションする前提のアクターです。
 サーバーとクライアントの同期に十分注意して下さい。
 */
-UCLASS(Blueprintable, BlueprintType)
-class DUNGEONGENERATOR_API ADungeonDoorBase : public ADungeonActorBase
+UCLASS(Abstract, ClassGroup = "DungeonGenerator")
+class DUNGEONGENERATOR_API ADungeonDoorBase : public ADungeonVerifiableActor
 {
 	GENERATED_BODY()
 
@@ -115,7 +115,7 @@ private:
 	};
 	State mState = State::Invalid;
 
-	friend class ADungeonActor;
+	friend class ADungeonGenerateBase;
 };
 
 inline EDungeonRoomProps ADungeonDoorBase::GetRoomProps() const

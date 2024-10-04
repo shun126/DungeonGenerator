@@ -61,8 +61,6 @@ Or, [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36
 # 👾 Demo
 [DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
 
-![DungeonGeneratorDemo Screenshot](https://github.com/shun126/UE5-DungeonGeneratorDemo/raw/main/Document/Screenshot.gif)
-
 This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
 
 # 👀 See also

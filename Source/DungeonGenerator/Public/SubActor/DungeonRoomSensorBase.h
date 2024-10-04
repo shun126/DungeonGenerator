@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "SubActor/DungeonActorBase.h"
+#include "SubActor/DungeonVerifiableActor.h"
 #include "Helper/DungeonRandom.h"
 #include "Mission/DungeonRoomItem.h"
 #include "Mission/DungeonRoomParts.h"
@@ -38,8 +38,8 @@ Please be very careful with server-client synchronization.
 DungeonRoomSensorBaseはレプリケーションされない前提のアクターです。
 サーバーとクライアントの同期に十分注意して下さい。
 */
-UCLASS(Blueprintable, BlueprintType)
-class DUNGEONGENERATOR_API ADungeonRoomSensorBase : public ADungeonActorBase
+UCLASS(Abstract, ClassGroup = "DungeonGenerator")
+class DUNGEONGENERATOR_API ADungeonRoomSensorBase : public ADungeonVerifiableActor
 {
 	GENERATED_BODY()
 
@@ -55,7 +55,7 @@ public:
 
 	/**
 	Preparation for initialization immediately after spawning
-	If OnPrepare succeeds, OnInitialize is called and the failing DungeonRoomSensorBase is delete.
+	If OnPrepare succeeds, OnInitialize is called and the failing DungeonRoomSensorBase is deleted.
 	スポーン直後の初期化準備
 	OnPrepareが成功するとOnInitializeが呼び出され、失敗するDungeonRoomSensorBaseは破棄されます。
 	*/
@@ -152,7 +152,6 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	AActor* SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined, APawn* instigator_ = nullptr, const bool transient = false);
-	//AActor* SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined, const ESpawnActorScaleMethod transformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot, APawn* instigator_ = nullptr, const bool transient = false);
 
 	/**
 	Calculate the depth ratio from the start
@@ -200,13 +199,13 @@ public:
 	bool HasLockedDoor() const;
 
 	/**
-	Add torch light in a room
+	Add torchlight in a room
 	部屋に燭台を追加します
 	*/
 	void AddDungeonTorch(AActor* actor);
 
 	/**
-	Update the torch light in the room.
+	Update the torchlight in the room.
 	部屋の燭台を更新します
 	*/
 	template<typename Function>
@@ -417,7 +416,7 @@ protected:
 	デバッグ情報を表示
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
-	bool ShowDebugInfomation = false;
+	bool ShowDebugInformation = false;
 #endif
 
 	/**
@@ -442,7 +441,7 @@ protected:
 	TArray<TObjectPtr<ADungeonDoorBase>> DungeonDoors;
 
 	/**
-	Torch light in a room
+	Torchlight in a room
 	部屋の燭台
 	*/
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
@@ -462,7 +461,7 @@ private:
 	State mState = State::Invalid;
 	bool mEntered = true;
 
-	friend class ADungeonActor;
+	friend class ADungeonGenerateBase;
 };
 
 inline int32 ADungeonRoomSensorBase::GetIdentifier() const noexcept

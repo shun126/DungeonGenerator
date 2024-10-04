@@ -15,7 +15,7 @@ All Rights Reserved.
 Database of dungeon aisle mesh sets
 ダンジョン通路のメッシュセットのデータベース
 */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS()
 class DUNGEONGENERATOR_API UDungeonAisleMeshSetDatabase : public UDungeonMeshSetDatabase
 {
 	GENERATED_BODY()

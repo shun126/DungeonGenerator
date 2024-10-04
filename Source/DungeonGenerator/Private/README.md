@@ -33,7 +33,7 @@ ULevelStreamingDynamic --* CDungeonGeneratorCore
 ```mermaid
 classDiagram
 
-class ADungeonActor {
+class ADungeonGenerateBase {
     -
 }
 
@@ -49,8 +49,8 @@ class UDungeonMiniMapTextureLayer {
     -
 }
 
-AActor <|-- ADungeonActor
-ADungeonActor <|-- ADungeonGenerateActor
+AActor <|-- ADungeonGenerateBase
+ADungeonGenerateBase <|-- ADungeonGenerateActor
 UDungeonGenerateParameter --* ADungeonGenerateActor
 UDungeonTransactionalHierarchicalInstancedStaticMeshComponent --* ADungeonGenerateActor
 UHierarchicalInstancedStaticMeshComponent <|-- UDungeonTransactionalHierarchicalInstancedStaticMeshComponent

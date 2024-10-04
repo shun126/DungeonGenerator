@@ -180,7 +180,7 @@ namespace dungeon
 
 	inline bool GenerateParameter::UseMissionGraph() const noexcept
 	{
-		return mUseMissionGraph == true && mAisleComplexity <= 0;
+		return GetAisleComplexity() <= 0;
 	}
 
 	inline void GenerateParameter::SetMissionGraph(const bool use) noexcept
@@ -200,7 +200,7 @@ namespace dungeon
 
 	inline bool GenerateParameter::IsAisleComplexity() const noexcept
 	{
-		return mUseMissionGraph == false && mAisleComplexity > 0;
+		return GetAisleComplexity() > 0;
 	}
 
 	inline bool GenerateParameter::IsGenerateSlopeInRoom() const noexcept

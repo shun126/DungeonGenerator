@@ -6,7 +6,7 @@ All Rights Reserved.
 
 #include "SubActor/DungeonRoomSensorBase.h"
 #include "SubActor/DungeonDoorBase.h"
-#include "DungeonActor.h"
+#include "DungeonGenerateBase.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Helper/Crc.h"
 #include "Core/Math/Random.h"
@@ -26,7 +26,7 @@ namespace
 
 const FName& ADungeonRoomSensorBase::GetDungeonGeneratorTag()
 {
-	return ADungeonActor::GetDungeonGeneratorTag();
+	return ADungeonGenerateBase::GetDungeonGeneratorTag();
 }
 
 const TArray<FName>& ADungeonRoomSensorBase::GetDungeonGeneratorTags()
@@ -88,7 +88,7 @@ void ADungeonRoomSensorBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	// cppcheck-suppress [knownConditionTrueFalse]
-	if (ShowDebugInfomation || ForceShowDebugInformation)
+	if (ShowDebugInformation || ForceShowDebugInformation)
 	{
 		TArray<FString> output;
 		output.Add(TEXT("Identifier:") + FString::FromInt(Identifier));
@@ -368,7 +368,6 @@ float ADungeonRoomSensorBase::GetDepthRatioFromStart() const
 	return (DeepestDepthFromStart == 0) ? 0.f : static_cast<float>(DepthFromStart) / static_cast<float>(DeepestDepthFromStart);
 }
 
-//AActor* ADungeonRoomSensorBase::SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride, const ESpawnActorScaleMethod transformScaleMethod, APawn* instigator, const bool transient)
 AActor* ADungeonRoomSensorBase::SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride, APawn* instigator, const bool transient)
 {
 	AActor* actor = nullptr;
@@ -402,8 +401,8 @@ uint32_t ADungeonRoomSensorBase::GenerateCrc32(uint32_t crc) const noexcept
 	if (IsValid(this))
 	{
 		const FTransform& transform = GetTransform();
-		crc = ADungeonActorBase::GenerateCrc32(transform, crc);
-		crc = ADungeonActorBase::GenerateCrc32(RoomSize, crc);
+		crc = ADungeonVerifiableActor::GenerateCrc32(transform, crc);
+		crc = ADungeonVerifiableActor::GenerateCrc32(RoomSize, crc);
 		crc = dungeon::GenerateCrc32FromData(&HorizontalMargin, sizeof(float), crc);
 		crc = dungeon::GenerateCrc32FromData(&VerticalMargin, sizeof(float), crc);
 		crc = dungeon::GenerateCrc32FromData(&Identifier, sizeof(int32), crc);

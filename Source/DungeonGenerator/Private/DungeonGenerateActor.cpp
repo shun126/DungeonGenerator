@@ -2,6 +2,10 @@
 @author		Shun Moriya
 @copyright	2023- Shun Moriya
 All Rights Reserved.
+
+ADungeonActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
+ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可能(NotPlaceable)にするため、
+継承元であるADungeonGenerateBaseをAbstract指定して共通機能をまとめています。
 */
 
 #include "DungeonGenerateActor.h"
@@ -35,9 +39,66 @@ ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializ
 	// Tick Enable
 	PrimaryActorTick.bCanEverTick = PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// Create default parameters
-	DungeonGenerateParameter = NewObject<UDungeonGenerateParameter>(this, TEXT("DungeonGenerateParameter"));
-	check(DungeonGenerateParameter);
+	SetCanBeDamaged(false);
+}
+
+void ADungeonGenerateActor::PreInitializeComponents()
+{
+	// Calling the parent class
+	Super::PreInitializeComponents();
+
+	if (AutoGenerateAtStart == true)
+	{
+		PreGenerateImplementation();
+	}
+}
+
+void ADungeonGenerateActor::PostInitializeComponents()
+{
+	// Calling the parent class
+	Super::PostInitializeComponents();
+
+	if (GetNetMode() != NM_Standalone)
+	{
+		SetReplicates(true);
+		SetAutonomousProxy(true);
+	}
+}
+
+void ADungeonGenerateActor::BeginPlay()
+{
+	// Calling the parent class
+	Super::BeginPlay();
+
+#if WITH_EDITOR
+	DUNGEON_GENERATOR_LOG(TEXT("%s: LocalRole=%s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*UEnum::GetValueAsString(GetLocalRole())
+	);
+	DUNGEON_GENERATOR_LOG(TEXT("%s: RemoteRole=%s"),
+		HasAuthority() ? TEXT("Server") : TEXT("Client"),
+		*UEnum::GetValueAsString(GetRemoteRole())
+	);
+#endif
+}
+
+void ADungeonGenerateActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	DestroyImplementation();
+
+	// Calling the parent class
+	Super::EndPlay(EndPlayReason);
+}
+
+void ADungeonGenerateActor::Tick(float DeltaSeconds)
+{
+	// Calling the parent class
+	Super::Tick(DeltaSeconds);
+
+
+#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
+	DrawDebugInformation();
+#endif
 }
 
 void ADungeonGenerateActor::OnPreDungeonGeneration()
@@ -310,53 +371,23 @@ void ADungeonGenerateActor::DestroyImplementation()
 
 }
 
-/********** ゲームの状態 **********/
-void ADungeonGenerateActor::PreInitializeComponents()
-{
-	// Calling the parent class
-	Super::PreInitializeComponents();
-
-	if (AutoGenerateAtStart)
-	{
-		PreGenerateImplementation();
-	}
-}
-
-void ADungeonGenerateActor::PostInitializeComponents()
-{
-	// Calling the parent class
-	Super::PostInitializeComponents();
-}
-
-void ADungeonGenerateActor::BeginPlay()
-{
-	// Calling the parent class
-	Super::BeginPlay();
-}
-
-void ADungeonGenerateActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	DestroyImplementation();
-
-	// Calling the parent class
-	Super::EndPlay(EndPlayReason);
-}
-
-void ADungeonGenerateActor::Tick(float DeltaSeconds)
-{
-	// Calling the parent class
-	Super::Tick(DeltaSeconds);
-
-
-#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
-	DrawDebugInformation();
-#endif
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // BluePrint Useful Functions
-void ADungeonGenerateActor::GenerateDungeon()
+// サーバープロセスで実行する
+void ADungeonGenerateActor::GenerateDungeon_Implementation()
 {
+#if JENKINS_FOR_DEVELOP
+	DUNGEON_GENERATOR_LOG(TEXT("ServerOnGenerateDungeon: %s"), HasAuthority() ? TEXT("Server") : TEXT("Client"));
+#endif
+	MulticastOnGenerateDungeon();
+}
+
+// 全てのクライアントプロセスで実行する
+void ADungeonGenerateActor::MulticastOnGenerateDungeon_Implementation()
+{
+#if JENKINS_FOR_DEVELOP
+	DUNGEON_GENERATOR_LOG(TEXT("MulticastOnGenerateDungeon: %s"), HasAuthority() ? TEXT("Server") : TEXT("Client"));
+#endif
 	PreGenerateImplementation();
 }
 

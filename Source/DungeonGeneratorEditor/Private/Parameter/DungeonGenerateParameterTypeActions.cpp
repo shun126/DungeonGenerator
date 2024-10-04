@@ -12,16 +12,6 @@ UDungeonGenerateParameterTypeActions::UDungeonGenerateParameterTypeActions(EAsse
 {
 }
 
-FColor UDungeonGenerateParameterTypeActions::GetTypeColor() const
-{
-	return FColor::Emerald;
-}
-
-void UDungeonGenerateParameterTypeActions::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
-{
-	FSimpleAssetEditor::CreateEditor(EToolkitMode::Standalone, EditWithinLevelEditor, InObjects);
-}
-
 FText UDungeonGenerateParameterTypeActions::GetName() const
 {
 	return FText::FromName(TEXT("Generate parameter"));

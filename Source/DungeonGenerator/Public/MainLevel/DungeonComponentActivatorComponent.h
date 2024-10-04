@@ -32,7 +32,7 @@ OnPartiationInactivate is called when the DungeonPartiation moves away.
 所属しているDungeonPartiationがプレイヤー周辺に近づいたらOnPartiationActivateが呼ばれます。
 離れたらOnPartiationInactivateが呼ばれます。
 */
-UCLASS(Blueprintable, BlueprintType, meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = "DungeonGenerator", meta = (BlueprintSpawnableComponent))
 class DUNGEONGENERATOR_API UDungeonComponentActivatorComponent : public UActorComponent
 {
 	GENERATED_BODY()
