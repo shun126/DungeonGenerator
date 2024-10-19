@@ -1068,12 +1068,13 @@ namespace dungeon
 		);
 #endif
 
-		// 狭すぎる部屋を調整する
+		// 狭すぎる・大きすぎる部屋を調整する
 		for (const std::shared_ptr<Room>& room : mRooms)
 		{
 			// 予約済みの部屋はサイズを変更できない
 			if (room->IsValidReservationNumber() == true)
 				continue;
+			// スタート・ゴール部屋はサイズを変更できない
 			if (room->GetParts() == Room::Parts::Start && mGenerateParameter.IsGenerateStartRoomReserved())
 				continue;
 			if (room->GetParts() == Room::Parts::Goal && mGenerateParameter.IsGenerateGoalRoomReserved())
@@ -1081,6 +1082,12 @@ namespace dungeon
 
 			uint32_t width = room->GetWidth();
 			uint32_t depth = room->GetDepth();
+			// 部屋の最大サイズにあわせる
+			if (width > mGenerateParameter.GetMaxRoomWidth())
+				width = mGenerateParameter.GetMaxRoomWidth();
+			if (depth > mGenerateParameter.GetMaxRoomDepth())
+				depth = mGenerateParameter.GetMaxRoomDepth();
+			// ドアに対して部屋が小さい場合は広げる
 			const uint32_t minimumArea = dungeon::math::Square<uint32_t>(room->GetGateCount());
 			const uint32_t requiredArea = std::max(2u, minimumArea);
 			if (requiredArea > width * depth)
@@ -1095,7 +1102,7 @@ namespace dungeon
 				room->SetWidth(width);
 				room->SetDepth(depth);
 
-				DUNGEON_GENERATOR_VERBOSE(TEXT("Expanded the room because it was too small for the connecting gate : ID=%d"), room->GetIdentifier().Get());
+				DUNGEON_GENERATOR_LOG(TEXT("Expanded the room because it was too small for the connecting gate : ID=%d"), room->GetIdentifier().Get());
 			}
 		}
 

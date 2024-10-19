@@ -1,8 +1,22 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (40)
+## Unreleased-1.6.* (41)
 ### Changes
 ### 変更点
+
+## 20241017-1.6.11 (40)
+### Changes
+* Added demo map
+* modified content names
+* Refactoring UCLASS attributes
+* Fixed problem with rooms becoming larger than maximum size
+* Fixed several bugs
+### 変更点
+* デモ用マップを追加
+* コンテンツ名を修正
+* UCLASS属性の見直し
+* 部屋が最大サイズよりも大きくなる問題を修正
+* いくつかの不具合を修正
 
 ## 20241005-1.6.10 (39)
 ### Changes
