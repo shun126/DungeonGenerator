@@ -98,6 +98,13 @@ namespace dungeon
 		void Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) const noexcept;
 
 		/**
+		グリッド内のグリッドを設定します
+		@param[in]	location	グリッド座標
+		@param[in]	grid	グリッド
+		*/
+		void Set(const FIntVector& location, const Grid& grid) const noexcept;
+
+		/**
 		矩形の範囲にGridを書き込みます
 		@param[in]	min			最小座標
 		@param[in]	max			最大座標

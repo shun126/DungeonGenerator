@@ -33,10 +33,6 @@ private:
 	static ADungeonActor* SpawnDungeonActor(UWorld* world, const FVector& location);
 	static void DestroySpawnedActors(UWorld* world);
 
-#if WITH_EDITOR
-	virtual void SyncLoadStreamLevels() override;
-#endif
-	virtual void UnloadStreamLevels() override;
 
 	// friend class
 	friend class FDungeonGenerateEditorModule;

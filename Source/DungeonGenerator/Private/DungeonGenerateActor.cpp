@@ -504,6 +504,8 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 						message.Append(TEXT("Identifier:") + FString::FromInt(grid.GetIdentifier()) + TEXT("\n"));
 						message.Append(TEXT("Type: ") + grid.GetTypeName() + TEXT("\n"));
 						message.Append(TEXT("Props: ") + grid.GetPropsName() + TEXT("\n"));
+						if (grid.IsCatwalk())
+							message.Append(TEXT("Catwalk\n"));
 						message.Append(grid.GetNoMeshGenerationName());
 						DrawDebugString(
 							GetWorld(),
@@ -541,6 +543,8 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 		output.Add(TEXT("Identifier:") + FString::FromInt(grid.GetIdentifier()));
 		output.Add(TEXT("Type: ") + grid.GetTypeName());
 		output.Add(TEXT("Props: ") + grid.GetPropsName());
+		if (grid.IsCatwalk())
+			output.Add(TEXT("Catwalk"));
 
 		FString message;
 		for (const FString& line : output)

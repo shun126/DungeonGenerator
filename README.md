@@ -7,7 +7,7 @@
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
 [![youtube](https://img.shields.io/youtube/views/HIW4mRt2_AA?style=social)](https://youtu.be/HIW4mRt2_AA)
 
-Please also take a look at the [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version.
+Please also take a look at the [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) version.
 
 * Trailer video: [YouTube](https://youtu.be/HIW4mRt2_AA)
 * Tutorial videos: [YouTube](https://www.youtube.com/playlist?list=PLlMDkSa8bQnK4PDIfkXYorQIucn47ifKO)
@@ -39,7 +39,7 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 * Users can easily generate dungeons by preparing meshes for floors, walls, ceilings, and stairs.
 * Supports dungeon replication
 * Generates actors for doors and keys by MissionGraph.
-* The following features are supported only in the [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version
+* The following features are supported only in the [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) version
   * Sub-levels can be applied as dungeon rooms
   * A mini-map of the dungeon can be generated.
   * Interior decoration. [beta version]
@@ -56,7 +56,7 @@ you can redistribute it and/or modify it under the terms of the GNU General Publ
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied arranty of MERCHANTABILITY or FITNESS FOR A ARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-Or, [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
+Or, [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
 # 👾 Demo
 [DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
@@ -68,7 +68,7 @@ This is an easy to use. Simply drop the DungeonGenerateActor into your level, se
 * [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
 * [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
 
-The [Unreal Engine marketplace](https://www.unrealengine.com/marketplace/slug/36a8b87d859f44439cfe1515975d7197) version includes the following enhancements.
+The [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) version includes the following enhancements.
 * Sub-levels can be applied as dungeon rooms
 * A mini-map of the dungeon can be generated.
 * Interior decoration. [beta version]

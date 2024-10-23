@@ -62,7 +62,7 @@ UDungeonMiniMapTextureLayer --* ADungeonGenerateActor
 ```mermaid
 classDiagram
 
-class FDungeonMeshSet {
+class FDungeonTemporaryMeshSet {
     -
 }
 
@@ -74,7 +74,7 @@ class FDungeonAisleMeshSet {
     -
 }
 
-class UDungeonMeshSetDatabase {
+class UDungeonTemporaryMeshSetDatabase {
     -
 }
 
@@ -83,12 +83,12 @@ class UDungeonAisleMeshSetDatabase {
 }
 
 
-FDungeonMeshSet <|-- FDungeonRoomMeshSet
+FDungeonTemporaryMeshSet <|-- FDungeonRoomMeshSet
 FDungeonRoomMeshSet <|-- FDungeonAisleMeshSet
 
-UObject <|-- UDungeonMeshSetDatabase
-UDungeonMeshSetDatabase <|-- UDungeonAisleMeshSetDatabase
-FDungeonRoomMeshSet --* UDungeonMeshSetDatabase
+UObject <|-- UDungeonTemporaryMeshSetDatabase
+UDungeonTemporaryMeshSetDatabase <|-- UDungeonAisleMeshSetDatabase
+FDungeonRoomMeshSet --* UDungeonTemporaryMeshSetDatabase
 FDungeonAisleMeshSet --* UDungeonAisleMeshSetDatabase
 
 

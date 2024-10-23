@@ -14,7 +14,7 @@ FDungeonAisleMeshSetDatabaseTypeActions::FDungeonAisleMeshSetDatabaseTypeActions
 
 FText FDungeonAisleMeshSetDatabaseTypeActions::GetName() const
 {
-	return FText::FromName(TEXT("Mesh set database (Aisle)"));
+	return FText::FromName(TEXT("Mesh set database (Aisle)[deprecated]"));
 }
 
 UClass* FDungeonAisleMeshSetDatabaseTypeActions::GetSupportedClass() const
