@@ -7,6 +7,7 @@ All Rights Reserved.
 #include "DungeonGeneratorEditorModule.h"
 #include "DungeonGeneratorStyle.h"
 #include "DungeonGeneratorCommands.h"
+#include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonAisleMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonRoomMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
@@ -72,6 +73,12 @@ void FDungeonGenerateEditorModule::StartupModule()
 	// Register UDungeonGenerateParameterTypeActions
 	{
 		TSharedPtr<IAssetTypeActions> actionType = MakeShareable(new UDungeonGenerateParameterTypeActions(gameAssetCategory));
+		AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
+	}
+
+	// Register FDungeonMeshSetDatabaseTypeActions
+	{
+		TSharedPtr<IAssetTypeActions> actionType = MakeShareable(new FDungeonMeshSetDatabaseTypeActions(gameAssetCategory));
 		AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
 	}
 

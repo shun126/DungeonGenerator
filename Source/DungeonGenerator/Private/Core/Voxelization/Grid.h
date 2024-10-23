@@ -324,6 +324,16 @@ namespace dungeon
 		*/
 		bool CanMergeAisle() const noexcept;
 
+		/**
+		 * 中二階通路か設定します
+		 */
+		void Catwalk(const bool enable) noexcept;
+
+		/**
+		 * 中二階通路か取得します
+		 */
+		bool IsCatwalk() const noexcept;
+
 	public:
 		/**
 		グリッドの種類の色を取得します
@@ -367,6 +377,7 @@ namespace dungeon
 			NoFloorMeshGeneration,
 			NoRoofMeshGeneration,
 			MergeAisle,
+			Catwalk,
 		};
 		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::MergeAisle) + 1;
 

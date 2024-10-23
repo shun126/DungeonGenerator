@@ -228,6 +228,17 @@ namespace dungeon
 		return mPack.IsAttributeEnabled(Attribute::MergeAisle);
 	}
 
+	inline void Grid::Catwalk(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::Catwalk, enable);
+	}
+
+	inline bool Grid::IsCatwalk() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::Catwalk);
+	}
+
+
 
 	inline Grid::Pack::Pack()
 	{

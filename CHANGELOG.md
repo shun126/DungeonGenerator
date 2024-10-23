@@ -3,6 +3,8 @@
 ## Unreleased-1.6.* (41)
 ### Changes
 ### 変更点
+* DungeonAisleMeshSetDatabaseとDungeonRoomMeshSetDatabaseを非推奨にしてDungeonMeshDatabaseを新設しました
+* いくつかの不具合を修正
 
 ## 20241017-1.6.11 (40)
 ### Changes

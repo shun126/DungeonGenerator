@@ -14,7 +14,7 @@ FDungeonRoomMeshSetDatabaseTypeActions::FDungeonRoomMeshSetDatabaseTypeActions(E
 
 FText FDungeonRoomMeshSetDatabaseTypeActions::GetName() const
 {
-	return FText::FromName(TEXT("Mesh set database (Room)"));
+	return FText::FromName(TEXT("Mesh set database (Room)[deprecated]"));
 }
 
 UClass* FDungeonRoomMeshSetDatabaseTypeActions::GetSupportedClass() const

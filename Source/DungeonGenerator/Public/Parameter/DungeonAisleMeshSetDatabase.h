@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "DungeonMeshSetDatabase.h"
+#include "DungeonTemporaryMeshSetDatabase.h"
 #include "DungeonAisleMeshSet.h"
 #include <CoreMinimal.h>
 #include <memory>
@@ -13,10 +13,13 @@ All Rights Reserved.
 
 /**
 Database of dungeon aisle mesh sets
+(DeprecatedProperty, Use DungeonRoomMeshSetDatabase instead.)
+
 ダンジョン通路のメッシュセットのデータベース
+(DungeonRoomMeshSetDatabaseを使用してください)
 */
 UCLASS()
-class DUNGEONGENERATOR_API UDungeonAisleMeshSetDatabase : public UDungeonMeshSetDatabase
+class DUNGEONGENERATOR_API UDungeonAisleMeshSetDatabase : public UDungeonTemporaryMeshSetDatabase
 {
 	GENERATED_BODY()
 
@@ -33,9 +36,9 @@ public:
 		}
 	}
 
-	// UDungeonMeshSetDatabase overrides
-	virtual const FDungeonMeshSet* AtImplement(const size_t index) const override;
-	virtual const FDungeonMeshSet* SelectImplement(const std::shared_ptr<dungeon::Random>& random) const override;
+	// UDungeonTemporaryMeshSetDatabase overrides
+	virtual const FDungeonTemporaryMeshSet* AtImplement(const size_t index) const override;
+	virtual const FDungeonTemporaryMeshSet* SelectImplement(const std::shared_ptr<dungeon::Random>& random) const override;
 
 #if WITH_EDITOR
 public:
@@ -50,6 +53,8 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	TArray<FDungeonAisleMeshSet> Parts;
+
+	friend class UDungeonMeshSetDatabase;
 };
 
 inline UDungeonAisleMeshSetDatabase::UDungeonAisleMeshSetDatabase(const FObjectInitializer& ObjectInitializer)
