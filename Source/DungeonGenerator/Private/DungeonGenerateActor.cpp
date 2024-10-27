@@ -58,7 +58,8 @@ void ADungeonGenerateActor::PostInitializeComponents()
 	// Calling the parent class
 	Super::PostInitializeComponents();
 
-	if (GetNetMode() != NM_Standalone)
+	//if (GetNetMode() != NM_Standalone)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		SetReplicates(true);
 		SetAutonomousProxy(true);
@@ -80,14 +81,6 @@ void ADungeonGenerateActor::BeginPlay()
 		*UEnum::GetValueAsString(GetRemoteRole())
 	);
 #endif
-}
-
-void ADungeonGenerateActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	DestroyImplementation();
-
-	// Calling the parent class
-	Super::EndPlay(EndPlayReason);
 }
 
 void ADungeonGenerateActor::Tick(float DeltaSeconds)
@@ -230,8 +223,6 @@ void ADungeonGenerateActor::SetInstancedMeshCullDistance(const double cullDistan
 /********** 生成と破棄 **********/
 void ADungeonGenerateActor::PreGenerateImplementation()
 {
-	DestroyImplementation();
-
 	if (!IsValid(DungeonGenerateParameter))
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("DungeonGenerateParameter is not set"));
@@ -247,6 +238,8 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("The actor's scale is not applied in the generated dungeon."));
 	}
+
+	Dispose(true);
 
 	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
 	{
@@ -305,34 +298,34 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 		);
 	}
 
-	if (Create(DungeonGenerateParameter, HasAuthority()))
-	{
-		if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
-			CommitAddInstance();
-
-		/*
-		List of PlayerStart, not including PlayerStartPIE.
-		PlayerStartの一覧。PlayerStartPIEは含まない。
-		*/
-		TArray<APlayerStart*> playerStart;
-		CollectPlayerStartExceptPlayerStartPIE(playerStart);
-		MovePlayerStart(playerStart);
-
-		// スタート部屋とゴール部屋の位置を記録
-		StartRoomLocation = GetStartLocation();
-		GoalRoomLocation = GetGoalLocation();
-
-		// 成功を通知
-		OnGenerationSuccess.Broadcast();
-	}
-	else
+	if (Create(DungeonGenerateParameter, HasAuthority()) == false)
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Failed to generate dungeon. Seed(%d)"), DungeonGenerateParameter->GetRandomSeed());
-		DestroyImplementation();
 
 		// 失敗を通知
 		OnGenerationFailure.Broadcast();
+
+		Dispose(false);
+		return;
 	}
+
+	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
+		CommitAddInstance();
+
+	/*
+	List of PlayerStart, not including PlayerStartPIE.
+	PlayerStartの一覧。PlayerStartPIEは含まない。
+	*/
+	TArray<APlayerStart*> playerStart;
+	CollectPlayerStartExceptPlayerStartPIE(playerStart);
+	MovePlayerStart(playerStart);
+
+	// スタート部屋とゴール部屋の位置を記録
+	StartRoomLocation = GetStartLocation();
+	GoalRoomLocation = GetGoalLocation();
+
+	// 成功を通知
+	OnGenerationSuccess.Broadcast();
 
 #if WITH_EDITOR
 	// Record dungeon-generated random numbers
@@ -365,10 +358,14 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 #endif
 }
 
-void ADungeonGenerateActor::DestroyImplementation()
+void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)
 {
-	ClearInstancedMeshComponents();
+	if (IsCreated())
+	{
+		ClearInstancedMeshComponents();
+	}
 
+	Super::Dispose(flushStreamLevels);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -399,7 +396,7 @@ void ADungeonGenerateActor::GenerateDungeonWithParameter(UDungeonGenerateParamet
 
 void ADungeonGenerateActor::DestroyDungeon()
 {
-	DestroyImplementation();
+	Dispose(false);
 }
 
 int32 ADungeonGenerateActor::FindFloorHeight(const float z) const

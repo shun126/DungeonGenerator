@@ -18,7 +18,7 @@ template<typename T>
 class DungeonComponentActivationSaver final
 {
 public:
-	DungeonComponentActivationSaver();
+	DungeonComponentActivationSaver() = default;
 	~DungeonComponentActivationSaver() = default;
 
 	/**
@@ -43,11 +43,6 @@ public:
 private:
 	TMap<TWeakObjectPtr<UActorComponent>, T> mActivations;
 };
-
-template<typename T>
-inline DungeonComponentActivationSaver<T>::DungeonComponentActivationSaver()
-{
-}
 
 template<typename T>
 inline void DungeonComponentActivationSaver<T>::Stash(const AActor* actor, const std::function<std::pair<bool, T>(UActorComponent*)>& function)
