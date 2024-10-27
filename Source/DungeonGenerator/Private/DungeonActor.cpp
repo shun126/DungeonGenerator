@@ -33,14 +33,3 @@ void ADungeonActor::DestroySpawnedActors(UWorld* world)
 	Super::DestroySpawnedActors(world);	
 }
 
-#if WITH_EDITOR
-void ADungeonActor::SyncLoadStreamLevels()
-{
-	Super::SyncLoadStreamLevels();
-}
-#endif
-
-void ADungeonActor::UnloadStreamLevels()
-{
-	Super::UnloadStreamLevels();
-}

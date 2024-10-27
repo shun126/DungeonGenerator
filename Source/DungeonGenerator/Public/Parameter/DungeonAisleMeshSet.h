@@ -24,7 +24,7 @@ public:
 	*/
 	const FDungeonMeshParts* SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
-		return FDungeonRoomMeshSet::SelectParts(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
+		return FDungeonAisleMeshSet::SelectParts(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
 	}
 
 	/**
@@ -33,13 +33,13 @@ public:
 	template<typename Function>
 	void EachSlopeParts(Function&& function) const
 	{
-		FDungeonRoomMeshSet::EachParts(SlopeParts, std::forward<Function>(function));
+		FDungeonAisleMeshSet::EachParts(SlopeParts, std::forward<Function>(function));
 	}
 
 #if WITH_EDITOR
 public:
 	// Debug
-	FString DumpToJson(const uint32 indent) const;
+	virtual FString DumpToJson(const uint32 indent) const override;
 #endif
 
 protected:
@@ -56,4 +56,6 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
 	TArray<FDungeonMeshParts> SlopeParts;
+
+	friend class UDungeonMeshSetDatabase;
 };

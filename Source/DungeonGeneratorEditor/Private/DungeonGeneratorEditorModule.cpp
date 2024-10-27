@@ -7,6 +7,7 @@ All Rights Reserved.
 #include "DungeonGeneratorEditorModule.h"
 #include "DungeonGeneratorStyle.h"
 #include "DungeonGeneratorCommands.h"
+#include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonAisleMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonRoomMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
@@ -72,6 +73,12 @@ void FDungeonGenerateEditorModule::StartupModule()
 	// Register UDungeonGenerateParameterTypeActions
 	{
 		TSharedPtr<IAssetTypeActions> actionType = MakeShareable(new UDungeonGenerateParameterTypeActions(gameAssetCategory));
+		AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
+	}
+
+	// Register FDungeonMeshSetDatabaseTypeActions
+	{
+		TSharedPtr<IAssetTypeActions> actionType = MakeShareable(new FDungeonMeshSetDatabaseTypeActions(gameAssetCategory));
 		AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
 	}
 
@@ -263,13 +270,7 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 		return FReply::Unhandled();
 	}
 
-
-	// Delete all generated actors
-	ADungeonActor::DestroySpawnedActors(world);
-	mDungeonActor.Reset();
-
-	// Update the world
-	world->FlushLevelStreaming();
+	DisposeDungeon(world, true);
 
 	// Get dungeon generation parameters
 	const UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get();
@@ -317,13 +318,28 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 
 FReply FDungeonGenerateEditorModule::OnClickedClearButton()
 {
-
-	// Delete all generated actors
-	ADungeonActor::DestroySpawnedActors(GetWorldFromGameViewport());
-	mDungeonActor.Reset();
+	DisposeDungeon(GetWorldFromGameViewport(), false);
 
 
 	return FReply::Handled();
+}
+
+void FDungeonGenerateEditorModule::DisposeDungeon(UWorld* world, const bool flushLevelStreaming)
+{
+
+	// Delete all generated actors
+	ADungeonActor::DestroySpawnedActors(world);
+	mDungeonActor.Reset();
+
+	// Delete all generated actors
+	ADungeonActor::DestroySpawnedActors(world);
+	mDungeonActor.Reset();
+
+	if (flushLevelStreaming)
+	{
+		// Update the world
+		world->FlushLevelStreaming();
+	}
 }
 
 

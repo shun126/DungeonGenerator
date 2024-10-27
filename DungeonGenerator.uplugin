@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
-	"Version": 40,
-	"VersionName": "1.6.11",
+	"Version": 41,
+	"VersionName": "1.6.12",
 	"FriendlyName": "Procedural Dungeon Generator",
-	"Description": "Procedural dungeon generator plugin. Easy generation of levels, mini-maps and missions.",
+	"Description": "Procedural 3d dungeon generator plugin. Easy generation of levels, mini-maps and missions.",
 	"Category": "Procedural",
 	"CreatedBy": "Narcis Software",
 	"CreatedByURL": "https://github.com/shun126/UE5-DungeonGeneratorDemo",

@@ -13,24 +13,24 @@ All Rights Reserved.
 #include "DungeonComponentActivatorComponent.generated.h"
 
 class ADungeonMainLevelScriptActor;
-class UDungeonPartiation;
+class UDungeonPartition;
 
 UENUM(Blueprintable)
 enum class EDungeonComponentActivateReason : uint8
 {
-	Partiation,
+	Partition,
 	Demo,
 	Custom
 };
 constexpr uint8_t DungeonComponentActivateReasonSize = 3;
 
 /**
-OnPartiationActivate will be called when the DungeonPartiation belonging to
+OnPartitionActivate will be called when the DungeonPartition belonging to
 the player approaches the vicinity of the player.
-OnPartiationInactivate is called when the DungeonPartiation moves away.
+OnPartitionInactivate is called when the DungeonPartition moves away.
 
-所属しているDungeonPartiationがプレイヤー周辺に近づいたらOnPartiationActivateが呼ばれます。
-離れたらOnPartiationInactivateが呼ばれます。
+所属しているDungeonPartitionがプレイヤー周辺に近づいたらOnPartitionActivateが呼ばれます。
+離れたらOnPartitionInactivateが呼ばれます。
 */
 UCLASS(ClassGroup = "DungeonGenerator", meta = (BlueprintSpawnableComponent))
 class DUNGEONGENERATOR_API UDungeonComponentActivatorComponent : public UActorComponent
@@ -85,23 +85,23 @@ public:
 
 protected:
 	/**
-	所属しているDungeonPartiationがプレイヤー周辺に近づいたら呼び出されます。
-	The DungeonPartiation will be called when it approaches the player's vicinity.
+	所属しているDungeonPartitionがプレイヤー周辺に近づいたら呼び出されます。
+	The DungeonPartition will be called when it approaches the player's vicinity.
 	*/
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnPartiationActivate();
+	void OnPartitionActivate();
 
 	/**
-	所属しているDungeonPartiationがプレイヤー周辺から離れたら呼び出されます。
-	It is called when the DungeonPartiation to which it belongs leaves the player's vicinity.
+	所属しているDungeonPartitionがプレイヤー周辺から離れたら呼び出されます。
+	It is called when the DungeonPartition to which it belongs leaves the player's vicinity.
 	*/
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnPartiationInactivate();
+	void OnPartitionInactivate();
 
 private:
 	void TickImplement(const FVector& location);
-	void CallPartiationActivate();
-	void CallPartiationInactivate();
+	void CallPartitionActivate();
+	void CallPartitionInactivate();
 
 	// Actor
 	void SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason, AActor* owner);
@@ -175,10 +175,10 @@ private:
 	std::bitset<DungeonComponentActivateReasonSize> mLogicEnabled = ~0;
 
 	TWeakObjectPtr<ADungeonMainLevelScriptActor> mDungeonLevelScriptActor;
-	TWeakObjectPtr<UDungeonPartiation> mLastDungeonPartiation;
+	TWeakObjectPtr<UDungeonPartition> mLastDungeonPartition;
 	FVector mLastLocation;
 
-	friend class UDungeonPartiation;
+	friend class UDungeonPartition;
 };
 
 inline bool UDungeonComponentActivatorComponent::IsEnableOwnerActorTickControl() const noexcept
