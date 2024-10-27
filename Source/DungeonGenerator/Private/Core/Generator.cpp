@@ -787,7 +787,7 @@ namespace dungeon
 			// 部屋のパーツ（役割）をリセットする
 			// TODO:MinimumSpanningTreeで統合できそう
 			room->SetParts(Room::Parts::Unidentified);
-			room->SetReservationNumber(0);
+			room->ResetReservationNumber();
 
 			// Room::GetGroundCenterリストを作成
 			// cppcheck-suppress [useStlAlgorithm]
@@ -1080,13 +1080,28 @@ namespace dungeon
 			if (room->GetParts() == Room::Parts::Goal && mGenerateParameter.IsGenerateGoalRoomReserved())
 				continue;
 
-			uint32_t width = room->GetWidth();
-			uint32_t depth = room->GetDepth();
 			// 部屋の最大サイズにあわせる
+			uint32_t width = room->GetWidth();
 			if (width > mGenerateParameter.GetMaxRoomWidth())
+			{
 				width = mGenerateParameter.GetMaxRoomWidth();
+				room->SetWidth(width);
+			}
+
+			uint32_t depth = room->GetDepth();
 			if (depth > mGenerateParameter.GetMaxRoomDepth())
+			{
 				depth = mGenerateParameter.GetMaxRoomDepth();
+				room->SetDepth(depth);
+			}
+
+			uint32_t height = room->GetHeight();
+			if (height > mGenerateParameter.GetMaxRoomHeight())
+			{
+				height = mGenerateParameter.GetMaxRoomHeight();
+				room->SetHeight(height);
+			}
+
 			// ドアに対して部屋が小さい場合は広げる
 			const uint32_t minimumArea = dungeon::math::Square<uint32_t>(room->GetGateCount());
 			const uint32_t requiredArea = std::max(2u, minimumArea);

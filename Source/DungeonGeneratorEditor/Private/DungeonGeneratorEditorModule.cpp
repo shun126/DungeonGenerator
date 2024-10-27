@@ -270,13 +270,7 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 		return FReply::Unhandled();
 	}
 
-
-	// Delete all generated actors
-	ADungeonActor::DestroySpawnedActors(world);
-	mDungeonActor.Reset();
-
-	// Update the world
-	world->FlushLevelStreaming();
+	DisposeDungeon(world, true);
 
 	// Get dungeon generation parameters
 	const UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get();
@@ -324,13 +318,28 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 
 FReply FDungeonGenerateEditorModule::OnClickedClearButton()
 {
-
-	// Delete all generated actors
-	ADungeonActor::DestroySpawnedActors(GetWorldFromGameViewport());
-	mDungeonActor.Reset();
+	DisposeDungeon(GetWorldFromGameViewport(), false);
 
 
 	return FReply::Handled();
+}
+
+void FDungeonGenerateEditorModule::DisposeDungeon(UWorld* world, const bool flushLevelStreaming)
+{
+
+	// Delete all generated actors
+	ADungeonActor::DestroySpawnedActors(world);
+	mDungeonActor.Reset();
+
+	// Delete all generated actors
+	ADungeonActor::DestroySpawnedActors(world);
+	mDungeonActor.Reset();
+
+	if (flushLevelStreaming)
+	{
+		// Update the world
+		world->FlushLevelStreaming();
+	}
 }
 
 

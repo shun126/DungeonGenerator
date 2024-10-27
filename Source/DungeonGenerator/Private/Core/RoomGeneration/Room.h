@@ -376,6 +376,7 @@ namespace dungeon
 		bool IsValidReservationNumber() const noexcept;
 		uint32_t GetReservationNumber() const noexcept;
 		void SetReservationNumber(const uint32_t reservationNumber) noexcept;
+		void ResetReservationNumber() noexcept;
 
 
 	private:

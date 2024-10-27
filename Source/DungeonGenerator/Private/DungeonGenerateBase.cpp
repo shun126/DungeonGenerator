@@ -35,13 +35,11 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include <Engine/Texture2D.h>
 #include <Kismet/GameplayStatics.h>
 #include <Misc/EngineVersionComparison.h>
-#include <Misc/Paths.h>
 #include <NavMesh/NavMeshBoundsVolume.h>
 #include <NavMesh/RecastNavMesh.h>
 
 #include <Components/BrushComponent.h>
 #include <Engine/Polys.h>
-#include <Engine/Texture2D.h>
 #include <UObject/Package.h>
 
 #include <algorithm>
@@ -70,7 +68,6 @@ namespace
 		return static_cast<uint8_t>(left) == static_cast<uint8_t>(right);
 	}
 }
-
 
 ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer)
 	: Super(initializer)
@@ -155,6 +152,14 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 	mOnAddWall = addWallStaticMeshEvent;
 	mOnAddRoof = addRoofStaticMeshEvent;
 	mOnAddPillar = addPillarStaticMeshEvent;
+}
+
+void ADungeonGenerateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Dispose(false);
+
+	// Calling the parent class
+	Super::EndPlay(EndPlayReason);
 }
 
 /*
@@ -309,8 +314,30 @@ void ADungeonGenerateBase::OnPostDungeonGeneration(const bool result)
 
 
 
+bool ADungeonGenerateBase::IsCreated() const noexcept
+{
+	return mCreated;
+}
 
+void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
+{
+	// 生成済みなら破棄する
+	if (mCreated == true)
+	{
 
+		// スポーン済みアクターを破棄
+		DestroySpawnedActors();
+
+		// ジェネレータを解放
+		mGenerator.reset();
+
+		// 生成したパラメータを解放
+		mParameter = nullptr;
+
+		// 生成済みフラグをリセットする
+		mCreated = false;
+	}
+}
 
 /*
 hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
@@ -318,6 +345,7 @@ hasAuthorityによって処理を分岐する場合は、乱数の同期が確�
 */
 bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
 {
+	check(mCreated == false);
 #if WITH_EDITOR
 	dungeon::CreateDebugDirectory();
 #endif
@@ -336,7 +364,6 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 	if (IsValid(parameter) == false)
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Set the dungeon generation parameters"));
-		Clear();
 		return false;
 	}
 
@@ -410,7 +437,6 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 	if (mGenerator == nullptr)
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("System initialization failed."));
-		Clear();
 		return false;
 	}
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
@@ -441,50 +467,49 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 		// デバッグに必要な情報（デバッグ生成パラメータ）を出力する
 		//mParameter->DumpToJson();
 #endif
-		Clear();
 		return false;
 	}
-	else
+
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+	// 通信同期用に現在の乱数の種を出力する
+	if (mGenerator)
 	{
-#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
-		// 通信同期用に現在の乱数の種を出力する
-		if (mGenerator)
-		{
-			uint32_t x, y, z, w;
-			generateParameter.GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("generation p0   : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
-				x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
-			);
-		}
-#endif
-
-		// メッシュの生成
-		{
-			RoomAndRoomSensorMap roomSensorCache;
-			CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
-			CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
-			CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
-			CreateImplement_Navigation(hasAuthority);
-		}
-
-
-#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
-		// 通信同期用に現在の乱数の種を出力する
-		if (mGenerator)
-		{
-			uint32_t x, y, z, w;
-			generateParameter.GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("generation end  : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
-				x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
-			);
-			GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("generation end  :       Local RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
-				x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
-			);
-		}
-#endif
-		return true;
+		uint32_t x, y, z, w;
+		generateParameter.GetRandom()->GetSeeds(x, y, z, w);
+		DUNGEON_GENERATOR_LOG(TEXT("generation p0   : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
+			x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
+		);
 	}
+#endif
+
+	// メッシュの生成
+	{
+		RoomAndRoomSensorMap roomSensorCache;
+		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
+		CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
+		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
+		CreateImplement_Navigation(hasAuthority);
+	}
+
+
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+	// 通信同期用に現在の乱数の種を出力する
+	if (mGenerator)
+	{
+		uint32_t x, y, z, w;
+		generateParameter.GetRandom()->GetSeeds(x, y, z, w);
+		DUNGEON_GENERATOR_LOG(TEXT("generation end  : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
+			x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
+		);
+		GetRandom()->GetSeeds(x, y, z, w);
+		DUNGEON_GENERATOR_LOG(TEXT("generation end  :       Local RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
+			x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
+		);
+	}
+#endif
+
+	mCreated = true;
+	return true;
 }
 
 /*
@@ -1506,19 +1531,6 @@ void ADungeonGenerateBase::FinishRoomSensorActorSpawning(ADungeonRoomSensorBase*
 		dungeonRoomSensor->FinishSpawning(FTransform::Identity, true);
 	}
 };
-
-void ADungeonGenerateBase::Clear()
-{
-
-	// スポーン済みアクターを破棄
-	DestroySpawnedActors();
-
-	// ジェネレータを解放
-	mGenerator.reset();
-
-	// 生成したパラメータを解放
-	mParameter = nullptr;
-}
 
 FTransform ADungeonGenerateBase::GetStartTransform() const
 {

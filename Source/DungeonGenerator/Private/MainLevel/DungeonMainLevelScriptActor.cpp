@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #include "MainLevel/DungeonMainLevelScriptActor.h"
-#include "MainLevel/DungeonPartiation.h"
+#include "MainLevel/DungeonPartition.h"
 #include "DungeonGenerateActor.h"
 #include "Core/Debug/Debug.h"
 #include <Engine/Level.h>
@@ -84,7 +84,7 @@ void ADungeonMainLevelScriptActor::BeginPlay()
 		DungeonPartitions.Reserve(mPartitionWidth * mPartitionDepth);
 		for (size_t i = 0; i < mPartitionWidth * mPartitionDepth; ++i)
 		{
-			DungeonPartitions.Add(NewObject<UDungeonPartiation>());
+			DungeonPartitions.Add(NewObject<UDungeonPartition>());
 		}
 	}
 	else
@@ -119,26 +119,16 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 		const UWorld* world = GetWorld();
 		if (IsValid(world))
 		{
-#if UE_VERSION_OLDER_THAN(5, 0, 0)
-			const int32 numberOfPlayers = world->GetNumPlayerControllers();
-#else
-			const int32 numberOfPlayers = UGameplayStatics::GetNumPlayerControllers(world);
-#endif
-			for (int32 i = 0; i < numberOfPlayers; ++i)
+			for (FConstControllerIterator iterator = GetWorld()->GetControllerIterator(); iterator; ++iterator)
 			{
-				const APawn* playerPawn = UGameplayStatics::GetPlayerPawn(world, i);
-				if (!IsValid(playerPawn))
-					continue;
-
-				const FVector& playerLocation = playerPawn->GetActorLocation();
-#if 0
-				const FVector extents(2 * 100);
-				Mark(FBox(playerLocation - extents, playerLocation + extents));
-#else
-				Mark(FBox(playerLocation - mActiveExtents, playerLocation + mActiveExtents));
-#endif
+				const AController* controller = iterator->Get();
+				const APawn* playerPawn = controller->GetPawn();
+				if (IsValid(playerPawn))
+				{
+					const FVector& playerLocation = playerPawn->GetActorLocation();
+					Mark(FBox(playerLocation - mActiveExtents, playerLocation + mActiveExtents));
+				}
 			}
-
 		}
 
 		End(deltaSeconds);
@@ -162,9 +152,9 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 /*
 点で検索しているので、巨大なアクターは誤判定に注意してください。
 */
-UDungeonPartiation* ADungeonMainLevelScriptActor::Find(const FVector& worldLocation) const noexcept
+UDungeonPartition* ADungeonMainLevelScriptActor::Find(const FVector& worldLocation) const noexcept
 {
-	//if (DungeonPartiations.IsEmpty())
+	//if (DungeonPartitions.IsEmpty())
 	if (DungeonPartitions.Num() <= 0)
 		return nullptr;
 	const FVector localLocation = (worldLocation - mBounding.Min) / PartitionSize;
@@ -178,10 +168,10 @@ UDungeonPartiation* ADungeonMainLevelScriptActor::Find(const FVector& worldLocat
 
 void ADungeonMainLevelScriptActor::Begin()
 {
-	for (UDungeonPartiation* partiations : DungeonPartitions)
+	for (UDungeonPartition* partition : DungeonPartitions)
 	{
-		if (IsValid(partiations))
-			partiations->Unmark();
+		if (IsValid(partition))
+			partition->Unmark();
 	}
 }
 
@@ -200,54 +190,54 @@ void ADungeonMainLevelScriptActor::Mark(const FBox& activeBounds)
 		for (size_t x = static_cast<size_t>(sx); x < iex; ++x)
 		{
 			const size_t index = mPartitionWidth * y + x;
-			UDungeonPartiation* partiation = DungeonPartitions[index];
-			if (IsValid(partiation))
-				partiation->Mark();
+			UDungeonPartition* partition = DungeonPartitions[index];
+			if (IsValid(partition))
+				partition->Mark();
 		}
 	}
 }
 
 void ADungeonMainLevelScriptActor::End(const float deltaSeconds)
 {
-	for (UDungeonPartiation* partiations : DungeonPartitions)
+	for (UDungeonPartition* partition : DungeonPartitions)
 	{
-		if (!IsValid(partiations))
+		if (!IsValid(partition))
 			continue;
 
-		if (partiations->IsMarked())
+		if (partition->IsMarked())
 		{
-			partiations->CallPartiationActivate();
+			partition->CallPartitionActivate();
 		}
-		else if (partiations->UpdateActivateRemainTimer(deltaSeconds))
+		else if (partition->UpdateActivateRemainTimer(deltaSeconds))
 		{
-			partiations->CallPartiationActivate();
+			partition->CallPartitionActivate();
 		}
 		else
 		{
-			partiations->CallPartiationInactivate();
+			partition->CallPartitionInactivate();
 		}
 	}
 }
 
 void ADungeonMainLevelScriptActor::ForceActivate()
 {
-	for (UDungeonPartiation* partiations : DungeonPartitions)
+	for (UDungeonPartition* partition : DungeonPartitions)
 	{
-		if (!IsValid(partiations))
+		if (!IsValid(partition))
 			continue;
 
-		partiations->CallPartiationActivate();
+		partition->CallPartitionActivate();
 	}
 }
 
 void ADungeonMainLevelScriptActor::ForceInactivate()
 {
-	for (UDungeonPartiation* partiations : DungeonPartitions)
+	for (UDungeonPartition* partition : DungeonPartitions)
 	{
-		if (!IsValid(partiations))
+		if (!IsValid(partition))
 			continue;
 
-		partiations->CallPartiationInactivate();
+		partition->CallPartitionInactivate();
 	}
 }
 

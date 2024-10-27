@@ -38,6 +38,8 @@ private:
 	FReply OnClickedGenerateButton();
 	FReply OnClickedClearButton();
 
+	void DisposeDungeon(UWorld* world, const bool flushLevelStreaming);
+
 
 	static UWorld* GetWorldFromGameViewport();
 
