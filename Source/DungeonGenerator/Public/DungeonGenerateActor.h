@@ -6,9 +6,6 @@ All Rights Reserved.
 
 #pragma once
 #include "DungeonGenerateBase.h"
-#include "Mission/DungeonRoomParts.h"
-#include "Mission/DungeonRoomProps.h"
-#include <memory>
 #include "DungeonGenerateActor.generated.h"
 
 class CDungeonGeneratorCore;
@@ -128,7 +125,6 @@ public:
 	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 #if WITH_EDITOR
 	virtual bool ShouldTickIfViewportsOnly() const override;
@@ -138,6 +134,7 @@ private:
 	// ADungeonGenerateBase overrides
 	virtual void OnPreDungeonGeneration() override;
 	virtual void OnPostDungeonGeneration(const bool result) override;
+	virtual void Dispose(const bool flushStreamLevels) override;
 
 private:
 	void CreateInstancedMeshComponent(UStaticMesh* staticMesh);
@@ -146,7 +143,6 @@ private:
 	void CommitAddInstance();
 
 	void PreGenerateImplementation();
-	void DestroyImplementation();
 
 protected:
 	/**

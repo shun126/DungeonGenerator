@@ -6,6 +6,7 @@ All Rights Reserved.
 
 #pragma once
 #include "Parameter/DungeonMeshParts.h"
+#include "Parameter/DungeonMeshPartsWithDirection.h"
 #include "Parameter/DungeonRandomActorParts.h"
 #include "Parameter/DungeonPartsSelectionMethod.h"
 #include <CoreMinimal.h>
@@ -34,6 +35,75 @@ struct DUNGEONGENERATOR_API FDungeonMeshSet
 
 public:
 	virtual ~FDungeonMeshSet() = default;
+
+	const FDungeonMeshPartsWithDirection* SelectFloorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+	{
+		return SelectParts(gridIndex, grid, random, FloorParts, FloorPartsSelectionMethod);
+	}
+
+	template<typename Function>
+	void EachFloorParts(Function&& function) const
+	{
+		EachParts(FloorParts, std::forward<Function>(function));
+	}
+
+	const FDungeonMeshParts* SelectWallParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+	{
+		return SelectParts(gridIndex, grid, random, WallParts, WallPartsSelectionMethod);
+	}
+
+	template<typename Function>
+	void EachWallParts(Function&& function) const
+	{
+		EachParts(WallParts, std::forward<Function>(function));
+	}
+
+	const FDungeonMeshPartsWithDirection* SelectRoofParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+	{
+		return SelectParts(gridIndex, grid, random, RoofParts, RoofPartsSelectionMethod);
+	}
+
+	template<typename Function>
+	void EachRoofParts(Function&& function) const
+	{
+		EachParts(RoofParts, std::forward<Function>(function));
+	}
+
+	/**
+	スロープパーツを選択します
+	*/
+	const FDungeonMeshParts* SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+	{
+		return SelectParts(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
+	}
+
+	/**
+	スロープパーツを巡回します
+	*/
+	template<typename Function>
+	void EachSlopeParts(Function&& function) const
+	{
+		EachParts(SlopeParts, std::forward<Function>(function));
+	}
+
+	/**
+	中二階通路パーツを選択します
+	*/
+	const FDungeonMeshParts* SelectCatwalkParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+	{
+		return SelectParts(gridIndex, grid, random, CatwalkParts, CatwalkPartsSelectionMethod);
+	}
+
+	/**
+	中二階通路パーツを巡回します
+	*/
+	template<typename Function>
+	void EachCatwalkParts(Function&& function) const
+	{
+		EachParts(CatwalkParts, std::forward<Function>(function));
+	}
+
+
 
 	static FDungeonRandomActorParts* SelectRandomActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonRandomActorParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod);
 
@@ -64,7 +134,82 @@ public:
 	virtual FString DumpToJson(const uint32 indent) const;
 #endif
 
+protected:
+	/**
+	How to select floor parts
+	床のパーツを選択する方法
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
+	EDungeonPartsSelectionMethod FloorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/**
+	Specify the floor parts. Multiple parts can be set and will be selected based on FloorPartsSelectionMethod.
+	床のパーツを指定して下さい。パーツは複数設定する事ができ、FloorPartsSelectionMethodを元に選択されます。
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
+	TArray<FDungeonMeshPartsWithDirection> FloorParts;
+
+	/**
+	How to select wall parts
+	壁のパーツを選択する方法
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
+	EDungeonPartsSelectionMethod WallPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/**
+	Specify the wall parts. Multiple parts can be set and will be selected based on WallPartsSelectionMethod.
+	壁のパーツを指定して下さい。パーツは複数設定する事ができ、WallPartsSelectionMethodを元に選択されます。
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
+	TArray<FDungeonMeshParts> WallParts;
+
+	/**
+	How to select roof parts
+	天井のパーツを選択する方法
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
+	EDungeonPartsSelectionMethod RoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/**
+	Specify the roof parts. Multiple parts can be set and will be selected based on RoofPartsSelectionMethod.
+	天井のパーツを指定して下さい。パーツは複数設定する事ができ、RoofPartsSelectionMethodを元に選択されます。
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
+	TArray<FDungeonMeshPartsWithDirection> RoofParts;
+
+	/**
+	How to generate parts for stairs and ramps
+	階段やスロープの部品を生成する方法
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
+	EDungeonPartsSelectionMethod SloopPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/**
+	Specify parts for stairs and ramps. Multiple parts can be set and will be selected based on the SloopPartsSelectionMethod.
+	階段やスロープのパーツを指定して下さい。パーツは複数設定する事ができ、SloopPartsSelectionMethodを元に選択されます。
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
+	TArray<FDungeonMeshParts> SlopeParts;
+
+	/**
+	How to select catwalk parts
+	中二階通路のパーツを選択する方法
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite)
+	EDungeonPartsSelectionMethod CatwalkPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/**
+	Specify the catwalk parts. Multiple parts can be set and will be selected based on CatwalkPartsSelectionMethod.
+	中二階通路のパーツを指定して下さい。パーツは複数設定する事ができ、CatwalkPartsSelectionMethodを元に選択されます。
+	*/
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite)
+	TArray<FDungeonMeshPartsWithDirection> CatwalkParts;
+
 private:
 	static int32 SelectDungeonMeshPartsIndex(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod);
 	static FDungeonActorParts* SelectActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonActorParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod);
+
+
+	// TODO: 移行完了後に削除して下さい
+	friend class UDungeonMeshSetDatabase;
 };

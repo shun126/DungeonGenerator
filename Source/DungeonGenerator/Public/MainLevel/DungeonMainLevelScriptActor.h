@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "DungeonPartiation.h"
+#include "DungeonPartition.h"
 #include <CoreMinimal.h>
 #include <Containers/Array.h>
 #include <Engine/LevelScriptActor.h>
@@ -66,10 +66,10 @@ public:
 
 public:
 	/**
-	Find DungeonPartiation by world location
-	ワールド座標からDungeonPartiationを検索します
+	Find DungeonPartition by world location
+	ワールド座標からDungeonPartitionを検索します
 	*/
-	UDungeonPartiation* Find(const FVector& worldLocation) const noexcept;
+	UDungeonPartition* Find(const FVector& worldLocation) const noexcept;
 
 	/**
 	Get AABB Extents to determine if it is around the player
@@ -111,7 +111,7 @@ protected:
 	レベル内のダンジョンパーティエーション
 	*/
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UDungeonPartiation>> DungeonPartitions;
+	TArray<TObjectPtr<UDungeonPartition>> DungeonPartitions;
 
 	/**
 	Distance to divide the world

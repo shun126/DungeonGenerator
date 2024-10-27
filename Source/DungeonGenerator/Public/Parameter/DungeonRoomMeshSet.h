@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "Parameter/DungeonMeshSet.h"
+#include "Parameter/DungeonTemporaryMeshSet.h"
 #include "Parameter/DungeonMeshParts.h"
 #include "Parameter/DungeonMeshPartsWithDirection.h"
 #include "Parameter/DungeonPartsSelectionMethod.h"
@@ -18,7 +18,7 @@ Dungeon room mesh set
 ダンジョン部屋のメッシュセット
 */
 USTRUCT(Blueprintable, BlueprintType)
-struct DUNGEONGENERATOR_API FDungeonRoomMeshSet : public FDungeonMeshSet
+struct DUNGEONGENERATOR_API FDungeonRoomMeshSet : public FDungeonTemporaryMeshSet
 {
 	GENERATED_BODY()
 
@@ -104,4 +104,6 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
 	TArray<FDungeonMeshPartsWithDirection> RoofParts;
+
+	friend class UDungeonMeshSetDatabase;
 };

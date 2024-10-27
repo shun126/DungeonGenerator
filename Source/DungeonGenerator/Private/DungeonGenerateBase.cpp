@@ -35,13 +35,11 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include <Engine/Texture2D.h>
 #include <Kismet/GameplayStatics.h>
 #include <Misc/EngineVersionComparison.h>
-#include <Misc/Paths.h>
 #include <NavMesh/NavMeshBoundsVolume.h>
 #include <NavMesh/RecastNavMesh.h>
 
 #include <Components/BrushComponent.h>
 #include <Engine/Polys.h>
-#include <Engine/Texture2D.h>
 #include <UObject/Package.h>
 
 #include <algorithm>
@@ -70,7 +68,6 @@ namespace
 		return static_cast<uint8_t>(left) == static_cast<uint8_t>(right);
 	}
 }
-
 
 ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer)
 	: Super(initializer)
@@ -155,6 +152,14 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 	mOnAddWall = addWallStaticMeshEvent;
 	mOnAddRoof = addRoofStaticMeshEvent;
 	mOnAddPillar = addPillarStaticMeshEvent;
+}
+
+void ADungeonGenerateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Dispose(false);
+
+	// Calling the parent class
+	Super::EndPlay(EndPlayReason);
 }
 
 /*
@@ -309,8 +314,30 @@ void ADungeonGenerateBase::OnPostDungeonGeneration(const bool result)
 
 
 
+bool ADungeonGenerateBase::IsCreated() const noexcept
+{
+	return mCreated;
+}
 
+void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
+{
+	// 生成済みなら破棄する
+	if (mCreated == true)
+	{
 
+		// スポーン済みアクターを破棄
+		DestroySpawnedActors();
+
+		// ジェネレータを解放
+		mGenerator.reset();
+
+		// 生成したパラメータを解放
+		mParameter = nullptr;
+
+		// 生成済みフラグをリセットする
+		mCreated = false;
+	}
+}
 
 /*
 hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
@@ -318,6 +345,7 @@ hasAuthorityによって処理を分岐する場合は、乱数の同期が確�
 */
 bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
 {
+	check(mCreated == false);
 #if WITH_EDITOR
 	dungeon::CreateDebugDirectory();
 #endif
@@ -336,7 +364,6 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 	if (IsValid(parameter) == false)
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Set the dungeon generation parameters"));
-		Clear();
 		return false;
 	}
 
@@ -410,7 +437,6 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 	if (mGenerator == nullptr)
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("System initialization failed."));
-		Clear();
 		return false;
 	}
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
@@ -441,50 +467,49 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 		// デバッグに必要な情報（デバッグ生成パラメータ）を出力する
 		//mParameter->DumpToJson();
 #endif
-		Clear();
 		return false;
 	}
-	else
+
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+	// 通信同期用に現在の乱数の種を出力する
+	if (mGenerator)
 	{
-#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
-		// 通信同期用に現在の乱数の種を出力する
-		if (mGenerator)
-		{
-			uint32_t x, y, z, w;
-			generateParameter.GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("generation p0   : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
-				x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
-			);
-		}
-#endif
-
-		// メッシュの生成
-		{
-			RoomAndRoomSensorMap roomSensorCache;
-			CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
-			CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
-			CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
-			CreateImplement_Navigation(hasAuthority);
-		}
-
-
-#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
-		// 通信同期用に現在の乱数の種を出力する
-		if (mGenerator)
-		{
-			uint32_t x, y, z, w;
-			generateParameter.GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("generation end  : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
-				x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
-			);
-			GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("generation end  :       Local RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
-				x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
-			);
-		}
-#endif
-		return true;
+		uint32_t x, y, z, w;
+		generateParameter.GetRandom()->GetSeeds(x, y, z, w);
+		DUNGEON_GENERATOR_LOG(TEXT("generation p0   : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
+			x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
+		);
 	}
+#endif
+
+	// メッシュの生成
+	{
+		RoomAndRoomSensorMap roomSensorCache;
+		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
+		CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
+		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
+		CreateImplement_Navigation(hasAuthority);
+	}
+
+
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+	// 通信同期用に現在の乱数の種を出力する
+	if (mGenerator)
+	{
+		uint32_t x, y, z, w;
+		generateParameter.GetRandom()->GetSeeds(x, y, z, w);
+		DUNGEON_GENERATOR_LOG(TEXT("generation end  : Synchronize RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
+			x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
+		);
+		GetRandom()->GetSeeds(x, y, z, w);
+		DUNGEON_GENERATOR_LOG(TEXT("generation end  :       Local RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x, CRC32(voxel)=%x, %s"),
+			x, y, z, w, mCrc32AtCreation, mGenerator->CalculateCRC32(~0), hasAuthority ? TEXT("Server") : TEXT("Client")
+		);
+	}
+#endif
+
+	mCreated = true;
+	return true;
 }
 
 /*
@@ -627,27 +652,68 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 		スロープのメッシュを生成
 		メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
 		*/
-		if (const FDungeonMeshParts* parts = mParameter->SelectSlopeParts(cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
+		//if (cp.mGrid.IsKindOfRoomType())
+		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
+			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
+		else
+			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		if (dungeonMeshSetDatabase)
 		{
-			mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+			if (const FDungeonMeshParts* parts = mParameter->SelectSlopeParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			{
+				mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+			}
+		}
+		else
+		{
+			if (const FDungeonMeshParts* parts = mParameter->SelectSlopeParts(cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			{
+				mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+			}
 		}
 	}
 	else if (mOnAddFloor && cp.mGrid.CanBuildFloor(true))
 	{
+		/*
+		床のメッシュを生成
+		メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
+		*/
 		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
 		//if (cp.mGrid.IsKindOfRoomType())
 		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-			dungeonMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
 		else
-			dungeonMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
-
-		if (const FDungeonMeshParts* parts = mParameter->SelectFloorParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		if (dungeonMeshSetDatabase)
 		{
-			/*
-			床のメッシュを生成
-			メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
-			*/
-			mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+			if (cp.mGrid.IsCatwalk())
+			{
+				if (const FDungeonMeshParts* parts = mParameter->SelectCatwalkParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+				{
+					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+				}
+			}
+			else
+			{
+				if (const FDungeonMeshParts* parts = mParameter->SelectFloorParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+				{
+					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+				}
+			}
+		}
+		else
+		{
+			const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
+			if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
+				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+			else
+				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
+
+			if (const FDungeonMeshParts* parts = mParameter->SelectFloorParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			{
+				mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+			}
 		}
 	}
 }
@@ -664,14 +730,28 @@ void ADungeonGenerateBase::CreateImplement_AddWall(const CreateImplementParamete
 	壁のメッシュを生成
 	メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面（北側の壁）になっています。
 	*/
+	const FDungeonMeshParts* parts;
 	const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
 	//if (cp.mGrid.IsKindOfRoomType())
 	if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-		dungeonMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+		dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
 	else
-		dungeonMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
+		dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+	if (dungeonMeshSetDatabase)
+	{
+		parts = mParameter->SelectWallParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
+	}
+	else
+	{
+		const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
+		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
+			dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+		else
+			dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
+		parts = mParameter->SelectWallParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
+	}
 
-	if (const FDungeonMeshParts* parts = mParameter->SelectWallParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+	if (parts)
 	{
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z), dungeon::Direction::North, mParameter->IsMergeRooms()))
 		{
@@ -721,21 +801,45 @@ void ADungeonGenerateBase::CreateImplement_AddRoof(const CreateImplementParamete
 		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
 		//if (cp.mGrid.IsKindOfRoomType())
 		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-			dungeonMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
 		else
-			dungeonMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
-
-		/*
-		壁のメッシュを生成
-		メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
-		*/
-		const FTransform transform(cp.mCenterPosition);
-		if (const FDungeonMeshPartsWithDirection* parts = mParameter->SelectRoofParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		if (dungeonMeshSetDatabase)
 		{
-			mOnAddRoof(
-				parts->StaticMesh,
-				parts->CalculateWorldTransform(GetSynchronizedRandom(), transform)
-			);
+			/*
+			壁のメッシュを生成
+			メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
+			*/
+			const FTransform transform(cp.mCenterPosition);
+			if (const FDungeonMeshPartsWithDirection* parts = mParameter->SelectRoofParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			{
+				mOnAddRoof(
+					parts->StaticMesh,
+					parts->CalculateWorldTransform(GetSynchronizedRandom(), transform)
+				);
+			}
+		}
+		else
+		{
+			const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
+			//if (cp.mGrid.IsKindOfRoomType())
+			if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
+				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+			else
+				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
+
+			/*
+			壁のメッシュを生成
+			メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
+			*/
+			const FTransform transform(cp.mCenterPosition);
+			if (const FDungeonMeshPartsWithDirection* parts = mParameter->SelectRoofParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			{
+				mOnAddRoof(
+					parts->StaticMesh,
+					parts->CalculateWorldTransform(GetSynchronizedRandom(), transform)
+				);
+			}
 		}
 	}
 }
@@ -948,7 +1052,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 		bool spawnTorchActor = false;
 		switch (mParameter->GetFrequencyOfTorchlightGeneration())
 		{
-		case EFrequencyOfGeneration::Normaly:
+		case EFrequencyOfGeneration::Normally:
 			spawnTorchActor = true;
 			break;
 		case EFrequencyOfGeneration::Sometime:
@@ -1427,19 +1531,6 @@ void ADungeonGenerateBase::FinishRoomSensorActorSpawning(ADungeonRoomSensorBase*
 		dungeonRoomSensor->FinishSpawning(FTransform::Identity, true);
 	}
 };
-
-void ADungeonGenerateBase::Clear()
-{
-
-	// スポーン済みアクターを破棄
-	DestroySpawnedActors();
-
-	// ジェネレータを解放
-	mGenerator.reset();
-
-	// 生成したパラメータを解放
-	mParameter = nullptr;
-}
 
 FTransform ADungeonGenerateBase::GetStartTransform() const
 {

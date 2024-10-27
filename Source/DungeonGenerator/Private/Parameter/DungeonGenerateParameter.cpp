@@ -39,6 +39,8 @@ UDungeonGenerateParameter* UDungeonGenerateParameter::GenerateRandomParameter(co
 		parameter->VerticalGridSize = sourceParameter->VerticalGridSize;
 		parameter->DungeonRoomPartsDatabase = sourceParameter->DungeonRoomPartsDatabase;
 		parameter->DungeonAislePartsDatabase = sourceParameter->DungeonAislePartsDatabase;
+		parameter->DungeonRoomMeshPartsDatabase = sourceParameter->DungeonRoomMeshPartsDatabase;
+		parameter->DungeonAisleMeshPartsDatabase = sourceParameter->DungeonAisleMeshPartsDatabase;
 		parameter->PillarPartsSelectionMethod = sourceParameter->PillarPartsSelectionMethod;
 		parameter->PillarParts = sourceParameter->PillarParts;
 		parameter->TorchPartsSelectionMethod = sourceParameter->TorchPartsSelectionMethod;
@@ -250,6 +252,20 @@ void UDungeonGenerateParameter::DumpToJson() const
 			jsonString += DungeonAislePartsDatabase->DumpToJson(2) + TEXT("\n");
 			jsonString += TEXT(" }");
 		}
+		if (IsValid(DungeonRoomMeshPartsDatabase))
+		{
+			jsonString += TEXT(",\n");
+			jsonString += TEXT(" \"DungeonRoomMeshPartsDatabase\":{\n");
+			jsonString += DungeonRoomMeshPartsDatabase->DumpToJson(2) + TEXT("\n");
+			jsonString += TEXT(" }");
+		}
+		if (IsValid(DungeonAisleMeshPartsDatabase))
+		{
+			jsonString += TEXT(",\n");
+			jsonString += TEXT(" \"DungeonAisleMeshPartsDatabase\":{\n");
+			jsonString += DungeonAisleMeshPartsDatabase->DumpToJson(2) + TEXT("\n");
+			jsonString += TEXT(" }");
+		}
 		jsonString += TEXT(",\n");
 		jsonString += TEXT(" \"PillarParts\":{\n");
 		jsonString += TEXT("  \"PillarPartsSelectionMethod\":\"") + UEnum::GetValueAsString(PillarPartsSelectionMethod) + TEXT("\",\n");
@@ -315,11 +331,11 @@ FString UDungeonGenerateParameter::GetJsonDefaultDirectory() const
 
 
 
-const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const UDungeonMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
 	if (IsValid(dungeonPartsDatabase))
 	{
-		if (const FDungeonMeshSet* parts = dungeonPartsDatabase->AtImplement(grid.GetIdentifier()))
+		if (const FDungeonTemporaryMeshSet* parts = dungeonPartsDatabase->AtImplement(grid.GetIdentifier()))
 		{
 			const FDungeonRoomMeshSet* roomMeshSet = static_cast<const FDungeonRoomMeshSet*>(parts);
 			if (const FDungeonMeshPartsWithDirection* result = roomMeshSet->SelectFloorParts(gridIndex, grid, random))
@@ -329,11 +345,11 @@ const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorPart
 	return nullptr;
 }
 
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallParts(const UDungeonMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
 	if (IsValid(dungeonPartsDatabase))
 	{
-		if (const FDungeonMeshSet* parts = dungeonPartsDatabase->AtImplement(grid.GetIdentifier()))
+		if (const FDungeonTemporaryMeshSet* parts = dungeonPartsDatabase->AtImplement(grid.GetIdentifier()))
 		{
 			const FDungeonRoomMeshSet* roomMeshSet = static_cast<const FDungeonRoomMeshSet*>(parts);
 			if (const FDungeonMeshParts* result = roomMeshSet->SelectWallParts(gridIndex, grid, random))
@@ -343,11 +359,11 @@ const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallParts(const UDunge
 	return nullptr;
 }
 
-const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoofParts(const UDungeonMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoofParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
 	if (IsValid(dungeonPartsDatabase))
 	{
-		if (const FDungeonMeshSet* parts = dungeonPartsDatabase->AtImplement(grid.GetIdentifier()))
+		if (const FDungeonTemporaryMeshSet* parts = dungeonPartsDatabase->AtImplement(grid.GetIdentifier()))
 		{
 			const FDungeonRoomMeshSet* roomMeshSet = static_cast<const FDungeonRoomMeshSet*>(parts);
 			if (const FDungeonMeshPartsWithDirection* result = roomMeshSet->SelectRoofParts(gridIndex, grid, random))
@@ -361,7 +377,7 @@ const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const size_
 {
 	if (IsValid(DungeonAislePartsDatabase))
 	{
-		if (const FDungeonMeshSet* parts = DungeonAislePartsDatabase->AtImplement(grid.GetIdentifier()))
+		if (const FDungeonTemporaryMeshSet* parts = DungeonAislePartsDatabase->AtImplement(grid.GetIdentifier()))
 		{
 			const FDungeonAisleMeshSet* aisleMeshSet = static_cast<const FDungeonAisleMeshSet*>(parts);
 			if (const FDungeonMeshParts* result = aisleMeshSet->SelectSlopeParts(gridIndex, grid, random))
@@ -370,6 +386,60 @@ const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const size_
 	}
 	return nullptr;
 }
+
+
+
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
+{
+	if (IsValid(dungeonMeshSetDatabase))
+	{
+		if (const auto* parts = dungeonMeshSetDatabase->AtImplement(grid.GetIdentifier()))
+			return parts->SelectFloorParts(gridIndex, grid, random);
+	}
+	return nullptr;
+}
+
+const FDungeonMeshParts* UDungeonGenerateParameter::SelectCatwalkParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
+{
+	if (IsValid(dungeonMeshSetDatabase))
+	{
+		if (const auto* parts = dungeonMeshSetDatabase->AtImplement(grid.GetIdentifier()))
+			return parts->SelectCatwalkParts(gridIndex, grid, random);
+	}
+	return nullptr;
+}
+
+const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
+{
+	if (IsValid(dungeonMeshSetDatabase))
+	{
+		if (const auto* parts = dungeonMeshSetDatabase->AtImplement(grid.GetIdentifier()))
+			return parts->SelectWallParts(gridIndex, grid, random);
+	}
+	return nullptr;
+}
+
+const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoofParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
+{
+	if (IsValid(dungeonMeshSetDatabase))
+	{
+		if (const auto* parts = dungeonMeshSetDatabase->AtImplement(grid.GetIdentifier()))
+			return parts->SelectRoofParts(gridIndex, grid, random);
+	}
+	return nullptr;
+}
+
+const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
+{
+	if (IsValid(dungeonMeshSetDatabase))
+	{
+		if (const auto* parts = dungeonMeshSetDatabase->AtImplement(grid.GetIdentifier()))
+			return parts->SelectSlopeParts(gridIndex, grid, random);
+	}
+	return nullptr;
+}
+
+
 
 const FDungeonMeshParts* UDungeonGenerateParameter::SelectPillarParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 {
@@ -390,7 +460,15 @@ const FDungeonDoorActorParts* UDungeonGenerateParameter::SelectDoorParts(const s
 
 void UDungeonGenerateParameter::EachRoomFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
 {
-	if (IsValid(DungeonRoomPartsDatabase))
+	if (IsValid(DungeonRoomMeshPartsDatabase))
+	{
+		DungeonRoomMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachFloorParts(function);
+			}
+		);
+	}
+	else if (IsValid(DungeonRoomPartsDatabase))
 	{
 		DungeonRoomPartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
 			{
@@ -402,7 +480,15 @@ void UDungeonGenerateParameter::EachRoomFloorParts(const std::function<void(cons
 
 void UDungeonGenerateParameter::EachAisleFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
 {
-	if (IsValid(DungeonAislePartsDatabase))
+	if (IsValid(DungeonAisleMeshPartsDatabase))
+	{
+		DungeonAisleMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachFloorParts(function);
+			}
+		);
+	}
+	else if (IsValid(DungeonAislePartsDatabase))
 	{
 		DungeonAislePartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
 			{
@@ -414,7 +500,15 @@ void UDungeonGenerateParameter::EachAisleFloorParts(const std::function<void(con
 
 void UDungeonGenerateParameter::EachRoomWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const
 {
-	if (IsValid(DungeonRoomPartsDatabase))
+	if (IsValid(DungeonRoomMeshPartsDatabase))
+	{
+		DungeonRoomMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachWallParts(function);
+			}
+		);
+	}
+	else if (IsValid(DungeonRoomPartsDatabase))
 	{
 		DungeonRoomPartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
 			{
@@ -426,7 +520,15 @@ void UDungeonGenerateParameter::EachRoomWallParts(const std::function<void(const
 
 void UDungeonGenerateParameter::EachAisleWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const
 {
-	if (IsValid(DungeonAislePartsDatabase))
+	if (IsValid(DungeonAisleMeshPartsDatabase))
+	{
+		DungeonAisleMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachWallParts(function);
+			}
+		);
+	}
+	else if (IsValid(DungeonAislePartsDatabase))
 	{
 		DungeonAislePartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
 			{
@@ -436,9 +538,69 @@ void UDungeonGenerateParameter::EachAisleWallParts(const std::function<void(cons
 	}
 }
 
-void UDungeonGenerateParameter::EachSlopeParts(const std::function<void(const FDungeonMeshParts&)>& function) const
+void UDungeonGenerateParameter::EachRoomRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
 {
-	if (IsValid(DungeonAislePartsDatabase))
+	if (IsValid(DungeonRoomMeshPartsDatabase))
+	{
+		DungeonRoomMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachRoofParts(function);
+			}
+		);
+	}
+	else if (IsValid(DungeonRoomPartsDatabase))
+	{
+		DungeonRoomPartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
+			{
+				parts.EachRoofParts(function);
+			}
+		);
+	}
+}
+
+void UDungeonGenerateParameter::EachAisleRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
+{
+	if (IsValid(DungeonAisleMeshPartsDatabase))
+	{
+		DungeonAisleMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachRoofParts(function);
+			}
+		);
+	}
+	else if (IsValid(DungeonAislePartsDatabase))
+	{
+		DungeonAislePartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
+			{
+				parts.EachRoofParts(function);
+			}
+		);
+	}
+}
+
+void UDungeonGenerateParameter::EachRoomSlopeParts(const std::function<void(const FDungeonMeshParts&)>& function) const
+{
+	if (IsValid(DungeonRoomMeshPartsDatabase))
+	{
+		DungeonRoomMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachSlopeParts(function);
+			}
+		);
+	}
+}
+
+void UDungeonGenerateParameter::EachAisleSlopeParts(const std::function<void(const FDungeonMeshParts&)>& function) const
+{
+	if (IsValid(DungeonAisleMeshPartsDatabase))
+	{
+		DungeonAisleMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
+			{
+				parts.EachSlopeParts(function);
+			}
+		);
+	}
+	else if (IsValid(DungeonAislePartsDatabase))
 	{
 		DungeonAislePartsDatabase->Each([&function](const FDungeonAisleMeshSet& parts)
 			{
@@ -451,28 +613,4 @@ void UDungeonGenerateParameter::EachSlopeParts(const std::function<void(const FD
 void UDungeonGenerateParameter::EachPillarParts(const std::function<void(const FDungeonMeshParts&)>& function) const
 {
 	FDungeonRoomMeshSet::EachParts(PillarParts, function);
-}
-
-void UDungeonGenerateParameter::EachRoomRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
-{
-	if (IsValid(DungeonRoomPartsDatabase))
-	{
-		DungeonRoomPartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
-			{
-				parts.EachRoofParts(function);
-			}
-		);
-	}
-}
-
-void UDungeonGenerateParameter::EachAisleRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
-{
-	if (IsValid(DungeonAislePartsDatabase))
-	{
-		DungeonAislePartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
-			{
-				parts.EachRoofParts(function);
-			}
-		);
-	}
 }

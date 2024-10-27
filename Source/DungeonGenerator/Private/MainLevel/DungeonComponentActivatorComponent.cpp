@@ -82,28 +82,28 @@ void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 		if (levelScript->IsEnableLoadControl())
 		{
 #endif
-			// 新しい座標のUDungeonPartiationを検索
-			UDungeonPartiation* currentDungeonPartiation = levelScript->Find(location);
+			// 新しい座標のUDungeonPartitionを検索
+			UDungeonPartition* currentDungeonPartition = levelScript->Find(location);
 
-			// 古い座標のUDungeonPartiationを検索
-			UDungeonPartiation* lastDungeonPartiation = mLastDungeonPartiation.Get();
+			// 古い座標のUDungeonPartitionを検索
+			UDungeonPartition* lastDungeonPartition = mLastDungeonPartition.Get();
 
-			// UDungeonPartiationを移動した？
-			if (lastDungeonPartiation != currentDungeonPartiation)
+			// UDungeonPartitionを移動した？
+			if (lastDungeonPartition != currentDungeonPartition)
 			{
-				// 古いUDungeonPartiationから退出
-				if (IsValid(lastDungeonPartiation))
+				// 古いUDungeonPartitionから退出
+				if (IsValid(lastDungeonPartition))
 				{
-					lastDungeonPartiation->UnregisterActivatorComponent(this);
+					lastDungeonPartition->UnregisterActivatorComponent(this);
 				}
 
-				// 新しいUDungeonPartiationに登録
-				if (IsValid(currentDungeonPartiation))
+				// 新しいUDungeonPartitionに登録
+				if (IsValid(currentDungeonPartition))
 				{
-					currentDungeonPartiation->RegisterActivatorComponent(this);
+					currentDungeonPartition->RegisterActivatorComponent(this);
 				}
 
-				mLastDungeonPartiation = currentDungeonPartiation;
+				mLastDungeonPartition = currentDungeonPartition;
 			}
 #if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 		}
@@ -111,51 +111,51 @@ void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 	}
 }
 
-void UDungeonComponentActivatorComponent::CallPartiationActivate()
+void UDungeonComponentActivatorComponent::CallPartitionActivate()
 {
-	OnPartiationActivate();
+	OnPartitionActivate();
 
 	if (EnableComponentActivationControl)
-		LoadComponentActivation(EDungeonComponentActivateReason::Partiation);
+		LoadComponentActivation(EDungeonComponentActivateReason::Partition);
 
 	if (EnableCollisionEnableControl)
-		LoadCollisionEnable(EDungeonComponentActivateReason::Partiation);
+		LoadCollisionEnable(EDungeonComponentActivateReason::Partition);
 
 	if (EnableComponentVisibilityControl)
-		LoadVisibility(EDungeonComponentActivateReason::Partiation);
+		LoadVisibility(EDungeonComponentActivateReason::Partition);
 
 	if (EnableOwnerActorTickControl)
-		LoadActorTickEnable(EDungeonComponentActivateReason::Partiation);
+		LoadActorTickEnable(EDungeonComponentActivateReason::Partition);
 
 	if (EnableOwnerActorAiControl)
-		LoadAiLogic(EDungeonComponentActivateReason::Partiation, TEXT("DungeonActivatorComponent"));
+		LoadAiLogic(EDungeonComponentActivateReason::Partition, TEXT("DungeonActivatorComponent"));
 }
 
-void UDungeonComponentActivatorComponent::CallPartiationInactivate()
+void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 {
 	AActor* owner = GetOwner();
 	if (IsValid(owner))
 	{
 		if (EnableComponentActivationControl)
-			SaveAndDisableComponentActivation(EDungeonComponentActivateReason::Partiation, owner);
+			SaveAndDisableComponentActivation(EDungeonComponentActivateReason::Partition, owner);
 
 		if (EnableCollisionEnableControl)
-			SaveAndDisableCollisionEnable(EDungeonComponentActivateReason::Partiation, owner);
+			SaveAndDisableCollisionEnable(EDungeonComponentActivateReason::Partition, owner);
 
 		if (EnableComponentVisibilityControl)
-			SaveAndDisableVisibility(EDungeonComponentActivateReason::Partiation, owner);
+			SaveAndDisableVisibility(EDungeonComponentActivateReason::Partition, owner);
 
 		if (EnableOwnerActorTickControl)
-			SaveAndDisableActorTickEnable(EDungeonComponentActivateReason::Partiation, owner);
+			SaveAndDisableActorTickEnable(EDungeonComponentActivateReason::Partition, owner);
 
 		if (EnableOwnerActorAiControl)
 		{
 			if (APawn* ownerPawn = Cast<APawn>(GetOwner()))
-				SaveAndStopAiLogic(EDungeonComponentActivateReason::Partiation, TEXT("DungeonActivatorComponent"), ownerPawn);
+				SaveAndStopAiLogic(EDungeonComponentActivateReason::Partition, TEXT("DungeonActivatorComponent"), ownerPawn);
 		}
 	}
 
-	OnPartiationInactivate();
+	OnPartitionInactivate();
 }
 
 // Actor

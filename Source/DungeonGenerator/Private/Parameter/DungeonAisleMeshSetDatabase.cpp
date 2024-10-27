@@ -11,13 +11,13 @@ All Rights Reserved.
 #include "Helper/DungeonDebugUtility.h"
 #endif
 
-const FDungeonMeshSet* UDungeonAisleMeshSetDatabase::AtImplement(const size_t index) const
+const FDungeonTemporaryMeshSet* UDungeonAisleMeshSetDatabase::AtImplement(const size_t index) const
 {
 	const int32 size = Parts.Num();
 	return (size > 0) ? &Parts[index % size] : nullptr;
 }
 
-const FDungeonMeshSet* UDungeonAisleMeshSetDatabase::SelectImplement(const std::shared_ptr<dungeon::Random>& random) const
+const FDungeonTemporaryMeshSet* UDungeonAisleMeshSetDatabase::SelectImplement(const std::shared_ptr<dungeon::Random>& random) const
 {
 	const int32 size = Parts.Num();
 	if (size <= 0)

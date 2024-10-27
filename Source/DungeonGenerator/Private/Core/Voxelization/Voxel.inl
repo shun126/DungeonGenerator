@@ -106,6 +106,11 @@ namespace dungeon
 		return mGrids.get()[index];
 	}
 
+	inline void Voxel::Set(const FIntVector& location, const Grid& grid) const noexcept
+	{
+		Set(location.X, location.Y, location.Z, grid);
+	}
+
 	inline Grid& Voxel::operator[](const size_t index) noexcept
 	{
 		check(index < static_cast<size_t>(mWidth) * mDepth * mHeight);

@@ -239,4 +239,9 @@ namespace dungeon
 	{
 		mReservationNumber = reservationNumber;
 	}
+
+	inline void Room::ResetReservationNumber() noexcept
+	{
+		SetReservationNumber(0);
+	}
 }

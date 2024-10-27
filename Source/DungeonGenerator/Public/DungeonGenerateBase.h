@@ -15,7 +15,6 @@ All Rights Reserved.
 #include <EngineUtils.h>
 #include <Containers/Array.h>
 
-#include <algorithm>
 #include <functional>
 #include <list>
 #include <memory>
@@ -83,10 +82,17 @@ public:
 	bool Create(const UDungeonGenerateParameter* parameter, const bool hasAuthority);
 
 	/**
-	Clear added terrain and objects
-	*/
-	void Clear();
+	 * ダンジョンを生成済みか取得します
+	 * @return trueなら生成済み
+	 */
+	bool IsCreated() const noexcept;
 
+	/**
+	Dispose dungeon
+	*/
+	virtual void Dispose(const bool flushStreamLevels);
+
+public:
 	/**
 	Get start position
 	@return		Coordinates of start position
@@ -269,6 +275,10 @@ private:
 #endif
 
 	////////////////////////////////////////////////////////////////////////////
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	////////////////////////////////////////////////////////////////////////////
 	// member variables
 	// Vegetation
 protected:
@@ -290,8 +300,10 @@ private:
 	// 生成時のCRC32
 	mutable uint32_t mCrc32AtCreation = ~0;
 
+	// 生成済みフラグ
+	bool mCreated = false;
+
 	// friend class
-	//friend class FDungeonGenerateEditorModule;
 };
 
 inline const FName& ADungeonGenerateBase::GetDungeonGeneratorTag()

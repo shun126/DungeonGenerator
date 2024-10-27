@@ -141,7 +141,17 @@ namespace dungeon
 		if (mValid == false)
 			return;
 
-		// グリッドを生成
+		// 中二階グリッド属性のみ設定
+		static_assert(Offsets.empty() == false);
+		if (Offsets[0].mZ > 0)
+		{
+			const FIntVector location = mLocation + FIntVector(Offsets[0].mX, 0, Offsets[0].mZ);
+			auto grid = voxel->Get(location);
+			grid.Catwalk(true);
+			voxel->Set(location, grid);
+		}
+
+		// 中二階グリッドを生成
 		for (size_t i = 1; i < Offsets.size(); ++i)
 		{
 			const auto& offset = Offsets[i];
@@ -205,6 +215,8 @@ namespace dungeon
 			auto grid = voxel->Get(ox, oy, oz);
 			grid.SetType(offset.mGridType);
 			grid.SetDirection(direction);
+			if (offset.mZ > 0)
+				grid.Catwalk(true);
 			voxel->Set(ox, oy, oz, grid);
 		}
 	}
