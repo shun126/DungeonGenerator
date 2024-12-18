@@ -282,7 +282,7 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 	}
 
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP
-	const FVector origin = FVector(-10000, 20000, 30000);
+	const FVector origin = FVector(-3000, 2000, 1000);
 #else
 	const FVector& origin = FVector::ZeroVector;
 #endif

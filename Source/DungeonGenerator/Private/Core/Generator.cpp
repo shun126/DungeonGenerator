@@ -1358,6 +1358,7 @@ namespace dungeon
 			{
 				bool complete = false;
 
+				// 室内にスロープが生成できて、終了門が開始門よりも高い位置にある？
 				if (mGenerateParameter.IsGenerateSlopeInRoom() == true && start.Z < goal.Z)
 				{
 					RoomStructureGenerator roomStructureGenerator;

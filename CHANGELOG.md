@@ -1,8 +1,22 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (42)
+## Unreleased-1.6.* (43)
 ### Changes
 ### 変更点
+
+## Unreleased-1.6.13 (42)
+### Changes
+* Support for Unreal Engine 5.5.1
+* Fixed an issue where the starting position would be incorrect in rooms with 2 grids or less
+* Fixed an issue where vegetation in the center of the room was appearing on the roof
+* Added direction for Catwalk floors
+* Fixed several bugs
+### 変更点
+* Unreal Engine 5.5.1対応
+* ２グリッド以下の部屋で開始位置が不正になる問題を修正
+* 部屋の中心の植生が屋根に出ていた問題を修正
+* Catwalkの床の方向を追加
+* いくつかの不具合を修正
 
 ## 20241027-1.6.12 (41)
 ### Changes

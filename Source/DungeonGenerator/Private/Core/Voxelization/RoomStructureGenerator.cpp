@@ -8,6 +8,7 @@ All Rights Reserved.
 
 #include "RoomStructureGenerator.h"
 #include "Voxel.h"
+#include "../Debug/Debug.h"
 #include "../RoomGeneration/Room.h"
 
 namespace dungeon
@@ -68,6 +69,7 @@ namespace dungeon
 		std::vector<EffectiveDirection> pass;
 		if (room->GetWidth() >= 4)
 		{
+			// 東西方向
 			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 1, 0) == true)
 				pass.emplace_back(EffectiveDirection::HorizontalNortheast);
 			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), -1, 0) == true)
@@ -79,6 +81,7 @@ namespace dungeon
 		}
 		if (room->GetDepth() >= 4)
 		{
+			// 南北方向
 			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1) == true)
 				pass.emplace_back(EffectiveDirection::VerticalNortheast);
 			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1) == true)
@@ -148,6 +151,44 @@ namespace dungeon
 			const FIntVector location = mLocation + FIntVector(Offsets[0].mX, 0, Offsets[0].mZ);
 			auto grid = voxel->Get(location);
 			grid.Catwalk(true);
+
+			Direction catwalkDirection;
+			switch (mEffectiveDirection)
+			{
+			case EffectiveDirection::HorizontalNortheast:
+				catwalkDirection.Set(Direction::North);
+				break;
+
+			case EffectiveDirection::HorizontalNorthwest:
+				catwalkDirection.Set(Direction::North);
+				break;
+
+			case EffectiveDirection::HorizontalSouthwest:
+				catwalkDirection.Set(Direction::South);
+				break;
+
+			case EffectiveDirection::HorizontalSoutheast:
+				catwalkDirection.Set(Direction::South);
+				break;
+
+			case EffectiveDirection::VerticalNortheast:
+				catwalkDirection.Set(Direction::West);
+				break;
+
+			case EffectiveDirection::VerticalNorthwest:
+				catwalkDirection.Set(Direction::East);
+				break;
+
+			case EffectiveDirection::VerticalSouthwest:
+				catwalkDirection.Set(Direction::East);
+				break;
+
+			case EffectiveDirection::VerticalSoutheast:
+				catwalkDirection.Set(Direction::West);
+				break;
+			}
+			grid.SetCatwalkDirection(catwalkDirection);
+
 			voxel->Set(location, grid);
 		}
 
@@ -156,6 +197,7 @@ namespace dungeon
 		{
 			const auto& offset = Offsets[i];
 			Direction direction;
+			Direction catwalkDirection;
 			int32 ox, oy;
 			switch (mEffectiveDirection)
 			{
@@ -163,58 +205,68 @@ namespace dungeon
 				ox = mLocation.X - offset.mX;
 				oy = mLocation.Y;
 				direction.Set(Direction::East);
+				catwalkDirection.Set(Direction::North);
 				break;
 
 			case EffectiveDirection::HorizontalNorthwest:
 				ox = mLocation.X + offset.mX;
 				oy = mLocation.Y;
 				direction.Set(Direction::West);
+				catwalkDirection.Set(Direction::North);
 				break;
 
 			case EffectiveDirection::HorizontalSouthwest:
 				ox = mLocation.X + offset.mX;
 				oy = mLocation.Y;
 				direction.Set(Direction::West);
+				catwalkDirection.Set(Direction::South);
 				break;
 
 			case EffectiveDirection::HorizontalSoutheast:
 				ox = mLocation.X - offset.mX;
 				oy = mLocation.Y;
 				direction.Set(Direction::East);
+				catwalkDirection.Set(Direction::South);
 				break;
 
 			case EffectiveDirection::VerticalNortheast:
 				ox = mLocation.X;
 				oy = mLocation.Y + offset.mX;
 				direction.Set(Direction::North);
+				catwalkDirection.Set(Direction::West);
 				break;
 
 			case EffectiveDirection::VerticalNorthwest:
 				ox = mLocation.X;
 				oy = mLocation.Y + offset.mX;
 				direction.Set(Direction::North);
+				catwalkDirection.Set(Direction::East);
 				break;
 
 			case EffectiveDirection::VerticalSouthwest:
 				ox = mLocation.X;
 				oy = mLocation.Y - offset.mX;
 				direction.Set(Direction::South);
+				catwalkDirection.Set(Direction::East);
 				break;
 
 			case EffectiveDirection::VerticalSoutheast:
 				ox = mLocation.X;
 				oy = mLocation.Y - offset.mX;
 				direction.Set(Direction::South);
+				catwalkDirection.Set(Direction::West);
 				break;
 
 			default:
-				return;
+				DUNGEON_GENERATOR_ERROR(TEXT("An incorrect orientation was detected on the slope in the room, so cancel the generation of this slope"));
+				continue;
 			}
 
 			const int32 oz = mLocation.Z + offset.mZ;
 			auto grid = voxel->Get(ox, oy, oz);
 			grid.SetType(offset.mGridType);
 			grid.SetDirection(direction);
+			grid.SetCatwalkDirection(catwalkDirection);
 			if (offset.mZ > 0)
 				grid.Catwalk(true);
 			voxel->Set(ox, oy, oz, grid);

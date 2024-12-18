@@ -327,7 +327,7 @@ protected:
 	部屋のメッシュパーツデータベース
 	(DungeonRoomMeshPartsDatabaseを使用してください)
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts", DisplayName = "Dungeon Room Parts Database (Deprecated)", meta = (DeprecatedProperty, DeprecationMessage = "Use DungeonRoomMeshPartsDatabase instead."))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Deprecated", DisplayName = "Dungeon Room Parts Database (Deprecated)", meta = (DeprecatedProperty, DeprecationMessage = "Use DungeonRoomMeshPartsDatabase instead."))
 	TObjectPtr<UDungeonRoomMeshSetDatabase> DungeonRoomPartsDatabase;
 
 	/**
@@ -337,7 +337,7 @@ protected:
 	通路のメッシュパーツデータベース
 	(DungeonAisleMeshPartsDatabaseを使用してください)
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts", DisplayName = "Dungeon Aisle Parts Database (Deprecated)", meta = (DeprecatedProperty, DeprecationMessage = "Use DungeonAisleMeshPartsDatabase instead."))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Deprecated", DisplayName = "Dungeon Aisle Parts Database (Deprecated)", meta = (DeprecatedProperty, DeprecationMessage = "Use DungeonAisleMeshPartsDatabase instead."))
 	TObjectPtr<UDungeonAisleMeshSetDatabase> DungeonAislePartsDatabase;
 
 	/**

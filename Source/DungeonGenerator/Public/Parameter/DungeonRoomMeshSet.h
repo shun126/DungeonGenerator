@@ -74,35 +74,35 @@ protected:
 	Specify the floor parts. Multiple parts can be set and will be selected based on FloorPartsSelectionMethod.
 	床のパーツを指定して下さい。パーツは複数設定する事ができ、FloorPartsSelectionMethodを元に選択されます。
 	*/
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Floor")
 	TArray<FDungeonMeshPartsWithDirection> FloorParts;
 
 	/**
 	How to select wall parts
 	壁のパーツを選択する方法
 	*/
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Wall")
 	EDungeonPartsSelectionMethod WallPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
 	Specify the wall parts. Multiple parts can be set and will be selected based on WallPartsSelectionMethod.
 	壁のパーツを指定して下さい。パーツは複数設定する事ができ、WallPartsSelectionMethodを元に選択されます。
 	*/
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Wall")
 	TArray<FDungeonMeshParts> WallParts;
 
 	/**
 	How to select roof parts
 	天井のパーツを選択する方法
 	*/
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Roof")
 	EDungeonPartsSelectionMethod RoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
 	Specify the roof parts. Multiple parts can be set and will be selected based on RoofPartsSelectionMethod.
 	天井のパーツを指定して下さい。パーツは複数設定する事ができ、RoofPartsSelectionMethodを元に選択されます。
 	*/
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Roof")
 	TArray<FDungeonMeshPartsWithDirection> RoofParts;
 
 	friend class UDungeonMeshSetDatabase;

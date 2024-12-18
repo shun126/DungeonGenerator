@@ -488,6 +488,7 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
 		CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
 		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
+		CreateImplement_AddWall();
 		CreateImplement_Navigation(hasAuthority);
 	}
 
@@ -518,7 +519,7 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
 例えばリプリケートするアクターはサーバー側でのみ実行されるため乱数の同期ずれが発生します。
 */
-void ADungeonGenerateBase::CreateImplement_AddTerrain(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const
+void ADungeonGenerateBase::CreateImplement_AddTerrain(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority)
 {
 	check(IsValid(mParameter));
 
@@ -537,6 +538,8 @@ void ADungeonGenerateBase::CreateImplement_AddTerrain(RoomAndRoomSensorMap& room
 		);
 	}
 #endif
+
+	mReservedWallInfo.clear();
 
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
@@ -582,14 +585,13 @@ void ADungeonGenerateBase::CreateImplement_AddTerrain(RoomAndRoomSensorMap& room
 					CreateImplement_AddFloorAndSlope(createImplementParameter);
 					END_STOPWATCH(floorAndSlopeStopwatch);
 				}
-
+#if 1
 				// Generate wall mesh
 				{
 					BEGIN_STOPWATCH();
-					CreateImplement_AddWall(createImplementParameter);
+					CreateImplement_ReserveWall(createImplementParameter);
 					END_STOPWATCH(wallStopwatch);
 				}
-
 				// Generate mesh for pillars and torches
 				{
 					BEGIN_STOPWATCH();
@@ -603,7 +605,7 @@ void ADungeonGenerateBase::CreateImplement_AddTerrain(RoomAndRoomSensorMap& room
 					CreateImplement_AddDoor(createImplementParameter, dungeonRoomSensorBase, hasAuthority);
 					END_STOPWATCH(doorStopwatch);
 				}
-
+#endif
 				// Generate roof mesh
 				{
 					BEGIN_STOPWATCH();
@@ -691,7 +693,7 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 			{
 				if (const FDungeonMeshParts* parts = mParameter->SelectCatwalkParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
 				{
-					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
+					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetCatwalkDirection()));
 				}
 			}
 			else
@@ -721,11 +723,8 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 /*
 壁はレプリケーションする必要が無いのでサーバーとクライアント両方でアクターをスポーンする。
 */
-void ADungeonGenerateBase::CreateImplement_AddWall(const CreateImplementParameter& cp) const
+void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementParameter& cp)
 {
-	if (mOnAddWall == nullptr)
-		return;
-
 	/*
 	壁のメッシュを生成
 	メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面（北側の壁）になっています。
@@ -758,7 +757,7 @@ void ADungeonGenerateBase::CreateImplement_AddWall(const CreateImplementParamete
 			// 北側の壁
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.Y -= cp.mGridHalfSize.Y;
-			mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 0.f));
+			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 0.f));
 
 		}
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z), dungeon::Direction::South, mParameter->IsMergeRooms()))
@@ -766,7 +765,7 @@ void ADungeonGenerateBase::CreateImplement_AddWall(const CreateImplementParamete
 			// 南側の壁
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.Y += cp.mGridHalfSize.Y;
-			mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 180.f));
+			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 180.f));
 
 		}
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::East, mParameter->IsMergeRooms()))
@@ -774,7 +773,7 @@ void ADungeonGenerateBase::CreateImplement_AddWall(const CreateImplementParamete
 			// 東側の壁
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.X += cp.mGridHalfSize.X;
-			mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 90.f));
+			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 90.f));
 
 		}
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::West, mParameter->IsMergeRooms()))
@@ -782,9 +781,21 @@ void ADungeonGenerateBase::CreateImplement_AddWall(const CreateImplementParamete
 			// 西側の壁
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.X -= cp.mGridHalfSize.X;
-			mOnAddWall(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, -90.f));
+			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, -90.f));
 
 		}
+	}
+}
+
+void ADungeonGenerateBase::CreateImplement_AddWall()
+{
+	if (mOnAddWall)
+	{
+		for (const auto& reservedWallInfo : mReservedWallInfo)
+		{
+			mOnAddWall(reservedWallInfo.mStaticMesh, reservedWallInfo.mTransform);
+		}
+		mReservedWallInfo.clear();
 	}
 }
 
@@ -1359,7 +1370,9 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 		return;
 
 	// Calculate the position to shift APlayerStart
-	const double placementRadius = mParameter->GetGridSize().HorizontalSize;
+	const double halfHorizontalSize = mParameter->GetGridSize().HorizontalSize / 2;
+	const double halfVerticalSize = mParameter->GetGridSize().VerticalSize / 2;
+	const double placementRadius = halfHorizontalSize;
 	const double placementAngle = (3.1415926535897932384626433832795 * 2.) / static_cast<double>(startPoints.Num());
 
 	for (int32 index = 0; index < startPoints.Num(); ++index)
@@ -1386,8 +1399,8 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 
 				// Grounding the APlayerStart
 				FHitResult hitResult;
-				const FVector startLocation = location + FVector(0, 0, mParameter->GetGridSize().VerticalSize);
-				const FVector endLocation = location - FVector(0, 0, mParameter->GetGridSize().VerticalSize);
+				const FVector startLocation = location + FVector(0, 0, halfVerticalSize);
+				const FVector endLocation = location - FVector(0, 0, halfVerticalSize);
 				if (playerStart->GetWorld()->LineTraceSingleByChannel(hitResult, startLocation, endLocation, ECollisionChannel::ECC_Pawn))
 				{
 					location = hitResult.ImpactPoint;
@@ -1400,7 +1413,12 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 				collisionShape.SetCapsule(cylinderRadius, cylinderHalfHeight);
 				if (playerStart->GetWorld()->OverlapBlockingTestByChannel(location, playerStart->GetActorQuat(), ECollisionChannel::ECC_Pawn, collisionShape))
 				{
-					DUNGEON_GENERATOR_ERROR(TEXT("PlayerStart(%s) is in contact with something"), *playerStart->GetName());
+					DUNGEON_GENERATOR_ERROR(TEXT("PlayerStart(%s: %f, %f, %f) is in contact with something")
+						, *playerStart->GetName()
+						, location.X
+						, location.Y
+						, location.Z
+					);
 				}
 #endif
 			}
@@ -1409,7 +1427,7 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 		}
 		else
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("Set RootComponent of PlayerStart(%s)"), *playerStart->GetName());
+			DUNGEON_GENERATOR_ERROR(TEXT("PlayerStart's RootComponent was not set and could not be moved (%s)"), *playerStart->GetName());
 		}
 	}
 }
