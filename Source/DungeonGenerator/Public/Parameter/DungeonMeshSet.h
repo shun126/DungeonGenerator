@@ -203,7 +203,7 @@ protected:
 	中二階通路のパーツを指定して下さい。パーツは複数設定する事ができ、CatwalkPartsSelectionMethodを元に選択されます。
 	*/
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite)
-	TArray<FDungeonMeshPartsWithDirection> CatwalkParts;
+	TArray<FDungeonMeshParts> CatwalkParts;
 
 private:
 	static int32 SelectDungeonMeshPartsIndex(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod);

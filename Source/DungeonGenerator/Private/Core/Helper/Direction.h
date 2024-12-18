@@ -146,6 +146,13 @@ namespace dungeon
 		*/
 		static Direction CreateFromRandom(const std::shared_ptr<Random>& random) noexcept;
 
+#if WITH_EDITOR
+		/**
+		方向名を取得します
+		*/
+		const FString& GetName() const noexcept;
+#endif
+
 	private:
 		Index mIndex;
 	};

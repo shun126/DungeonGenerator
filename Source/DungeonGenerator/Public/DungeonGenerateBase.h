@@ -19,6 +19,7 @@ All Rights Reserved.
 #include <list>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include "DungeonGenerateBase.generated.h"
 
@@ -196,9 +197,20 @@ private:
 		const FVector& mGridHalfSize;
 		const FVector& mCenterPosition;
 	};
-	void CreateImplement_AddTerrain(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const;
+	struct ReservedWallInfo final
+	{
+		UStaticMesh* mStaticMesh;
+		FTransform mTransform;
+
+		ReservedWallInfo(UStaticMesh* staticMesh, const FTransform& transform)
+			: mStaticMesh(staticMesh)
+			, mTransform(transform)
+		{}
+	};
+	void CreateImplement_AddTerrain(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority);
 	void CreateImplement_AddFloorAndSlope(const CreateImplementParameter& cp) const;
-	void CreateImplement_AddWall(const CreateImplementParameter& cp) const;
+	void CreateImplement_ReserveWall(const CreateImplementParameter& cp);
+	void CreateImplement_AddWall();
 	void CreateImplement_AddRoof(const CreateImplementParameter& cp) const;
 	void CreateImplement_AddDoor(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const;
 	bool CanAddDoor(const ADungeonRoomSensorBase* dungeonRoomSensorBase, const FIntVector& location, const dungeon::Grid& grid) const;
@@ -296,6 +308,8 @@ private:
 	AddStaticMeshEvent mOnAddRoof;
 	AddPillarStaticMeshEvent mOnAddPillar;
 
+	std::vector<ReservedWallInfo> mReservedWallInfo;
+	
 
 	// 生成時のCRC32
 	mutable uint32_t mCrc32AtCreation = ~0;

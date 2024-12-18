@@ -117,6 +117,16 @@ namespace dungeon
 		mPack.SetDirection(direction);
 	}
 
+	inline Direction Grid::GetCatwalkDirection() const noexcept
+	{
+		return mPack.GetCatwalkDirection();
+	}
+
+	inline void Grid::SetCatwalkDirection(const Direction direction) noexcept
+	{
+		mPack.SetCatwalkDirection(direction);
+	}
+
 	inline Grid::Props Grid::GetProps() const noexcept
 	{
 		return mPack.GetProps();
@@ -249,29 +259,44 @@ namespace dungeon
 
 	inline Direction Grid::Pack::GetDirection() const noexcept
 	{
-		constexpr ValueType count = BitCount(DirectionSize);
 		constexpr ValueType shift = 0;
+		constexpr ValueType count = BitCount(DirectionSize);
 		constexpr ValueType mask = Mask(count, shift);
-		return Direction(static_cast<Direction::Index>(GetValue<int16_t>(0, mask)));
+		return Direction(static_cast<Direction::Index>(GetValue<int16_t>(shift, mask)));
 	}
 	inline void Grid::Pack::SetDirection(const Direction direction) noexcept
 	{
-		constexpr ValueType count = BitCount(DirectionSize);
 		constexpr ValueType shift = 0;
+		constexpr ValueType count = BitCount(DirectionSize);
 		constexpr ValueType mask = ~Mask(count, shift);
-		SetValue<int16_t>(0, mask, static_cast<ValueType>(direction.Get()));
+		SetValue<int16_t>(shift, mask, static_cast<ValueType>(direction.Get()));
+	}
+
+	inline Direction Grid::Pack::GetCatwalkDirection() const noexcept
+	{
+		constexpr ValueType shift = BitCount(DirectionSize);
+		constexpr ValueType count = BitCount(DirectionSize);
+		constexpr ValueType mask = Mask(count, shift);
+		return Direction(static_cast<Direction::Index>(GetValue<int16_t>(shift, mask)));
+	}
+	inline void Grid::Pack::SetCatwalkDirection(const Direction direction) noexcept
+	{
+		constexpr ValueType shift = BitCount(DirectionSize);
+		constexpr ValueType count = BitCount(DirectionSize);
+		constexpr ValueType mask = ~Mask(count, shift);
+		SetValue<int16_t>(shift, mask, static_cast<ValueType>(direction.Get()));
 	}
 
 	inline Grid::Type Grid::Pack::GetType() const noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2;
 		constexpr ValueType count = BitCount(TypeSize);
 		constexpr ValueType mask = Mask(count, shift);
 		return GetValue<Type>(shift, mask);
 	}
 	inline void Grid::Pack::SetType(const Type type) noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2;
 		constexpr ValueType count = BitCount(TypeSize);
 		constexpr ValueType mask = ~Mask(count, shift);
 		SetValue<Type>(shift, mask, type);
@@ -279,14 +304,14 @@ namespace dungeon
 
 	inline Grid::Props Grid::Pack::GetProps() const noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) + BitCount(TypeSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize);
 		constexpr ValueType count = BitCount(PropsSize);
 		constexpr ValueType mask = Mask(count, shift);
 		return GetValue<Props>(shift, mask);
 	}
 	inline void Grid::Pack::SetProps(const Props props) noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) + BitCount(TypeSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize);
 		constexpr ValueType count = BitCount(PropsSize);
 		constexpr ValueType mask = ~Mask(count, shift);
 		SetValue<Props>(shift, mask, props);
@@ -294,12 +319,12 @@ namespace dungeon
 
 	inline bool Grid::Pack::IsAttributeEnabled(const Attribute attribute) const noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) + BitCount(TypeSize) + BitCount(PropsSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize) + BitCount(PropsSize);
 		return Test(shift + static_cast<ValueType>(attribute));
 	}
 	inline void Grid::Pack::SetAttribute(const Attribute attribute, const bool enable) noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) + BitCount(TypeSize) + BitCount(PropsSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize) + BitCount(PropsSize);
 		Set(shift + static_cast<ValueType>(attribute), enable);
 	}
 }

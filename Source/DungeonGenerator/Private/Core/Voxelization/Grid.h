@@ -92,6 +92,16 @@ namespace dungeon
 		void SetDirection(const Direction direction) noexcept;
 
 		/**
+		中二階モデルの方向を取得します
+		*/
+		Direction GetCatwalkDirection() const noexcept;
+
+		/**
+		中二階モデルの方向を設定します
+		*/
+		void SetCatwalkDirection(const Direction direction) noexcept;
+
+		/**
 		識別子を取得します
 		*/
 		uint16_t GetIdentifier() const noexcept;
@@ -397,6 +407,9 @@ namespace dungeon
 			Direction GetDirection() const noexcept;
 			void SetDirection(const Direction direction) noexcept;
 
+			Direction GetCatwalkDirection() const noexcept;
+			void SetCatwalkDirection(const Direction direction) noexcept;
+
 			Type GetType() const noexcept;
 			void SetType(const Type type) noexcept;
 
@@ -409,6 +422,9 @@ namespace dungeon
 		private:
 			constexpr static ValueType BitCount(ValueType value) noexcept
 			{
+				if (value <= 1)
+					return 1;
+				--value;
 				ValueType count = 0;
 				while (value > 0)
 				{
