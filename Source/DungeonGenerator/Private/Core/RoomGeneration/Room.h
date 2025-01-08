@@ -155,12 +155,6 @@ namespace dungeon
 		void SetHeight(const int32_t height) noexcept;
 
 		/**
-		床下の高さを設定します
-		@param[in]	underfloorHeight	床下の高さ
-		*/
-		//void SetUnderfloorHeight(const uint16_t underfloorHeight) noexcept;
-
-		/**
 		矩形の左の座標を取得します
 		@return		矩形の左の座標
 		*/
@@ -303,6 +297,11 @@ namespace dungeon
 		通路識別子を設定します
 		*/
 		void SetBranchId(const uint8_t branchId) noexcept;
+
+		/*
+		有効な通路識別子か調べます
+		*/
+		bool IsValidBranchId() const noexcept;
 
 		/*
 		部屋に生成する門の数を取得します
