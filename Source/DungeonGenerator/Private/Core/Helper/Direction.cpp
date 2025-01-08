@@ -40,4 +40,17 @@ namespace dungeon
 	{
 		return detail::Offsets.cend();
 	}
+
+#if WITH_EDITOR
+	const FString& Direction::GetName() const noexcept
+	{
+		static const FString names[] = {
+			TEXT("North"),
+			TEXT("East"),
+			TEXT("South"),
+			TEXT("West")
+		};
+		return names[mIndex];
+	}
+#endif
 }

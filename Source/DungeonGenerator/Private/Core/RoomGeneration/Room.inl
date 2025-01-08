@@ -193,6 +193,11 @@ namespace dungeon
 		mBranchId = branchId;
 	}
 
+	inline bool Room::IsValidBranchId() const noexcept
+	{
+		return mBranchId != std::numeric_limits<uint8_t>::max();
+	}
+
 	inline uint8_t Room::GetGateCount() const noexcept
 	{
 		return mNumberOfGates;

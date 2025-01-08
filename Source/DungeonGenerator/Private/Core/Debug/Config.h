@@ -22,7 +22,7 @@ All Rights Reserved.
 // 定義すると途中経過と最終結果をBMPで出力します
 #define DEBUG_GENERATE_BITMAP_FILE
 
-// 定義するとミッショングラフのデバッグファイル(PlantUML)を出力します
+// 定義するとミッショングラフのデバッグファイル(Markdown)を出力します
 #define DEBUG_GENERATE_MISSION_GRAPH_FILE
 
 #endif

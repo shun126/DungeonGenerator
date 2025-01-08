@@ -236,7 +236,7 @@ namespace dungeon
 		uint8_t GetDeepestDepthFromStart() const noexcept;
 
 	private:
-		bool MarkBranchIdAndDepthFromStart(std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<Room>& room, uint8_t& branchId, const uint8_t depth) noexcept;
+		void MarkBranchIdAndDepthFromStartRecursive(const std::shared_ptr<Room>& room, uint8_t& branchId, const uint8_t depth) noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 	public:
@@ -265,7 +265,7 @@ namespace dungeon
 		bool ExpandSpace(const int32_t horizontalMargin = 3, const int32_t verticalMargin = 1) noexcept;
 		void AdjustPoints() noexcept;
 		void InvokeRoomCallbacks() const noexcept;
-		bool DetectFloorHeight() noexcept;
+		bool DetectFloorHeightAndDepthFromStart() noexcept;
 		bool GenerateVoxel() noexcept;
 
 		/**

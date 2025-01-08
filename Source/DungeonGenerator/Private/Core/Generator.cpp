@@ -142,12 +142,12 @@ namespace dungeon
 		// Pointの同期
 		AdjustPoints();
 
-		// ブランチIDの生成
+		// ブランチIDと各部屋の深さの生成
 		if (MarkBranchIdAndDepthFromStart() == false)
 			return false;
 
-		// 階層情報の生成
-		if (DetectFloorHeight() == false)
+		// 階層情報と全体の深さの生成
+		if (DetectFloorHeightAndDepthFromStart() == false)
 			return false;
 
 		// 部屋と通路に意味付けする
@@ -724,19 +724,20 @@ namespace dungeon
 		}
 	}
 
-	bool Generator::DetectFloorHeight() noexcept
+	bool Generator::DetectFloorHeightAndDepthFromStart() noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 		Stopwatch stopwatch;
 		Finalizer finalizer([&stopwatch]()
 			{
-				DUNGEON_GENERATOR_LOG(TEXT("DetectFloorHeight: %lf seconds"), stopwatch.Lap());
+				DUNGEON_GENERATOR_LOG(TEXT("DetectFloorHeightAndDepthFromStart: %lf seconds"), stopwatch.Lap());
 			}
 		);
 #endif
 
 		mFloorHeight.clear();
 
+		mDeepestDepthFromStart = 0;
 		for (const std::shared_ptr<Room>& room : mRooms)
 		{
 			const int32_t z = room->GetBackground();
@@ -744,6 +745,9 @@ namespace dungeon
 			{
 				mFloorHeight.emplace_back(z);
 			}
+
+			if (mDeepestDepthFromStart < room->GetDepthFromStart())
+				mDeepestDepthFromStart = room->GetDepthFromStart();
 		}
 
 		std::stable_sort(mFloorHeight.begin(), mFloorHeight.end());
@@ -753,7 +757,7 @@ namespace dungeon
 		{
 			uint32_t x, y, z, w;
 			GetGenerateParameter().GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("DetectFloorHeight: RandomSeed x=%08x, y=%08x, z=%08x, w=%08x"), x, y, z, w);
+			DUNGEON_GENERATOR_LOG(TEXT("DetectFloorHeightAndDepthFromStart: RandomSeed x=%08x, y=%08x, z=%08x, w=%08x"), x, y, z, w);
 		}
 #endif
 
@@ -1151,9 +1155,8 @@ namespace dungeon
 
 		if (mStartRoom)
 		{
-			std::unordered_set<const Aisle*> edges;
 			uint8_t branchId = 0;
-			return MarkBranchIdAndDepthFromStart(edges, mStartRoom, branchId, 0);
+			MarkBranchIdAndDepthFromStartRecursive(mStartRoom, branchId, 0);
 		}
 
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
@@ -1168,14 +1171,15 @@ namespace dungeon
 		return true;
 	}
 
-	bool Generator::MarkBranchIdAndDepthFromStart(std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<Room>& room, uint8_t& branchId, const uint8_t depth) noexcept
+	void Generator::MarkBranchIdAndDepthFromStartRecursive(const std::shared_ptr<Room>& room, uint8_t& branchId, const uint8_t depth) noexcept
 	{
-		room->SetBranchId(branchId);
-		room->SetDepthFromStart(depth);
+		if (room->IsValidBranchId() == false)
+			room->SetBranchId(branchId);
 
-		if (mDeepestDepthFromStart < depth)
-			mDeepestDepthFromStart = depth;
+		if (room->GetDepthFromStart() > depth)
+			room->SetDepthFromStart(depth);
 
+#if WITH_EDITOR
 		size_t aisleCount = 0;
 		for (const auto& aisle : mAisles)
 		{
@@ -1184,6 +1188,8 @@ namespace dungeon
 			if (room == room0 || room == room1)
 				++aisleCount;
 		}
+		check(aisleCount == room->GetGateCount());
+#endif
 
 		for (const auto& aisle : mAisles)
 		{
@@ -1191,28 +1197,23 @@ namespace dungeon
 			const auto& room1 = aisle.GetPoint(1)->GetOwnerRoom();
 			if (room == room0 || room == room1)
 			{
-				if (passableAisles.contains(&aisle))
-					continue;
-				passableAisles.emplace(&aisle);
-
+				const auto newDepth = depth + 1;
 				if (room != room0)
 				{
-					if (aisleCount >= 3)
+					if (room->GetGateCount() >= 3)
 						++branchId;
-					if (!MarkBranchIdAndDepthFromStart(passableAisles, room0, branchId, depth + 1))
-						return false;
+					if (room0->GetDepthFromStart() > newDepth)
+						MarkBranchIdAndDepthFromStartRecursive(room0, branchId, newDepth);
 				}
 				if (room != room1)
 				{
-					if (aisleCount >= 3)
+					if (room->GetGateCount() >= 3)
 						++branchId;
-					if (!MarkBranchIdAndDepthFromStart(passableAisles, room1, branchId, depth + 1))
-						return false;
+					if (room1->GetDepthFromStart() > newDepth)
+						MarkBranchIdAndDepthFromStartRecursive(room1, branchId, newDepth);
 				}
 			}
 		}
-
-		return true;
 	}
 
 	/*
@@ -1358,6 +1359,7 @@ namespace dungeon
 			{
 				bool complete = false;
 
+				// 室内にスロープが生成できて、終了門が開始門よりも高い位置にある？
 				if (mGenerateParameter.IsGenerateSlopeInRoom() == true && start.Z < goal.Z)
 				{
 					RoomStructureGenerator roomStructureGenerator;
@@ -1728,7 +1730,7 @@ namespace dungeon
 				passableAisles.emplace(&aisle);
 
 				std::string label;
-				label = ": Identifier:" + std::to_string(aisle.GetIdentifier().Get());
+				label = "Identifier:" + std::to_string(aisle.GetIdentifier().Get());
 				if (aisle.IsUniqueLocked())
 					label += "\nUnique lock";
 				else if (aisle.IsLocked())
