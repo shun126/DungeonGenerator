@@ -46,6 +46,8 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include <numeric>
 #include <unordered_map>
 
+#include "Core/Math/Math.h"
+
 #if WITH_EDITOR
 // UnrealEd
 #include <EditorActorFolders.h>
@@ -146,12 +148,27 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 			(void)(actor);
 #endif
 		};
+	const AddStaticMeshEvent addCatwalkStaticMeshEvent = [this](UStaticMesh* staticMesh, const FTransform& transform)
+		{
+			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Catwalk"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+			{
+				// 通信同期用のデバッグ情報を出力
+				uint32_t x, y, z, w;
+				GetSynchronizedRandom()->GetSeeds(x, y, z, w);
+				DUNGEON_GENERATOR_VERBOSE(TEXT("addFloorStaticMeshEvent %s: %x, %x, %x, %x: CRC32=%x"), *actor->GetName(), x, y, z, w, mCrc32AtCreation);
+			}
+#else
+			(void)(actor);
+#endif
+		};
 
 	mOnAddFloor = addFloorStaticMeshEvent;
 	mOnAddSlope = addSlopeStaticMeshEvent;
 	mOnAddWall = addWallStaticMeshEvent;
 	mOnAddRoof = addRoofStaticMeshEvent;
 	mOnAddPillar = addPillarStaticMeshEvent;
+	mOnAddCatwalk = addCatwalkStaticMeshEvent;
 }
 
 void ADungeonGenerateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -178,24 +195,37 @@ const std::shared_ptr<dungeon::Random>& ADungeonGenerateBase::GetRandom() const 
 	return mLocalRandom;
 }
 
+UDungeonComponentActivatorComponent* ADungeonGenerateBase::FindOrAddComponentActivatorComponent(AActor* actor)
+{
+	UDungeonComponentActivatorComponent* component = nullptr;
+	if (IsValid(actor))
+	{
+		component = actor->FindComponentByClass<UDungeonComponentActivatorComponent>();
+		if (component == nullptr)
+		{
+			component = NewObject<UDungeonComponentActivatorComponent>(actor, TEXT("ComponentActivator"));
+			actor->AddInstanceComponent(component);
+			component->RegisterComponent();
+		}
+	}
+	return component;
+}
+
 AActor* ADungeonGenerateBase::SpawnActorImpl(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters)
 {
 	if (!IsValid(world))
 		return nullptr;
 
 	AActor* actor = world->SpawnActor(actorClass, &transform, actorSpawnParameters);
-	if (!IsValid(actor))
-		return nullptr;
-
+	if (actor)
+	{
 #if WITH_EDITOR
-	actor->SetFolderPath(FName(dungeon::GetBaseDirectoryName() + TEXT("/") + folderPath));
+		actor->SetFolderPath(FName(dungeon::GetBaseDirectoryName() + TEXT("/") + folderPath));
 #endif
 
-	actor->Tags.Reserve(1);
-	actor->Tags.Emplace(GetDungeonGeneratorTag());
-
-
-
+		actor->Tags.Reserve(1);
+		actor->Tags.Emplace(GetDungeonGeneratorTag());
+	}
 
 	return actor;
 }
@@ -693,7 +723,7 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 			{
 				if (const FDungeonMeshParts* parts = mParameter->SelectCatwalkParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
 				{
-					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetCatwalkDirection()));
+					mOnAddCatwalk(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetCatwalkDirection()));
 				}
 			}
 			else
@@ -729,56 +759,89 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 	壁のメッシュを生成
 	メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面（北側の壁）になっています。
 	*/
-	const FDungeonMeshParts* parts;
-	const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-	//if (cp.mGrid.IsKindOfRoomType())
-	if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-		dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
-	else
-		dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
-	if (dungeonMeshSetDatabase)
+	const FDungeonMeshSet* meshSet = nullptr;
+	const FDungeonMeshParts* parts = nullptr;
+	EDungeonPartsSelectionMethod dungeonPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 	{
-		parts = mParameter->SelectWallParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
-	}
-	else
-	{
-		const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
+		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
 		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-			dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
 		else
-			dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
-		parts = mParameter->SelectWallParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
+			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		if (dungeonMeshSetDatabase)
+		{
+			meshSet = mParameter->SelectParts(dungeonMeshSetDatabase, cp.mGrid);
+			if (meshSet != nullptr)
+				dungeonPartsSelectionMethod = meshSet->GetWallPartsSelectionMethod();
+
+			// グリッドによるパーツ選択を行う場合はここで抽選する
+			if (dungeonPartsSelectionMethod != EDungeonPartsSelectionMethod::GridIndex)
+				parts = mParameter->SelectWallPartsByGrid(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
+		}
+		else
+		{
+			const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
+			if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
+				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
+			else
+				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
+			parts = mParameter->SelectWallParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
+		}
 	}
 
-	if (parts)
+	if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex || parts != nullptr)
 	{
+		// 北側の壁
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z), dungeon::Direction::North, mParameter->IsMergeRooms()))
 		{
-			// 北側の壁
+			// 面によるパーツ選択を行う場合はここで抽選する
+			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			{
+				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::North));
+			}
+
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.Y -= cp.mGridHalfSize.Y;
 			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 0.f));
 
 		}
+		// 南側の壁
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z), dungeon::Direction::South, mParameter->IsMergeRooms()))
 		{
-			// 南側の壁
+			// 面によるパーツ選択を行う場合はここで抽選する
+			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			{
+				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::South));
+			}
+
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.Y += cp.mGridHalfSize.Y;
 			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 180.f));
 
 		}
+		// 東側の壁
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::East, mParameter->IsMergeRooms()))
 		{
-			// 東側の壁
+			// 面によるパーツ選択を行う場合はここで抽選する
+			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			{
+				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::East));
+			}
+
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.X += cp.mGridHalfSize.X;
 			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, 90.f));
 
 		}
+		// 西側の壁
 		if (cp.mGrid.CanBuildWall(mGenerator->GetVoxel()->Get(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::West, mParameter->IsMergeRooms()))
 		{
-			// 西側の壁
+			// 面によるパーツ選択を行う場合はここで抽選する
+			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			{
+				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::West));
+			}
+
 			FVector wallPosition = cp.mCenterPosition;
 			wallPosition.X -= cp.mGridHalfSize.X;
 			mReservedWallInfo.emplace_back(parts->StaticMesh, parts->CalculateWorldTransform(wallPosition, -90.f));
@@ -1374,6 +1437,9 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	const double placementRadius = halfHorizontalSize;
 	const double placementAngle = (3.1415926535897932384626433832795 * 2.) / static_cast<double>(startPoints.Num());
 
+	const FVector& startRoomLocation = GetStartLocation();
+	const FVector& goalRoomLocation = GetGoalLocation();
+
 	for (int32 index = 0; index < startPoints.Num(); ++index)
 	{
 		APlayerStart* playerStart = startPoints[index];
@@ -1392,7 +1458,7 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 				rootComponent->CalcBoundingCylinder(cylinderRadius, cylinderHalfHeight);
 
 				// If there are multiple APlayerStart, shift APlayerStart from the center of the room
-				FVector location = GetStartLocation();
+				FVector location = startRoomLocation;
 				location.X += placementRadius * std::cos(placementAngle * static_cast<double>(index));
 				location.Y += placementRadius * std::sin(placementAngle * static_cast<double>(index));
 
@@ -1405,7 +1471,17 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 					location = hitResult.ImpactPoint;
 				}
 				location.Z += cylinderHalfHeight + heightMargin;
-				playerStart->SetActorLocation(location);
+
+				// ゴールの部屋の方向を向く
+				auto rotator = playerStart->GetActorRotation();
+				rotator.Yaw = dungeon::math::ToDegree(
+						std::atan2(
+							goalRoomLocation.Y - location.Y,
+							goalRoomLocation.X - location.X
+						)
+					);
+
+				playerStart->SetActorTransform(FTransform(rotator, location));
 
 #if WITH_EDITOR
 				FCollisionShape collisionShape;
@@ -1455,15 +1531,9 @@ AStaticMeshActor* ADungeonGenerateBase::SpawnStaticMeshActor(UStaticMesh* static
 		staticMeshComponent->SetStaticMesh(staticMesh);
 	}
 
-	// 処理負荷制御を追加
-	UDungeonComponentActivatorComponent* dungeonComponentActivatorComponent = NewObject<UDungeonComponentActivatorComponent>(actor);
-	if (IsValid(dungeonComponentActivatorComponent) == true)
-	{
+	// 負荷制御コンポーネントを追加する
+	if (auto* dungeonComponentActivatorComponent = FindOrAddComponentActivatorComponent(actor))
 		dungeonComponentActivatorComponent->SetEnableCollisionEnableControl(false);
-
-		actor->AddInstanceComponent(dungeonComponentActivatorComponent);
-		dungeonComponentActivatorComponent->RegisterComponent();
-	}
 
 	actor->FinishSpawning(transform, true);
 
@@ -1482,8 +1552,10 @@ ADungeonDoorBase* ADungeonGenerateBase::SpawnDoorActor(UClass* actorClass, const
 	if (IsValid(actor))
 	{
 		actor->InvokeInitialize(GetRandom(), props);
-
 		actor->FinishSpawning(transform, true);
+
+		// 負荷制御コンポーネントを追加する
+		FindOrAddComponentActivatorComponent(actor);
 
 		if (IsValid(ownerActor))
 			ownerActor->AddDungeonDoor(actor);
@@ -1500,8 +1572,13 @@ AActor* ADungeonGenerateBase::SpawnTorchActor(UClass* actorClass, const FTransfo
 	actorSpawnParameters.Owner = ownerActor;
 	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
 	AActor* actor = SpawnActorImpl(actorClass, TEXT("Actors/Torches"), transform, actorSpawnParameters);
+
+	// 負荷制御コンポーネントを追加する
+	FindOrAddComponentActivatorComponent(actor);
+
 	if (IsValid(ownerActor))
 		ownerActor->AddDungeonTorch(actor);
+
 	return actor;
 }
 

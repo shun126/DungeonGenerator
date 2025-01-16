@@ -25,14 +25,14 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (const ULevel* level = GetComponentLevel())
+	if (const AActor* ownerActor = GetOwner())
 	{
-		if (ADungeonMainLevelScriptActor* levelScript = Cast<ADungeonMainLevelScriptActor>(level->GetLevelScriptActor()))
+		if (const ULevel* level = GetComponentLevel())
 		{
-			mDungeonLevelScriptActor = levelScript;
-
-			if (const AActor* ownerActor = GetOwner())
+			if (ADungeonMainLevelScriptActor* levelScript = Cast<ADungeonMainLevelScriptActor>(level->GetLevelScriptActor()))
 			{
+				mDungeonLevelScriptActor = levelScript;
+
 				// 動かないならTick不要
 				const USceneComponent* rootSceneComponent = ownerActor->GetRootComponent();
 				if (rootSceneComponent && rootSceneComponent->Mobility != EComponentMobility::Movable)
@@ -42,11 +42,13 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 				mLastLocation = ownerActor->GetActorLocation() + FVector(0, DisplacementOfInitialLocation, 0);
 			}
 		}
-	}
-	// ADungeonMainLevelScriptActorではないならTick不要
-	if (mDungeonLevelScriptActor.Get() == nullptr)
-	{
-		SetComponentTickEnabled(false);
+		// ADungeonMainLevelScriptActorではないならTick不要
+		if (mDungeonLevelScriptActor.Get() == nullptr)
+		{
+			SetComponentTickEnabled(false);
+		}
+
+		TickImplement(ownerActor->GetActorLocation());
 	}
 }
 

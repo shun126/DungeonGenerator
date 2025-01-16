@@ -1,4 +1,4 @@
-
+# ダンジョン生成パラメータ
 
 ```mermaid
 classDiagram

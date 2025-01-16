@@ -9,6 +9,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 */
 
 #include "DungeonGenerateActor.h"
+#include "PluginInfomation.h"
 #include "Core/Generator.h"
 #include "Core/Debug/BuildInfomation.h"
 #include "Core/Debug/Debug.h"
@@ -113,110 +114,79 @@ void ADungeonGenerateActor::OnPostDungeonGeneration(const bool result)
 }
 
 /********** InstancedStaticMesh **********/
-void ADungeonGenerateActor::CreateInstancedMeshComponent(UStaticMesh* staticMesh)
+uint32 ADungeonGenerateActor::InstancedMeshHash(const FVector& position, const double quantizationSize)
+{
+	uint32 x = static_cast<uint32>(position.X / quantizationSize);
+	uint32 y = static_cast<uint32>(position.Y / quantizationSize);
+	y <<= 16;
+	x &= 0xFFFF;
+	return y | x;
+}
+
+void ADungeonGenerateActor::BeginInstanceTransaction()
+{
+	for (auto& chunk : mInstancedMeshCluster)
+	{
+		chunk.Value.BeginTransaction();
+	}
+}
+
+void ADungeonGenerateActor::AddInstance(UStaticMesh* staticMesh, const FTransform& transform)
 {
 	check(
 		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh ||
 		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh
 	);
 
-	for (const UInstancedStaticMeshComponent* mesh : InstancedStaticMeshes)
-	{
-		if (IsValid(mesh) && mesh->GetStaticMesh() == staticMesh)
-			return;
-	}
-
+	double quantizationSize = 25 * 100;
+	if (mParameter)
+		quantizationSize = mParameter->GetGridSize().HorizontalSize * 5.f;
+	const uint32 hash = InstancedMeshHash(transform.GetTranslation(), quantizationSize);
+	auto& chunk = mInstancedMeshCluster.FindOrAdd(hash);
 	if (DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh)
 	{
-		auto component = NewObject<UInstancedStaticMeshComponent>(this);
-		AddInstanceComponent(component);
-		component->RegisterComponent();
-		component->SetStaticMesh(staticMesh);
-		InstancedStaticMeshes.Add(component);
+		auto* component = chunk.FindOrCreateInstance(this, staticMesh);
+		component->AddInstance(transform);
 	}
 	else
 	{
-		auto component = NewObject<UHierarchicalInstancedStaticMeshComponent>(this);
-		AddInstanceComponent(component);
-		component->RegisterComponent();
-		component->SetStaticMesh(staticMesh);
-		component->bAutoRebuildTreeOnInstanceChanges = false;
-		InstancedStaticMeshes.Add(component);
+		auto* component = chunk.FindOrCreateHierarchicalInstance(this, staticMesh);
+		component->AddInstance(transform);
 	}
 }
 
-void ADungeonGenerateActor::ClearInstancedMeshComponents()
+void ADungeonGenerateActor::EndInstanceTransaction()
 {
-	for (UInstancedStaticMeshComponent* instancedStaticMeshComponent : InstancedStaticMeshes)
-	{
-		if (IsValid(instancedStaticMeshComponent))
-		{
-			instancedStaticMeshComponent->UnregisterComponent();
-			instancedStaticMeshComponent->ConditionalBeginDestroy();
-			//instancedStaticMeshComponent->DestroyComponent();
-		}
-	}
-	InstancedStaticMeshes.Empty();
-}
+	mInstancedMeshCluster.Shrink();
 
-void ADungeonGenerateActor::AddInstance(const UStaticMesh* staticMesh, const FTransform& transform)
-{
-	check(
-		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh ||
-		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh
-	);
-
-	for (UInstancedStaticMeshComponent* instancedStaticMeshComponent : InstancedStaticMeshes)
+	for (auto& chunk : mInstancedMeshCluster)
 	{
-		if (IsValid(instancedStaticMeshComponent) && instancedStaticMeshComponent->GetStaticMesh() == staticMesh)
-		{
-			instancedStaticMeshComponent->AddInstance(transform);
-			break;
-		}
+		chunk.Value.EndTransaction();
 	}
 }
 
-void ADungeonGenerateActor::CommitAddInstance()
+void ADungeonGenerateActor::DestroyAllInstance()
 {
-	check(
-		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh ||
-		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh
-	);
-
-	// カリング距離をDungeonMainLevelScriptActorから取得します
-	int32 startCullingDistance = 0;
-	int32 endCullingDistance = 0;
-	if (const ULevel* level = GetLevel())
+	for (auto& chunk : mInstancedMeshCluster)
 	{
-		if (const auto* levelScript = Cast<ADungeonMainLevelScriptActor>(level->GetLevelScriptActor()))
-		{
-			endCullingDistance = std::ceil(levelScript->GetPartitionSize());
-			startCullingDistance = std::max(1, endCullingDistance - 100);
-		}
+		chunk.Value.DestroyAll();
 	}
-
-	for (UInstancedStaticMeshComponent* instancedStaticMeshComponent : InstancedStaticMeshes)
-	{
-		auto hierarchicalInstancedStaticMesh = Cast<UHierarchicalInstancedStaticMeshComponent>(instancedStaticMeshComponent);
-		if (IsValid(hierarchicalInstancedStaticMesh))
-		{
-			hierarchicalInstancedStaticMesh->bAutoRebuildTreeOnInstanceChanges = false;
-			hierarchicalInstancedStaticMesh->BuildTreeIfOutdated(true, false);
-
-			// カリング距離を設定
-			hierarchicalInstancedStaticMesh->SetCullDistances(startCullingDistance, endCullingDistance);
-		}
-	}
+	mInstancedMeshCluster.Reset();
 }
 
 void ADungeonGenerateActor::SetInstancedMeshCullDistance(const double cullDistance)
 {
-	for (UInstancedStaticMeshComponent* mesh : InstancedStaticMeshes)
+	double length = 10 * 100;
+	if (mParameter)
+		length = mParameter->GetGridSize().HorizontalSize * 3.f;
+
+	for (auto& pair : mInstancedMeshCluster)
 	{
-		if (IsValid(mesh))
-		{
-			mesh->SetCullDistances(cullDistance, cullDistance + 100);
-		}
+		const FInt32Interval range(
+			cullDistance,
+			cullDistance + length
+		);
+		pair.Value.SetCullDistance(range);
 	}
 }
 
@@ -243,60 +213,40 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 
 	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
 	{
-		// StaticMeshを先に登録
-		DungeonGenerateParameter->EachFloorParts([this](const FDungeonMeshParts& meshParts)
-			{
-				CreateInstancedMeshComponent(meshParts.StaticMesh);
-			}
-		);
-		DungeonGenerateParameter->EachWallParts([this](const FDungeonMeshParts& meshParts)
-			{
-				CreateInstancedMeshComponent(meshParts.StaticMesh);
-			}
-		);
-		DungeonGenerateParameter->EachRoofParts([this](const FDungeonMeshParts& meshParts)
-			{
-				CreateInstancedMeshComponent(meshParts.StaticMesh);
-			}
-		);
-		DungeonGenerateParameter->EachSlopeParts([this](const FDungeonMeshParts& meshParts)
-			{
-				CreateInstancedMeshComponent(meshParts.StaticMesh);
-			}
-		);
-		DungeonGenerateParameter->EachPillarParts([this](const FDungeonMeshParts& meshParts)
-			{
-				CreateInstancedMeshComponent(meshParts.StaticMesh);
-			}
-		);
-
 		// インスタンスメッシュを登録
-		OnAddFloor([this](const UStaticMesh* staticMesh, const FTransform& transform)
+		OnAddFloor([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(staticMesh, transform);
 			}
 		);
-		OnAddSlope([this](const UStaticMesh* staticMesh, const FTransform& transform)
+		OnAddSlope([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(staticMesh, transform);
 			}
 		);
-		OnAddWall([this](const UStaticMesh* staticMesh, const FTransform& transform)
+		OnAddWall([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(staticMesh, transform);
 			}
 		);
-		OnAddRoof([this](const UStaticMesh* staticMesh, const FTransform& transform)
+		OnAddRoof([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(staticMesh, transform);
 			}
 		);
-		OnAddPillar([this](const UStaticMesh* staticMesh, const FTransform& transform)
+		OnAddPillar([this](UStaticMesh* staticMesh, const FTransform& transform)
+			{
+				AddInstance(staticMesh, transform);
+			}
+		);
+		OnAddCatwalk([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(staticMesh, transform);
 			}
 		);
 	}
+
+	BeginInstanceTransaction();
 
 	if (Create(DungeonGenerateParameter, HasAuthority()) == false)
 	{
@@ -309,8 +259,7 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 		return;
 	}
 
-	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
-		CommitAddInstance();
+	EndInstanceTransaction();
 
 	/*
 	List of PlayerStart, not including PlayerStartPIE.
@@ -362,7 +311,7 @@ void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)
 {
 	if (IsCreated())
 	{
-		ClearInstancedMeshComponents();
+		DestroyAllInstance();
 	}
 
 	Super::Dispose(flushStreamLevels);

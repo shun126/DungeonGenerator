@@ -119,6 +119,10 @@ private:
 private:
 	const UDungeonRoomMeshSetDatabase* GetDungeonRoomPartsDatabase() const noexcept;
 	const UDungeonAisleMeshSetDatabase* GetDungeonAislePartsDatabase() const noexcept;
+
+	static const FDungeonTemporaryMeshSet* SelectParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const dungeon::Grid& grid);
+	static const FDungeonMeshSet* SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid);
+
 	static const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 	static const FDungeonMeshParts* SelectWallParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 	static const FDungeonMeshPartsWithDirection* SelectRoofParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
@@ -128,7 +132,8 @@ private:
 	const UDungeonMeshSetDatabase* GetDungeonAisleMeshPartsDatabase() const noexcept;
 	static const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 	static const FDungeonMeshParts* SelectCatwalkParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
-	static const FDungeonMeshParts* SelectWallParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
+	static const FDungeonMeshParts* SelectWallPartsByGrid(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
+	static const FDungeonMeshParts* SelectWallPartsByFace(const FDungeonMeshSet* dungeonMeshSet, const FIntVector& gridLocation, const dungeon::Direction& direction);
 	static const FDungeonMeshPartsWithDirection* SelectRoofParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 	static const FDungeonMeshParts* SelectSlopeParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 
@@ -141,17 +146,20 @@ private:
 	void EachWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 	void EachRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachSlopeParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
+	void EachCatwalkParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 	void EachPillarParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 
 	void EachRoomFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachRoomWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 	void EachRoomRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachRoomSlopeParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
+	void EachRoomCatwalkParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 
 	void EachAisleFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachAisleWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 	void EachAisleRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachAisleSlopeParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
+	void EachAisleCatwalkParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 
 	int32 GetGeneratedDungeonCRC32() const noexcept;
 	void SetGeneratedDungeonCRC32(const int32 generatedDungeonCRC32) noexcept;
@@ -237,7 +245,7 @@ protected:
 	生成される部屋数の候補
 	これは最終的な部屋の数ではなく最初に生成される部屋の数です。
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "2", ClampMax = "100"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "3", ClampMax = "100"))
 	uint8 NumberOfCandidateRooms = 25;
 
 	/**
@@ -557,4 +565,10 @@ inline void UDungeonGenerateParameter::EachSlopeParts(const std::function<void(c
 {
 	EachRoomSlopeParts(function);
 	EachAisleSlopeParts(function);
+}
+
+inline void UDungeonGenerateParameter::EachCatwalkParts(const std::function<void(const FDungeonMeshParts&)>& function) const
+{
+	EachRoomCatwalkParts(function);
+	EachAisleCatwalkParts(function);
 }

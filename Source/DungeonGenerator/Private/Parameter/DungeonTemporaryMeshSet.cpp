@@ -16,15 +16,13 @@ int32 FDungeonTemporaryMeshSet::SelectDungeonMeshPartsIndex(const size_t gridInd
 {
 	switch (partsSelectionMethod)
 	{
-	case EDungeonPartsSelectionMethod::GridIndex:
-		return gridIndex % size;
-
 	case EDungeonPartsSelectionMethod::Direction:
 		return grid.GetDirection().Get() % size;
 
 	case EDungeonPartsSelectionMethod::Random:
 		return random->Get<uint32_t>(size);
 
+	case EDungeonPartsSelectionMethod::GridIndex:
 	default:
 		return gridIndex % size;
 	}

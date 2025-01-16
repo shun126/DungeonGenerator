@@ -172,19 +172,19 @@ namespace dungeon
 				break;
 
 			case EffectiveDirection::VerticalNortheast:
-				catwalkDirection.Set(Direction::West);
+				catwalkDirection.Set(Direction::East);
 				break;
 
 			case EffectiveDirection::VerticalNorthwest:
-				catwalkDirection.Set(Direction::East);
+				catwalkDirection.Set(Direction::West);
 				break;
 
 			case EffectiveDirection::VerticalSouthwest:
-				catwalkDirection.Set(Direction::East);
+				catwalkDirection.Set(Direction::West);
 				break;
 
 			case EffectiveDirection::VerticalSoutheast:
-				catwalkDirection.Set(Direction::West);
+				catwalkDirection.Set(Direction::East);
 				break;
 			}
 			grid.SetCatwalkDirection(catwalkDirection);
@@ -233,28 +233,28 @@ namespace dungeon
 				ox = mLocation.X;
 				oy = mLocation.Y + offset.mX;
 				direction.Set(Direction::North);
-				catwalkDirection.Set(Direction::West);
+				catwalkDirection.Set(Direction::East);
 				break;
 
 			case EffectiveDirection::VerticalNorthwest:
 				ox = mLocation.X;
 				oy = mLocation.Y + offset.mX;
 				direction.Set(Direction::North);
-				catwalkDirection.Set(Direction::East);
+				catwalkDirection.Set(Direction::West);
 				break;
 
 			case EffectiveDirection::VerticalSouthwest:
 				ox = mLocation.X;
 				oy = mLocation.Y - offset.mX;
 				direction.Set(Direction::South);
-				catwalkDirection.Set(Direction::East);
+				catwalkDirection.Set(Direction::West);
 				break;
 
 			case EffectiveDirection::VerticalSoutheast:
 				ox = mLocation.X;
 				oy = mLocation.Y - offset.mX;
 				direction.Set(Direction::South);
-				catwalkDirection.Set(Direction::West);
+				catwalkDirection.Set(Direction::East);
 				break;
 
 			default:

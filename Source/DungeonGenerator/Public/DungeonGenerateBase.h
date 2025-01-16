@@ -28,6 +28,7 @@ class ADungeonDoorBase;
 class ADungeonRoomSensorBase;
 class ADungeonGenerateBase;
 class UDungeonGenerateParameter;
+class UDungeonComponentActivatorComponent;
 class ANavMeshBoundsVolume;
 class APlayerStart;
 class AStaticMeshActor;
@@ -140,6 +141,11 @@ public:
 	*/
 	static AActor* SpawnActorImpl(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters);
 
+	/**
+	 * アクターの負荷制御コンポーネントを追加します
+	 */
+	static UDungeonComponentActivatorComponent* FindOrAddComponentActivatorComponent(AActor* actor);
+
 private:
 	AActor* SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters) const;
 	template<typename T = AActor> T* SpawnActorImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
@@ -184,6 +190,7 @@ protected:
 	void OnAddWall(const AddStaticMeshEvent& function);
 	void OnAddRoof(const AddStaticMeshEvent& function);
 	void OnAddPillar(const AddPillarStaticMeshEvent& function);
+	void OnAddCatwalk(const AddStaticMeshEvent& function);
 
 private:
 	using RoomAndRoomSensorMap = std::unordered_map<const dungeon::Room*, ADungeonRoomSensorBase*>;
@@ -307,6 +314,7 @@ private:
 	AddStaticMeshEvent mOnAddWall;
 	AddStaticMeshEvent mOnAddRoof;
 	AddPillarStaticMeshEvent mOnAddPillar;
+	AddStaticMeshEvent mOnAddCatwalk;
 
 	std::vector<ReservedWallInfo> mReservedWallInfo;
 	
@@ -349,6 +357,11 @@ inline void ADungeonGenerateBase::OnAddRoof(const AddStaticMeshEvent& function)
 inline void ADungeonGenerateBase::OnAddPillar(const AddPillarStaticMeshEvent& function)
 {
 	mOnAddPillar = function;
+}
+
+inline void ADungeonGenerateBase::OnAddCatwalk(const AddStaticMeshEvent& function)
+{
+	mOnAddCatwalk = function;
 }
 
 template<typename T>
