@@ -61,6 +61,11 @@ public:
 	*/
 	static const FName& GetDungeonGeneratorTag();
 
+	/**
+	Get tag name
+	*/
+	static const FName& GetDungeonGeneratorTerrainTag();
+
 public:
 	/**
 	constructor
@@ -332,6 +337,12 @@ inline const FName& ADungeonGenerateBase::GetDungeonGeneratorTag()
 {
 	static const FName DungeonGeneratorTag(TEXT("DungeonGenerator"));
 	return DungeonGeneratorTag;
+}
+
+inline const FName& ADungeonGenerateBase::GetDungeonGeneratorTerrainTag()
+{
+	static const FName DungeonGeneratorTerrainTag(TEXT("DungeonGeneratorTerrain"));
+	return DungeonGeneratorTerrainTag;
 }
 
 inline void ADungeonGenerateBase::OnAddFloor(const AddStaticMeshEvent& function)

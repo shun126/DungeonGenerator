@@ -12,7 +12,6 @@ All Rights Reserved.
 #include "../PathGeneration/PathGoalCondition.h"
 #include <atomic>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 #include "Core/PathGeneration/PathFinder.h"
@@ -68,7 +67,7 @@ namespace dungeon
 		@param[in]	x		X座標
 		@param[in]	y		Y座標
 		@param[in]	z		Z座標
-		TODO:座標関連はFIntVectorに統一して下さい
+		TODO: 座標関連はFIntVectorに統一して下さい
 		@return		グリッド
 		*/
 		const Grid& Get(const uint32_t x, const uint32_t y, const uint32_t z) const noexcept;
@@ -93,7 +92,7 @@ namespace dungeon
 		@param[in]	y		Y座標
 		@param[in]	z		Z座標
 		@param[in]	grid	グリッド
-		TODO:座標関連はFIntVectorに統一して下さい
+		TODO: 座標関連はFIntVectorに統一して下さい
 		*/
 		void Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) const noexcept;
 
@@ -171,6 +170,8 @@ namespace dungeon
 
 		/**
 		門を生成可能な場所を探します
+		1. 部屋の内部から部屋の外郭を検索します。
+		2. 部屋の外のグリッドは Grid::Type::Empty である必要があります。
 		@param[out]		result				FIntVector配列
 		@param[in]		maxResultCount		resultの最大数
 		@param[in]		start				スタート部屋のFIntVector
@@ -212,8 +213,16 @@ namespace dungeon
 		};
 		bool AisleImpl(const std::vector<Route>& route, const AisleParameter& aisleParameter) noexcept;
 		std::shared_ptr<PathFinder::Result> FindAisle(const Route& route, const AisleParameter& aisleParameter, const size_t index) const noexcept;
-		bool CheckDoorAligned(const FIntVector& location, const Direction& direction) const noexcept;
 		void WriteAisleToGrid(const std::shared_ptr<PathFinder::Result>& pathResult, const AisleParameter& aisleParameter) const;
+
+		/**
+		 * 並んだ門のグリッドを省略できるか調べます
+		 * @param location	調べるグリッドの位置
+		 * @param direction	調べるグリッドの方向
+		 * @param nodeType	一つ前のグリッドの種類
+		 * @return trueなら門は省略できる
+		 */
+		bool CheckDoorAligned(const FIntVector& location, const Direction& direction, const PathFinder::NodeType nodeType) const noexcept;
 
 	public:
 		/**

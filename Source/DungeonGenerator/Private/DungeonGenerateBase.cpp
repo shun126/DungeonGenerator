@@ -25,7 +25,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include "Parameter/DungeonGenerateParameter.h"
 #include "SubActor/DungeonRoomSensorBase.h"
 #include "SubActor/DungeonDoorBase.h"
-#include "PluginInfomation.h"
+#include "PluginInformation.h"
 #include <TextureResource.h>
 #include <Components/StaticMeshComponent.h>
 #include <GameFramework/PlayerStart.h>
@@ -1208,7 +1208,7 @@ void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSen
 				static_cast<EDungeonRoomItem>(room->GetItem()),
 				room->GetBranchId(),
 				room->GetDepthFromStart(),
-				mGenerator->GetDeepestDepthFromStart()	//!< TODO:適切な関数名に変えて下さい
+				mGenerator->GetDeepestDepthFromStart()
 			);
 			roomSensorCache[room.get()] = roomSensorActor;
 		}
@@ -1411,7 +1411,7 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	}
 
 	// APlayerStartPIEの位置を調整
-	// TODO:メニュー内の「ここから開始」で問題が起きるかもしれません
+	// TODO: メニュー内の「ここから開始」で問題が起きるかもしれません
 	EachActors<APlayerStartPIE>([&startPoints](APlayerStartPIE* playerStartPIE)
 		{
 			APlayerStart* playerStart = startPoints[FMath::RandRange(0, startPoints.Num() - 1)];
@@ -1529,6 +1529,7 @@ AStaticMeshActor* ADungeonGenerateBase::SpawnStaticMeshActor(UStaticMesh* static
 		}
 
 		staticMeshComponent->SetStaticMesh(staticMesh);
+		staticMeshComponent->ComponentTags.AddUnique(GetDungeonGeneratorTerrainTag());
 	}
 
 	// 負荷制御コンポーネントを追加する

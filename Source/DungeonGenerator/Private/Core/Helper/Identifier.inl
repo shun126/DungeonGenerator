@@ -1,3 +1,4 @@
+
 /**
 識別子クラスヘッダーファイル
 
@@ -19,10 +20,10 @@ namespace dungeon
 	inline Identifier::Identifier(const Type type) noexcept
 		: mIdentifier(mCounter)
 	{
-		const IdentifierType value = static_cast<IdentifierType>(type) << shift;
+		const IdentifierType value = static_cast<IdentifierType>(type) << Shift;
 		mIdentifier |= value;
 
-		mCounter = (mCounter + 1) & maskCounter;
+		mCounter = (mCounter + 1) & MaskCounter;
 	}
 
 	inline Identifier::Identifier(const IdentifierType other) noexcept
@@ -52,16 +53,6 @@ namespace dungeon
 		return *this;
 	}
 
-	inline Identifier::operator uint16_t() const noexcept
-	{
-		return mIdentifier;
-	}
-
-	inline uint16_t Identifier::Get() const noexcept
-	{
-		return mIdentifier;
-	}
-
 	inline bool Identifier::operator==(const Identifier& other) const noexcept
 	{
 		return mIdentifier == other.mIdentifier;
@@ -74,7 +65,7 @@ namespace dungeon
 
 	inline Identifier::Type Identifier::GetType() const noexcept
 	{
-		const uint8_t type = mIdentifier >> shift;
+		const uint8_t type = mIdentifier >> Shift;
 		return static_cast<Type>(type);
 	}
 
@@ -85,12 +76,17 @@ namespace dungeon
 
 	inline bool Identifier::IsType(const IdentifierType identifier, const Type type) noexcept
 	{
-		const uint8_t selfType = identifier >> shift;
+		const uint8_t selfType = identifier >> Shift;
 		return static_cast<Type>(selfType) == type;
 	}
 
 	inline void Identifier::ResetCounter()
 	{
 		mCounter = 0;
+	}
+
+	inline Identifier::operator IdentifierType() const noexcept
+	{
+		return mIdentifier;
 	}
 }

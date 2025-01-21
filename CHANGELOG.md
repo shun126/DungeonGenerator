@@ -1,10 +1,22 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (44)
+## Unreleased-1.6.* (45)
 ### Changes
 ### 変更点
 
-## Unreleased-1.6.14 (43)
+## 20250122-1.6.15 (44)
+### Changes
+* Fixed problem with incorrect depth of rooms from the start
+* Investigated an issue where gates were not created when stairs and rooms were connected
+* Changed the order in which vegetation is generated to after interiors
+* Fixed several bugs
+### 変更点
+* スタートからの部屋の奥行きが不正になる問題の修正
+* 階段と部屋がつながった時に門ができていない不具合の調査
+* 植生の生成順序をインテリアよりも後に変更
+* いくつかの不具合を修正
+
+## 20250108-1.6.14 (43)
 ### Changes
 * Fixed problem with incorrect distance from starting room
 * Fixed several bugs
@@ -12,7 +24,7 @@
 * スタート部屋からの距離が不正になる問題を修正
 * いくつかの不具合を修正
 
-## Unreleased-1.6.13 (42)
+## 20241218-1.6.13 (42)
 ### Changes
 * Support for Unreal Engine 5.5.1
 * Fixed an issue where the starting position would be incorrect in rooms with 2 grids or less

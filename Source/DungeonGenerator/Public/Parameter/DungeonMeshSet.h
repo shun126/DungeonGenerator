@@ -235,7 +235,5 @@ private:
 	static int32 SelectDungeonMeshPartsIndexByFace(const FIntVector& gridLocation, const dungeon::Direction& direction, const int32 size);
 	static FDungeonActorParts* SelectActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonActorParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod);
 
-
-	// TODO: 移行完了後に削除して下さい
 	friend class UDungeonMeshSetDatabase;
 };

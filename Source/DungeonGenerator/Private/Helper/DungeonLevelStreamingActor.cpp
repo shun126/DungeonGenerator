@@ -7,7 +7,7 @@ Helper class that loads the level when the player enters the OverlapVolume
 All Rights Reserved.
 */
 
-#include "LevelStreaming/DungeonLevelStreamingActor.h"
+#include "Helper/DungeonLevelStreamingActor.h"
 #include <Components/BoxComponent.h>
 #include <GameFramework/Character.h>
 #include <Kismet/GameplayStatics.h>

@@ -9,9 +9,9 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 */
 
 #include "DungeonGenerateActor.h"
-#include "PluginInfomation.h"
+#include "PluginInformation.h"
 #include "Core/Generator.h"
-#include "Core/Debug/BuildInfomation.h"
+#include "Core/Debug/BuildInformation.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Vector.h"
 #include "Core/Voxelization/Grid.h"
@@ -33,7 +33,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 
 ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializer)
 	: Super(initializer)
-	, BuildJobTag(TEXT(JENKINS_JOB_TAG))
+	, BuildJobTag(TEXT(DUNGENERATOR_PLUGIN_VERSION_NAME "-" JENKINS_JOB_TAG))
 	, LicenseTag(TEXT(JENKINS_LICENSE))
 	, LicenseId(TEXT(JENKINS_UUID))
 {

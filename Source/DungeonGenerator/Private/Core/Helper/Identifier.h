@@ -36,7 +36,7 @@ namespace dungeon
 		explicit Identifier(const Type type) noexcept;
 		explicit Identifier(const IdentifierType other) noexcept;
 
-		explicit Identifier(const Identifier& other) noexcept;
+		Identifier(const Identifier& other) noexcept;
 		Identifier(Identifier&& other) noexcept;
 
 		~Identifier() = default;
@@ -47,6 +47,8 @@ namespace dungeon
 		bool operator==(const Identifier& other) const noexcept;
 		bool operator!=(const Identifier& other) const noexcept;
 
+		operator IdentifierType() const noexcept;
+
 		Type GetType() const noexcept;
 		bool IsType(const Type type) const noexcept;
 		static bool IsType(const IdentifierType identifier, const Type type) noexcept;
@@ -56,16 +58,12 @@ namespace dungeon
 		*/
 		static void ResetCounter();
 
-		// TODO:移行が完了したら削除して下さい
-		operator uint16_t() const noexcept;
-		uint16_t Get() const noexcept;
-
 	private:
 		IdentifierType mIdentifier;
 
-		static constexpr uint8_t bitCount = 2;
-		static constexpr uint8_t shift = sizeof(mIdentifier) * 8 - bitCount;
-		static constexpr IdentifierType maskCounter = static_cast<IdentifierType>(~0) >> bitCount;
+		static constexpr uint8_t BitCount = 2;
+		static constexpr uint8_t Shift = sizeof(mIdentifier) * 8 - BitCount;
+		static constexpr IdentifierType MaskCounter = static_cast<IdentifierType>(~0) >> BitCount;
 		static IdentifierType mCounter;
 	};
 }

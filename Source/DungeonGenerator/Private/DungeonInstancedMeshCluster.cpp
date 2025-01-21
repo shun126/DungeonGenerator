@@ -5,6 +5,7 @@ All Rights Reserved.
 */
 
 #include "DungeonInstancedMeshCluster.h"
+#include "DungeonGenerateBase.h"
 #include <Components/HierarchicalInstancedStaticMeshComponent.h>
 
 /**
@@ -53,6 +54,7 @@ UHierarchicalInstancedStaticMeshComponent* FDungeonInstancedMeshCluster::FindOrC
 	component->RegisterComponent();
 	component->SetStaticMesh(staticMesh);
 	component->bAutoRebuildTreeOnInstanceChanges = false;
+	component->ComponentTags.Add(ADungeonGenerateBase::GetDungeonGeneratorTerrainTag());
 	mComponents.Add(component);
 	return component;
 }

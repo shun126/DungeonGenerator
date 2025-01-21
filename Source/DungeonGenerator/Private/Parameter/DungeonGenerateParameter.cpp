@@ -7,8 +7,8 @@ All Rights Reserved.
 #include "Parameter/DungeonGenerateParameter.h"
 #include "Parameter/DungeonAisleMeshSetDatabase.h"
 #include "Parameter/DungeonRoomMeshSetDatabase.h"
-#include "PluginInfomation.h"
-#include "Core/Debug/BuildInfomation.h"
+#include "PluginInformation.h"
+#include "Core/Debug/BuildInformation.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
 #include "Core/Voxelization/Grid.h"
@@ -71,12 +71,7 @@ void UDungeonGenerateParameter::SetRandomParameter() noexcept
 	MergeRooms = random->Get<bool>();
 	Flat = random->Get<bool>();
 	GenerateSlopeInRoom = random->Get<bool>();
-#if 0
-	// TODO: テストパラメータ
-	NumberOfCandidateFloors = random->Get<uint8>(20, 30);
-	MergeRooms = false;
-	Flat = false;
-#endif
+
 	if (MergeRooms == true)
 	{
 		UseMissionGraph = false;
@@ -189,16 +184,6 @@ FIntVector UDungeonGenerateParameter::ToGrid(const FVector& location) const
 #if WITH_EDITOR
 void UDungeonGenerateParameter::DumpToJson() const
 {
-	/*
-	TODO:外部からファイル名を与えられるように変更して下さい
-	const FString path = FPaths::ProjectSavedDir() + TEXT("/DungeonGenerator/dungeon_diagram.json");
-	*/
-	// TSharedPtr<FJsonObject> jsonRoot = MakeShareable(new FJsonObject);
-	// 
-	// FString outPutString;
-	// TSharedRef<TJsonWriter<>> writer = TJsonWriterFactory<>::Create(&outPutString);
-	// FJsonSerializer::Serialize(jsonRoot.ToSharedRef(), writer);
-
 	auto boolValue = [](const bool value) -> FString
 		{
 			return value ? TEXT("true") : TEXT("false");

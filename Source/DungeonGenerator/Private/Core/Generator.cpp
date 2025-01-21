@@ -168,7 +168,6 @@ namespace dungeon
 
 #if defined(DEBUG_GENERATE_MISSION_GRAPH_FILE)
 			// デバッグ情報を出力
-			// TODO:外部からファイル名を与えられるように変更して下さい
 			DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_diagram.md");
 #endif
 
@@ -184,7 +183,6 @@ namespace dungeon
 
 #if defined(DEBUG_GENERATE_MISSION_GRAPH_FILE)
 			// デバッグ情報を出力
-			// TODO:外部からファイル名を与えられるように変更して下さい
 			DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_diagram.md");
 #endif
 		}
@@ -467,11 +465,10 @@ namespace dungeon
 #endif
 
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP
-		// TODO 不要になったら削除してください
 		for (const auto& room : mRooms)
 		{
 			DUNGEON_GENERATOR_LOG(TEXT("Room: ID=%d (X=%d,Y=%d,Z=%d) (W=%d,D=%d,H=%d)")
-				, room->GetIdentifier().Get()
+				, static_cast<uint16_t>(room->GetIdentifier())
 				, room->GetX(), room->GetY(), room->GetZ()
 				, room->GetWidth(), room->GetDepth(), room->GetHeight()
 			);
@@ -789,7 +786,6 @@ namespace dungeon
 		for (const std::shared_ptr<Room>& room : mRooms)
 		{
 			// 部屋のパーツ（役割）をリセットする
-			// TODO:MinimumSpanningTreeで統合できそう
 			room->SetParts(Room::Parts::Unidentified);
 			room->ResetReservationNumber();
 
@@ -1121,7 +1117,7 @@ namespace dungeon
 				room->SetWidth(width);
 				room->SetDepth(depth);
 
-				DUNGEON_GENERATOR_LOG(TEXT("Expanded the room because it was too small for the connecting gate : ID=%d"), room->GetIdentifier().Get());
+				DUNGEON_GENERATOR_LOG(TEXT("Expanded the room because it was too small for the connecting gate : ID=%d"), static_cast<uint16_t>(room->GetIdentifier()));
 			}
 		}
 
@@ -1275,8 +1271,8 @@ namespace dungeon
 			const FIntVector min(room->GetLeft(), room->GetTop(), room->GetBackground());
 			const FIntVector max(room->GetRight(), room->GetBottom(), room->GetForeground());
 			mVoxel->Rectangle(min, max
-				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier().Get())
-				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier().Get())
+				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier())
+				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier())
 			);
 		}
 
@@ -1413,14 +1409,14 @@ namespace dungeon
 						if (complete == false)
 						{
 #if WITH_EDITOR
-							DUNGEON_GENERATOR_ERROR(TEXT("Generator: Route search failed. %d: ID=%d (%d,%d,%d)-(%d,%d,%d)"), i, aisle.GetIdentifier().Get(), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
+							DUNGEON_GENERATOR_ERROR(TEXT("Generator: Route search failed. %d: ID=%d (%d,%d,%d)-(%d,%d,%d)"), i, static_cast<uint16_t>(aisle.GetIdentifier()), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
 							DUNGEON_GENERATOR_ERROR(TEXT("State of the grid in the starting room %d: ID=%d (%d,%d,%d) %d Gate"), i
-								, startPoint->GetOwnerRoom()->GetIdentifier().Get()
+								, static_cast<uint16_t>(startPoint->GetOwnerRoom()->GetIdentifier())
 								, startPoint->GetOwnerRoom()->GetX(), startPoint->GetOwnerRoom()->GetY(), startPoint->GetOwnerRoom()->GetZ()
 								, startPoint->GetOwnerRoom()->GetGateCount());
 							DumpVoxel(startPoint);
 							DUNGEON_GENERATOR_ERROR(TEXT("State of the grid in the goal room %d: ID=%d (%d,%d,%d) %d Gate"), i
-								, goalPoint->GetOwnerRoom()->GetIdentifier().Get()
+								, static_cast<uint16_t>(goalPoint->GetOwnerRoom()->GetIdentifier())
 								, goalPoint->GetOwnerRoom()->GetX(), goalPoint->GetOwnerRoom()->GetY(), goalPoint->GetOwnerRoom()->GetZ()
 								, goalPoint->GetOwnerRoom()->GetGateCount());
 							DumpVoxel(goalPoint);
@@ -1437,7 +1433,7 @@ namespace dungeon
 						{
 #if WITH_EDITOR
 							DUNGEON_GENERATOR_ERROR(TEXT("Cannot find a start gate that can be generated. %d: ID=%d (%d,%d,%d) %d Gate"), i
-								, startPoint->GetOwnerRoom()->GetIdentifier().Get()
+								, static_cast<uint16_t>(startPoint->GetOwnerRoom()->GetIdentifier())
 								, startPoint->GetOwnerRoom()->GetX(), startPoint->GetOwnerRoom()->GetY(), startPoint->GetOwnerRoom()->GetZ()
 								, startPoint->GetOwnerRoom()->GetGateCount());
 							DumpVoxel(startPoint);
@@ -1456,7 +1452,7 @@ namespace dungeon
 				{
 #if WITH_EDITOR
 					DUNGEON_GENERATOR_ERROR(TEXT("Cannot find a goal gate that can be generated. %d: ID=%d (%d,%d,%d) %d Gate"), i
-						, goalPoint->GetOwnerRoom()->GetIdentifier().Get()
+						, static_cast<uint16_t>(goalPoint->GetOwnerRoom()->GetIdentifier())
 						, goalPoint->GetOwnerRoom()->GetX(), goalPoint->GetOwnerRoom()->GetY(), goalPoint->GetOwnerRoom()->GetZ()
 						, goalPoint->GetOwnerRoom()->GetGateCount());
 					DumpVoxel(goalPoint);
@@ -1697,7 +1693,7 @@ namespace dungeon
 			{
 				stream << room->GetName() << "(" << std::endl;
 				stream << room->GetPartsName() << std::endl;
-				stream << "Identifier:" << std::to_string(room->GetIdentifier().Get()) << std::endl;
+				stream << "Identifier:" << std::to_string(room->GetIdentifier()) << std::endl;
 				stream << "Branch:" << std::to_string(room->GetBranchId()) << std::endl;
 				stream << "Depth:" << std::to_string(room->GetDepthFromStart()) << std::endl;
 				if (Room::Item::Empty != room->GetItem())
@@ -1730,7 +1726,7 @@ namespace dungeon
 				passableAisles.emplace(&aisle);
 
 				std::string label;
-				label = "Identifier:" + std::to_string(aisle.GetIdentifier().Get());
+				label = "Identifier:" + std::to_string(aisle.GetIdentifier());
 				if (aisle.IsUniqueLocked())
 					label += "\nUnique lock";
 				else if (aisle.IsLocked())
@@ -1904,20 +1900,20 @@ namespace dungeon
 			const Aisle& a = mAisles[j];
 			const Point& s = a.GetPoint(0)->GetOwnerRoom()->GetCenter();
 			const Point& g = a.GetPoint(1)->GetOwnerRoom()->GetCenter();
-			const auto aid = a.GetIdentifier().Get();
+			const auto aid = static_cast<uint16_t>(a.GetIdentifier());
 			const auto amp = a.IsMain() ? TCHAR('M') : TCHAR(' ');
-			const auto sid = a.GetPoint(0)->GetOwnerRoom()->GetIdentifier().Get();
-			const auto gid = a.GetPoint(1)->GetOwnerRoom()->GetIdentifier().Get();
+			const auto sid = static_cast<uint16_t>(a.GetPoint(0)->GetOwnerRoom()->GetIdentifier());
+			const auto gid = static_cast<uint16_t>(a.GetPoint(1)->GetOwnerRoom()->GetIdentifier());
 			DUNGEON_GENERATOR_ERROR(TEXT("OK .. %d %c: ID=%d (%d:%f,%f,%f)-(%d:%f,%f,%f)"), j, amp, aid, sid, s.X, s.Y, s.Z, gid, g.X, g.Y, g.Z);
 		}
 		{
 			const Aisle& a = mAisles[index];
 			const Point& s = a.GetPoint(0)->GetOwnerRoom()->GetCenter();
 			const Point& g = a.GetPoint(1)->GetOwnerRoom()->GetCenter();
-			const auto aid = a.GetIdentifier().Get();
+			const auto aid = static_cast<uint16_t>(a.GetIdentifier());
 			const auto amp = a.IsMain() ? TCHAR('M') : TCHAR(' ');
-			const auto sid = a.GetPoint(0)->GetOwnerRoom()->GetIdentifier().Get();
-			const auto gid = a.GetPoint(1)->GetOwnerRoom()->GetIdentifier().Get();
+			const auto sid = static_cast<uint16_t>(a.GetPoint(0)->GetOwnerRoom()->GetIdentifier());
+			const auto gid = static_cast<uint16_t>(a.GetPoint(1)->GetOwnerRoom()->GetIdentifier());
 			DUNGEON_GENERATOR_ERROR(TEXT("NG .. %d %c: ID=%d (%d:%f,%f,%f)-(%d:%f,%f,%f)"), index, amp, aid, sid, s.X, s.Y, s.Z, gid, g.X, g.Y, g.Z);
 		}
 		for (size_t j = index + 1; j < mAisles.size(); ++j)
@@ -1925,17 +1921,17 @@ namespace dungeon
 			const Aisle& a = mAisles[j];
 			const Point& s = a.GetPoint(0)->GetOwnerRoom()->GetCenter();
 			const Point& g = a.GetPoint(1)->GetOwnerRoom()->GetCenter();
-			const auto aid = a.GetIdentifier().Get();
+			const auto aid = static_cast<uint16_t>(a.GetIdentifier());
 			const auto amp = a.IsMain() ? TCHAR('M') : TCHAR(' ');
-			const auto sid = a.GetPoint(0)->GetOwnerRoom()->GetIdentifier().Get();
-			const auto gid = a.GetPoint(1)->GetOwnerRoom()->GetIdentifier().Get();
+			const auto sid = static_cast<uint16_t>(a.GetPoint(0)->GetOwnerRoom()->GetIdentifier());
+			const auto gid = static_cast<uint16_t>(a.GetPoint(1)->GetOwnerRoom()->GetIdentifier());
 			DUNGEON_GENERATOR_ERROR(TEXT("-- .. %d %c: ID=%d (%d:%f,%f,%f)-(%d:%f,%f,%f)"), j, amp, aid, sid, s.X, s.Y, s.Z, gid, g.X, g.Y, g.Z);
 		}
 
 		for (const auto& room : mRooms)
 		{
 			DUNGEON_GENERATOR_ERROR(TEXT("Room: ID=%d (X=%d,Y=%d,Z=%d) (W=%d,D=%d,H=%d) center(%f, %f, %f)")
-				, room->GetIdentifier().Get()
+				, static_cast<uint16_t>(room->GetIdentifier())
 				, room->GetX(), room->GetY(), room->GetZ()
 				, room->GetWidth(), room->GetDepth(), room->GetHeight()
 				, room->GetCenter().X, room->GetCenter().Y, room->GetCenter().Z
@@ -1966,7 +1962,7 @@ namespace dungeon
 					room->GetX() <= x && x < room->GetX() + room->GetWidth())
 					typeName = TEXT("*");
 				typeName += grid.GetTypeName();
-				text += FString::Printf(TEXT("%10s (%5d),"), *typeName, grid.GetIdentifier());
+				text += FString::Printf(TEXT("%10s (%5d),"), *typeName, static_cast<uint16_t>(grid.GetIdentifier()));
 			}
 			DUNGEON_GENERATOR_ERROR(TEXT("%s"), *text);
 		}

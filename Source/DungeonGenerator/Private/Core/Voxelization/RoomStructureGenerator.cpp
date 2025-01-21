@@ -54,6 +54,8 @@ namespace dungeon
 						if (gridType != Grid::Type::Floor)
 							return false;
 					}
+					if (grid.IsCatwalk() == true)
+						return false;
 				}
 
 				const int32 ox = x + 3 * xFlip;

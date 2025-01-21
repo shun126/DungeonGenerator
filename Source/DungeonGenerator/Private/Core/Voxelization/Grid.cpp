@@ -118,7 +118,7 @@ namespace dungeon
 	*/
 	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
 	{
-		// TODO:NoWallMeshGenerationフラグは進入禁止に使用されている別途生成禁止フラグが必要
+		// TODO: NoWallMeshGenerationフラグは進入禁止に使用されている別途生成禁止フラグが必要
 		if (IsNoWallMeshGeneration(direction))
 			return false;
 		/*
@@ -142,12 +142,10 @@ namespace dungeon
 					toGrid.GetDirection().IsNorthSouth() != Direction::IsNorthSouth(direction);
 			}
 
-
 			if (GetIdentifier() == toGrid.GetIdentifier())
 			{
 				return false;
 			}
-
 
 			// 以下の条件なら壁を生成
 			return
@@ -226,13 +224,10 @@ namespace dungeon
 			// スロープ対門以外の部屋
 			if (toGrid.IsKindOfRoomTypeWithoutGate())
 			{
-
-
 				if (GetIdentifier() == toGrid.GetIdentifier())
 				{
 					return false;
 				}
-
 
 				return CanBuildWall_SlopeVsRoom();
 			}

@@ -137,14 +137,14 @@ namespace dungeon
 		mPack.SetProps(props);
 	}
 
-	inline uint16_t Grid::GetIdentifier() const noexcept
+	inline Identifier Grid::GetIdentifier() const noexcept
 	{
-		return mIdentifier;
+		return Identifier(mIdentifier);
 	}
 
-	inline void Grid::SetIdentifier(const uint16_t identifier) noexcept
+	inline void Grid::SetIdentifier(Identifier identifier) noexcept
 	{
-		mIdentifier = identifier;
+		mIdentifier = static_cast<uint16_t>(identifier);
 	}
 
 	inline bool Grid::IsInvalidIdentifier() const noexcept

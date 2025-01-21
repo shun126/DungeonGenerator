@@ -325,12 +325,13 @@ namespace dungeon
 		std::vector<int32_t> mFloorHeight;
 
 		std::shared_ptr<Room> mStartRoom;
-		std::shared_ptr<Room> mGoalRoom;
-
 		// TODO: mStartRoomに置き換えてください
 		std::shared_ptr<const Point> mStartPoint;
+
+		std::shared_ptr<Room> mGoalRoom;
 		// TODO: mGoalRoomに置き換えてください
 		std::shared_ptr<const Point> mGoalPoint;
+
 		std::vector<Aisle> mAisles;
 
 		std::function<void(const std::shared_ptr<Voxel>&)> mOnPreGenerateVoxel;

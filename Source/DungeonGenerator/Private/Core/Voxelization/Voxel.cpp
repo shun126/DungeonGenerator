@@ -21,9 +21,8 @@ All Rights Reserved.
 
 #include <array>
 #include <map>
+#include <mutex>
 #include <vector>
-
-#include "Core/RoomGeneration/Room.h"
 
 namespace dungeon
 {
@@ -35,18 +34,14 @@ namespace dungeon
 	{
 	}
 
-	/**
-	 * 部屋の内部から部屋の外郭を検索します。
-	 * 部屋の外のグリッドは Grid::Type::Empty である必要があります。
-	 */
 	bool Voxel::SearchGateLocation(std::vector<CandidateLocation>& result, const size_t maxResultCount, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) const noexcept
 	{
 		result.clear();
 
 #if defined(JENKINS_FOR_DEVELOP)
 		{
-			const auto startIdentifier = mGrids.get()[Index(start)].GetIdentifier();
-			check(startIdentifier == identifier.Get());
+			const auto& startIdentifier = mGrids.get()[Index(start)].GetIdentifier();
+			check(startIdentifier == identifier);
 		}
 #endif
 
@@ -59,7 +54,7 @@ namespace dungeon
 			// 指定位置のグリッドを取得
 			const auto gridIndex = Index(location);
 			const auto& grid = mGrids.get()[gridIndex];
-			if (grid.GetIdentifier() != identifier.Get())
+			if (grid.GetIdentifier() != identifier)
 				return false;
 
 			// 門にできないグリッドなら次の検索へ
@@ -84,7 +79,7 @@ namespace dungeon
 
 				const Grid& aroundGrid = Get(location + direction.GetVector());
 				// 部屋の中心と同じ識別子なら他のグリッドへ
-				if (aroundGrid.GetIdentifier() == identifier.Get())
+				if (aroundGrid.GetIdentifier() == identifier)
 					continue;
 
 				// 空白なら接続を許可
@@ -220,11 +215,11 @@ namespace dungeon
 		const double lap = stopwatch.Lap();
 		if (lap >= 1.0)
 		{
-			DUNGEON_GENERATOR_WARNING(TEXT("Voxel: Aisle ID=%d, %lf seconds"), aisleParameter.mIdentifier.Get(), lap);
+			DUNGEON_GENERATOR_WARNING(TEXT("Voxel: Aisle ID=%d, %lf seconds"), static_cast<uint16_t>(aisleParameter.mIdentifier), lap);
 		}
 		else
 		{
-			DUNGEON_GENERATOR_LOG(TEXT("Voxel: Aisle ID=%d, %lf seconds"), aisleParameter.mIdentifier.Get(), lap);
+			DUNGEON_GENERATOR_LOG(TEXT("Voxel: Aisle ID=%d, %lf seconds"), static_cast<uint16_t>(aisleParameter.mIdentifier), lap);
 		}
 #endif
 
@@ -342,8 +337,13 @@ namespace dungeon
 			// ゴールに到達？
 			if (IsReachedGoal(nextLocation, route.mIdealGoal.Z, aisleParameter.mGoalCondition))
 			{
-				if (nextNodeType == PathFinder::NodeType::Aisle && nextSearchDirection == PathFinder::SearchDirection::Any)
-					break;
+				if (nextNodeType == PathFinder::NodeType::Aisle)
+				{
+					if (nextSearchDirection == PathFinder::SearchDirection::Any)
+						break;
+				}
+
+				// 別の経路を探索要求
 				continue;
 			}
 
@@ -469,15 +469,13 @@ namespace dungeon
 				check(route.mStart == pathResult->GetStartLocation());
 				check(nextLocation == pathResult->GetGoalLocation());
 				check(nextDirection == pathResult->GetGoalDirection());
+				check(pathResult->GetPathLength() >= 2);
 
-				if (CheckDoorAligned(pathResult->GetStartLocation(), pathResult->GetStartDirection()) == true)
-				{
+				if (CheckDoorAligned(pathResult->GetStartLocation(), pathResult->GetStartDirection(), pathResult->GetNodeTypeFromStart(1)) == true)
 					pathResult->InvalidateStartLocationType();
-				}
-				if (CheckDoorAligned(pathResult->GetGoalLocation(), pathResult->GetGoalDirection()) == true)
-				{
+
+				if (CheckDoorAligned(pathResult->GetGoalLocation(), pathResult->GetGoalDirection(), pathResult->GetNodeTypeFromGoal(1)) == true)
 					pathResult->InvalidateGoalLocationType();
-				}
 			}
 		}
 #if 0
@@ -502,11 +500,14 @@ namespace dungeon
 
 // #define ___DUNGEON_DEBUG___
 
-	bool Voxel::CheckDoorAligned(const FIntVector& location, const Direction& direction) const noexcept
+	bool Voxel::CheckDoorAligned(const FIntVector& location, const Direction& direction, const PathFinder::NodeType nodeType) const noexcept
 	{
+		if (nodeType != PathFinder::NodeType::Aisle)
+			return false;
+
 		if (direction.IsNorthSouth())
 		{
-			// 南北に向いた門
+			// 南北に向いた門（東西に並んだ門）
 			const Grid& w = Get(location.X - 1, location.Y, location.Z);
 			const Grid& e = Get(location.X + 1, location.Y, location.Z);
 
@@ -550,7 +551,7 @@ namespace dungeon
 		}
 		else
 		{
-			// 東西に向いた門
+			// 東西に向いた門（南北に並んだ門）
 			const Grid& n = Get(location.X, location.Y - 1, location.Z);
 			const Grid& s = Get(location.X, location.Y + 1, location.Z);
 
@@ -647,7 +648,7 @@ namespace dungeon
 				// 識別子が無効なら通路として設定する
 				if (grid.IsInvalidIdentifier())
 				{
-					grid.SetIdentifier(aisleParameter.mIdentifier.Get());
+					grid.SetIdentifier(aisleParameter.mIdentifier);
 				}
 
 				grid.SetType(cellType);
