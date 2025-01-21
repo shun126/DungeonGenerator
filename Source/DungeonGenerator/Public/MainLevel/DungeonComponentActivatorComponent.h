@@ -176,7 +176,7 @@ private:
 
 	TWeakObjectPtr<ADungeonMainLevelScriptActor> mDungeonLevelScriptActor;
 	TWeakObjectPtr<UDungeonPartition> mLastDungeonPartition;
-	FVector mLastLocation;
+	FVector mLastLocation = FVector::ZeroVector;
 
 	friend class UDungeonPartition;
 };

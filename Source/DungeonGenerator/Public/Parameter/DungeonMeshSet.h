@@ -38,7 +38,7 @@ public:
 
 	const FDungeonMeshPartsWithDirection* SelectFloorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
-		return SelectParts(gridIndex, grid, random, FloorParts, FloorPartsSelectionMethod);
+		return SelectPartsByGrid(gridIndex, grid, random, FloorParts, FloorPartsSelectionMethod);
 	}
 
 	template<typename Function>
@@ -47,9 +47,14 @@ public:
 		EachParts(FloorParts, std::forward<Function>(function));
 	}
 
-	const FDungeonMeshParts* SelectWallParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
+	const FDungeonMeshParts* SelectWallPartsByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
-		return SelectParts(gridIndex, grid, random, WallParts, WallPartsSelectionMethod);
+		return SelectPartsByGrid(gridIndex, grid, random, WallParts, WallPartsSelectionMethod);
+	}
+
+	const FDungeonMeshParts* SelectWallPartsByFace(const FIntVector& gridLocation, const dungeon::Direction& direction) const
+	{
+		return SelectPartsByFace(gridLocation, direction, WallParts);
 	}
 
 	template<typename Function>
@@ -60,7 +65,7 @@ public:
 
 	const FDungeonMeshPartsWithDirection* SelectRoofParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
-		return SelectParts(gridIndex, grid, random, RoofParts, RoofPartsSelectionMethod);
+		return SelectPartsByGrid(gridIndex, grid, random, RoofParts, RoofPartsSelectionMethod);
 	}
 
 	template<typename Function>
@@ -74,7 +79,7 @@ public:
 	*/
 	const FDungeonMeshParts* SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
-		return SelectParts(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
+		return SelectPartsByGrid(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
 	}
 
 	/**
@@ -91,7 +96,7 @@ public:
 	*/
 	const FDungeonMeshParts* SelectCatwalkParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
-		return SelectParts(gridIndex, grid, random, CatwalkParts, CatwalkPartsSelectionMethod);
+		return SelectPartsByGrid(gridIndex, grid, random, CatwalkParts, CatwalkPartsSelectionMethod);
 	}
 
 	/**
@@ -109,13 +114,25 @@ public:
 
 	// aka: SelectActorParts, SelectRandomActorParts
 	template<typename T = FDungeonMeshParts>
-	static T* SelectParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<T>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod)
+	static T* SelectPartsByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<T>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod)
 	{
 		const int32 size = parts.Num();
 		if (size <= 0)
 			return nullptr;
 
-		const int32 index = SelectDungeonMeshPartsIndex(gridIndex, grid, random, size, partsSelectionMethod);
+		const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, partsSelectionMethod);
+		return const_cast<T*>(&parts[index]);
+	}
+
+	// aka: SelectActorParts, SelectRandomActorParts
+	template<typename T = FDungeonMeshParts>
+	static T* SelectPartsByFace(const FIntVector& gridLocation, const dungeon::Direction& direction, const TArray<T>& parts)
+	{
+		const int32 size = parts.Num();
+		if (size <= 0)
+			return nullptr;
+
+		const int32 index = SelectDungeonMeshPartsIndexByFace(gridLocation, direction, size);
 		return const_cast<T*>(&parts[index]);
 	}
 
@@ -126,6 +143,14 @@ public:
 		{
 			std::forward<Function>(function)(part);
 		}
+	}
+
+	/**
+	壁のパーツを選択する方法を取得します
+	*/
+	EDungeonPartsSelectionMethod GetWallPartsSelectionMethod() const noexcept
+	{
+		return WallPartsSelectionMethod;
 	}
 
 #if WITH_EDITOR
@@ -206,10 +231,9 @@ protected:
 	TArray<FDungeonMeshParts> CatwalkParts;
 
 private:
-	static int32 SelectDungeonMeshPartsIndex(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod);
+	static int32 SelectDungeonMeshPartsIndexByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod);
+	static int32 SelectDungeonMeshPartsIndexByFace(const FIntVector& gridLocation, const dungeon::Direction& direction, const int32 size);
 	static FDungeonActorParts* SelectActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonActorParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod);
 
-
-	// TODO: 移行完了後に削除して下さい
 	friend class UDungeonMeshSetDatabase;
 };

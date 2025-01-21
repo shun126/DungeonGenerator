@@ -8,6 +8,7 @@ All Rights Reserved.
 
 #pragma once
 #include "../Helper/Direction.h"
+#include "../Helper/Identifier.h"
 #include <Containers/UnrealString.h>
 #include <Math/Color.h>
 
@@ -104,12 +105,12 @@ namespace dungeon
 		/**
 		識別子を取得します
 		*/
-		uint16_t GetIdentifier() const noexcept;
+		Identifier GetIdentifier() const noexcept;
 
 		/**
 		識別子を設定します
 		*/
-		void SetIdentifier(const uint16_t identifier) noexcept;
+		void SetIdentifier(Identifier identifier) noexcept;
 
 		/**
 		無効な識別子か判定します？

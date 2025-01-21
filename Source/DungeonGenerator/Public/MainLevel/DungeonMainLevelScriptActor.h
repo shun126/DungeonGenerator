@@ -85,7 +85,7 @@ public:
 	float GetPartitionSize() const noexcept;
 
 	// override
-	virtual void BeginPlay() override;
+	virtual void PreInitializeComponents() override;
 	virtual void EndPlay(const EEndPlayReason::Type endPlayReason) override;
 	virtual void Tick(float deltaSeconds) override;
 

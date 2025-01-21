@@ -5,9 +5,9 @@ All Rights Reserved.
 */
 
 #include "DungeonBlueprint.h"
-#include "PluginInfomation.h"
+#include "PluginInformation.h"
 #include "SubActor/DungeonRoomSensorBase.h"
-#include "Core/Debug/BuildInfomation.h"
+#include "Core/Debug/BuildInformation.h"
 #include <GameFramework/Pawn.h>
 #include <Kismet/GameplayStatics.h>
 #include <Math/UnrealMathUtility.h>

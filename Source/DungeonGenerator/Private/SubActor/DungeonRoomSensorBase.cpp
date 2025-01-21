@@ -96,6 +96,10 @@ void ADungeonRoomSensorBase::Tick(float DeltaSeconds)
 		output.Add(TEXT("Item:") + GetDungeonRoomItemName(Item));
 		output.Add(TEXT("BranchId:") + FString::FromInt(BranchId));
 		output.Add(TEXT("DepthFromStart:") + FString::FromInt(DepthFromStart));
+		output.Add(FString(TEXT("AutoReset:")) + (AutoReset ? TEXT("On") : TEXT("Off")));
+		output.Add(TEXT("DoorAddingProbability:") + FString::FromInt(DoorAddingProbability));
+		output.Add(TEXT("Doors:") + FString::FromInt(DungeonDoors.Num()));
+		output.Add(TEXT("Torches:") + FString::FromInt(DungeonTorchs.Num()));
 
 		FString message;
 		for (const FString& line : output)

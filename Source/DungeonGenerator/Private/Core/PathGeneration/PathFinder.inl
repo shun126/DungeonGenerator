@@ -210,6 +210,16 @@ namespace dungeon
 		return mRoute.front().mLocation;
 	}
 
+	inline PathFinder::NodeType PathFinder::Result::GetNodeTypeFromStart(const size_t index) const noexcept
+	{
+		return (mRoute.end() - 1 - index)->mNodeType;
+	}
+
+	inline PathFinder::NodeType PathFinder::Result::GetNodeTypeFromGoal(const size_t index) const noexcept
+	{
+		return (mRoute.begin() + index)->mNodeType;
+	}
+
 	inline void PathFinder::Result::InvalidateStartLocationType() noexcept
 	{
 		mRoute.back().mNodeType = NodeType::Invalid;

@@ -6,6 +6,7 @@ All Rights Reserved.
 
 #pragma once
 #include "DungeonGenerateBase.h"
+#include "DungeonInstancedMeshCluster.h"
 #include "DungeonGenerateActor.generated.h"
 
 class CDungeonGeneratorCore;
@@ -137,10 +138,11 @@ private:
 	virtual void Dispose(const bool flushStreamLevels) override;
 
 private:
-	void CreateInstancedMeshComponent(UStaticMesh* staticMesh);
-	void ClearInstancedMeshComponents();
-	void AddInstance(const UStaticMesh* staticMesh, const FTransform& transform);
-	void CommitAddInstance();
+	static uint32 InstancedMeshHash(const FVector& position, const double quantizationSize = 50 * 100);
+	void BeginInstanceTransaction();
+	void AddInstance(UStaticMesh* staticMesh, const FTransform& transform);
+	void EndInstanceTransaction();
+	void DestroyAllInstance();
 
 	void PreGenerateImplementation();
 
@@ -181,9 +183,6 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	EDungeonMeshGenerationMethod DungeonMeshGenerationMethod = EDungeonMeshGenerationMethod::StaticMesh;
-
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UInstancedStaticMeshComponent>> InstancedStaticMeshes;
 
 
 	/**
@@ -252,6 +251,12 @@ protected:
 	*/
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	FVector GoalRoomLocation;
+
+	/**
+	 * UInstancedStaticMeshComponentまたはUHierarchicalInstancedStaticMeshComponentのクラスターを管理します
+	 */
+	UPROPERTY(Transient)
+	TMap<uint32, FDungeonInstancedMeshCluster> mInstancedMeshCluster;
 
 #if WITH_EDITOR
 private:

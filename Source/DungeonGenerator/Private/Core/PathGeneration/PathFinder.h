@@ -324,6 +324,20 @@ namespace dungeon
 			const FIntVector& GetGoalLocation() const noexcept;
 
 			/**
+			 * 開始位置から経路のノードタイプを取得します
+			 * @param[in]	index	開始位置からの配列番号
+			 * @return ノードタイプ
+			 */
+			NodeType GetNodeTypeFromStart(const size_t index = 0) const noexcept;
+
+			/**
+			 * 終点位置から経路のノードタイプを取得します
+			 * @param[in]	index	終点位置からの配列番号
+			 * @return ノードタイプ
+			 */
+			NodeType GetNodeTypeFromGoal(const size_t index = 0) const noexcept;
+
+			/**
 			 * 開始位置の種類をGateからInvalidに変更します
 			 */
 			void InvalidateStartLocationType() noexcept;

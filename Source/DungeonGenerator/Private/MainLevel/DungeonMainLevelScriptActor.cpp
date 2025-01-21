@@ -26,15 +26,14 @@ ADungeonMainLevelScriptActor::ADungeonMainLevelScriptActor(const FObjectInitiali
 	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
-void ADungeonMainLevelScriptActor::BeginPlay()
+void ADungeonMainLevelScriptActor::PreInitializeComponents()
 {
-	Super::BeginPlay();
+	Super::PreInitializeComponents();
 
 	mBounding.Init();
 	mActiveExtents.Set(ActiveExtentHorizontalSize, ActiveExtentHorizontalSize, ActiveExtentVerticalSize);
 
-	ULevel* level = GetLevel();
-	if (IsValid(level))
+	if (ULevel* level = GetValid(GetLevel()))
 	{
 		// DungeonGenerateActorの部屋の大きさからアクティブ範囲を求める
 		TArray<ADungeonGenerateActor*> dungeonGenerateActors;
@@ -48,7 +47,7 @@ void ADungeonMainLevelScriptActor::BeginPlay()
 			const FBox& dungeonBoundingBox = dungeonGenerateActor->CalculateBoundingBox();
 			mBounding += dungeonBoundingBox;
 
-			// 現在と隣の部屋ともう少し含めるので二倍にする
+			// 現在と隣の部屋ともう少し含めるので３倍にする
 			FVector dungeonRoomMaxSize = dungeonGenerateActor->GetRoomMaxSize();
 			dungeonRoomMaxSize *= 3;
 
@@ -66,13 +65,14 @@ void ADungeonMainLevelScriptActor::BeginPlay()
 			cullDistance = mActiveExtents.Y;
 		if (cullDistance < mActiveExtents.Z)
 			cullDistance = mActiveExtents.Z;
+
 		for (ADungeonGenerateActor* dungeonGenerateActor : dungeonGenerateActors)
 		{
-			// 辺の半分なので2倍にして辺の長さにする
-			dungeonGenerateActor->SetInstancedMeshCullDistance(cullDistance * 2);
+			// 辺の長さにする
+			dungeonGenerateActor->SetInstancedMeshCullDistance(cullDistance);
 		}
 	}
-	
+
 	// パーティエーションを初期化
 	DungeonPartitions.Reset();
 
@@ -99,6 +99,7 @@ void ADungeonMainLevelScriptActor::EndPlay(const EEndPlayReason::Type endPlayRea
 {
 	Super::EndPlay(endPlayReason);
 
+	mPartitionWidth = mPartitionDepth = 0;
 	DungeonPartitions.Reset();
 	mBounding.Init();
 }
@@ -114,24 +115,27 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 	if (bEnableLoadControl)
 #endif
 	{
-		Begin();
-
-		const UWorld* world = GetWorld();
-		if (IsValid(world))
+		if (const UWorld* world = GetValid(GetWorld()))
 		{
-			for (FConstControllerIterator iterator = GetWorld()->GetControllerIterator(); iterator; ++iterator)
+			Begin();
+			for (FConstControllerIterator iterator = world->GetControllerIterator(); iterator; ++iterator)
 			{
-				const AController* controller = iterator->Get();
-				const APawn* playerPawn = controller->GetPawn();
-				if (IsValid(playerPawn))
+				if (const AController* controller = iterator->Get())
 				{
-					const FVector& playerLocation = playerPawn->GetActorLocation();
-					Mark(FBox(playerLocation - mActiveExtents, playerLocation + mActiveExtents));
+					const APawn* playerPawn = controller->GetPawn();
+					if (IsValid(playerPawn))
+					{
+						const FVector& playerLocation = playerPawn->GetActorLocation();
+						Mark(FBox(playerLocation - mActiveExtents, playerLocation + mActiveExtents));
+					}
 				}
 			}
+			End(deltaSeconds);
 		}
-
-		End(deltaSeconds);
+		else
+		{
+			ForceInactivate();
+		}
 
 #if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 		mLastEnableLoadControl = true;

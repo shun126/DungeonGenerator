@@ -23,8 +23,13 @@ ADungeonActor* ADungeonActor::SpawnDungeonActor(UWorld* world, const FVector& lo
 	const FTransform transform(location);
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.ObjectFlags |= RF_Transient;
-	AActor* actor = SpawnActorImpl(world, ADungeonActor::StaticClass(), TEXT("Actors"), transform, actorSpawnParameters);
-
+	AActor* actor = SpawnActorImpl(
+		world,
+		ADungeonActor::StaticClass(),
+		TEXT("Actors"),
+		transform,
+		actorSpawnParameters
+	);
 	return Cast<ADungeonActor>(actor);
 }
 

@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "BuildInfomation.h"
+#include "BuildInformation.h"
 
 // エディタかつ開発ビルドのみ有効
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP

@@ -7,7 +7,7 @@ All Rights Reserved.
 */
 
 #include "PathFinder.h"
-#include "../Debug/BuildInfomation.h"
+#include "../Debug/BuildInformation.h"
 #include <CoreMinimal.h>
 
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP
@@ -136,13 +136,13 @@ namespace dungeon
 		// 使用中と予約中のOpenノードをクリアします
 		ClearOpenNode();
 
-		// 結果オブジェクトを生成
-		mResult = std::make_shared<Result>();
-
 #if defined(CHECK_ROUTE)
 		// Openノードは不要なのでクリア
 		mOpen.clear();
 #endif
+
+		// 結果オブジェクトを生成
+		mResult = std::make_shared<Result>();
 
 		// ゴールノードを探すキーを生成
 		const uint64_t key = Hash(goal);
@@ -203,7 +203,7 @@ namespace dungeon
 #endif
 
 		// 階段ノードを修正
-		// TODO: Resultクラスに含められるか検討して下さい
+		// TODO: このブロックをResultクラスに含められるか検討して下さい
 		for (auto current = mResult->mRoute.rbegin(); current != mResult->mRoute.rend(); ++current)
 		{
 			switch (current->mNodeType)

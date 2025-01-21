@@ -84,7 +84,7 @@ namespace dungeon
 			uint32_t bfOffBits;
 		};
 
-		//! Microsoft Windows Bitmap infomation header
+		//! Microsoft Windows Bitmap information header
 		struct BMPINFOHEADER
 		{
 			uint32_t biSize;

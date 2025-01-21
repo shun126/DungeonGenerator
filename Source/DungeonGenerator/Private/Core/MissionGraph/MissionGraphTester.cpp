@@ -127,7 +127,7 @@ namespace dungeon
 					--inventory.mNumberOfUniqueKeys;
 					node->mRoomKey = Room::Item::Empty;
 					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Used a unique key in Room %d. (%d|%d)"), node->mIdentifier.Get(), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
+					DUNGEON_GENERATOR_LOG(TEXT(" -> Used a unique key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
 					if (node->SeekGoal(inventory, shouldRetry) == true)
 						return true;
 				}
@@ -144,7 +144,7 @@ namespace dungeon
 					--inventory.mNumberOfKeys;
 					node->mRoomKey = Room::Item::Empty;
 					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Used a key in Room %d. (%d|%d)"), node->mIdentifier.Get(), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
+					DUNGEON_GENERATOR_LOG(TEXT(" -> Used a key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
 					if (node->SeekGoal(inventory, shouldRetry) == true)
 						return true;
 				}
@@ -159,7 +159,7 @@ namespace dungeon
 					++inventory.mNumberOfUniqueKeys;
 					node->mRoomItem = Room::Item::Empty;
 					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Picked up a unique key in Room %d. (%d|%d)"), node->mIdentifier.Get(), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
+					DUNGEON_GENERATOR_LOG(TEXT(" -> Picked up a unique key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
 				}
 				// 鍵を拾った？
 				else if (node->mRoomItem == Room::Item::Key)
@@ -167,7 +167,7 @@ namespace dungeon
 					++inventory.mNumberOfKeys;
 					node->mRoomItem = Room::Item::Empty;
 					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Picked up a key in Room %d. (%d|%d)"), node->mIdentifier.Get(), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
+					DUNGEON_GENERATOR_LOG(TEXT(" -> Picked up a key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
 				}
 
 				// 次の部屋へ

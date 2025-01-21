@@ -34,22 +34,28 @@ All Rights Reserved.
 
 
 
-int32 FDungeonMeshSet::SelectDungeonMeshPartsIndex(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod)
+int32 FDungeonMeshSet::SelectDungeonMeshPartsIndexByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod)
 {
 	switch (partsSelectionMethod)
 	{
-	case EDungeonPartsSelectionMethod::GridIndex:
-		return gridIndex % size;
-
 	case EDungeonPartsSelectionMethod::Direction:
 		return grid.GetDirection().Get() % size;
 
 	case EDungeonPartsSelectionMethod::Random:
 		return random->Get<uint32_t>(size);
 
+	case EDungeonPartsSelectionMethod::GridIndex:
 	default:
 		return gridIndex % size;
 	}
+}
+
+int32 FDungeonMeshSet::SelectDungeonMeshPartsIndexByFace(const FIntVector& gridLocation, const dungeon::Direction& direction, const int32 size)
+{
+	const int32 offset = gridLocation.Z & 1;
+	if (direction.IsNorthSouth())
+		return (gridLocation.X + offset) % size;
+	return (gridLocation.Y + offset) % size;
 }
 
 // aka: SelectParts, SelectRandomActorParts
@@ -59,7 +65,7 @@ FDungeonActorParts* FDungeonMeshSet::SelectActorParts(const size_t gridIndex, co
 	if (size <= 0)
 		return nullptr;
 
-	const int32 index = SelectDungeonMeshPartsIndex(gridIndex, grid, random, size, partsSelectionMethod);
+	const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, partsSelectionMethod);
 	FDungeonActorParts* actorParts = const_cast<FDungeonActorParts*>(&parts[index]);
 	return IsValid(actorParts->ActorClass) ? actorParts : nullptr;
 }
@@ -71,7 +77,7 @@ FDungeonRandomActorParts* FDungeonMeshSet::SelectRandomActorParts(const size_t g
 	if (size <= 0)
 		return nullptr;
 
-	const int32 index = SelectDungeonMeshPartsIndex(gridIndex, grid, random, size, partsSelectionMethod);
+	const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, partsSelectionMethod);
 	FDungeonRandomActorParts* actorParts = const_cast<FDungeonRandomActorParts*>(&parts[index]);
 	if (!IsValid(actorParts->ActorClass))
 		return nullptr;
