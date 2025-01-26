@@ -32,7 +32,7 @@ void UDungeonPartition::CallPartitionActivate()
 	if (!mPartitionActivate)
 	{
 		mPartitionActivate = true;
-		mActivateRemainTimer = ActivateRemainTimer;
+		mInactivateRemainTimer = InactivateRemainTimer;
 
 		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
 		{

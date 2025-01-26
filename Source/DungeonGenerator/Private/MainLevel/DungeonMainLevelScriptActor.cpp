@@ -108,7 +108,7 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 {
 	Super::Tick(deltaSeconds);
 
-	if (!mBounding.IsValid)
+	if (mBounding.IsValid == false)
 		return;
 
 #if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
@@ -123,10 +123,26 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 				if (const AController* controller = iterator->Get())
 				{
 					const APawn* playerPawn = controller->GetPawn();
-					if (IsValid(playerPawn))
+					if (IsValid(playerPawn) && playerPawn->IsPlayerControlled())
 					{
 						const FVector& playerLocation = playerPawn->GetActorLocation();
 						Mark(FBox(playerLocation - mActiveExtents, playerLocation + mActiveExtents));
+
+#if WITH_EDITOR
+						// 有効な範囲を黄色い線で描画します
+						if (ShowDebugInformation)
+						{
+							UKismetSystemLibrary::DrawDebugBox(
+								GetWorld(),
+								playerLocation,
+								mActiveExtents,
+								FColor::Yellow,
+								FRotator::ZeroRotator,
+								0.f,
+								10.f
+							);
+						}
+#endif
 					}
 				}
 			}
@@ -150,6 +166,11 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 			ForceActivate();
 		}
 	}
+#endif
+
+#if WITH_EDITOR
+	if (ShowDebugInformation)
+		DrawDebugInformation();
 #endif
 }
 
@@ -212,7 +233,7 @@ void ADungeonMainLevelScriptActor::End(const float deltaSeconds)
 		{
 			partition->CallPartitionActivate();
 		}
-		else if (partition->UpdateActivateRemainTimer(deltaSeconds))
+		else if (partition->UpdateInactivateRemainTimer(deltaSeconds))
 		{
 			partition->CallPartitionActivate();
 		}
@@ -252,3 +273,32 @@ bool ADungeonMainLevelScriptActor::IsEnableLoadControl() const noexcept
 }
 #endif
 
+#if WITH_EDITOR
+void ADungeonMainLevelScriptActor::DrawDebugInformation() const
+{
+	// パーティエーションの状態を線で描画します
+	for (double z = mBounding.Min.Z; z < mBounding.Max.Z; z += PartitionSize)
+	{
+		for (double y = mBounding.Min.Y; y < mBounding.Max.Y; y += PartitionSize)
+		{
+			for (double x = mBounding.Min.X; x < mBounding.Max.X; x += PartitionSize)
+			{
+				if (const auto* partition = Find(FVector(x + 1, y + 1, z + 1)))
+				{
+					const FVector location(x, y, z);
+					const FVector halfSize(PartitionSize / 2, PartitionSize / 2, PartitionSize / 2);
+					UKismetSystemLibrary::DrawDebugBox(
+						GetWorld(),
+						location + halfSize,
+						halfSize,
+						partition->IsMarked() ? FColor::Red : FColor::Blue,
+						FRotator::ZeroRotator,
+						0.f,
+						10.f
+					);
+				}
+			}
+		}
+	}
+}
+#endif

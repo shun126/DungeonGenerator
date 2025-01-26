@@ -30,7 +30,7 @@ class DUNGEONGENERATOR_API UDungeonPartition : public UObject
 	Time from inactivity target to deactivation.
 	非アクティブ化対象になってから実際に非アクティブ化するまでの秒数。
 	*/
-	static constexpr float ActivateRemainTimer = 5.f;
+	static constexpr float InactivateRemainTimer = 3.f;
 
 public:
 	explicit UDungeonPartition(const FObjectInitializer& objectInitializer);
@@ -40,8 +40,8 @@ private:
 	void RegisterActivatorComponent(UDungeonComponentActivatorComponent* component);
 	void UnregisterActivatorComponent(UDungeonComponentActivatorComponent* component);
 
-	bool UpdateActivateRemainTimer(const float deltaSeconds);
-	bool IsValidActivateRemainTimer() const noexcept;
+	bool UpdateInactivateRemainTimer(const float deltaSeconds);
+	bool IsValidInactivateRemainTimer() const noexcept;
 
 	void Mark() noexcept;
 	void Unmark() noexcept;
@@ -55,7 +55,7 @@ protected:
 	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> ActivatorComponents;
 
 private:
-	float mActivateRemainTimer = 0.f;
+	float mInactivateRemainTimer = 0.f;
 	bool mPartitionActivate = true;
 	bool mMarked = false;
 
@@ -68,18 +68,18 @@ inline UDungeonPartition::UDungeonPartition(const FObjectInitializer& objectInit
 {
 }
 
-inline bool UDungeonPartition::UpdateActivateRemainTimer(const float deltaSeconds)
+inline bool UDungeonPartition::UpdateInactivateRemainTimer(const float deltaSeconds)
 {
-	if (mActivateRemainTimer > 0.f)
+	if (mInactivateRemainTimer > 0.f)
 	{
-		mActivateRemainTimer -= deltaSeconds;
+		mInactivateRemainTimer -= deltaSeconds;
 	}
-	return mActivateRemainTimer > 0.f;
+	return mInactivateRemainTimer > 0.f;
 }
 
-inline bool UDungeonPartition::IsValidActivateRemainTimer() const noexcept
+inline bool UDungeonPartition::IsValidInactivateRemainTimer() const noexcept
 {
-	return mActivateRemainTimer > 0.f;
+	return mInactivateRemainTimer > 0.f;
 }
 
 inline void UDungeonPartition::Mark() noexcept

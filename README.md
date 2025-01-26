@@ -5,11 +5,11 @@
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
 [![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
-[![youtube](https://img.shields.io/youtube/views/HIW4mRt2_AA?style=social)](https://youtu.be/HIW4mRt2_AA)
+[![youtube](https://img.shields.io/youtube/views/1igd4pls5x8?style=social)](https://youtu.be/1igd4pls5x8)
 
 Please also take a look at the [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) version.
 
-* Trailer video: [YouTube](https://youtu.be/HIW4mRt2_AA)
+* Trailer video: [YouTube](https://youtu.be/1igd4pls5x8)
 * Tutorial videos: [YouTube](https://www.youtube.com/playlist?list=PLlMDkSa8bQnK4PDIfkXYorQIucn47ifKO)
 
 Revolutionize your dungeon creation process with our new Unreal Engine plugin! Enjoy freedom and customize your own rulesets to offer players unique and engaging dungeon exploration experiences. Say goodbye to the hassle of manual dungeon building and welcome the new age of dungeon exploration!

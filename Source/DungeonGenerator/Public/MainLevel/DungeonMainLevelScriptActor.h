@@ -106,6 +106,10 @@ private:
 	void ForceActivate();
 	void ForceInactivate();
 
+#if WITH_EDITOR
+	void DrawDebugInformation() const;
+#endif
+
 protected:
 	/**
 	レベル内のダンジョンパーティエーション
@@ -127,6 +131,13 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
 	bool bEnableLoadControl = true;
+
+	/**
+	 * Displays debugging information
+	 * デバッグ情報を表示します
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
+	bool ShowDebugInformation = false;
 #endif
 
 private:

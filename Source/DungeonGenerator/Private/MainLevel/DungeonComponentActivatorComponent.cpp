@@ -318,11 +318,11 @@ void UDungeonComponentActivatorComponent::SaveAndDisableVisibility(const EDungeo
 			{
 				std::pair<bool, bool> result;
 
-				USceneComponent* meshComponent = Cast<USceneComponent>(component);
-				result.first = result.second = IsValid(meshComponent) && meshComponent->IsVisible();
+				auto* sceneComponent = Cast<USceneComponent>(component);
+				result.first = result.second = IsValid(sceneComponent) && sceneComponent->IsVisible();
 				if (result.first)
 				{
-					meshComponent->SetVisibility(false);
+					sceneComponent->SetVisibility(false);
 				}
 				else
 				{
@@ -344,9 +344,9 @@ void UDungeonComponentActivatorComponent::LoadVisibility(const EDungeonComponent
 	{
 		mComponentVisibilitySaver.Pop([](UActorComponent* component, const bool activation)
 			{
-				if (USceneComponent* meshComponent = Cast<USceneComponent>(component))
+				if (auto* sceneComponent = Cast<USceneComponent>(component))
 				{
-					meshComponent->SetVisibility(activation);
+					sceneComponent->SetVisibility(activation);
 				}
 			}
 		);
