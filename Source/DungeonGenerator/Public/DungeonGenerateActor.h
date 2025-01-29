@@ -111,6 +111,12 @@ public:
 #endif
 
 	/**
+	 * Gets the size of the grid
+	 * グリッドのサイズを取得します
+	 */
+	float GetGridSize() const;
+
+	/**
 	Get the largest room size
 	最も大きい部屋のサイズを取得します
 	*/
@@ -120,7 +126,7 @@ public:
 	Sets the culling distance for InstancedMesh
 	InstancedMeshのカリング距離を設定します
 	*/
-	void SetInstancedMeshCullDistance(const double cullDistance);
+	void SetInstancedMeshCullDistance(const FInt32Interval& cullDistance);
 
 	// AActor overrides
 	virtual void PreInitializeComponents() override;

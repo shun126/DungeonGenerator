@@ -1,6 +1,6 @@
 # Dungeon generator plugin for Unreal Engine 5
 
-[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.4-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
+[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.5-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
 [![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
@@ -48,7 +48,7 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 * Supported Target Build Platforms: Windows,Android (should be possible to target all platforms)
 
 # 🔧 Requirements
-* [Unreal Engine 5.1 ~ Unreal Engine 5.4](https://www.unrealengine.com/)
+* [Unreal Engine 5.1 ~ Unreal Engine 5.5](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 # 📜 License
@@ -76,6 +76,6 @@ The [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) 
 
 # 👾 Authors
 * [Nonbiri](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q)
-* [Shun Moriya](https://twitter.com/moriya_zx25r)
+* [Shun Moriya](https://x.com/monjiro1972)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M413XDXB)

@@ -1,18 +1,24 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (45)
+## Unreleased-1.6.* (46)
 ### Changes
 ### 変更点
 
+## 20250130-1.6.16 (45)
+### Changes
+* Modified load reduction algorithm
+* Fixed several bugs
+### 変更点
+* 負荷軽減アルゴリズムを変更
+* いくつかの不具合を修正
+
 ## 20250122-1.6.15 (44)
 ### Changes
-* Fixed problem with incorrect depth of rooms from the start
-* Investigated an issue where gates were not created when stairs and rooms were connected
+* Fixed a problem where a gate was not formed when a staircase connected to a room.
 * Changed the order in which vegetation is generated to after interiors
 * Fixed several bugs
 ### 変更点
-* スタートからの部屋の奥行きが不正になる問題の修正
-* 階段と部屋がつながった時に門ができていない不具合の調査
+* 階段と部屋がつながった時に門ができていない不具合の修正
 * 植生の生成順序をインテリアよりも後に変更
 * いくつかの不具合を修正
 
@@ -445,4 +451,3 @@
 * Initial release version
 ### 変更点
 * 初回リリース版
-

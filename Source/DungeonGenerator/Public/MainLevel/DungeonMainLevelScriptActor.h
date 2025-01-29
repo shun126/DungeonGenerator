@@ -13,6 +13,8 @@ All Rights Reserved.
 #include "DungeonMainLevelScriptActor.generated.h"
 
 class ADungeonGenerateActor;
+class APlayerController;
+class FSceneView;
 
 /**
 This class manages the DungeonComponentActivatorComponent validity
@@ -34,13 +36,13 @@ class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptAct
 	Distance from horizontal player to activate partition
 	パーティションをアクティブにする水平方向のプレイヤーからの距離
 	*/
-	static constexpr double ActiveExtentHorizontalSize = 10.0 * 100.0;
+	static constexpr double ActiveExtentHorizontalSize = 20.0 * 100.0;
 
 	/**
 	Distance from vertical player to activate partition
 	パーティションをアクティブにする垂直方向のプレイヤーからの距離
 	*/
-	static constexpr double ActiveExtentVerticalSize = 5.0 * 100.0;
+	static constexpr double ActiveExtentVerticalSize = 10.0 * 100.0;
 
 public:
 	explicit ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer);
@@ -77,13 +79,6 @@ public:
 	*/
 	const FVector& GetActiveExtents() const noexcept;
 
-	/**
-	 * Get the partition size
-	 * パーティエーションサイズを取得します
-	 * @return パーティエーションサイズ
-	 */
-	float GetPartitionSize() const noexcept;
-
 	// override
 	virtual void PreInitializeComponents() override;
 	virtual void EndPlay(const EEndPlayReason::Type endPlayReason) override;
@@ -99,12 +94,18 @@ public:
 #endif
 
 private:
+	const FSceneView* GetSceneView(const APlayerController* playerController) const;
+
 	void Begin();
 	void Mark(const FBox& activeBounds);
+	void Mark(const FSceneView& sceneView);
+	void Mark(const FRotator& viewRotator, const FVector& viewLocation);
 	void End(const float deltaSeconds);
 
 	void ForceActivate();
 	void ForceInactivate();
+
+	static bool TestSegmentAABB(const FVector& segmentStart, const FVector& segmentEnd, const FVector& aabbCenter, const FVector& aabbExtent);
 
 #if WITH_EDITOR
 	void DrawDebugInformation() const;
@@ -116,13 +117,6 @@ protected:
 	*/
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UDungeonPartition>> DungeonPartitions;
-
-	/**
-	Distance to divide the world
-	ワールドを分割する距離
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ClampMin = "1000"))
-	float PartitionSize = 1000.0f;
 
 #if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	/**
@@ -142,8 +136,10 @@ protected:
 
 private:
 	FBox mBounding;
+	double mBoundingSize = ActiveExtentHorizontalSize;
 	size_t mPartitionWidth = 0;
 	size_t mPartitionDepth = 0;
+	double mPartitionSize = ActiveExtentHorizontalSize / 2;
 	FVector mActiveExtents;
 
 #if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
@@ -154,9 +150,4 @@ private:
 inline const FVector& ADungeonMainLevelScriptActor::GetActiveExtents() const noexcept
 {
 	return mActiveExtents;
-}
-
-inline float ADungeonMainLevelScriptActor::GetPartitionSize() const noexcept
-{
-	return PartitionSize;
 }
