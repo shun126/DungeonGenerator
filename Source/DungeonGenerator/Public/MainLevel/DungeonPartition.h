@@ -50,6 +50,8 @@ private:
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
 
+	bool IsEmpty() const;
+
 protected:
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> ActivatorComponents;

@@ -59,3 +59,8 @@ void UDungeonPartition::CallPartitionInactivate()
 		}
 	}
 }
+
+bool UDungeonPartition::IsEmpty() const
+{
+	return ActivatorComponents.Num() == 0;
+}

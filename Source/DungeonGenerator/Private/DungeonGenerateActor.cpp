@@ -174,19 +174,11 @@ void ADungeonGenerateActor::DestroyAllInstance()
 	mInstancedMeshCluster.Reset();
 }
 
-void ADungeonGenerateActor::SetInstancedMeshCullDistance(const double cullDistance)
+void ADungeonGenerateActor::SetInstancedMeshCullDistance(const FInt32Interval& cullDistance)
 {
-	double length = 10 * 100;
-	if (mParameter)
-		length = mParameter->GetGridSize().HorizontalSize * 3.f;
-
 	for (auto& pair : mInstancedMeshCluster)
 	{
-		const FInt32Interval range(
-			cullDistance,
-			cullDistance + length
-		);
-		pair.Value.SetCullDistance(range);
+		pair.Value.SetCullDistance(cullDistance);
 	}
 }
 
@@ -370,6 +362,11 @@ int32 ADungeonGenerateActor::GetGeneratedDungeonCRC32() const noexcept
 	return GeneratedDungeonCRC32;
 }
 #endif
+
+float ADungeonGenerateActor::GetGridSize() const
+{
+	return DungeonGenerateParameter && DungeonGenerateParameter->GridSize;
+}
 
 FVector ADungeonGenerateActor::GetRoomMaxSize() const
 {
