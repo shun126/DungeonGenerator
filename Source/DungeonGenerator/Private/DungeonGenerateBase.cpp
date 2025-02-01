@@ -18,6 +18,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include "Core/Helper/Direction.h"
 #include "Core/Helper/Identifier.h"
 #include "Core/Helper/Stopwatch.h"
+#include "Core/Math/Math.h"
 #include "Core/Math/Random.h"
 #include "Core/Voxelization/Voxel.h"
 #include "MainLevel/DungeonComponentActivatorComponent.h"
@@ -45,8 +46,6 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include <algorithm>
 #include <numeric>
 #include <unordered_map>
-
-#include "Core/Math/Math.h"
 
 #if WITH_EDITOR
 // UnrealEd
@@ -1273,10 +1272,9 @@ RecastNavMeshアクターを検索して、無ければRecastNavMeshアクター
 */
 void ADungeonGenerateBase::CheckRecastNavMesh() const
 {
-	if (const ARecastNavMesh* navMeshBoundsVolume = FindActor<ARecastNavMesh>())
+	if (const auto* recastNavMesh = FindActor<ARecastNavMesh>())
 	{
-		const auto mode = navMeshBoundsVolume->GetRuntimeGenerationMode();
-		if (mode != ERuntimeGenerationType::Dynamic && mode != ERuntimeGenerationType::DynamicModifiersOnly)
+		if (recastNavMesh->GetRuntimeGenerationMode() != ERuntimeGenerationType::Dynamic)
 		{
 			DUNGEON_GENERATOR_ERROR(TEXT("Set RuntimeGenerationMode of RecastNavMesh to Dynamic"));
 		}

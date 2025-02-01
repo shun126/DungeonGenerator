@@ -235,9 +235,10 @@ private:
 	// Navigation
 	void CreateImplement_Navigation(const bool hasAuthority);
 	void CheckRecastNavMesh() const;
-	void FitNavMeshBoundsVolume();
 
 protected:
+	virtual void FitNavMeshBoundsVolume();
+
 	/**
 	PlayerStartPIEアクターを除くPlayerStartアクターを収集してstartPointsに記録します
 	*/

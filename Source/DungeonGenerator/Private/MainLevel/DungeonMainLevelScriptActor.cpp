@@ -20,6 +20,15 @@ All Rights Reserved.
 #include <Kismet/GameplayStatics.h>
 #include <cmath>
 
+/**
+ * Ratio from the overall size to find the visible distance
+ * 0.5 means you can see half the distance of the world
+ * 
+ * 見える距離を求める為の全体のサイズからの比率
+ * 0.5なら世界の半分の距離が見える事になる
+ */
+static constexpr double VisibleDistanceRatio = 0.5;
+
 ADungeonMainLevelScriptActor::ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer)
 	: Super(objectInitializer)
 	, mActiveExtents(0)
@@ -37,11 +46,11 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 
 	mBounding.Init();
 	mActiveExtents.Set(ActiveExtentHorizontalSize, ActiveExtentHorizontalSize, ActiveExtentVerticalSize);
+	TArray<ADungeonGenerateActor*> dungeonGenerateActors;
 	float maxGridSize = 100.f;
 	if (ULevel* level = GetValid(GetLevel()))
 	{
 		// DungeonGenerateActorの部屋の大きさからアクティブ範囲を求める
-		TArray<ADungeonGenerateActor*> dungeonGenerateActors;
 		for (AActor* actor : level->Actors)
 		{
 			ADungeonGenerateActor* dungeonGenerateActor = Cast<ADungeonGenerateActor>(actor);
@@ -73,22 +82,6 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 			if (mPartitionSize < mActiveExtents.Z)
 				mPartitionSize = mActiveExtents.Z;
 			mPartitionSize = std::ceil(mPartitionSize);
-
-			// カリング距離を求めてDungeonGenerateActorに設定する
-			const FVector boundingSize = mBounding.GetSize();
-			double cullDistance = boundingSize.X;
-			if (cullDistance < boundingSize.Y)
-				cullDistance = boundingSize.Y;
-			if (cullDistance < boundingSize.Z)
-				cullDistance = boundingSize.Z;
-			const FInt32Interval cullingDistanceRange(
-				cullDistance / 3 * 2,
-				cullDistance
-			);
-			for (ADungeonGenerateActor* dungeonGenerateActor : dungeonGenerateActors)
-			{
-				dungeonGenerateActor->SetInstancedMeshCullDistance(cullingDistanceRange);
-			}
 		}
 	}
 
@@ -113,12 +106,20 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 		{
 			DungeonPartitions.Add(NewObject<UDungeonPartition>());
 		}
+
+		// カリング距離を求めてDungeonGenerateActorに設定する
+		const FInt32Interval cullingDistanceRange(
+			mBoundingSize * 0.8,
+			mBoundingSize * 0.9
+		);
+		for (ADungeonGenerateActor* dungeonGenerateActor : dungeonGenerateActors)
+		{
+			dungeonGenerateActor->SetInstancedMeshCullDistance(cullingDistanceRange);
+		}
 	}
 	else
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Place the DungeonGenerateActor on the level"));
-		mPartitionWidth = 0;
-		mPartitionDepth = 0;
 	}
 }
 
@@ -156,7 +157,10 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 	Super::Tick(deltaSeconds);
 
 	if (mBounding.IsValid == false)
+	{
+		SetActorTickEnabled(false);
 		return;
+	}
 
 #if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 	if (bEnableLoadControl)
@@ -283,7 +287,7 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 {
 	const double halfPartitionSize = mPartitionSize * 0.5;
 	const FVector partitionExtent(halfPartitionSize);
-	const double visibleDistanceSquared = FMath::Square(mBoundingSize * 0.5);
+	const double visibleDistanceSquared = FMath::Square(mBoundingSize * VisibleDistanceRatio);
 
 	size_t index = 0;
 	FVector origin;
@@ -310,7 +314,7 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 
 void ADungeonMainLevelScriptActor::Mark(const FRotator& viewRotator, const FVector& viewLocation)
 {
-	const FVector segmentEnd = viewLocation + viewRotator.Vector() * mBoundingSize;
+	const FVector segmentEnd = viewLocation + viewRotator.Vector() * (mBoundingSize * VisibleDistanceRatio);
 
 	const double halfPartitionSize = mPartitionSize * 0.5;
 	const FVector partitionExtent(halfPartitionSize, halfPartitionSize, (mBounding.Max.Z - mBounding.Min.Z) * 0.5);

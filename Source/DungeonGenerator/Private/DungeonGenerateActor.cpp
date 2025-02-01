@@ -163,6 +163,9 @@ void ADungeonGenerateActor::EndInstanceTransaction()
 	{
 		chunk.Value.EndTransaction();
 	}
+
+	if (mInstancedMeshCullDistance.Min < mInstancedMeshCullDistance.Max)
+		ApplyInstancedMeshCullDistance();
 }
 
 void ADungeonGenerateActor::DestroyAllInstance()
@@ -176,9 +179,15 @@ void ADungeonGenerateActor::DestroyAllInstance()
 
 void ADungeonGenerateActor::SetInstancedMeshCullDistance(const FInt32Interval& cullDistance)
 {
+	mInstancedMeshCullDistance = cullDistance;
+	ApplyInstancedMeshCullDistance();
+}
+
+void ADungeonGenerateActor::ApplyInstancedMeshCullDistance()
+{
 	for (auto& pair : mInstancedMeshCluster)
 	{
-		pair.Value.SetCullDistance(cullDistance);
+		pair.Value.SetCullDistance(mInstancedMeshCullDistance);
 	}
 }
 
@@ -307,6 +316,14 @@ void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)
 	}
 
 	Super::Dispose(flushStreamLevels);
+}
+
+void ADungeonGenerateActor::FitNavMeshBoundsVolume()
+{
+	Super::FitNavMeshBoundsVolume();
+
+	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
+		ReregisterAllComponents();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
