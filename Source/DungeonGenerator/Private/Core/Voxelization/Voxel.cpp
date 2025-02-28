@@ -613,22 +613,26 @@ namespace dungeon
 				case PathFinder::NodeType::UpSpace:
 					cellType = Grid::Type::UpSpace;
 					grid.MergeAisle(aisleParameter.mGenerateIntersections);
+					grid.SetDepthRatioFromStart(aisleParameter.mDepthRatioFromStart);
 					break;
 
 				case PathFinder::NodeType::DownSpace:
 					cellType = Grid::Type::DownSpace;
 					grid.MergeAisle(aisleParameter.mGenerateIntersections);
+					grid.SetDepthRatioFromStart(aisleParameter.mDepthRatioFromStart);
 					break;
 
 				case PathFinder::NodeType::Downstairs:
 				case PathFinder::NodeType::Upstairs:
 					cellType = Grid::Type::Slope;
 					grid.MergeAisle(aisleParameter.mGenerateIntersections);
+					grid.SetDepthRatioFromStart(aisleParameter.mDepthRatioFromStart);
 					break;
 
 				case PathFinder::NodeType::Stairwell:
 					cellType = Grid::Type::Stairwell;
 					grid.MergeAisle(aisleParameter.mGenerateIntersections);
+					grid.SetDepthRatioFromStart(aisleParameter.mDepthRatioFromStart);
 					break;
 
 				case PathFinder::NodeType::Gate:
@@ -638,6 +642,7 @@ namespace dungeon
 				case PathFinder::NodeType::Aisle:
 					cellType = Grid::Type::Aisle;
 					grid.MergeAisle(aisleParameter.mGenerateIntersections);
+					grid.SetDepthRatioFromStart(aisleParameter.mDepthRatioFromStart);
 					break;
 
 				case PathFinder::NodeType::Invalid:
@@ -777,12 +782,8 @@ namespace dungeon
 		if (grid.IsNoWallMeshGeneration(enteringDirection.Inverse()) == true)
 			return false;
 
-		// 部屋の一階部分の属性ではない？
-		if (grid.Is(Grid::Type::Deck) == false)
-			return false;
-
-		// 進入許可
-		return true;
+		// 部屋の一階部分の属性なら進入許可
+		return grid.Is(Grid::Type::Deck);
 	}
 
 	uint32_t Voxel::CalculateCRC32(const uint32_t hash) const noexcept

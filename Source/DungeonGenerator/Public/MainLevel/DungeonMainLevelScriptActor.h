@@ -79,19 +79,22 @@ public:
 	*/
 	const FVector& GetActiveExtents() const noexcept;
 
-	// override
-	virtual void PreInitializeComponents() override;
-	virtual void EndPlay(const EEndPlayReason::Type endPlayReason) override;
-	virtual void Tick(float deltaSeconds) override;
-
-public:
-#if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 	/**
 	Is load control effective?
 	負荷コントロールが有効か取得します
 	*/
 	bool IsEnableLoadControl() const noexcept;
-#endif
+
+	/**
+	Enables or disables load control
+	負荷コントロールを有効または無効にします
+	*/
+	void EnableLoadControl(const bool enable) noexcept;
+
+	// override
+	virtual void PreInitializeComponents() override;
+	virtual void EndPlay(const EEndPlayReason::Type endPlayReason) override;
+	virtual void Tick(float deltaSeconds) override;
 
 private:
 	const FSceneView* GetSceneView(const APlayerController* playerController) const;
@@ -105,6 +108,14 @@ private:
 	void ForceActivate();
 	void ForceInactivate();
 
+	/**
+	 * 線分とAABBの交差判定
+	 * @param segmentStart	線分の開始位置
+	 * @param segmentEnd	線分の終了位置
+	 * @param aabbCenter	AABBの中心
+	 * @param aabbExtent	AABBの大きさ
+	 * @return trueなら交差している
+	 */
 	static bool TestSegmentAABB(const FVector& segmentStart, const FVector& segmentEnd, const FVector& aabbCenter, const FVector& aabbExtent);
 
 #if WITH_EDITOR
@@ -118,7 +129,6 @@ protected:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UDungeonPartition>> DungeonPartitions;
 
-#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	/**
 	Load control effectiveness
 	負荷コントロールの有効性
@@ -126,6 +136,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
 	bool bEnableLoadControl = true;
 
+#if WITH_EDITORONLY_DATA
 	/**
 	 * Displays debugging information
 	 * デバッグ情報を表示します
@@ -141,10 +152,7 @@ private:
 	size_t mPartitionDepth = 0;
 	double mPartitionSize = ActiveExtentHorizontalSize / 2;
 	FVector mActiveExtents;
-
-#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	bool mLastEnableLoadControl;
-#endif
 };
 
 inline const FVector& ADungeonMainLevelScriptActor::GetActiveExtents() const noexcept

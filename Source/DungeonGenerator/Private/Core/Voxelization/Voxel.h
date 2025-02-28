@@ -155,6 +155,12 @@ namespace dungeon
 		void NoWestWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
 		/**
+		 * サブレベル適用グリッドを設定します
+		 * @param[in]	location			グリッドの位置
+		 */
+		void UseSubLevel(const FIntVector& location) noexcept;
+
+		/**
 		 * 候補位置
 		 */
 		struct CandidateLocation final
@@ -193,6 +199,7 @@ namespace dungeon
 			bool mGenerateIntersections;		//!< 交差点を生成する
 			bool mUniqueLocked;					//!< ユニーク鍵のある通路
 			bool mLocked;						//!< 鍵のある通路
+			uint8_t mDepthRatioFromStart;		//!< スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
 		};
 
 		/**

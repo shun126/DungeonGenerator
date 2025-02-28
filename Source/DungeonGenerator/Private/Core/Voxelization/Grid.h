@@ -77,6 +77,15 @@ namespace dungeon
 		Grid(const Type type, const Direction& direction, const uint16_t identifier) noexcept;
 
 		/**
+		コンストラクタ
+		@param[in]	type		グリッドの種類
+		@param[in]	direction	グリッドの方向
+		@param[in]	identifier	識別子
+		@param[in]	depthRatioFromStart	スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
+		*/
+		Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
+
+		/**
 		デストラクタ
 		*/
 		~Grid() = default;
@@ -126,6 +135,18 @@ namespace dungeon
 		小道具を設定します
 		*/
 		void SetProps(const Props props) noexcept;
+
+		/**
+		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）を取得します
+		@return		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
+		*/
+		uint8_t GetDepthRatioFromStart() const noexcept;
+
+		/**
+		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）を取得します
+		@param[in]	depthRatioFromStart		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
+		*/
+		void SetDepthRatioFromStart(const uint8_t depthRatioFromStart) noexcept;
 
 	public:
 		/**
@@ -190,12 +211,12 @@ namespace dungeon
 		/**
 		床（部屋）グリッドを生成します
 		*/
-		static Grid CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept;
+		static Grid CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
 
 		/**
 		デッキ（部屋の周辺）グリッドを生成します
 		*/
-		static Grid CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept;
+		static Grid CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
 
 		// 判定補助関数
 		/**
@@ -345,6 +366,16 @@ namespace dungeon
 		 */
 		bool IsCatwalk() const noexcept;
 
+		/**
+		 * サブレベル適用グリッドを設定します
+		 */
+		void SubLevel() noexcept;
+
+		/**
+		 * サブレベル適用グリッドか取得します
+		 */
+		bool IsSubLevel() const noexcept;
+
 	public:
 		/**
 		グリッドの種類の色を取得します
@@ -389,6 +420,7 @@ namespace dungeon
 			NoRoofMeshGeneration,
 			MergeAisle,
 			Catwalk,
+			SubLevel,
 		};
 		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::MergeAisle) + 1;
 
@@ -488,8 +520,8 @@ namespace dungeon
 
 		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
 		uint16_t mIdentifier = InvalidIdentifier;
-
-		uint16_t mPadding = 0;
+		uint8_t mDepthRatioFromStart = 0;
+		uint8_t mPadding = 0;
 	};
 	static_assert(sizeof(Grid) == 8);
 }

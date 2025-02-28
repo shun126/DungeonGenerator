@@ -13,6 +13,7 @@ All Rights Reserved.
 #include <Components/BoxComponent.h>
 #include <Engine/World.h>
 #include <GameFramework/Pawn.h>
+#include <GameFramework/PlayerController.h>
 #include <cmath>
 
 #if WITH_EDITOR
@@ -54,7 +55,14 @@ ADungeonRoomSensorBase::ADungeonRoomSensorBase(const FObjectInitializer& initial
 	check(IsValid(Bounding));
 	Bounding->SetMobility(EComponentMobility::Static);
 	Bounding->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Bounding->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	Bounding->SetCollisionObjectType(ECC_WorldStatic);
+	for (size_t i = 0; i < ECC_MAX; ++i)
+	{
+		if (static_cast<ECollisionChannel>(i) == ECC_Pawn)
+			Bounding->SetCollisionResponseToChannel(static_cast<ECollisionChannel>(i), ECR_Overlap);
+		else
+			Bounding->SetCollisionResponseToChannel(static_cast<ECollisionChannel>(i), ECR_Ignore);
+	}
 	Bounding->SetGenerateOverlapEvents(true);
 	SetRootComponent(Bounding);
 }

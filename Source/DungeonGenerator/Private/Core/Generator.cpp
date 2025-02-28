@@ -1187,7 +1187,7 @@ namespace dungeon
 		check(aisleCount == room->GetGateCount());
 #endif
 
-		for (const auto& aisle : mAisles)
+		for (auto& aisle : mAisles)
 		{
 			const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
 			const auto& room1 = aisle.GetPoint(1)->GetOwnerRoom();
@@ -1268,11 +1268,20 @@ namespace dungeon
 		// Generate room
 		for (const auto& room : mRooms)
 		{
+			// 部屋の深さを256段階の比率にする
+			uint8_t depthRatioFromStart = 0;
+			if (GetDeepestDepthFromStart() > 0)
+			{
+				float depthFromStart = static_cast<float>(room->GetDepthFromStart());
+				depthFromStart /= static_cast<float>(GetDeepestDepthFromStart());
+				depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
+			}
+
 			const FIntVector min(room->GetLeft(), room->GetTop(), room->GetBackground());
 			const FIntVector max(room->GetRight(), room->GetBottom(), room->GetForeground());
 			mVoxel->Rectangle(min, max
-				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier())
-				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier())
+				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart)
+				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart)
 			);
 		}
 
@@ -1335,6 +1344,15 @@ namespace dungeon
 				std::swap(startPoint, goalPoint);
 			}
 
+			// 通路は奥の部屋の深さにあわせ、256段階の比率にする
+			uint8_t depthRatioFromStart = 0;
+			if (GetDeepestDepthFromStart() > 0)
+			{
+				float depthFromStart = static_cast<float>(goalPoint->GetOwnerRoom()->GetDepthFromStart());
+				depthFromStart /= static_cast<float>(GetDeepestDepthFromStart());
+				depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
+			}
+
 			// Check if the start and end points are included in the room
 			check(startPoint->GetOwnerRoom()->GetRect().Contains(ToIntPoint(*startPoint)));
 			check(goalPoint->GetOwnerRoom()->GetRect().Contains(ToIntPoint(*goalPoint)));
@@ -1359,7 +1377,7 @@ namespace dungeon
 				if (mGenerateParameter.IsGenerateSlopeInRoom() == true && start.Z < goal.Z)
 				{
 					RoomStructureGenerator roomStructureGenerator;
-					if (roomStructureGenerator.CheckSlopePlacement(mVoxel, startPoint->GetOwnerRoom(), mGenerateParameter.GetRandom()))
+					if (roomStructureGenerator.CheckSlopePlacement(mVoxel, startPoint->GetOwnerRoom(), goal, mGenerateParameter.GetRandom()))
 					{
 						std::vector<Voxel::CandidateLocation> startToGoal;
 						startToGoal.reserve(1);
@@ -1372,6 +1390,7 @@ namespace dungeon
 						aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
 						aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
 						aisleParameter.mLocked = aisle.IsLocked();
+						aisleParameter.mDepthRatioFromStart = depthRatioFromStart;
 						complete = mVoxel->Aisle(startToGoal, goalToStart, aisleParameter);
 						if (complete == true)
 						{
@@ -1393,6 +1412,7 @@ namespace dungeon
 						aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
 						aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
 						aisleParameter.mLocked = aisle.IsLocked();
+						aisleParameter.mDepthRatioFromStart = depthRatioFromStart;
 						complete = mVoxel->Aisle(startToGoal, goalToStart, aisleParameter);
 
 						// 幹線通路以外なら生成に失敗しても到達可能なので成功扱いにする

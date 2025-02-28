@@ -36,38 +36,59 @@ struct DUNGEONGENERATOR_API FDungeonMeshSet
 public:
 	virtual ~FDungeonMeshSet() = default;
 
+	/**
+	 * 床パーツを選択します
+	 */
 	const FDungeonMeshPartsWithDirection* SelectFloorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
 		return SelectPartsByGrid(gridIndex, grid, random, FloorParts, FloorPartsSelectionMethod);
 	}
 
+	/**
+	 * 床パーツを更新します
+	 */
 	template<typename Function>
 	void EachFloorParts(Function&& function) const
 	{
 		EachParts(FloorParts, std::forward<Function>(function));
 	}
 
+	/**
+	 * グリッドに基づいて壁パーツを選択します
+	 */
 	const FDungeonMeshParts* SelectWallPartsByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
 		return SelectPartsByGrid(gridIndex, grid, random, WallParts, WallPartsSelectionMethod);
 	}
 
+	/**
+	 * 面に基づいて壁パーツを選択します
+	 */
 	const FDungeonMeshParts* SelectWallPartsByFace(const FIntVector& gridLocation, const dungeon::Direction& direction) const
 	{
 		return SelectPartsByFace(gridLocation, direction, WallParts);
 	}
 
+	/**
+	 * 壁パーツを更新します
+	 */
 	template<typename Function>
 	void EachWallParts(Function&& function) const
 	{
 		EachParts(WallParts, std::forward<Function>(function));
 	}
 
+	/**
+	 * 天井パーツを選択します
+	 */
 	const FDungeonMeshPartsWithDirection* SelectRoofParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
 		return SelectPartsByGrid(gridIndex, grid, random, RoofParts, RoofPartsSelectionMethod);
 	}
 
+	/**
+	 * 天井パーツを更新します
+	 */
 	template<typename Function>
 	void EachRoofParts(Function&& function) const
 	{
@@ -75,16 +96,16 @@ public:
 	}
 
 	/**
-	スロープパーツを選択します
-	*/
+	 * スロープパーツを選択します
+	 */
 	const FDungeonMeshParts* SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
 		return SelectPartsByGrid(gridIndex, grid, random, SlopeParts, SloopPartsSelectionMethod);
 	}
 
 	/**
-	スロープパーツを巡回します
-	*/
+	 * スロープパーツを更新します
+	 */
 	template<typename Function>
 	void EachSlopeParts(Function&& function) const
 	{
@@ -92,26 +113,30 @@ public:
 	}
 
 	/**
-	中二階通路パーツを選択します
-	*/
+	 * 中二階通路パーツを選択します
+	 */
 	const FDungeonMeshParts* SelectCatwalkParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 	{
 		return SelectPartsByGrid(gridIndex, grid, random, CatwalkParts, CatwalkPartsSelectionMethod);
 	}
 
 	/**
-	中二階通路パーツを巡回します
-	*/
+	 * 中二階通路パーツを更新します
+	 */
 	template<typename Function>
 	void EachCatwalkParts(Function&& function) const
 	{
 		EachParts(CatwalkParts, std::forward<Function>(function));
 	}
 
-
-
+	/**
+	 * 入力したFDungeonRandomActorPartsからアクターベースのパーツを選択します
+	 */
 	static FDungeonRandomActorParts* SelectRandomActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonRandomActorParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod);
 
+	/**
+	 * 入力したparts配列からグリッドに基づいて壁パーツを選択します
+	 */
 	// aka: SelectActorParts, SelectRandomActorParts
 	template<typename T = FDungeonMeshParts>
 	static T* SelectPartsByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<T>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod)
@@ -124,6 +149,9 @@ public:
 		return const_cast<T*>(&parts[index]);
 	}
 
+	/**
+	 * 入力したparts配列から面に基づいて壁パーツを選択します
+	 */
 	// aka: SelectActorParts, SelectRandomActorParts
 	template<typename T = FDungeonMeshParts>
 	static T* SelectPartsByFace(const FIntVector& gridLocation, const dungeon::Direction& direction, const TArray<T>& parts)
@@ -136,6 +164,9 @@ public:
 		return const_cast<T*>(&parts[index]);
 	}
 
+	/**
+	 * 入力したparts配列を更新します
+	 */
 	template<typename T = FDungeonMeshParts, typename Function>
 	static void EachParts(const TArray<T>& parts, Function&& function)
 	{

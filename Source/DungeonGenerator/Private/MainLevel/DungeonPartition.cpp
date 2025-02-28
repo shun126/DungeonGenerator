@@ -15,6 +15,12 @@ void UDungeonPartition::RegisterActivatorComponent(UDungeonComponentActivatorCom
 			component->CallPartitionActivate();
 		else
 			component->CallPartitionInactivate();
+
+		if (mCallCastShadowActivate)
+			component->CallCastShadowActivate();
+		else
+			component->CallCastShadowInactivate();
+
 		ActivatorComponents.Emplace(component);
 	}
 }
@@ -55,6 +61,38 @@ void UDungeonPartition::CallPartitionInactivate()
 			if (IsValid(component))
 			{
 				component->CallPartitionInactivate();
+			}
+		}
+	}
+}
+
+void UDungeonPartition::CallCastShadowActivate()
+{
+	if (!mCallCastShadowActivate)
+	{
+		mCallCastShadowActivate = true;
+
+		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
+		{
+			if (IsValid(component))
+			{
+				component->CallCastShadowActivate();
+			}
+		}
+	}
+}
+
+void UDungeonPartition::CallCastShadowInactivate()
+{
+	if (mCallCastShadowActivate)
+	{
+		mCallCastShadowActivate = false;
+
+		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
+		{
+			if (IsValid(component))
+			{
+				component->CallCastShadowInactivate();
 			}
 		}
 	}

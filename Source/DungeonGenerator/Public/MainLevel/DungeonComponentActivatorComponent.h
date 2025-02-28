@@ -45,12 +45,14 @@ public:
 	bool IsEnableOwnerActorAiControl() const noexcept;
 	bool IsEnableComponentActivationControl() const noexcept;
 	bool IsEnableComponentVisibilityControl() const noexcept;
+	bool IsEnableLightCastShadowControl() const noexcept;
 	bool IsEnableCollisionEnableControl() const noexcept;
 
 	void SetEnableOwnerActorTickControl(const bool enable = true) noexcept;
 	void SetEnableOwnerActorAiControl(const bool enable = true) noexcept;
 	void SetEnableComponentActivationControl(const bool enable = true) noexcept;
 	void SetEnableComponentVisibilityControl(const bool enable = true) noexcept;
+	void SetEnableLightCastShadowControl(const bool enable = true) noexcept;
 	void SetEnableCollisionEnableControl(const bool enable = true) noexcept;
 
 	// Actor
@@ -72,6 +74,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	void SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason);
 	void LoadVisibility(const EDungeonComponentActivateReason activateReason);
+
+	// Cast Shadow
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	void SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason);
+	void LoadCastShadow(const EDungeonComponentActivateReason activateReason);
 
 	// AI
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
@@ -102,21 +109,26 @@ private:
 	void TickImplement(const FVector& location);
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
+	void CallCastShadowActivate();
+	void CallCastShadowInactivate();
 
 	// Actor
 	void SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason, AActor* owner);
 
 	// Component
-	void SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason, AActor* owner);
+	void SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason, const AActor* owner);
 
 	// Collision
-	void SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason, AActor* owner);
+	void SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason, const AActor* owner);
 
 	// Visibility
-	void SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason, AActor* owner);
+	void SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason, const AActor* owner);
+
+	// CastShadow
+	void SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason, const AActor* owner);
 
 	// AI
-	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason, APawn* owner);
+	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason, const APawn* owner);
 
 protected:
 	/**
@@ -148,6 +160,13 @@ protected:
 	bool EnableComponentVisibilityControl = true;
 
 	/**
+	If enabled, controls the Cast Shadow of the owner actor's point light and spotlight
+	有効にするとオーナーアクターのポイントライトとスポットライトのCast Shadowを制御します
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	bool EnableLightShadowControl = true;
+
+	/**
 	If enabled, controls the enable of the collision component of the owner actor
 	有効にするとオーナーアクターのコリジョンコンポーネントの有効性を制御します
 	*/
@@ -166,6 +185,10 @@ private:
 	// Visibility
 	std::bitset<DungeonComponentActivateReasonSize> mComponentVisibility = ~0;
 	DungeonComponentActivationSaver<bool> mComponentVisibilitySaver;
+
+	// CastShadow
+	std::bitset<DungeonComponentActivateReasonSize> mLightCastShadow = ~0;
+	DungeonComponentActivationSaver<bool> mLightCastShadowSaver;
 
 	// Collision
 	std::bitset<DungeonComponentActivateReasonSize> mComponentCollisionEnabled = ~0;
@@ -201,6 +224,11 @@ inline bool UDungeonComponentActivatorComponent::IsEnableComponentVisibilityCont
 	return EnableComponentVisibilityControl;
 }
 
+inline bool UDungeonComponentActivatorComponent::IsEnableLightCastShadowControl() const noexcept
+{
+	return EnableLightShadowControl;
+}
+
 inline bool UDungeonComponentActivatorComponent::IsEnableCollisionEnableControl() const noexcept
 {
 	return EnableCollisionEnableControl;
@@ -224,6 +252,11 @@ inline void UDungeonComponentActivatorComponent::SetEnableComponentActivationCon
 inline void UDungeonComponentActivatorComponent::SetEnableComponentVisibilityControl(const bool enable) noexcept
 {
 	EnableComponentVisibilityControl = enable;
+}
+
+inline void UDungeonComponentActivatorComponent::SetEnableLightCastShadowControl(const bool enable) noexcept
+{
+	EnableLightShadowControl = enable;
 }
 
 inline void UDungeonComponentActivatorComponent::SetEnableCollisionEnableControl(const bool enable) noexcept

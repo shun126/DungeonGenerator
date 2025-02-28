@@ -147,6 +147,7 @@ private:
 	static uint32 InstancedMeshHash(const FVector& position, const double quantizationSize = 50 * 100);
 	void BeginInstanceTransaction();
 	void AddInstance(UStaticMesh* staticMesh, const FTransform& transform);
+	void AddInstance(UStaticMesh* staticMesh, const FTransform& transform, const EDungeonMeshGenerationMethod meshGenerationMethod);
 	void EndInstanceTransaction();
 	void DestroyAllInstance();
 	void ApplyInstancedMeshCullDistance();

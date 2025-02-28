@@ -10,7 +10,6 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 
 #include "DungeonGenerateBase.h"
 
-#include <FoliageInstancedStaticMeshComponent.h>
 
 #include "Core/Generator.h"
 #include "Core/Debug/Debug.h"
@@ -27,6 +26,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include "SubActor/DungeonRoomSensorBase.h"
 #include "SubActor/DungeonDoorBase.h"
 #include "PluginInformation.h"
+#include <FoliageInstancedStaticMeshComponent.h>
 #include <TextureResource.h>
 #include <Components/StaticMeshComponent.h>
 #include <GameFramework/PlayerStart.h>
@@ -64,6 +64,12 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 
 namespace
 {
+	const FString DoorsFolderPath = TEXT("Actors/Doors");
+	const FString TorchesFolderPath = TEXT("Actors/Torches");
+	const FString SensorsFolderPath = TEXT("Actors/Sensors");
+	const FString LevelsFolderPath = TEXT("/Levels/");
+	const FString InteriorsFolderPath = TEXT("Interiors");
+
 	bool operator==(const EDungeonRoomItem left, const dungeon::Room::Item right)
 	{
 		return static_cast<uint8_t>(left) == static_cast<uint8_t>(right);
@@ -517,6 +523,11 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
 		CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
 		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
+		/*
+		 * 壁を生成します。
+		 * CreateImplement_FinishSpawnInteriorよりも前にする事で内装物を壁にめり込まないようにします
+		 * しかし、壁に穴や突起物がある場合、内装物が壁に引っかかる現象が発生します
+		 */
 		CreateImplement_AddWall();
 		CreateImplement_Navigation(hasAuthority);
 	}
@@ -769,7 +780,7 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
 		if (dungeonMeshSetDatabase)
 		{
-			meshSet = mParameter->SelectParts(dungeonMeshSetDatabase, cp.mGrid);
+			meshSet = mParameter->SelectParts(dungeonMeshSetDatabase, cp.mGrid, GetSynchronizedRandom());
 			if (meshSet != nullptr)
 				dungeonPartsSelectionMethod = meshSet->GetWallPartsSelectionMethod();
 
@@ -1547,7 +1558,7 @@ DungeonDoorBaseをスポーンします。
 */
 ADungeonDoorBase* ADungeonGenerateBase::SpawnDoorActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, EDungeonRoomProps props) const
 {
-	ADungeonDoorBase* actor = SpawnActorDeferredImpl<ADungeonDoorBase>(actorClass, TEXT("Actors/Doors"), transform, ownerActor, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	ADungeonDoorBase* actor = SpawnActorDeferredImpl<ADungeonDoorBase>(actorClass, DoorsFolderPath, transform, ownerActor, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (IsValid(actor))
 	{
 		actor->InvokeInitialize(GetRandom(), props);
@@ -1570,7 +1581,7 @@ AActor* ADungeonGenerateBase::SpawnTorchActor(UClass* actorClass, const FTransfo
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.Owner = ownerActor;
 	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
-	AActor* actor = SpawnActorImpl(actorClass, TEXT("Actors/Torches"), transform, actorSpawnParameters);
+	AActor* actor = SpawnActorImpl(actorClass, TorchesFolderPath, transform, actorSpawnParameters);
 
 	// 負荷制御コンポーネントを追加する
 	FindOrAddComponentActivatorComponent(actor);
@@ -1590,7 +1601,7 @@ ADungeonRoomSensorBaseはリプリケートされる前提のアクターなの�
 ADungeonRoomSensorBase* ADungeonGenerateBase::SpawnRoomSensorActorDeferred(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId, const uint8 depthFromStart, const uint8 deepestDepthFromStart) const
 {
 	const FTransform transform(center);
-	ADungeonRoomSensorBase* actor = SpawnActorDeferredImpl<ADungeonRoomSensorBase>(actorClass, TEXT("Sensors"), transform, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	ADungeonRoomSensorBase* actor = SpawnActorDeferredImpl<ADungeonRoomSensorBase>(actorClass, SensorsFolderPath, transform, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (IsValid(actor))
 	{
 		const bool success = actor->InvokePrepare(

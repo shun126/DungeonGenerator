@@ -121,7 +121,7 @@ private:
 	const UDungeonAisleMeshSetDatabase* GetDungeonAislePartsDatabase() const noexcept;
 
 	static const FDungeonTemporaryMeshSet* SelectParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const dungeon::Grid& grid);
-	static const FDungeonMeshSet* SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid);
+	static const FDungeonMeshSet* SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 
 	static const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 	static const FDungeonMeshParts* SelectWallParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
@@ -246,7 +246,7 @@ protected:
 	これは最終的な部屋の数ではなく最初に生成される部屋の数です。
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "3", ClampMax = "100"))
-	uint8 NumberOfCandidateRooms = 25;
+	uint8 NumberOfCandidateRooms = 10;
 
 	/**
 	Horizontal room-to-room coupling

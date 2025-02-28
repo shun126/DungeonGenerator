@@ -1,6 +1,9 @@
 # Visual Studio 2015 user specific files
 .vs/
 
+# Mac Finder
+.DS_Store
+
 # Compiled Object files
 *.slo
 *.lo
@@ -75,4 +78,5 @@ DerivedDataCache/*
 
 # Doxygen
 Document/doxygen
+Document/doxygen.bat
 Source/CHANGELOG.md
