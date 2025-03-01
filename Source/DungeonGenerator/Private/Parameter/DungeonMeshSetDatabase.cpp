@@ -11,6 +11,7 @@ All Rights Reserved.
 #endif
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
+#include <cmath>
 
 #if WITH_EDITOR
 #include "Helper/DungeonDebugUtility.h"

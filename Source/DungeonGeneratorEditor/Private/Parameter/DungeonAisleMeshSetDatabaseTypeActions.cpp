@@ -26,3 +26,9 @@ uint32 FDungeonAisleMeshSetDatabaseTypeActions::GetCategories()
 {
 	return mAssetCategory;
 }
+
+FColor FDungeonAisleMeshSetDatabaseTypeActions::GetTypeColor() const
+{
+	static constexpr FColor Color(56, 56, 156);
+	return Color;
+}

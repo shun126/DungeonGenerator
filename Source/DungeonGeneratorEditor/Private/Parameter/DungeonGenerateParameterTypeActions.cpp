@@ -26,3 +26,9 @@ uint32 UDungeonGenerateParameterTypeActions::GetCategories()
 {
 	return mAssetCategory;
 }
+
+FColor UDungeonGenerateParameterTypeActions::GetTypeColor() const
+{
+	static constexpr FColor Color(156, 156, 56);
+	return Color;
+}
