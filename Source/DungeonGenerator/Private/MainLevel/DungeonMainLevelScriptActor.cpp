@@ -20,12 +20,23 @@ All Rights Reserved.
 #include <Kismet/GameplayStatics.h>
 #include <cmath>
 
+#if WITH_EDITOR
+#include <array>
+#endif
+
+/**
+ * Ratio from the overall size to find the visible distance
+ * 0.5 means you can see half the distance of the world
+ * 
+ * 見える距離を求める為の全体のサイズからの比率
+ * 0.5なら世界の半分の距離が見える事になる
+ */
+static constexpr double VisibleDistanceRatio = 0.5;
+
 ADungeonMainLevelScriptActor::ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer)
 	: Super(objectInitializer)
 	, mActiveExtents(0)
-#if WITH_EDITORONLY_DATA && (UE_BUILD_SHIPPING == 0)
 	, mLastEnableLoadControl(bEnableLoadControl)
-#endif
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
@@ -37,11 +48,11 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 
 	mBounding.Init();
 	mActiveExtents.Set(ActiveExtentHorizontalSize, ActiveExtentHorizontalSize, ActiveExtentVerticalSize);
+	TArray<ADungeonGenerateActor*> dungeonGenerateActors;
 	float maxGridSize = 100.f;
 	if (ULevel* level = GetValid(GetLevel()))
 	{
 		// DungeonGenerateActorの部屋の大きさからアクティブ範囲を求める
-		TArray<ADungeonGenerateActor*> dungeonGenerateActors;
 		for (AActor* actor : level->Actors)
 		{
 			ADungeonGenerateActor* dungeonGenerateActor = Cast<ADungeonGenerateActor>(actor);
@@ -73,22 +84,6 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 			if (mPartitionSize < mActiveExtents.Z)
 				mPartitionSize = mActiveExtents.Z;
 			mPartitionSize = std::ceil(mPartitionSize);
-
-			// カリング距離を求めてDungeonGenerateActorに設定する
-			const FVector boundingSize = mBounding.GetSize();
-			double cullDistance = boundingSize.X;
-			if (cullDistance < boundingSize.Y)
-				cullDistance = boundingSize.Y;
-			if (cullDistance < boundingSize.Z)
-				cullDistance = boundingSize.Z;
-			const FInt32Interval cullingDistanceRange(
-				cullDistance / 3 * 2,
-				cullDistance
-			);
-			for (ADungeonGenerateActor* dungeonGenerateActor : dungeonGenerateActors)
-			{
-				dungeonGenerateActor->SetInstancedMeshCullDistance(cullingDistanceRange);
-			}
 		}
 	}
 
@@ -113,12 +108,20 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 		{
 			DungeonPartitions.Add(NewObject<UDungeonPartition>());
 		}
+
+		// カリング距離を求めてDungeonGenerateActorに設定する
+		const FInt32Interval cullingDistanceRange(
+			mBoundingSize * 0.8,
+			mBoundingSize * 0.9
+		);
+		for (ADungeonGenerateActor* dungeonGenerateActor : dungeonGenerateActors)
+		{
+			dungeonGenerateActor->SetInstancedMeshCullDistance(cullingDistanceRange);
+		}
 	}
 	else
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Place the DungeonGenerateActor on the level"));
-		mPartitionWidth = 0;
-		mPartitionDepth = 0;
 	}
 }
 
@@ -156,11 +159,12 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 	Super::Tick(deltaSeconds);
 
 	if (mBounding.IsValid == false)
+	{
+		SetActorTickEnabled(false);
 		return;
+	}
 
-#if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 	if (bEnableLoadControl)
-#endif
 	{
 		if (const UWorld* world = GetValid(GetWorld()))
 		{
@@ -204,14 +208,11 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 		}
 		else
 		{
-			ForceInactivate();
+			ForceActivate();
 		}
 
-#if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 		mLastEnableLoadControl = true;
-#endif
 	}
-#if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 	else
 	{
 		if (mLastEnableLoadControl != bEnableLoadControl)
@@ -220,7 +221,6 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 			ForceActivate();
 		}
 	}
-#endif
 
 #if WITH_EDITOR
 	if (ShowDebugInformation)
@@ -267,6 +267,8 @@ void ADungeonMainLevelScriptActor::Mark(const FBox& activeBounds)
 	const double ey = std::max(0.0, static_cast<double>(std::ceil(end.Y)));
 	const size_t iex = std::min(static_cast<size_t>(ex), mPartitionWidth);
 	const size_t iey = std::min(static_cast<size_t>(ey), mPartitionDepth);
+	const size_t cx = std::round((sx + ex) / 2);
+	const size_t cy = std::round((sx + ex) / 2);
 	for (size_t y = static_cast<size_t>(sy); y < iey; ++y)
 	{
 		for (size_t x = static_cast<size_t>(sx); x < iex; ++x)
@@ -274,7 +276,11 @@ void ADungeonMainLevelScriptActor::Mark(const FBox& activeBounds)
 			const size_t index = mPartitionWidth * y + x;
 			UDungeonPartition* partition = DungeonPartitions[index];
 			check(IsValid(partition));
-			partition->Mark();
+			partition->Mark(
+				x == cx && y == cy ?
+				UDungeonPartition::ActiveState::ActivateNear : 
+				UDungeonPartition::ActiveState::ActivateFar
+			);
 		}
 	}
 }
@@ -283,7 +289,8 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 {
 	const double halfPartitionSize = mPartitionSize * 0.5;
 	const FVector partitionExtent(halfPartitionSize);
-	const double visibleDistanceSquared = FMath::Square(mBoundingSize * 0.5);
+	const double visibleDistanceSquared = FMath::Square(mBoundingSize * VisibleDistanceRatio);
+	const double castShadowDistanceSquared = FMath::Square(mPartitionSize);
 
 	size_t index = 0;
 	FVector origin;
@@ -294,11 +301,16 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 		origin.X = mBounding.Min.X + halfPartitionSize;
 		while (origin.X < mBounding.Max.X + halfPartitionSize)
 		{
-			if (FVector::DistSquared(sceneView.ViewLocation, origin) < visibleDistanceSquared)
+			const double distanceSquared = FVector::DistSquared(sceneView.ViewLocation, origin);
+			if (distanceSquared < visibleDistanceSquared)
 			{
 				if (sceneView.ViewFrustum.IntersectBox(origin, partitionExtent))
 				{
-					DungeonPartitions[index]->Mark();
+					DungeonPartitions[index]->Mark(
+						distanceSquared < castShadowDistanceSquared ?
+						UDungeonPartition::ActiveState::ActivateNear :
+						UDungeonPartition::ActiveState::ActivateFar
+					);
 				}
 			}
 			++index;
@@ -310,7 +322,7 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 
 void ADungeonMainLevelScriptActor::Mark(const FRotator& viewRotator, const FVector& viewLocation)
 {
-	const FVector segmentEnd = viewLocation + viewRotator.Vector() * mBoundingSize;
+	const FVector segmentEnd = viewLocation + viewRotator.Vector() * (mBoundingSize * VisibleDistanceRatio);
 
 	const double halfPartitionSize = mPartitionSize * 0.5;
 	const FVector partitionExtent(halfPartitionSize, halfPartitionSize, (mBounding.Max.Z - mBounding.Min.Z) * 0.5);
@@ -326,7 +338,7 @@ void ADungeonMainLevelScriptActor::Mark(const FRotator& viewRotator, const FVect
 		{
 			if (TestSegmentAABB(viewLocation, segmentEnd, origin, partitionExtent))
 			{
-				DungeonPartitions[index]->Mark();
+				DungeonPartitions[index]->Mark(UDungeonPartition::ActiveState::ActivateNear);
 			}
 			++index;
 			origin.X += mPartitionSize;
@@ -365,17 +377,26 @@ void ADungeonMainLevelScriptActor::End(const float deltaSeconds)
 	for (UDungeonPartition* partition : DungeonPartitions)
 	{
 		check(IsValid(partition));
-		if (partition->IsMarked())
+
+		switch (partition->IsMarked())
 		{
+		case UDungeonPartition::ActiveState::ActivateNear:
 			partition->CallPartitionActivate();
-		}
-		else if (partition->UpdateInactivateRemainTimer(deltaSeconds))
-		{
+			partition->CallCastShadowActivate();
+			break;
+
+		case UDungeonPartition::ActiveState::ActivateFar:
 			partition->CallPartitionActivate();
-		}
-		else
-		{
-			partition->CallPartitionInactivate();
+			partition->CallCastShadowInactivate();
+			break;
+
+		case UDungeonPartition::ActiveState::Inactivate:
+			if (partition->UpdateInactivateRemainTimer(deltaSeconds))
+				partition->CallPartitionActivate();
+			else
+				partition->CallPartitionInactivate();
+			partition->CallCastShadowInactivate();
+			break;
 		}
 	}
 }
@@ -398,12 +419,15 @@ void ADungeonMainLevelScriptActor::ForceInactivate()
 	}
 }
 
-#if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 bool ADungeonMainLevelScriptActor::IsEnableLoadControl() const noexcept
 {
 	return bEnableLoadControl;
 }
-#endif
+
+void ADungeonMainLevelScriptActor::EnableLoadControl(const bool enable) noexcept
+{
+	bEnableLoadControl = enable;
+}
 
 #if WITH_EDITOR
 void ADungeonMainLevelScriptActor::DrawDebugInformation() const
@@ -418,12 +442,19 @@ void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 		{
 			if (const auto* partition = Find(FVector(x + 1, y + 1, z)))
 			{
+				static const std::array<FColor, 3> colors = {
+					{
+						FColor::Blue,
+						FColor::Green,
+						FColor::Red
+					} };
+
 				const FVector location(x, y, z);
 				UKismetSystemLibrary::DrawDebugBox(
 					GetWorld(),
 					location + halfSize,
 					halfSize,
-					partition->IsMarked() ? FColor::Red : FColor::Blue,
+					colors.at(static_cast<uint8>(partition->IsMarked())),
 					FRotator::ZeroRotator,
 					0.f,
 					10.f

@@ -64,6 +64,15 @@ namespace dungeon
 		}
 	}
 
+	inline void Voxel::UseSubLevel(const FIntVector& location) noexcept
+	{
+		if (Contain(location))
+		{
+			const size_t index = Index(location);
+			mGrids.get()[index].SubLevel();
+		}
+	}
+
 	inline Voxel::Error Voxel::GetLastError() const noexcept
 	{
 		return mLastError;

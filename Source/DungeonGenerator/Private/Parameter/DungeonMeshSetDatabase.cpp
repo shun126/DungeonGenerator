@@ -9,7 +9,9 @@ All Rights Reserved.
 #include "Parameter/DungeonAisleMeshSetDatabase.h"
 #include "Parameter/DungeonRoomMeshSetDatabase.h"
 #endif
+#include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
+#include <cmath>
 
 #if WITH_EDITOR
 #include "Helper/DungeonDebugUtility.h"
@@ -26,14 +28,31 @@ const FDungeonMeshSet* UDungeonMeshSetDatabase::AtImplement(const size_t index) 
 	return (size > 0) ? &Parts[index % size] : nullptr;
 }
 
-const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const std::shared_ptr<dungeon::Random>& random) const
+const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random) const
 {
 	const int32 size = Parts.Num();
 	if (size <= 0)
 		return nullptr;
 
-	const uint32_t index = random->Get<uint32_t>(size);
-	return &Parts[index];
+	switch (SelectionMethod)
+	{
+	case EDungeonMeshSetSelectionMethod::Random:
+		return &Parts[random->Get<uint32_t>(size)];
+
+	case EDungeonMeshSetSelectionMethod::Identifier:
+		return &Parts[identifier % size];
+
+	case EDungeonMeshSetSelectionMethod::DepthFromStart:
+	{
+		const float ratio = static_cast<float>(depthRatioFromStart) / 255.f;
+		const float index = static_cast<float>(size - 1) * ratio;
+		return &Parts[static_cast<size_t>(std::round(index))];
+	}
+
+	default:
+		DUNGEON_GENERATOR_ERROR(TEXT("Set the correct SelectionMethod"));
+		return nullptr;
+	}
 }
 
 #if WITH_EDITOR

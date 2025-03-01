@@ -28,101 +28,191 @@ namespace dungeon
 		},
 	};
 
-	bool RoomStructureGenerator::CheckSlopePlacement(const std::shared_ptr<Voxel>& voxel, const std::shared_ptr<Room>& room, const std::shared_ptr<Random>& random)
+	bool RoomStructureGenerator::CheckSlopePlacement(const std::shared_ptr<Voxel>& voxel, const std::shared_ptr<Room>& room, const FIntVector& baseLocation, const std::shared_ptr<Random>& random)
 	{
 		if (room->GetHeight() < 2)
 			return false;
 
 		auto checker = [voxel](const int32 x, const int32 y, const int32 z, const Identifier& identifier, const int32 xFlip, const int32 yFlip)
 			{
+				// スロープと中二階部分の判定
 				for (const auto& offset : Offsets)
 				{
 					const int32 ox = x + offset.mX * xFlip;
 					const int32 oy = y + offset.mX * yFlip;
 					const int32 oz = z + offset.mZ;
 					const Grid& grid = voxel->Get(ox, oy, oz);
+					// 識別子が違うなら不許可
 					if (grid.GetIdentifier() != identifier)
 						return false;
-					const auto gridType = grid.GetType();
+					// 中二階なら不許可
+					if (grid.IsCatwalk())
+						return false;
+					// サブレベル生成済みなら不許可
+					if (grid.IsSubLevel())
+						return false;
 					if (offset.mZ == 0)
 					{
-						if (gridType != Grid::Type::Deck)
+						if (grid.GetType() != Grid::Type::Deck)
 							return false;
 					}
 					else
 					{
-						if (gridType != Grid::Type::Floor)
+						if (grid.GetType() != Grid::Type::Floor)
 							return false;
 					}
-					if (grid.IsCatwalk() == true)
-						return false;
 				}
+				// スロープ前に必要な床の判定
+				{
+					const int32 ox = x + 3 * xFlip;
+					const int32 oy = y + 3 * yFlip;
+					const Grid& grid = voxel->Get(ox, oy, z);
+					// 識別子が違うなら不許可
+					if (grid.GetIdentifier() != identifier)
+						return false;
+					// 中二階なら不許可
+					if (grid.IsCatwalk())
+						return false;
+					// サブレベル生成済みなら不許可
+					if (grid.IsSubLevel())
+						return false;
+					const auto gridType = grid.GetType();
+					return gridType == Grid::Type::Deck || gridType == Grid::Type::Gate;
+				}
+			};
 
-				const int32 ox = x + 3 * xFlip;
-				const int32 oy = y + 3 * yFlip;
-				const Grid& grid = voxel->Get(ox, oy, z);
-				if (grid.GetIdentifier() != identifier)
-					return false;
-				const auto gridType = grid.GetType();
-				return gridType == Grid::Type::Deck || gridType == Grid::Type::Gate;
+		auto VectorDistance = [](const int32 v0x, const int32 v0y, const int32 v0z, const FIntVector& v1) -> uint32_t
+			{
+				return
+					static_cast<uint32_t>(v0x * v1.X) +
+					static_cast<uint32_t>(v0y * v1.Y) +
+					static_cast<uint32_t>(v0z * v1.Z);
 			};
 
 		// 部屋の四隅にスロープが生成できるか調べます
-		std::vector<EffectiveDirection> pass;
+		struct Entry final
+		{
+			uint32_t mDistance;
+			EffectiveDirection mEffectiveDirection;
+			Entry(const uint32_t distance, const EffectiveDirection effectiveDirection)
+				: mDistance(distance)
+				, mEffectiveDirection(effectiveDirection)
+			{}
+		};
+		std::vector<Entry> pass;
+		pass.reserve(8);
+		uint32_t furthestDistance = 0;
+		// 東西方向
 		if (room->GetWidth() >= 4)
 		{
-			// 東西方向
-			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 1, 0) == true)
-				pass.emplace_back(EffectiveDirection::HorizontalNortheast);
+			// 北東
 			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), -1, 0) == true)
-				pass.emplace_back(EffectiveDirection::HorizontalNorthwest);
-			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), -1, 0) == true)
-				pass.emplace_back(EffectiveDirection::HorizontalSouthwest);
+			{
+				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetTop(), room->GetBackground(), baseLocation);
+				pass.emplace_back(distance, EffectiveDirection::HorizontalNortheast);
+			}
+			// 北西
+			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 1, 0) == true)
+			{
+				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetTop(), room->GetBackground(), baseLocation);
+				furthestDistance = std::max(furthestDistance, distance);
+				pass.emplace_back(distance, EffectiveDirection::HorizontalNorthwest);
+			}
+			// 南西
 			if (checker(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 1, 0) == true)
-				pass.emplace_back(EffectiveDirection::HorizontalSoutheast);
+			{
+				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), baseLocation);
+				furthestDistance = std::max(furthestDistance, distance);
+				pass.emplace_back(distance, EffectiveDirection::HorizontalSouthwest);
+			}
+			// 南東
+			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), -1, 0) == true)
+			{
+				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), baseLocation);
+				furthestDistance = std::max(furthestDistance, distance);
+				pass.emplace_back(distance, EffectiveDirection::HorizontalSoutheast);
+			}
 		}
+		// 南北方向
 		if (room->GetDepth() >= 4)
 		{
-			// 南北方向
-			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1) == true)
-				pass.emplace_back(EffectiveDirection::VerticalNortheast);
+			// 北東
 			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1) == true)
-				pass.emplace_back(EffectiveDirection::VerticalNorthwest);
-			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 0, -1) == true)
-				pass.emplace_back(EffectiveDirection::VerticalSouthwest);
+			{
+				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetTop(), room->GetBackground(), baseLocation);
+				furthestDistance = std::max(furthestDistance, distance);
+				pass.emplace_back(distance, EffectiveDirection::VerticalNortheast);
+			}
+			// 北西
+			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1) == true)
+			{
+				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetTop(), room->GetBackground(), baseLocation);
+				furthestDistance = std::max(furthestDistance, distance);
+				pass.emplace_back(distance, EffectiveDirection::VerticalNorthwest);
+			}
+			// 南西
 			if (checker(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 0, -1) == true)
-				pass.emplace_back(EffectiveDirection::VerticalSoutheast);
+			{
+				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), baseLocation);
+				furthestDistance = std::max(furthestDistance, distance);
+				pass.emplace_back(distance, EffectiveDirection::VerticalSouthwest);
+			}
+			// 南東
+			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 0, -1) == true)
+			{
+				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), baseLocation);
+				furthestDistance = std::max(furthestDistance, distance);
+				pass.emplace_back(distance, EffectiveDirection::VerticalSoutheast);
+			}
 		}
 
 		// 抽選
 		mValid = pass.empty() == false;
 		if (mValid)
 		{
-			const size_t index = random->Get<size_t>(pass.size());
-			mEffectiveDirection = pass[index];
-
+			// 以降mDistanceは当選確率として扱う
+			++furthestDistance;
+			uint32_t probability = 0;
+			for (Entry& entry : pass)
+			{
+				probability += furthestDistance - entry.mDistance;
+				entry.mDistance = probability;
+			}
+			const uint32_t dice = random->Get<uint32_t>(probability + 1);
+			for (const Entry& entry : pass)
+			{
+				if (dice <= entry.mDistance)
+				{
+					mEffectiveDirection = entry.mEffectiveDirection;
+					break;
+				}
+			}
 			switch (mEffectiveDirection)
 			{
 			case EffectiveDirection::HorizontalNortheast:
 			case EffectiveDirection::VerticalNortheast:
+				// 北東
 				mLocation.X = room->GetRight() - 1;
 				mLocation.Y = room->GetTop();
 				break;
 
 			case EffectiveDirection::HorizontalNorthwest:
 			case EffectiveDirection::VerticalNorthwest:
+				// 北西
 				mLocation.X = room->GetLeft();
 				mLocation.Y = room->GetTop();
 				break;
 
 			case EffectiveDirection::HorizontalSouthwest:
 			case EffectiveDirection::VerticalSouthwest:
+				// 南西
 				mLocation.X = room->GetLeft();
 				mLocation.Y = room->GetBottom() - 1;
 				break;
 
 			case EffectiveDirection::HorizontalSoutheast:
 			case EffectiveDirection::VerticalSoutheast:
+				// 南東
 				mLocation.X = room->GetRight() - 1;
 				mLocation.Y = room->GetBottom() - 1;
 				break;

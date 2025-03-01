@@ -133,9 +133,14 @@ void ADungeonGenerateActor::BeginInstanceTransaction()
 
 void ADungeonGenerateActor::AddInstance(UStaticMesh* staticMesh, const FTransform& transform)
 {
+	AddInstance(staticMesh, transform, DungeonMeshGenerationMethod);
+}
+
+void ADungeonGenerateActor::AddInstance(UStaticMesh* staticMesh, const FTransform& transform, const EDungeonMeshGenerationMethod meshGenerationMethod)
+{
 	check(
-		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh ||
-		DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh
+		meshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh ||
+		meshGenerationMethod == EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh
 	);
 
 	double quantizationSize = 25 * 100;
@@ -143,7 +148,7 @@ void ADungeonGenerateActor::AddInstance(UStaticMesh* staticMesh, const FTransfor
 		quantizationSize = mParameter->GetGridSize().HorizontalSize * 5.f;
 	const uint32 hash = InstancedMeshHash(transform.GetTranslation(), quantizationSize);
 	auto& chunk = mInstancedMeshCluster.FindOrAdd(hash);
-	if (DungeonMeshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh)
+	if (meshGenerationMethod == EDungeonMeshGenerationMethod::InstancedStaticMesh)
 	{
 		auto* component = chunk.FindOrCreateInstance(this, staticMesh);
 		component->AddInstance(transform);
@@ -163,6 +168,9 @@ void ADungeonGenerateActor::EndInstanceTransaction()
 	{
 		chunk.Value.EndTransaction();
 	}
+
+	if (mInstancedMeshCullDistance.Min < mInstancedMeshCullDistance.Max)
+		ApplyInstancedMeshCullDistance();
 }
 
 void ADungeonGenerateActor::DestroyAllInstance()
@@ -176,9 +184,15 @@ void ADungeonGenerateActor::DestroyAllInstance()
 
 void ADungeonGenerateActor::SetInstancedMeshCullDistance(const FInt32Interval& cullDistance)
 {
+	mInstancedMeshCullDistance = cullDistance;
+	ApplyInstancedMeshCullDistance();
+}
+
+void ADungeonGenerateActor::ApplyInstancedMeshCullDistance()
+{
 	for (auto& pair : mInstancedMeshCluster)
 	{
-		pair.Value.SetCullDistance(cullDistance);
+		pair.Value.SetCullDistance(mInstancedMeshCullDistance);
 	}
 }
 
@@ -203,9 +217,9 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 
 	Dispose(true);
 
+	// インスタンスメッシュを登録
 	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
 	{
-		// インスタンスメッシュを登録
 		OnAddFloor([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(staticMesh, transform);
@@ -216,24 +230,28 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 				AddInstance(staticMesh, transform);
 			}
 		);
-		OnAddWall([this](UStaticMesh* staticMesh, const FTransform& transform)
+		OnAddCatwalk([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
 				AddInstance(staticMesh, transform);
+			}
+		);
+	}
+
+	// インスタンスメッシュを登録
+	{
+		OnAddWall([this](UStaticMesh* staticMesh, const FTransform& transform)
+			{
+				AddInstance(staticMesh, transform, EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh);
 			}
 		);
 		OnAddRoof([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform);
+				AddInstance(staticMesh, transform, EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh);
 			}
 		);
 		OnAddPillar([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform);
-			}
-		);
-		OnAddCatwalk([this](UStaticMesh* staticMesh, const FTransform& transform)
-			{
-				AddInstance(staticMesh, transform);
+				AddInstance(staticMesh, transform, EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh);
 			}
 		);
 	}
@@ -307,6 +325,14 @@ void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)
 	}
 
 	Super::Dispose(flushStreamLevels);
+}
+
+void ADungeonGenerateActor::FitNavMeshBoundsVolume()
+{
+	Super::FitNavMeshBoundsVolume();
+
+	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
+		ReregisterAllComponents();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -445,6 +471,7 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 					{
 						FString message;
 						message.Append(TEXT("Identifier:") + FString::FromInt(grid.GetIdentifier()) + TEXT("\n"));
+						message.Append(TEXT("DepthRatioFromStart:") + FString::SanitizeFloat(static_cast<float>(grid.GetDepthRatioFromStart()) / 255.f) + TEXT("\n"));
 						message.Append(TEXT("Type: ") + grid.GetTypeName() + TEXT("\n"));
 						message.Append(TEXT("Props: ") + grid.GetPropsName() + TEXT("\n"));
 						message.Append(TEXT("Direction: ") + grid.GetDirection().GetName() + TEXT("\n"));
@@ -453,6 +480,8 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 							message.Append(TEXT("Catwalk\n"));
 							message.Append(TEXT("Direction: ") + grid.GetCatwalkDirection().GetName() + TEXT("\n"));
 						}
+						if (grid.IsSubLevel())
+							message.Append(TEXT("SubLevel\n"));
 						message.Append(grid.GetNoMeshGenerationName());
 						DrawDebugString(
 							GetWorld(),
@@ -488,11 +517,14 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 
 		const dungeon::Grid& grid = generator->GetGrid(playerGridLocation);
 		output.Add(TEXT("Identifier:") + FString::FromInt(grid.GetIdentifier()));
+		output.Add(TEXT("DepthRatioFromStart:") + FString::SanitizeFloat(static_cast<float>(grid.GetDepthRatioFromStart()) / 255.f));
 		output.Add(TEXT("Type: ") + grid.GetTypeName());
 		output.Add(TEXT("Props: ") + grid.GetPropsName());
 		if (grid.IsCatwalk())
 			output.Add(TEXT("Catwalk"));
-
+		if (grid.IsSubLevel())
+			output.Add(TEXT("SubLevel"));
+		
 		FString message;
 		for (const FString& line : output)
 		{

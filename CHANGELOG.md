@@ -1,8 +1,28 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (46)
+## Unreleased-1.6.* (47)
 ### Changes
 ### 変更点
+
+## 20250301-1.6.17 (46)
+### Changes
+* Added DungeonMeshSet draw method
+* Changed DungeonMainLevelScriptActor load control availability to be configurable
+* Changed navigation generation and culling distance for Instanced Static Mesh
+* Added CastShadow validity control if point light and spot light are not Static
+* Added mask texture for minimap
+* Changed interiors to be generated for actors placed on sublevels
+* modified plugin assets
+* Fixed several bugs
+### 変更点
+* DungeonMeshSetの抽選方法を追加
+* DungeonMainLevelScriptActorの負荷制御の有効性を設定可能に変更
+* Instanced Static Meshのナビゲーション生成とカリング距離を変更
+* ポイントライトとスポットライトがStatic以外ならCastShadowの有効性制御を追加
+* ミニマップのマスクテクスチャを追加
+* サブレベルに配置されたアクターにも内装を生成するように変更
+* プラグインアセットを修正
+* いくつかの不具合を修正
 
 ## 20250130-1.6.16 (45)
 ### Changes

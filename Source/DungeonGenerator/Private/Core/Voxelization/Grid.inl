@@ -41,14 +41,23 @@ namespace dungeon
 		SetDirection(direction);
 	}
 
-	inline Grid Grid::CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept
+	inline Grid::Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
+		: mIdentifier(identifier)
+		, mDepthRatioFromStart(depthRatioFromStart)
 	{
-		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier);
+		SetType(type);
+		SetProps(Props::None);
+		SetDirection(direction);
 	}
 
-	inline Grid Grid::CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier) noexcept
+	inline Grid Grid::CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
 	{
-		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier);
+		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier, depthRatioFromStart);
+	}
+
+	inline Grid Grid::CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
+	{
+		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier, depthRatioFromStart);
 	}
 
 	inline Grid::Type Grid::GetType() const noexcept
@@ -152,6 +161,17 @@ namespace dungeon
 		return mIdentifier == InvalidIdentifier;
 	}
 
+	inline uint8_t Grid::GetDepthRatioFromStart() const noexcept
+	{
+		return mDepthRatioFromStart;
+	}
+
+	inline void Grid::SetDepthRatioFromStart(const uint8_t depthRatioFromStart) noexcept
+	{
+		mDepthRatioFromStart = depthRatioFromStart;
+	}
+
+
 	inline void Grid::NoRoofMeshGeneration(const bool noRoofMeshGeneration) noexcept
 	{
 		mPack.SetAttribute(Attribute::NoRoofMeshGeneration, noRoofMeshGeneration);
@@ -247,6 +267,17 @@ namespace dungeon
 	{
 		return mPack.IsAttributeEnabled(Attribute::Catwalk);
 	}
+
+	inline void Grid::SubLevel() noexcept
+	{
+		mPack.SetAttribute(Attribute::SubLevel, true);
+	}
+
+	inline bool Grid::IsSubLevel() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::SubLevel);
+	}
+
 
 
 

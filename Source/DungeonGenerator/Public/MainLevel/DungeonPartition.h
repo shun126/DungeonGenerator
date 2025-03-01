@@ -32,6 +32,13 @@ class DUNGEONGENERATOR_API UDungeonPartition : public UObject
 	*/
 	static constexpr float InactivateRemainTimer = 3.f;
 
+	enum class ActiveState : uint8
+	{
+		Inactivate,
+		ActivateFar,
+		ActivateNear,
+	};
+
 public:
 	explicit UDungeonPartition(const FObjectInitializer& objectInitializer);
 	virtual ~UDungeonPartition() override = default;
@@ -43,12 +50,15 @@ private:
 	bool UpdateInactivateRemainTimer(const float deltaSeconds);
 	bool IsValidInactivateRemainTimer() const noexcept;
 
-	void Mark() noexcept;
+	void Mark(const ActiveState activeState) noexcept;
 	void Unmark() noexcept;
-	bool IsMarked() const noexcept;
+	ActiveState IsMarked() const noexcept;
 
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
+
+	void CallCastShadowActivate();
+	void CallCastShadowInactivate();
 
 	bool IsEmpty() const;
 
@@ -59,7 +69,8 @@ protected:
 private:
 	float mInactivateRemainTimer = 0.f;
 	bool mPartitionActivate = true;
-	bool mMarked = false;
+	bool mCallCastShadowActivate = true;
+	ActiveState mMarked = ActiveState::Inactivate;
 
 	friend class ADungeonMainLevelScriptActor;
 	friend class UDungeonComponentActivatorComponent;
@@ -84,17 +95,18 @@ inline bool UDungeonPartition::IsValidInactivateRemainTimer() const noexcept
 	return mInactivateRemainTimer > 0.f;
 }
 
-inline void UDungeonPartition::Mark() noexcept
+inline void UDungeonPartition::Mark(const ActiveState activeState) noexcept
 {
-	mMarked = true;
+	if (mMarked < activeState)
+		mMarked = activeState;
 }
 
 inline void UDungeonPartition::Unmark() noexcept
 {
-	mMarked = false;
+	mMarked = ActiveState::Inactivate;
 }
 
-inline bool UDungeonPartition::IsMarked() const noexcept
+inline UDungeonPartition::ActiveState UDungeonPartition::IsMarked() const noexcept
 {
 	return mMarked;
 }

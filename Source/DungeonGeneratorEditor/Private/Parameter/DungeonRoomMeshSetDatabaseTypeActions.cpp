@@ -26,3 +26,9 @@ uint32 FDungeonRoomMeshSetDatabaseTypeActions::GetCategories()
 {
 	return mAssetCategory;
 }
+
+FColor FDungeonRoomMeshSetDatabaseTypeActions::GetTypeColor() const
+{
+	static constexpr FColor Color(56, 56, 156);
+	return Color;
+}

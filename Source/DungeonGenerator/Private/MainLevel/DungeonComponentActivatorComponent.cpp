@@ -5,6 +5,9 @@ All Rights Reserved.
 */
 
 #include "MainLevel/DungeonComponentActivatorComponent.h"
+
+#include "Components/SpotLightComponent.h"
+
 #include "MainLevel/DungeonMainLevelScriptActor.h"
 #include <Engine/Level.h>
 #include <AIController.h>
@@ -160,6 +163,22 @@ void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 	OnPartitionInactivate();
 }
 
+void UDungeonComponentActivatorComponent::CallCastShadowActivate()
+{
+	if (EnableLightShadowControl)
+		LoadCastShadow(EDungeonComponentActivateReason::Partition);
+}
+
+void UDungeonComponentActivatorComponent::CallCastShadowInactivate()
+{
+	AActor* owner = GetOwner();
+	if (IsValid(owner))
+	{
+		if (EnableLightShadowControl)
+			SaveAndDisableCastShadow(EDungeonComponentActivateReason::Partition, owner);
+	}
+}
+
 // Actor
 void UDungeonComponentActivatorComponent::SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason)
 {
@@ -202,7 +221,7 @@ void UDungeonComponentActivatorComponent::SaveAndDisableComponentActivation(cons
 		SaveAndDisableComponentActivation(activateReason, owner);
 }
 
-void UDungeonComponentActivatorComponent::SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason, AActor* owner)
+void UDungeonComponentActivatorComponent::SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason, const AActor* owner)
 {
 	const bool previousEnabled = mComponentActivation.all();
 	mComponentActivation.reset(static_cast<size_t>(activateReason));
@@ -253,7 +272,7 @@ void UDungeonComponentActivatorComponent::SaveAndDisableCollisionEnable(const ED
 		SaveAndDisableCollisionEnable(activateReason, owner);
 }
 
-void UDungeonComponentActivatorComponent::SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason, AActor* owner)
+void UDungeonComponentActivatorComponent::SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason, const AActor* owner)
 {
 	const bool previousEnabled = mComponentCollisionEnabled.all();
 	mComponentCollisionEnabled.reset(static_cast<size_t>(activateReason));
@@ -307,7 +326,7 @@ void UDungeonComponentActivatorComponent::SaveAndDisableVisibility(const EDungeo
 		SaveAndDisableVisibility(activateReason, owner);
 }
 
-void UDungeonComponentActivatorComponent::SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason, AActor* owner)
+void UDungeonComponentActivatorComponent::SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason, const AActor* owner)
 {
 	const bool previousEnabled = mComponentVisibility.all();
 	mComponentVisibility.reset(static_cast<size_t>(activateReason));
@@ -353,6 +372,63 @@ void UDungeonComponentActivatorComponent::LoadVisibility(const EDungeonComponent
 	}
 }
 
+// CastShadow
+void UDungeonComponentActivatorComponent::SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason)
+{
+	AActor* owner = GetOwner();
+	if (IsValid(owner))
+		SaveAndDisableCastShadow(activateReason, owner);
+}
+
+void UDungeonComponentActivatorComponent::SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason, const AActor* owner)
+{
+	const bool previousEnabled = mLightCastShadow.all();
+	mLightCastShadow.reset(static_cast<size_t>(activateReason));
+	const bool currentEnabled = mLightCastShadow.all();
+	if (previousEnabled != currentEnabled)
+	{
+		mLightCastShadowSaver.Stash(owner, [](UActorComponent* component)
+			{
+				std::pair<bool, bool> result;
+
+				auto* pointLightComponent = Cast<UPointLightComponent>(component);
+				result.first = result.second =
+					IsValid(pointLightComponent) &&
+					pointLightComponent->Mobility != EComponentMobility::Type::Static &&
+					pointLightComponent->CastShadows != 0;
+				if (result.first)
+				{
+					pointLightComponent->SetCastShadows(false);
+				}
+				else
+				{
+					result.first = false;
+				}
+
+				return result;
+			}
+		);
+	}
+}
+
+void UDungeonComponentActivatorComponent::LoadCastShadow(const EDungeonComponentActivateReason activateReason)
+{
+	const bool previousEnabled = mLightCastShadow.all();
+	mLightCastShadow.set(static_cast<size_t>(activateReason));
+	const bool currentEnabled = mLightCastShadow.all();
+	if (previousEnabled != currentEnabled)
+	{
+		mLightCastShadowSaver.Pop([](UActorComponent* component, const bool castShadow)
+			{
+				if (auto* pointLightComponent = Cast<UPointLightComponent>(component))
+				{
+					pointLightComponent->SetCastShadows(castShadow);
+				}
+			}
+		);
+	}
+}
+
 // AI
 void UDungeonComponentActivatorComponent::SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason)
 {
@@ -361,7 +437,7 @@ void UDungeonComponentActivatorComponent::SaveAndStopAiLogic(const EDungeonCompo
 			SaveAndStopAiLogic(activateReason, reason, owner);
 }
 
-void UDungeonComponentActivatorComponent::SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason, APawn* owner)
+void UDungeonComponentActivatorComponent::SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason, const APawn* owner)
 {
 	if (mLogicEnabled.all())
 	{

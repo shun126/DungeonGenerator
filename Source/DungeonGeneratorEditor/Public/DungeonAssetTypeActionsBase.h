@@ -18,12 +18,6 @@ public:
 	virtual ~FDungeonAssetTypeActionsBase() override = default;
 
 	// FAssetTypeActions_Base overrides
-	virtual FColor GetTypeColor() const override
-    {
-        static constexpr FColor Color(156, 156, 56);
-        return Color;
-    }
-
     virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor) override
     {
         FSimpleAssetEditor::CreateEditor(EToolkitMode::Standalone, EditWithinLevelEditor, InObjects);

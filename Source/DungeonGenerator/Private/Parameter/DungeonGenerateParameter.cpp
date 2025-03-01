@@ -323,12 +323,12 @@ const FDungeonTemporaryMeshSet* UDungeonGenerateParameter::SelectParts(const UDu
 	return dungeonPartsDatabase->AtImplement(grid.GetIdentifier());
 }
 
-const FDungeonMeshSet* UDungeonGenerateParameter::SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid)
+const FDungeonMeshSet* UDungeonGenerateParameter::SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
 	if (IsValid(dungeonMeshSetDatabase) == false)
 		return nullptr;
 
-	return dungeonMeshSetDatabase->AtImplement(grid.GetIdentifier());
+	return dungeonMeshSetDatabase->SelectImplement(grid.GetIdentifier(), grid.GetDepthRatioFromStart(), random);
 }
 
 const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
@@ -383,21 +383,21 @@ const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const size_
 
 const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
-	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid))
+	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid, random))
 		return parts->SelectFloorParts(gridIndex, grid, random);
 	return nullptr;
 }
 
 const FDungeonMeshParts* UDungeonGenerateParameter::SelectCatwalkParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
-	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid))
+	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid, random))
 		return parts->SelectCatwalkParts(gridIndex, grid, random);
 	return nullptr;
 }
 
 const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallPartsByGrid(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
-	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid))
+	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid, random))
 		return parts->SelectWallPartsByGrid(gridIndex, grid, random);
 	return nullptr;
 }
@@ -410,14 +410,14 @@ const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallPartsByFace(const 
 
 const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoofParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
-	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid))
+	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid, random))
 		return parts->SelectRoofParts(gridIndex, grid, random);
 	return nullptr;
 }
 
 const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
-	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid))
+	if (const auto* parts = SelectParts(dungeonMeshSetDatabase, grid, random))
 		return parts->SelectSlopeParts(gridIndex, grid, random);
 	return nullptr;
 }

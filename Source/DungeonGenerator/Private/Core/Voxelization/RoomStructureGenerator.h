@@ -29,10 +29,11 @@ namespace dungeon
 		 * GenerateSlopeを呼ぶとボクセルにスロープを生成します。
 		 * @param voxel		ボクセル
 		 * @param room		調べる部屋
+		 * @param baseLocation	通路を生成する基準の位置（接続先の部屋の位置）
 		 * @param random	乱数
 		 * @return trueならば生成可能
 		 */
-		bool CheckSlopePlacement(const std::shared_ptr<Voxel>& voxel, const std::shared_ptr<Room>& room, const std::shared_ptr<Random>& random);
+		bool CheckSlopePlacement(const std::shared_ptr<Voxel>& voxel, const std::shared_ptr<Room>& room, const FIntVector& baseLocation, const std::shared_ptr<Random>& random);
 
 		/**
 		 * CheckSlopePlacementで調べた部屋の門になる位置を取得します

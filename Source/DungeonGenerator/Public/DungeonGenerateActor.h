@@ -142,15 +142,21 @@ private:
 	virtual void OnPreDungeonGeneration() override;
 	virtual void OnPostDungeonGeneration(const bool result) override;
 	virtual void Dispose(const bool flushStreamLevels) override;
+	virtual void FitNavMeshBoundsVolume() override;
 
-private:
 	static uint32 InstancedMeshHash(const FVector& position, const double quantizationSize = 50 * 100);
 	void BeginInstanceTransaction();
 	void AddInstance(UStaticMesh* staticMesh, const FTransform& transform);
+	void AddInstance(UStaticMesh* staticMesh, const FTransform& transform, const EDungeonMeshGenerationMethod meshGenerationMethod);
 	void EndInstanceTransaction();
 	void DestroyAllInstance();
+	void ApplyInstancedMeshCullDistance();
 
 	void PreGenerateImplementation();
+
+#if WITH_EDITOR
+	void DrawDebugInformation() const;
+#endif
 
 protected:
 	/**
@@ -264,8 +270,6 @@ protected:
 	UPROPERTY(Transient)
 	TMap<uint32, FDungeonInstancedMeshCluster> mInstancedMeshCluster;
 
-#if WITH_EDITOR
 private:
-	void DrawDebugInformation() const;
-#endif
+	FInt32Interval mInstancedMeshCullDistance = { 0, 0};
 };

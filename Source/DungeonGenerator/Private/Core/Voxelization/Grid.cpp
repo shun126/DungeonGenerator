@@ -15,6 +15,7 @@ namespace dungeon
 	*/
 	bool Grid::CanBuildFloor(const bool checkNoMeshGeneration) const noexcept
 	{
+		// 床の生成禁止領域か？
 		if (checkNoMeshGeneration && IsNoFloorMeshGeneration())
 			return false;
 
@@ -26,6 +27,10 @@ namespace dungeon
 	*/
 	bool Grid::CanBuildSlope() const noexcept
 	{
+		// 床の生成禁止領域か？
+		//if (IsNoFloorMeshGeneration())
+		//	return false;
+
 		return Is(Type::Slope);
 	}
 

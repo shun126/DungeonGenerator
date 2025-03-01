@@ -21,6 +21,18 @@ namespace dungeon
 }
 
 /**
+Part Selection Method
+パーツを選択する方法
+*/
+UENUM(BlueprintType)
+enum class EDungeonMeshSetSelectionMethod : uint8
+{
+	Identifier,
+	DepthFromStart,
+	Random,
+};
+
+/**
 Database of dungeon mesh sets
 ダンジョンのメッシュセットのデータベース
 */
@@ -41,7 +53,7 @@ public:
 	/**
 	FDungeonMeshSetをランダムに抽選します
 	*/
-	virtual const FDungeonMeshSet* SelectImplement(const std::shared_ptr<dungeon::Random>& random) const;
+	virtual const FDungeonMeshSet* SelectImplement(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random) const;
 
 	template<typename Function>
 	void Each(Function&& function) const
@@ -60,6 +72,13 @@ public:
 #endif
 
 protected:
+	/**
+	Part Selection Method
+	パーツを選択する方法
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::Identifier;
+
 	/**
 	Set the DungeonRoomMeshSet; multiple DungeonRoomMeshSets can be set.
 	DungeonRoomMeshSetを設定して下さい。DungeonRoomMeshSetは複数設定する事ができます。
