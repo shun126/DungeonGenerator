@@ -7,6 +7,7 @@ All Rights Reserved.
 #pragma once
 #include <CoreMinimal.h>
 #include <memory>
+#include "DungeonRandom.generated.h"
 
 namespace dungeon
 {
@@ -14,8 +15,9 @@ namespace dungeon
 }
 
 /**
-共通ランダムクラス
-*/
+ * Random numbers for dungeon generation
+ * ダンジョン生成用乱数
+ */
 class DUNGEONGENERATOR_API CDungeonRandom
 {
 	using IntegerType = int32;
@@ -40,19 +42,19 @@ public:
 	/**
 	@return	true or false
 	*/
-	bool GetBoolean();
+	bool GetBoolean() const;
 
 	/**
 	@return	-1 or 1
 	*/
-	IntegerType GetIntegerSign();
+	IntegerType GetIntegerSign() const;
 
 	/**
 	Get a random number
 	@return		Returns the range [type_min,type_max) if T is an integer,
 				or [0,1] with equal probability if T is a real number.
 	*/
-	IntegerType GetInteger();
+	IntegerType GetInteger() const;
 
 	/**
 	Get a random number
@@ -60,7 +62,7 @@ public:
 	@return		Returns the range [0,to) if T is an integer,
 				or [0,to] with equal probability if T is a real number.
 	*/
-	IntegerType GetInteger(const IntegerType to);
+	IntegerType GetInteger(const IntegerType to) const;
 
 	/**
 	Get a random number
@@ -69,19 +71,19 @@ public:
 	@return		Returns the range [from,to) if T is an integer,
 				or [from,to] with equal probability if T is a real number.
 	*/
-	IntegerType GetInteger(const IntegerType from, const IntegerType to);
+	IntegerType GetInteger(const IntegerType from, const IntegerType to) const;
 
 	/**
 	@return	-1 or 1
 	*/
-	NumberType GetNumberSign();
+	NumberType GetNumberSign() const;
 
 	/**
 	Get a random number
 	@return		Returns the range [type_min,type_max) if T is an integer,
 				or [0,1] with equal probability if T is a real number.
 	*/
-	NumberType GetNumber();
+	NumberType GetNumber() const;
 
 	/**
 	Get a random number
@@ -89,7 +91,7 @@ public:
 	@return		Returns the range [0,to) if T is an integer,
 				or [0,to] with equal probability if T is a real number.
 	*/
-	NumberType GetNumber(const NumberType to);
+	NumberType GetNumber(const NumberType to) const;
 
 	/**
 	Get a random number
@@ -98,7 +100,98 @@ public:
 	@return		Returns the range [from,to) if T is an integer,
 				or [from,to] with equal probability if T is a real number.
 	*/
-	NumberType GetNumber(const NumberType from, const NumberType to);
+	NumberType GetNumber(const NumberType from, const NumberType to) const;
+
+private:
+	std::shared_ptr<dungeon::Random> mRandom;
+};
+
+/**
+ * Random numbers for dungeon generation available from BluePrint
+ * BluePrintから利用可能なダンジョン生成用乱数
+ */
+UCLASS()
+class DUNGEONGENERATOR_API UDungeonRandom : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UDungeonRandom() = default;
+	virtual ~UDungeonRandom() override = default;
+
+	void SetOwner(const std::shared_ptr<dungeon::Random>& random);
+
+	/**
+	@return	true or false
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	bool GetBoolean() const;
+
+	/**
+	@return	-1 or 1
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	int32 GetIntegerSign() const;
+
+	/**
+	Get a random number
+	@return		Returns the range [type_min,type_max) if T is an integer,
+				or [0,1] with equal probability if T is a real number.
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	int32 GetInteger() const;
+
+	/**
+	Get a random number
+	@param[in]	to	Upper value
+	@return		Returns the range [0,to) if T is an integer,
+				or [0,to] with equal probability if T is a real number.
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	int32 GetIntegerFrom(const int32 to) const;
+
+	/**
+	Get a random number
+	@param[in]	from	Lower value
+	@param[in]	to		Upper value
+	@return		Returns the range [from,to) if T is an integer,
+				or [from,to] with equal probability if T is a real number.
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	int32 GetIntegerInRangeFrom(const int32 from, const int32 to) const;
+
+	/**
+	@return	-1 or 1
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	float GetNumberSign() const;
+
+	/**
+	Get a random number
+	@return		Returns the range [type_min,type_max) if T is an integer,
+				or [0,1] with equal probability if T is a real number.
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	float GetFloat() const;
+
+	/**
+	Get a random number
+	@param[in]	to	Upper value
+	@return		Returns the range [0,to) if T is an integer,
+				or [0,to] with equal probability if T is a real number.
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	float GetFloatFrom(const float to) const;
+
+	/**
+	Get a random number
+	@param[in]	from	Lower value
+	@param[in]	to		Upper value
+	@return		Returns the range [from,to) if T is an integer,
+				or [from,to] with equal probability if T is a real number.
+	*/
+	UFUNCTION(BlueprintPure, Category = "DungeonGenerator")
+	float GetFloatInRangeFrom(const float from, const float to) const;
 
 private:
 	std::shared_ptr<dungeon::Random> mRandom;

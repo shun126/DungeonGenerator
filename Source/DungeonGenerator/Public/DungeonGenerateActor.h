@@ -20,9 +20,6 @@ namespace dungeon
 	class Room;
 }
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGeneratorActorNotifyGenerationSuccessSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGeneratorActorNotifyGenerationFailureSignature);
-
 /**
 メッシュの生成方法
 */
@@ -233,20 +230,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Debug")
 	bool ShowVoxelGridTypeAtPlayerLocation = false;
 #endif
-
-	/**
-	Notification when a dungeon is successfully created
-	ダンジョンの生成に成功した時の通知
-	*/
-	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
-	FDungeonGeneratorActorNotifyGenerationSuccessSignature OnGenerationSuccess;
-
-	/**
-	Notification when dungeon creation fails
-	ダンジョンの生成に失敗した時の通知
-	*/
-	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
-	FDungeonGeneratorActorNotifyGenerationFailureSignature OnGenerationFailure;
 
 	/**
 	Location of the starting room of the dungeon

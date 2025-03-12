@@ -74,7 +74,7 @@ public:
 	Transform from world location to texture location
 	ワールドの位置からテクスチャの位置へ変換します
 	*/
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator/Minimap")
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	static FVector2D TransformWorldToTexture(const FVector worldLocation, const float worldToTextureScale) noexcept;
 
 	/**

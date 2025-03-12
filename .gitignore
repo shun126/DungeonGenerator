@@ -77,6 +77,5 @@ Plugins/*/Intermediate/*
 DerivedDataCache/*
 
 # Doxygen
+MAIN_PAGE.md
 Document/doxygen
-Document/doxygen.bat
-Source/CHANGELOG.md

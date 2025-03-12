@@ -1,13 +1,21 @@
-# Dungeon generator plugin for Unreal Engine 5
+<div align="center">
+<h1>Dungeon generator plugin for Unreal Engine 5</h1>
+<p>
+<a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/issues">Issues</a>,
+<a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions">Discussions</a>,
+<a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki">Wiki</a>,
+<a href="https://mnu.sakura.ne.jp/_doxygen/dungeon_generator">Doxygen</a>
+</p>
+</div>
 
-[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.5-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
+[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.5-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
 [![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
 [![youtube](https://img.shields.io/youtube/views/1igd4pls5x8?style=social)](https://youtu.be/1igd4pls5x8)
 
-Please also take a look at the [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) version.
+Please also take a look at the [Fab](https://fab.com/s/f5587c55bad0) version.
 
 * Trailer video: [YouTube](https://youtu.be/1igd4pls5x8)
 * Tutorial videos: [YouTube](https://www.youtube.com/playlist?list=PLlMDkSa8bQnK4PDIfkXYorQIucn47ifKO)
@@ -39,13 +47,13 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 * Users can easily generate dungeons by preparing meshes for floors, walls, ceilings, and stairs.
 * Supports dungeon replication
 * Generates actors for doors and keys by MissionGraph.
-* The following features are supported only in the [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) version
+* The following features are supported only in the [Fab](https://fab.com/s/f5587c55bad0) version
   * Sub-levels can be applied as dungeon rooms
   * A mini-map of the dungeon can be generated.
   * Interior decoration. [beta version]
   * Foliage decoration. [beta version]
-* Supported Development Platforms: Windows,Android
-* Supported Target Build Platforms: Windows,Android (should be possible to target all platforms)
+* Supported Development Platforms: Windows,Android,Linux
+* Supported Target Build Platforms: Windows,Android,Linux (should be possible to target all platforms)
 
 # 🔧 Requirements
 * [Unreal Engine 5.1 ~ Unreal Engine 5.5](https://www.unrealengine.com/)
@@ -56,7 +64,7 @@ you can redistribute it and/or modify it under the terms of the GNU General Publ
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied arranty of MERCHANTABILITY or FITNESS FOR A ARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-Or, [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
+Or, [Fab](https://fab.com/s/f5587c55bad0) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
 # 👾 Demo
 [DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
@@ -67,15 +75,16 @@ This is an easy to use. Simply drop the DungeonGenerateActor into your level, se
 * [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
 * [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
 * [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
+* [Doxygen](https://mnu.sakura.ne.jp/_doxygen/dungeon_generator/)
 
-The [Fab](https://www.fab.com/ja/listings/11fce4d9-8996-4323-9aac-9cfacbfb95eb) version includes the following enhancements.
+The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhancements.
 * Sub-levels can be applied as dungeon rooms
 * A mini-map of the dungeon can be generated.
 * Interior decoration. [beta version]
 * Foriage decoration. [beta version]
 
 # 👾 Authors
-* [Nonbiri](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q)
-* [Shun Moriya](https://x.com/monjiro1972)
+* Nonbiri ([X.com](https://x.com/happy_game_dev) / [YouTube](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q))
+* Shun Moriya ([X.com](https://x.com/monjiro1972))
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M413XDXB)

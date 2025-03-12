@@ -3,8 +3,8 @@
 @copyright	2024- Shun Moriya
 All Rights Reserved.
 
-ADungeonActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
-ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可能(NotPlaceable)にするため、
+ADungeonGeneratedActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
+ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配置不可能(NotPlaceable)にするため、
 継承元であるADungeonGenerateBaseをAbstract指定して共通機能をまとめています。
 */
 
@@ -25,9 +25,17 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可�
 #include "Parameter/DungeonGenerateParameter.h"
 #include "SubActor/DungeonRoomSensorBase.h"
 #include "SubActor/DungeonDoorBase.h"
+
+
 #include "PluginInformation.h"
+
+#include "Core/Helper/Finalizer.h"
+
+#include "Helper/DungeonAisleGridMap.h"
+
 #include <FoliageInstancedStaticMeshComponent.h>
 #include <TextureResource.h>
+#include <Components/PointLightComponent.h>
 #include <Components/StaticMeshComponent.h>
 #include <GameFramework/PlayerStart.h>
 #include <Engine/LevelStreamingDynamic.h>
@@ -349,15 +357,15 @@ void ADungeonGenerateBase::OnPostDungeonGeneration(const bool result)
 
 
 
-bool ADungeonGenerateBase::IsCreated() const noexcept
+bool ADungeonGenerateBase::IsGenerated() const noexcept
 {
-	return mCreated;
+	return mGenerated;
 }
 
 void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 {
 	// 生成済みなら破棄する
-	if (mCreated == true)
+	if (mGenerated == true)
 	{
 
 		// スポーン済みアクターを破棄
@@ -370,7 +378,7 @@ void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 		mParameter = nullptr;
 
 		// 生成済みフラグをリセットする
-		mCreated = false;
+		mGenerated = false;
 	}
 }
 
@@ -378,9 +386,26 @@ void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
 例えばリプリケートするアクターはサーバー側でのみ実行されるため乱数の同期ずれが発生します。
 */
-bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
+bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
 {
-	check(mCreated == false);
+	check(mGenerated == false);
+
+	// 生成結果を通知
+	dungeon::Finalizer NotificationGenerationResults([this]()
+		{
+			if (mGenerated)
+			{
+				// 成功を通知
+				OnGenerationSuccess.Broadcast();
+			}
+			else
+			{
+				// 失敗を通知
+				OnGenerationFailure.Broadcast();
+			}
+		}
+	);
+
 #if WITH_EDITOR
 	dungeon::CreateDebugDirectory();
 #endif
@@ -474,6 +499,42 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 		DUNGEON_GENERATOR_ERROR(TEXT("System initialization failed."));
 		return false;
 	}
+
+	// 生成開始イベントの通知
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+	dungeon::Stopwatch stopwatch;
+#endif
+	BeginGeneration();
+	OnBeginGeneration.Broadcast();
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+	DUNGEON_GENERATOR_LOG(TEXT("On start generation event: %lf seconds"), stopwatch.Lap());
+#endif
+
+	// 通路グリッド記録クラスを生成
+	mAisleGridMap = NewObject<UDungeonAisleGridMap>();
+
+	// 生成終了イベントの登録
+	dungeon::Finalizer finalizer([this]()
+		{
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+			dungeon::Stopwatch stopwatch;
+#endif
+
+			// Blueprintから使用できる乱数を生成します
+			UDungeonRandom* random = NewObject<UDungeonRandom>();
+			random->SetOwner(GetSynchronizedRandom());
+			EndGeneration(random, mAisleGridMap);
+			OnEndGeneration.Broadcast(random, mAisleGridMap);
+
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+			DUNGEON_GENERATOR_LOG(TEXT("On end generation event: %lf seconds"), stopwatch.Lap());
+#endif
+
+			// 通路グリッド記録クラスを解放
+			mAisleGridMap = nullptr;
+		}
+	);
+
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 	// 通信同期用に現在の乱数の種を出力する
 	{
@@ -521,6 +582,7 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 	{
 		RoomAndRoomSensorMap roomSensorCache;
 		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
+		CreateImplement_QueryAisleGeneration(hasAuthority);
 		CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
 		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
 		/*
@@ -549,8 +611,66 @@ bool ADungeonGenerateBase::Create(const UDungeonGenerateParameter* parameter, co
 	}
 #endif
 
-	mCreated = true;
+	mGenerated = true;
 	return true;
+}
+
+void ADungeonGenerateBase::BeginGeneration_Implementation()
+{
+}
+
+bool ADungeonGenerateBase::OnQueryAisleGeneration_Implementation(const FVector& center, const int32 identifier, const EDungeonDirection direction)
+{
+	return false;
+}
+
+void ADungeonGenerateBase::EndGeneration_Implementation(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap)
+{
+}
+
+/*
+ * ボクセル情報に従って通路生成のイベントを発生させます
+ */
+void ADungeonGenerateBase::CreateImplement_QueryAisleGeneration(const bool hasAuthority)
+{
+	check(IsValid(mParameter));
+
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+	dungeon::Stopwatch stopwatch;
+#endif
+
+	// 通路生成のイベントを発生させます
+	mGenerator->GetVoxel()->Each([this](const FIntVector& location, dungeon::Grid& grid)
+		{
+			if (grid.GetType() == dungeon::Grid::Type::Aisle)
+			{
+				const FVector position = mParameter->ToWorld(location) + GetActorLocation();
+				const FVector gridSize = mParameter->GetGridSize().To3D();
+				const FVector gridHalfSize = gridSize / 2.;
+				const FVector centerPosition = position + FVector(gridHalfSize.X, gridHalfSize.Y, 0);
+				const EDungeonDirection direction = static_cast<EDungeonDirection>(grid.GetDirection().Get());
+				if (OnQueryAisleGeneration(centerPosition, grid.GetIdentifier(), direction))
+				{
+					// 各メッシュの生成禁止フラグを立てます
+					grid.NoFloorMeshGeneration(true);
+					grid.NoRoofMeshGeneration(true);
+					//grid.NoNorthWallMeshGeneration(true);
+					//grid.NoEastWallMeshGeneration(true);
+					//grid.NoSouthWallMeshGeneration(true);
+					//grid.NoWestWallMeshGeneration(true);
+				}
+
+				// 通路グリッドを登録
+				check(mAisleGridMap);
+				mAisleGridMap->Register(grid.GetIdentifier(), direction, centerPosition);
+			}
+			return true;
+		}
+	);
+
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+	DUNGEON_GENERATOR_LOG(TEXT("Query aisle generation: %lf seconds"), stopwatch.Lap());
+#endif
 }
 
 /*
@@ -1083,7 +1203,13 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 		{
 			++validGridCount;
 
-			static const auto registerer = [](std::vector<TorchChecker>& torchCheckers, const uint16_t identifier, const FIntVector& normal)
+			bool generationPermit = true;
+			if (mParameter->GetFrequencyOfTorchlightGeneration() >= EFrequencyOfGeneration::Occasionally)
+			{
+				generationPermit = fromGrid.Is(dungeon::Grid::Type::Floor) == false;
+			}
+
+			static const auto Registerer = [](std::vector<TorchChecker>& torchCheckers, const uint16_t identifier, const FIntVector& normal)
 				{
 					auto i = std::find_if(torchCheckers.begin(), torchCheckers.end(), [identifier](const TorchChecker& torch)
 						{
@@ -1101,12 +1227,6 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 					}
 				};
 
-			bool generationPermit = true;
-			if (mParameter->GetFrequencyOfTorchlightGeneration() >= EFrequencyOfGeneration::Occasionally)
-			{
-				generationPermit = fromGrid.Is(dungeon::Grid::Type::Floor) == false;
-			}
-
 			// 燭台を生成できないグリッドを含んでいる？
 			if (
 				generationPermit &&
@@ -1114,7 +1234,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 				fromGrid.Is(dungeon::Grid::Type::Slope) == false &&
 				fromGrid.IsKindOfSpatialType() == false)
 			{
-				registerer(torchCheckers, fromGrid.GetIdentifier(), direction * -1);
+				Registerer(torchCheckers, fromGrid.GetIdentifier(), direction * -1);
 			}
 		}
 	}
@@ -1186,7 +1306,14 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 						normal.Normalize();
 						FTransform relativeTransform(normal.Rotation());
 						const FTransform worldTransform = torchParts->RelativeTransform * relativeTransform * rootTransform;
-						SpawnTorchActor(torchParts->ActorClass, worldTransform, dungeonRoomSensorBase, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+						SpawnTorchActor(
+							torchParts->ActorClass,
+							worldTransform,
+							dungeonRoomSensorBase,
+							ESpawnActorCollisionHandlingMethod::AlwaysSpawn,
+							// 二階以上のライトは影を落とさない
+							cp.mGrid.Is(dungeon::Grid::Type::Floor)
+						);
 					}
 				}
 			}
@@ -1576,18 +1703,31 @@ ADungeonDoorBase* ADungeonGenerateBase::SpawnDoorActor(UClass* actorClass, const
 /*
 燭台アクターをスポーンします。
 */
-AActor* ADungeonGenerateBase::SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+AActor* ADungeonGenerateBase::SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const bool castShadow) const
 {
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.Owner = ownerActor;
 	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
 	AActor* actor = SpawnActorImpl(actorClass, TorchesFolderPath, transform, actorSpawnParameters);
+	if (IsValid(actor))
+	{
+		// 負荷制御コンポーネントを追加する
+		FindOrAddComponentActivatorComponent(actor);
 
-	// 負荷制御コンポーネントを追加する
-	FindOrAddComponentActivatorComponent(actor);
+		if (castShadow == false)
+		{
+			// ポイントライトまたはスポットライトのCastShadowを制御する
+			for (UActorComponent* component : actor->GetComponents())
+			{
+				if (UPointLightComponent* pointLightComponent = Cast<UPointLightComponent>(component))
+					pointLightComponent->SetCastShadows(castShadow);
+			}
+		}
 
-	if (IsValid(ownerActor))
-		ownerActor->AddDungeonTorch(actor);
+		// 親アクターに燭台アクターを登録する
+		if (IsValid(ownerActor))
+			ownerActor->AddDungeonTorch(actor);
+	}
 
 	return actor;
 }

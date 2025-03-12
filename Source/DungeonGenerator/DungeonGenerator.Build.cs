@@ -11,7 +11,7 @@ public class DungeonGenerator : ModuleRules
 	public DungeonGenerator(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-
+		/*
 		PublicIncludePaths.AddRange(
 			new string[]
 			{
@@ -21,7 +21,7 @@ public class DungeonGenerator : ModuleRules
 			new string[]
 			{
 			});
-
+		*/
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -49,11 +49,12 @@ public class DungeonGenerator : ModuleRules
                 });
 		}
 
+		/*
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[] {
 			});
+		*/
 
-		//CppStandard = CppStandardVersion.Cpp17;
 		CppStandard = CppStandardVersion.Latest;
 	}
 }

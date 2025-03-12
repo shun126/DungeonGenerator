@@ -3,8 +3,8 @@
 @copyright	2023- Shun Moriya
 All Rights Reserved.
 
-ADungeonActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
-ADungeonGenerateActorは配置可能(Placeable)、ADungeonActorは配置不可能(NotPlaceable)にするため、
+ADungeonGeneratedActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
+ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配置不可能(NotPlaceable)にするため、
 継承元であるADungeonGenerateBaseをAbstract指定して共通機能をまとめています。
 */
 
@@ -258,12 +258,9 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 
 	BeginInstanceTransaction();
 
-	if (Create(DungeonGenerateParameter, HasAuthority()) == false)
+	if (Generate(DungeonGenerateParameter, HasAuthority()) == false)
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Failed to generate dungeon. Seed(%d)"), DungeonGenerateParameter->GetRandomSeed());
-
-		// 失敗を通知
-		OnGenerationFailure.Broadcast();
 
 		Dispose(false);
 		return;
@@ -283,16 +280,15 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 	StartRoomLocation = GetStartLocation();
 	GoalRoomLocation = GetGoalLocation();
 
-	// 成功を通知
-	OnGenerationSuccess.Broadcast();
-
 #if WITH_EDITOR
 	// Record dungeon-generated random numbers
 	GeneratedRandomSeed = DungeonGenerateParameter->GetGeneratedRandomSeed();
 	GeneratedDungeonCRC32 = CalculateCRC32();
 
 	if (HasAuthority())
+	{
 		DungeonGenerateParameter->SetGeneratedDungeonCRC32(GeneratedDungeonCRC32);
+	}
 
 	if (GeneratedDungeonCRC32 == DungeonGenerateParameter->GetGeneratedDungeonCRC32())
 	{
@@ -319,7 +315,7 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 
 void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)
 {
-	if (IsCreated())
+	if (IsGenerated())
 	{
 		DestroyAllInstance();
 	}

@@ -14,7 +14,7 @@ namespace dungeon
 	{
 		/**
 		方向
-		Direction::IndexとPathFinder::SearchDirectionに並びを合わせて下さい
+		EDungeonDirection、Direction::IndexとPathFinder::SearchDirectionに並びを合わせて下さい
 		*/
 		static const std::array<FIntVector, 4> Offsets = {
 			{

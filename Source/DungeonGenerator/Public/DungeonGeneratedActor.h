@@ -6,13 +6,13 @@ All Rights Reserved.
 
 #pragma once
 #include "DungeonGenerateBase.h"
-#include "DungeonActor.generated.h"
+#include "DungeonGeneratedActor.generated.h"
 
 /**
 ダンジョン生成アクター
 */
 UCLASS(NotPlaceable)
-class DUNGEONGENERATOR_API ADungeonActor : public ADungeonGenerateBase
+class DUNGEONGENERATOR_API ADungeonGeneratedActor : public ADungeonGenerateBase
 {
 	GENERATED_BODY()
 
@@ -21,16 +21,16 @@ public:
 	constructor
 	コンストラクタ
 	*/
-	explicit ADungeonActor(const FObjectInitializer& initializer);
+	explicit ADungeonGeneratedActor(const FObjectInitializer& initializer);
 
 	/**
 	destructor
 	デストラクタ
 	*/
-	virtual ~ADungeonActor() override = default;
+	virtual ~ADungeonGeneratedActor() override = default;
 
 private:
-	static ADungeonActor* SpawnDungeonActor(UWorld* world, const FVector& location);
+	static ADungeonGeneratedActor* SpawnDungeonActor(UWorld* world, const FVector& location);
 	static void DestroySpawnedActors(UWorld* world);
 
 

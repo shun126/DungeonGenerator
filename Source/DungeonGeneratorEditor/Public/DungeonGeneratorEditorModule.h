@@ -8,7 +8,7 @@ All Rights Reserved.
 #include <Modules/ModuleManager.h>
 
 // Forward declaration
-class ADungeonActor;
+class ADungeonGeneratedActor;
 class UDungeonGenerateParameter;
 class FToolBarBuilder;
 class FMenuBuilder;
@@ -44,7 +44,7 @@ private:
 	static UWorld* GetWorldFromGameViewport();
 
 private:
-	TWeakObjectPtr<ADungeonActor> mDungeonActor;
+	TWeakObjectPtr<ADungeonGeneratedActor> mDungeonActor;
 	TWeakObjectPtr<UDungeonGenerateParameter> mDungeonGenerateParameter;
 	TSharedPtr<FUICommandList> PluginCommands;
 	TSharedPtr<SEditableTextBox> mRandomSeedValue;

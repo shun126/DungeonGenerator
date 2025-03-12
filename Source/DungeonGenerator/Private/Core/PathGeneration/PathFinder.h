@@ -26,7 +26,7 @@ namespace dungeon
 
 		/**
 		検索可能な方向
-		Direction::Indexと並びを合わせて下さい
+		EDungeonDirectionとDirection::Indexと並びを合わせて下さい
 		*/
 		enum class SearchDirection : uint8_t
 		{
