@@ -5,6 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
+#include "helper/DungeonRandom.h"
 #include "Mission/DungeonRoomItem.h"
 #include "Mission/DungeonRoomParts.h"
 #include "Mission/DungeonRoomProps.h"
@@ -23,6 +24,7 @@ All Rights Reserved.
 
 #include "DungeonGenerateBase.generated.h"
 
+class UDungeonAisleGridMap;
 // Forward declaration
 class ADungeonDoorBase;
 class ADungeonRoomSensorBase;
@@ -44,6 +46,11 @@ namespace dungeon
 	class Room;
 	class Voxel;
 }
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGeneratorActorNotifyGenerationSuccessSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGeneratorActorNotifyGenerationFailureSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGenerateBaseOnBeginGenerateSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDungeonGenerateBaseOnEndGenerateSignature, UDungeonRandom*, synchronizedRandom, const UDungeonAisleGridMap*, aisleGridMap);
 
 /**
 ランタイム、エディタ共通のダンジョン生成機能をまとめています。
@@ -86,13 +93,13 @@ public:
 	@param[in]	hasAuthority	HasAuthority
 	@return		If false, generation fails
 	*/
-	bool Create(const UDungeonGenerateParameter* parameter, const bool hasAuthority);
+	bool Generate(const UDungeonGenerateParameter* parameter, const bool hasAuthority);
 
 	/**
 	 * ダンジョンを生成済みか取得します
 	 * @return trueなら生成済み
 	 */
-	bool IsCreated() const noexcept;
+	bool IsGenerated() const noexcept;
 
 	/**
 	Dispose dungeon
@@ -178,14 +185,66 @@ protected:
 	*/
 	std::shared_ptr<const dungeon::Generator> GetGenerator() const;
 
+	/**
+	Notification when a dungeon is successfully created
+	ダンジョンの生成に成功した時の通知
+	*/
+	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
+	FDungeonGeneratorActorNotifyGenerationSuccessSignature OnGenerationSuccess;
+
+	/**
+	Notification when dungeon creation fails
+	ダンジョンの生成に失敗した時の通知
+	*/
+	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
+	FDungeonGeneratorActorNotifyGenerationFailureSignature OnGenerationFailure;
+
 	////////////////////////////////////////////////////////////////////////////
-protected:
+	/*
+	 * This event is called at the start of the Create function
+	 * Create関数開始時に呼び出されるイベントです
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
+	void BeginGeneration();
+
+	/*
+	 * This event is called at the start of the Create function
+	 * Create関数開始時に呼び出されるイベントです
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
+	FDungeonGenerateBaseOnBeginGenerateSignature OnBeginGeneration;
+
+	/*
+	 * Event to query the creation of an aisle.
+	 * If true is returned, the roof and aisle meshes are not generated.
+	 * 通路の生成を問い合わせイベント
+	 * trueを返すと屋根と通路のメッシュを生成しません
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
+	bool OnQueryAisleGeneration(const FVector& center, const int32 identifier, const EDungeonDirection direction);
+
+	/*
+	 * Event called at the end of the Create function
+	 * Create関数終了時に呼び出されるイベントです
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
+	void EndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap);
+
+	/*
+	 * Event called at the end of the Create function
+	 * Create関数終了時に呼び出されるイベントです
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
+	FDungeonGenerateBaseOnEndGenerateSignature OnEndGeneration;
+
+	////////////////////////////////////////////////////////////////////////////
+	// dungeon::Generator::Generate前イベント
 	virtual void OnPreDungeonGeneration();
+	// dungeon::Generator::Generate後イベント
 	virtual void OnPostDungeonGeneration(const bool result);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Terrain
-protected:
 	// event
 	using AddStaticMeshEvent = std::function<void(UStaticMesh*, const FTransform&)>;
 	using AddPillarStaticMeshEvent = std::function<void(UStaticMesh*, const FTransform&)>;
@@ -219,6 +278,8 @@ private:
 			, mTransform(transform)
 		{}
 	};
+	
+	void CreateImplement_QueryAisleGeneration(const bool hasAuthority);
 	void CreateImplement_AddTerrain(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority);
 	void CreateImplement_AddFloorAndSlope(const CreateImplementParameter& cp) const;
 	void CreateImplement_ReserveWall(const CreateImplementParameter& cp);
@@ -252,7 +313,7 @@ protected:
 private:
 	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
 	ADungeonDoorBase* SpawnDoorActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const EDungeonRoomProps props) const;
-	AActor* SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+	AActor* SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const bool castShadow) const;
 	ADungeonRoomSensorBase* SpawnRoomSensorActorDeferred(
 		UClass* actorClass,
 		const dungeon::Identifier& identifier,
@@ -311,6 +372,9 @@ protected:
 	UPROPERTY(Transient)
 	const UDungeonGenerateParameter* mParameter;
 
+	UPROPERTY(Transient)
+	UDungeonAisleGridMap* mAisleGridMap;
+
 private:
 	std::shared_ptr<dungeon::Generator> mGenerator;
 	std::shared_ptr<dungeon::Random> mLocalRandom;
@@ -329,7 +393,7 @@ private:
 	mutable uint32_t mCrc32AtCreation = ~0;
 
 	// 生成済みフラグ
-	bool mCreated = false;
+	bool mGenerated = false;
 
 	// friend class
 };

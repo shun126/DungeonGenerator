@@ -13,7 +13,7 @@ All Rights Reserved.
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
 #include "BuildInfomation.h"
 
-#include "DungeonActor.h"
+#include "DungeonGeneratedActor.h"
 #include "Helper/DungeonFinalizer.h"
 #include "Parameter/DungeonGenerateParameter.h"
 
@@ -288,19 +288,20 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 #endif
 
 	// spawn DungeonVegetationActor
-	ADungeonActor* dungeonActor = ADungeonActor::SpawnDungeonActor(world, origin);
+	ADungeonGeneratedActor* dungeonActor = ADungeonGeneratedActor::SpawnDungeonActor(world, origin);
 	if (IsValid(dungeonActor) == false)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to create dungeon vegetation actor"));
 		return FReply::Unhandled();
 	}
 
-	if (!dungeonActor->Create(dungeonGenerateParameter, true))
+	if (!dungeonActor->Generate(dungeonGenerateParameter, true))
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to generate dungeon"));
 		OnClickedClearButton();
 		return FReply::Unhandled();
 	}
+
 	TArray<APlayerStart*> startPoints;
 	dungeonActor->CollectPlayerStartExceptPlayerStartPIE(startPoints);
 	dungeonActor->MovePlayerStart(startPoints);
@@ -328,11 +329,11 @@ void FDungeonGenerateEditorModule::DisposeDungeon(UWorld* world, const bool flus
 {
 
 	// Delete all generated actors
-	ADungeonActor::DestroySpawnedActors(world);
+	ADungeonGeneratedActor::DestroySpawnedActors(world);
 	mDungeonActor.Reset();
 
 	// Delete all generated actors
-	ADungeonActor::DestroySpawnedActors(world);
+	ADungeonGeneratedActor::DestroySpawnedActors(world);
 	mDungeonActor.Reset();
 
 	if (flushLevelStreaming)

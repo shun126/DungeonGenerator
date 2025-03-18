@@ -1,8 +1,22 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (47)
+## Unreleased-1.6.* (48)
 ### Changes
 ### 変更点
+
+## 20150315-1.6.18 (47)
+### Changes
+* Added ability to disable CastShadow for point lights and spotlights on candelabras above the second floor of a room
+* Added ability to draw rectangles in the mask texture of the minimap
+* added support for actor spawning on the aisle grid
+* Extended the ability to specify the number of winning sublevels for random draws
+* Fixed several bugs
+### 変更点
+* 部屋の二階以上の燭台のポイントライト、スポットライトのCastShadowを無効化できるよう追加
+* ミニマップのマスクテクスチャに矩形を描画できるように追加
+* 通路グリッドへのアクタースポーンに対応
+* ランダム抽選するサブレベルの当選回数を指定できるように拡張
+* いくつかの不具合を修正
 
 ## 20250301-1.6.17 (46)
 ### Changes
