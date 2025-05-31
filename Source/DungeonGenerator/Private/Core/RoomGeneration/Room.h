@@ -206,6 +206,16 @@ namespace dungeon
 		FVector GetExtent() const noexcept;
 
 		/**
+		 * 矩形の最小位置を取得します
+		 */
+		FVector GetMin() const noexcept;
+
+		/**
+		 * 矩形の最大位置を取得します
+		 */
+		FVector GetMax() const noexcept;
+
+		/**
 		地面の中心の座標を取得します
 		@return		地面の中心
 		*/

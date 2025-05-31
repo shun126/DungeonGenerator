@@ -16,7 +16,7 @@ namespace dungeon
 	struct Offset final
 	{
 		int32 mX, mZ;
-		Grid::Type mGridType;
+		Grid::Type mWriteGridType;
 	};
 	static const std::array<Offset, 5> Offsets = {
 		{
@@ -33,8 +33,22 @@ namespace dungeon
 		if (room->GetHeight() < 2)
 			return false;
 
-		auto checker = [voxel](const int32 x, const int32 y, const int32 z, const Identifier& identifier, const int32 xFlip, const int32 yFlip)
+		auto checker = [voxel](const int32 x, const int32 y, const int32 z, const Identifier& identifier, const int32 xFlip, const int32 yFlip, const int32 xLanding, const int32 yLanding) -> bool
 			{
+				auto commonChecker = [voxel](const Grid& grid, const Identifier& identifier) -> bool
+					{
+						// 識別子が違うなら不許可
+						if (grid.GetIdentifier() != identifier)
+							return false;
+						// 中二階なら不許可
+						if (grid.IsCatwalk())
+							return false;
+						// サブレベル生成済みなら不許可
+						if (grid.IsSubLevel())
+							return false;
+						return true;
+					};
+
 				// スロープと中二階部分の判定
 				for (const auto& offset : Offsets)
 				{
@@ -42,14 +56,7 @@ namespace dungeon
 					const int32 oy = y + offset.mX * yFlip;
 					const int32 oz = z + offset.mZ;
 					const Grid& grid = voxel->Get(ox, oy, oz);
-					// 識別子が違うなら不許可
-					if (grid.GetIdentifier() != identifier)
-						return false;
-					// 中二階なら不許可
-					if (grid.IsCatwalk())
-						return false;
-					// サブレベル生成済みなら不許可
-					if (grid.IsSubLevel())
+					if (!commonChecker(grid, identifier))
 						return false;
 					if (offset.mZ == 0)
 					{
@@ -62,22 +69,24 @@ namespace dungeon
 							return false;
 					}
 				}
-				// スロープ前に必要な床の判定
+				// スロープ前に必要な床(踊り場)の判定
 				{
-					const int32 ox = x + 3 * xFlip;
-					const int32 oy = y + 3 * yFlip;
-					const Grid& grid = voxel->Get(ox, oy, z);
-					// 識別子が違うなら不許可
-					if (grid.GetIdentifier() != identifier)
+					const Grid& grid = voxel->Get(x + 3 * xFlip, y + 3 * yFlip, z);
+					if (!commonChecker(grid, identifier))
 						return false;
-					// 中二階なら不許可
-					if (grid.IsCatwalk())
-						return false;
-					// サブレベル生成済みなら不許可
-					if (grid.IsSubLevel())
-						return false;
+
 					const auto gridType = grid.GetType();
-					return gridType == Grid::Type::Deck || gridType == Grid::Type::Gate;
+					if (gridType != Grid::Type::Deck && gridType != Grid::Type::Gate)
+						return false;
+				}
+				// スロープ前にいずれかが必要な床(踊り場への接続)の判定
+				{
+					const Grid& grid1 = voxel->Get(x + 3 * xFlip + xLanding, y + 3 * yFlip + yLanding, z);
+					if (commonChecker(grid1, identifier) && (grid1.GetType() == Grid::Type::Deck || grid1.GetType() == Grid::Type::Gate))
+						return true;
+
+					const Grid& grid2 = voxel->Get(x + 4 * xFlip, y + 4 * yFlip, z);
+					return commonChecker(grid2, identifier) && (grid2.GetType() == Grid::Type::Deck || grid2.GetType() == Grid::Type::Gate);
 				}
 			};
 
@@ -106,27 +115,27 @@ namespace dungeon
 		if (room->GetWidth() >= 4)
 		{
 			// 北東
-			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), -1, 0) == true)
+			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), -1, 0, 0, 1) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetTop(), room->GetBackground(), baseLocation);
 				pass.emplace_back(distance, EffectiveDirection::HorizontalNortheast);
 			}
 			// 北西
-			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 1, 0) == true)
+			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 1, 0, 0, 1) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetTop(), room->GetBackground(), baseLocation);
 				furthestDistance = std::max(furthestDistance, distance);
 				pass.emplace_back(distance, EffectiveDirection::HorizontalNorthwest);
 			}
 			// 南西
-			if (checker(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 1, 0) == true)
+			if (checker(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 1, 0, 0, -1) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), baseLocation);
 				furthestDistance = std::max(furthestDistance, distance);
 				pass.emplace_back(distance, EffectiveDirection::HorizontalSouthwest);
 			}
 			// 南東
-			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), -1, 0) == true)
+			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), -1, 0, 0, -1) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), baseLocation);
 				furthestDistance = std::max(furthestDistance, distance);
@@ -137,28 +146,28 @@ namespace dungeon
 		if (room->GetDepth() >= 4)
 		{
 			// 北東
-			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1) == true)
+			if (checker(room->GetRight() - 1, room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1, -1, 0) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetTop(), room->GetBackground(), baseLocation);
 				furthestDistance = std::max(furthestDistance, distance);
 				pass.emplace_back(distance, EffectiveDirection::VerticalNortheast);
 			}
 			// 北西
-			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1) == true)
+			if (checker(room->GetLeft(), room->GetTop(), room->GetBackground(), room->GetIdentifier(), 0, 1, 1, 0) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetTop(), room->GetBackground(), baseLocation);
 				furthestDistance = std::max(furthestDistance, distance);
 				pass.emplace_back(distance, EffectiveDirection::VerticalNorthwest);
 			}
 			// 南西
-			if (checker(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 0, -1) == true)
+			if (checker(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 0, -1, 1, 0) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetLeft(), room->GetBottom() - 1, room->GetBackground(), baseLocation);
 				furthestDistance = std::max(furthestDistance, distance);
 				pass.emplace_back(distance, EffectiveDirection::VerticalSouthwest);
 			}
 			// 南東
-			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 0, -1) == true)
+			if (checker(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), room->GetIdentifier(), 0, -1, -1, 0) == true)
 			{
 				const uint32_t distance = VectorDistance(room->GetRight() - 1, room->GetBottom() - 1, room->GetBackground(), baseLocation);
 				furthestDistance = std::max(furthestDistance, distance);
@@ -356,7 +365,7 @@ namespace dungeon
 
 			const int32 oz = mLocation.Z + offset.mZ;
 			auto grid = voxel->Get(ox, oy, oz);
-			grid.SetType(offset.mGridType);
+			grid.SetType(offset.mWriteGridType);
 			grid.SetDirection(direction);
 			grid.SetCatwalkDirection(catwalkDirection);
 			if (offset.mZ > 0)

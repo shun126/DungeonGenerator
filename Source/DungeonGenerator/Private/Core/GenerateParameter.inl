@@ -213,6 +213,16 @@ namespace dungeon
 		mGenerateSlopeInRoom = generateSlopeInRoom;
 	}
 
+	inline bool GenerateParameter::IsGenerateStructuralColumn() const noexcept
+	{
+		return mGenerateStructuralColumn;
+	}
+
+	inline void GenerateParameter::SetGenerateStructuralColumn(const bool generateStructuralColumn) noexcept
+	{
+		mGenerateStructuralColumn = generateStructuralColumn;
+	}
+
 	inline const FIntVector& GenerateParameter::GetStartRoomSize() const noexcept
 	{
 		return mStartRoomSize;

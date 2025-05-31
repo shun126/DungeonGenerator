@@ -57,15 +57,18 @@ namespace dungeon
 			if (grid.GetIdentifier() != identifier)
 				return false;
 
+			if (grid.IsKindOfSlopeType())
+				return true;
+
 			// 門にできないグリッドなら次の検索へ
 			if (shared)
 			{
-				if (grid.Is(Grid::Type::Deck) == false && grid.IsKindOfSlopeType() == false && grid.IsKindOfGateType() == false)
+				if (grid.Is(Grid::Type::Deck) == false && grid.IsKindOfGateType() == false)
 					return true;
 			}
 			else
 			{
-				if (grid.Is(Grid::Type::Deck) == false && grid.IsKindOfSlopeType() == false)
+				if (grid.Is(Grid::Type::Deck) == false)
 					return true;
 			}
 

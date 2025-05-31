@@ -126,11 +126,14 @@ namespace dungeon
 		// TODO: NoWallMeshGenerationフラグは進入禁止に使用されている別途生成禁止フラグが必要
 		if (IsNoWallMeshGeneration(direction))
 			return false;
-		/*
-		*/
+
 		// 門以外の部屋
 		if (IsKindOfRoomTypeWithoutGate())
 		{
+			// 部屋の中の構造柱なら壁を生成
+			if (toGrid.Is(Type::StructuralColumn))
+				return true;
+
 			/*
 			部屋と部屋を結合する場合
 			部屋と部屋が隣接していてグリッドの識別番号（＝部屋の識別番号）が不一致なら壁がある
@@ -342,6 +345,7 @@ namespace dungeon
 			FColor::Magenta,	// Stairwell
 			FColor(0,128,128),	// DownSpace
 			FColor::Cyan,		// UpSpace
+			FColor::Black,		// StructuralColumn
 			FColor::Black,		// Empty
 			FColor::Black,		// OutOfBounds
 		};
@@ -362,6 +366,7 @@ namespace dungeon
 			TEXT("Stairwell"),
 			TEXT("DownSpace"),
 			TEXT("UpSpace"),
+			TEXT("StructuralColumn"),
 			TEXT("Empty"),
 			TEXT("OutOfBounds")
 		};

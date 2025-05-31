@@ -31,11 +31,7 @@ void ADungeonLevelStreamingActor::OverlapBegins(UPrimitiveComponent* overlappedC
 		ACharacter* myCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
 		if (otherActor == Cast<AActor>(myCharacter))
 		{
-#if UE_VERSION_NEWER_THAN(5, 0, 0)
 			const FName& longPackageName = Path.GetLongPackageFName();
-#else
-			const FName& longPackageName = FName(Path.GetLongPackageName());
-#endif
 			FLatentActionInfo LatentInfo;
 			UGameplayStatics::LoadStreamLevel(this, longPackageName, true, true, LatentInfo);
 #if 0
@@ -54,11 +50,7 @@ void ADungeonLevelStreamingActor::OverlapEnds(UPrimitiveComponent* overlappedCom
 		ACharacter* myCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
 		if (otherActor == Cast<AActor>(myCharacter))
 		{
-#if UE_VERSION_NEWER_THAN(5, 0, 0)
 			const FName& longPackageName = Path.GetLongPackageFName();
-#else
-			const FName& longPackageName = FName(Path.GetLongPackageName());
-#endif
 			FLatentActionInfo LatentInfo;
 			UGameplayStatics::UnloadStreamLevel(this, longPackageName, LatentInfo, false);
 		}

@@ -59,6 +59,16 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 * [Unreal Engine 5.1 ~ Unreal Engine 5.5](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
+# 🎮 How to install
+* Open Unreal Engine Editor and create a project using the First Person template or Third Person template.
+* Install the Dungeon Generator plugin via Epic Games Launcher, or copy it to the `Plugins` directory of your project.
+* Enable the plugin content.
+* Open `Plugins/Dungeon Generator/Contents/Demonstration`.
+
+![](Document/ContentBrowser.gif)
+
+* Run the project.
+
 # 📜 License
 you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
 

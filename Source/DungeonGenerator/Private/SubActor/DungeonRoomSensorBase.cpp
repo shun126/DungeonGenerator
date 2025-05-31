@@ -67,6 +67,63 @@ ADungeonRoomSensorBase::ADungeonRoomSensorBase(const FObjectInitializer& initial
 	SetRootComponent(Bounding);
 }
 
+
+int32 ADungeonRoomSensorBase::GetIdentifier() const noexcept
+{
+	return Identifier;
+}
+
+bool ADungeonRoomSensorBase::OnPrepare_Implementation(const float depthFromStartRatio)
+{
+	return true;
+}
+
+UBoxComponent* ADungeonRoomSensorBase::GetBounding()
+{
+	return Bounding;
+}
+
+const UBoxComponent* ADungeonRoomSensorBase::GetBounding() const
+{
+	return Bounding;
+}
+
+const FBox& ADungeonRoomSensorBase::GetRoomSize() const noexcept
+{
+	return RoomSize;
+}
+
+uint8 ADungeonRoomSensorBase::GetDoorAddingProbability() const noexcept
+{
+	return DoorAddingProbability;
+}
+
+void ADungeonRoomSensorBase::SetDoorAddingProbability(const uint8 doorAddingProbability) noexcept
+{
+	DoorAddingProbability = doorAddingProbability;
+}
+
+bool ADungeonRoomSensorBase::OnNativePrepare(const FVector& center)
+{
+	return true;
+}
+
+void ADungeonRoomSensorBase::OnNativeInitialize()
+{
+}
+
+void ADungeonRoomSensorBase::OnNativeFinalize(const bool finish)
+{
+}
+
+void ADungeonRoomSensorBase::OnNativeReset(const bool fallToAbyss)
+{
+}
+
+void ADungeonRoomSensorBase::OnNativeResume()
+{
+}
+
 void ADungeonRoomSensorBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -169,6 +226,18 @@ void ADungeonRoomSensorBase::InvokeInitialize()
 		OnNativeInitialize();
 		OnInitialize(Parts, Item, DepthFromStart, depthFromStartRatio);
 
+		if (Item == EDungeonRoomItem::Key)
+		{
+			DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Key spawned."), *GetName());
+			SpawnActorInRoomImpl(SpawnKeyActor, true);
+		}
+		if (Item == EDungeonRoomItem::UniqueKey)
+		{
+			DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Unique key spawned."), *GetName());
+			SpawnActorInRoomImpl(SpawnUniqueKeyActor, true);
+		}
+		SpawnActorsInRoomImpl();
+
 		mState = State::Initialized;
 	}
 }
@@ -223,6 +292,44 @@ bool ADungeonRoomSensorBase::HasLockedDoor() const
 void ADungeonRoomSensorBase::AddDungeonTorch(AActor* actor)
 {
 	DungeonTorchs.Add(actor);
+}
+
+void ADungeonRoomSensorBase::SpawnActorsInRoomImpl()
+{
+	if (HasAuthority() == false)
+		return;
+	if (Parts != EDungeonRoomParts::Hall && Parts != EDungeonRoomParts::Hanare)
+		return;
+	if (SpawnActors.IsEmpty())
+		return;
+
+	const int32 idealNumberOfActor = IdealNumberOfActor(AreaRequiredPerPerson, MaxNumberOfActor);
+	for (int32 i = 0; i < idealNumberOfActor; ++i)
+	{
+		const auto& spawnActorPath = SpawnActors[mSynchronizedRandom.GetInteger(SpawnActors.Num())];
+		DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Actor(%s) spawned."), *GetName(), *spawnActorPath.GetAssetName());
+		SpawnActorInRoomImpl(spawnActorPath, false);
+	}
+}
+
+void ADungeonRoomSensorBase::SpawnActorInRoomImpl(const FSoftObjectPath& spawnActorPath, const bool force)
+{
+	if (HasAuthority() == false)
+		return;
+	if (spawnActorPath.IsValid() == false)
+		return;
+
+	do {
+		FTransform transform;
+		if (RandomTransform(transform, 100.f, false))
+		{
+			const FSoftObjectPath path(spawnActorPath.ToString() + "_C");
+			const TSoftClassPtr<AActor> softClassPointer(path);
+			auto* actorClass = softClassPointer.LoadSynchronous();
+			SpawnActorFromClass(actorClass, transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn, nullptr, true);
+			break;
+		}
+	} while (force);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -288,7 +395,7 @@ namespace
 	正規乱数
 	https://ja.wikipedia.org/wiki/%E3%83%9C%E3%83%83%E3%82%AF%E3%82%B9%EF%BC%9D%E3%83%9F%E3%83%A5%E3%83%A9%E3%83%BC%E6%B3%95
 	*/
-	inline void NormalRandom(float& x, float& y, CDungeonRandom& random)
+	inline void NormalRandom(float& x, float& y, const CDungeonRandom& random)
 	{
 		const auto A = random.GetNumber();
 		const auto B = random.GetNumber();
@@ -307,9 +414,9 @@ bool ADungeonRoomSensorBase::RandomPoint(FVector& result, const float offsetHeig
 	else
 		NormalRandom(ratioX, ratioY, const_cast<ADungeonRoomSensorBase*>(this)->mSynchronizedRandom);
 
-	static constexpr float range = 0.9f;
-	ratioX = std::max(-range, std::min(ratioX / (3.9f / range), range));
-	ratioY = std::max(-range, std::min(ratioY / (3.9f / range), range));
+	static constexpr float maxRange = 0.9f;
+	ratioX = std::max(-maxRange, std::min(ratioX, maxRange));
+	ratioY = std::max(-maxRange, std::min(ratioY, maxRange));
 
 	const FVector& center = Bounding->Bounds.Origin;
 	const FVector& extent = Bounding->Bounds.BoxExtent;
@@ -339,10 +446,10 @@ bool ADungeonRoomSensorBase::RandomTransform(FTransform& result, const float off
 		position.Z += offsetHeight;
 	}
 
-	// look outward from the center
+	// 部屋の中心から外側へ向く
 	const FVector& center = Bounding->Bounds.Origin;
-	const double dx = center.X - position.X;
-	const double dy = center.Y - position.Y;
+	const double dx = position.X - center.X;
+	const double dy = position.Y - center.Y;
 	const double yaw = std::atan2(dy, dx) * 57.295779513082320876798154814105;
 	const FRotator rotator(0.f, yaw, 0.f);
 
@@ -365,7 +472,7 @@ bool ADungeonRoomSensorBase::FindFloorHeightPosition(FVector& result, const FVec
 {
 	FHitResult hitResult(ForceInit);
 	FCollisionQueryParams params("ADungeonRoomSensorBase::FindFloorHeightPosition", true);
-	const ECollisionChannel traceChannel = ECollisionChannel::ECC_Visibility;
+	constexpr ECollisionChannel traceChannel = ECollisionChannel::ECC_Pawn;
 	if (!GetWorld()->LineTraceSingleByChannel(hitResult, startPosition, endPosition, traceChannel, params))
 		return false;
 

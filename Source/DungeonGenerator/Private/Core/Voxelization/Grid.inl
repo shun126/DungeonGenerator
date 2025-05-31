@@ -107,6 +107,7 @@ namespace dungeon
 	inline bool Grid::IsKindOfSpatialType() const noexcept
 	{
 		return
+			Is(Type::StructuralColumn) ||
 			Is(Type::Empty) ||
 			Is(Type::OutOfBounds);
 	}
@@ -154,6 +155,11 @@ namespace dungeon
 	inline void Grid::SetIdentifier(Identifier identifier) noexcept
 	{
 		mIdentifier = static_cast<uint16_t>(identifier);
+	}
+
+	inline void Grid::ResetIdentifier() noexcept
+	{
+		mIdentifier = InvalidIdentifier;
 	}
 
 	inline bool Grid::IsInvalidIdentifier() const noexcept
