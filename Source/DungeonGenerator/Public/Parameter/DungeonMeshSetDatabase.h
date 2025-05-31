@@ -6,10 +6,6 @@ All Rights Reserved.
 
 #pragma once
 #include "Parameter/DungeonMeshSet.h"
-#if WITH_EDITOR
-#include "Parameter/DungeonTemporaryMeshSetDatabase.h"
-#include "Parameter/DungeonRoomMeshSet.h"
-#endif
 #include <CoreMinimal.h>
 #include <memory>
 #include "DungeonMeshSetDatabase.generated.h"
@@ -85,23 +81,4 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	TArray<FDungeonMeshSet> Parts;
-
-#if WITH_EDITORONLY_DATA
-	/*
-	 * Specify DungeonRoomMeshSetDatabase, DungeonAisleMeshSetDatabase to be migrated
-	 * 移行するDungeonRoomMeshSetDatabase, DungeonAisleMeshSetDatabaseを指定して下さい
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Migration")
-	TObjectPtr<UDungeonTemporaryMeshSetDatabase> MigrationMeshSetDatabase;
-#endif
-#if WITH_EDITOR
-	/*
-	 * Migrate DungeonRoomMeshSetDatabase, DungeonAisleMeshSetDatabase
-	 * DungeonRoomMeshSetDatabase, DungeonAisleMeshSetDatabaseを移行します
-	 */
-	UFUNCTION(Category = "DungeonGenerator|Migration", meta = (CallInEditor = "true"))
-	void Migrate();
-
-	static FDungeonMeshSet MigrateRoomMeshSet(const FDungeonRoomMeshSet& dungeonRoomMeshSet);
-#endif
 };

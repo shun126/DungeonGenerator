@@ -161,6 +161,12 @@ namespace dungeon
 		bool IsGenerateSlopeInRoom() const noexcept;
 		void SetGenerateSlopeInRoom(const bool generateSlopeInRoom) noexcept;
 
+		/**
+		 * 部屋の中に構造柱を生成する
+		 */
+		bool IsGenerateStructuralColumn() const noexcept;
+		void SetGenerateStructuralColumn(const bool generateStructuralColumn) noexcept;
+
 		/*
 		スタート部屋のサイズ
 		*/
@@ -231,6 +237,11 @@ namespace dungeon
 		 * 部屋の中にスロープを生成する
 		 */
 		bool mGenerateSlopeInRoom = true;
+
+		/**
+		 * 部屋の中に構造柱を生成する
+		 */
+		bool mGenerateStructuralColumn = true;
 
 		/**
 		部屋の最小の幅

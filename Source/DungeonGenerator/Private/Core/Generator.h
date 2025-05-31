@@ -267,6 +267,10 @@ namespace dungeon
 		void InvokeRoomCallbacks() const noexcept;
 		bool DetectFloorHeightAndDepthFromStart() noexcept;
 		bool GenerateVoxel() noexcept;
+		bool GenerateAisleVoxel(const size_t aisleIndex, const Aisle& aisle, const std::shared_ptr<const Point>& startPoint, const std::shared_ptr<const Point>& goalPoint, const uint8_t depthRatioFromStart, const bool generateIndoorSlope) noexcept;
+		void GenerateStructuralColumnVoxel(const std::shared_ptr<Room>& room) const;
+		bool CanFillStructuralColumnVoxel(const int32 x, const int32 y, const int32 minZ, const int32 maxZ) const;
+		void FillStructuralColumnVoxel(const int32 x, const int32 y, const int32 minZ, const int32 maxZ) const;
 
 		/**
 		リセット

@@ -5,10 +5,6 @@ All Rights Reserved.
 */
 
 #include "Parameter/DungeonMeshSetDatabase.h"
-#if WITH_EDITOR
-#include "Parameter/DungeonAisleMeshSetDatabase.h"
-#include "Parameter/DungeonRoomMeshSetDatabase.h"
-#endif
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
 #include <cmath>
@@ -70,43 +66,5 @@ FString UDungeonMeshSetDatabase::DumpToJson(const uint32 indent) const
 	}
 	json += dungeon::Indent(indent) + TEXT("]");
 	return json;
-}
-
-void UDungeonMeshSetDatabase::Migrate()
-{
-	if (IsValid(MigrationMeshSetDatabase) == false)
-		return;
-
-	Parts.Reset();
-
-	if (const auto* dungeonAisleMeshSetDatabase = Cast<UDungeonAisleMeshSetDatabase>(MigrationMeshSetDatabase))
-	{
-		for (const auto& parts : dungeonAisleMeshSetDatabase->Parts)
-		{
-			FDungeonMeshSet meshSet = MigrateRoomMeshSet(parts);
-			meshSet.SloopPartsSelectionMethod = parts.SloopPartsSelectionMethod;
-			meshSet.SlopeParts = parts.SlopeParts;
-			Parts.Add(meshSet);
-		}
-	}
-	else if (const auto* dungeonRoomMeshSetDatabase = Cast<UDungeonRoomMeshSetDatabase>(MigrationMeshSetDatabase))
-	{
-		for (const auto& parts : dungeonRoomMeshSetDatabase->Parts)
-		{
-			Parts.Add(MigrateRoomMeshSet(parts));
-		}
-	}
-}
-
-FDungeonMeshSet UDungeonMeshSetDatabase::MigrateRoomMeshSet(const FDungeonRoomMeshSet& dungeonRoomMeshSet)
-{
-	FDungeonMeshSet meshSet;
-	meshSet.FloorPartsSelectionMethod = dungeonRoomMeshSet.FloorPartsSelectionMethod;
-	meshSet.FloorParts = dungeonRoomMeshSet.FloorParts;
-	meshSet.WallPartsSelectionMethod = dungeonRoomMeshSet.WallPartsSelectionMethod;
-	meshSet.WallParts = dungeonRoomMeshSet.WallParts;
-	meshSet.RoofPartsSelectionMethod = dungeonRoomMeshSet.RoofPartsSelectionMethod;
-	meshSet.RoofParts = dungeonRoomMeshSet.RoofParts;
-	return meshSet;
 }
 #endif

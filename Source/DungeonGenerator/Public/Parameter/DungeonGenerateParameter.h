@@ -7,10 +7,6 @@ All Rights Reserved.
 #pragma once
 #include "DungeonGridSize.h"
 #include "DungeonMeshSetDatabase.h"
-
-#include "DungeonAisleMeshSetDatabase.h"
-#include "DungeonRoomMeshSetDatabase.h"
-
 #include "Parameter/DungeonDoorActorParts.h"
 #include <CoreMinimal.h>
 #include <functional>
@@ -116,16 +112,8 @@ private:
 	FString GetJsonDefaultDirectory() const;
 #endif
 
-private:
-	const UDungeonRoomMeshSetDatabase* GetDungeonRoomPartsDatabase() const noexcept;
-	const UDungeonAisleMeshSetDatabase* GetDungeonAislePartsDatabase() const noexcept;
-
-	static const FDungeonTemporaryMeshSet* SelectParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const dungeon::Grid& grid);
 	static const FDungeonMeshSet* SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 
-	static const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
-	static const FDungeonMeshParts* SelectWallParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
-	static const FDungeonMeshPartsWithDirection* SelectRoofParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
 	const FDungeonMeshParts* SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
 
 	const UDungeonMeshSetDatabase* GetDungeonRoomMeshPartsDatabase() const noexcept;
@@ -141,13 +129,12 @@ private:
 	const FDungeonRandomActorParts* SelectTorchParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
 	const FDungeonDoorActorParts* SelectDoorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
 
-private:
 	void EachFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 	void EachRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachSlopeParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 	void EachCatwalkParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
-	void EachPillarParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
+void EachPillarParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
 
 	void EachRoomFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachRoomWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
@@ -303,14 +290,24 @@ protected:
 	uint8 AisleComplexity = 5;
 
 	/**
-	Generate slopes in the room.
-	May be enabled by future forcing.
-
-	部屋の中にスロープを生成する
-	将来的強制的に有効になる可能性があります。
-	*/
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "10"))
+	 * Generate slopes in the room.
+	 * May be enabled by future forcing.
+	 *
+	 * 部屋の中にスロープを生成する
+	 * 将来的強制的に有効になる可能性があります。
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
 	bool GenerateSlopeInRoom = false;
+
+	/**
+	 * Generate structural columns in the room
+	 * May be enabled by future forcing.
+	 * 
+	 * 部屋の中に構造柱を生成する
+	 * 将来的強制的に有効になる可能性があります。
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
+	bool GenerateStructuralColumn = false;
 
 	/**
 	Horizontal voxel size
@@ -327,26 +324,6 @@ protected:
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|GridSize", meta = (ClampMin = 1), DisplayName = "Vertical Size")
 	float VerticalGridSize = 400.f;
-
-	/**
-	Room mesh parts database
-	(DeprecatedProperty, Use DungeonRoomMeshPartsDatabase instead.)
-
-	部屋のメッシュパーツデータベース
-	(DungeonRoomMeshPartsDatabaseを使用してください)
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Deprecated", DisplayName = "Dungeon Room Parts Database (Deprecated)", meta = (DeprecatedProperty, DeprecationMessage = "Use DungeonRoomMeshPartsDatabase instead."))
-	TObjectPtr<UDungeonRoomMeshSetDatabase> DungeonRoomPartsDatabase;
-
-	/**
-	Aisle mesh parts database
-	(DeprecatedProperty, Use DungeonAisleMeshPartsDatabase instead.)
-
-	通路のメッシュパーツデータベース
-	(DungeonAisleMeshPartsDatabaseを使用してください)
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Deprecated", DisplayName = "Dungeon Aisle Parts Database (Deprecated)", meta = (DeprecatedProperty, DeprecationMessage = "Use DungeonAisleMeshPartsDatabase instead."))
-	TObjectPtr<UDungeonAisleMeshSetDatabase> DungeonAislePartsDatabase;
 
 	/**
 	Room mesh parts database
@@ -516,16 +493,6 @@ inline bool UDungeonGenerateParameter::IsAisleComplexity() const noexcept
 inline EFrequencyOfGeneration UDungeonGenerateParameter::GetFrequencyOfTorchlightGeneration() const noexcept
 {
 	return FrequencyOfTorchlightGeneration;
-}
-
-inline const UDungeonRoomMeshSetDatabase* UDungeonGenerateParameter::GetDungeonRoomPartsDatabase() const noexcept
-{
-	return DungeonRoomPartsDatabase;
-}
-
-inline const UDungeonAisleMeshSetDatabase* UDungeonGenerateParameter::GetDungeonAislePartsDatabase() const noexcept
-{
-	return DungeonAislePartsDatabase;
 }
 
 inline const UDungeonMeshSetDatabase* UDungeonGenerateParameter::GetDungeonRoomMeshPartsDatabase() const noexcept

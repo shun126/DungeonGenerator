@@ -15,119 +15,112 @@ Dungeon grid size
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonGridSize
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    /**
-    コンストラクタ
-    constructor
-    */
-    FDungeonGridSize() = default;
+	/**
+	コンストラクタ
+	constructor
+	*/
+	FDungeonGridSize() = default;
 
-    /**
-    コンストラクタ
-    constructor
-    */
-    FDungeonGridSize(const float horizontalSize, const float verticalSize) noexcept
-        : HorizontalSize(horizontalSize)
-        , VerticalSize(verticalSize)
-    {
-    }
+	/**
+	コンストラクタ
+	constructor
+	*/
+	FDungeonGridSize(const float horizontalSize, const float verticalSize) noexcept
+		: HorizontalSize(horizontalSize)
+		, VerticalSize(verticalSize)
+	{
+	}
 
-    /**
-    コピーコンストラクタ
-    copy constructor
-    */
-    FDungeonGridSize(const FDungeonGridSize& other) noexcept
-        : HorizontalSize(other.HorizontalSize)
-        , VerticalSize(other.VerticalSize)
-    {
-    }
+	/**
+	コピーコンストラクタ
+	copy constructor
+	*/
+	FDungeonGridSize(const FDungeonGridSize& other) noexcept
+		: HorizontalSize(other.HorizontalSize)
+		, VerticalSize(other.VerticalSize)
+	{
+	}
 
-    /**
-    ムーブコンストラクタ
-    move constructor
-    */
-    FDungeonGridSize(FDungeonGridSize&& other) noexcept
-        : HorizontalSize(other.HorizontalSize)
-        , VerticalSize(other.VerticalSize)
-    {
-    }
+	/**
+	ムーブコンストラクタ
+	move constructor
+	*/
+	FDungeonGridSize(FDungeonGridSize&& other) noexcept
+		: HorizontalSize(other.HorizontalSize)
+		, VerticalSize(other.VerticalSize)
+	{
+	}
 
-    /**
-    デストラクタ
-    destructor
-    */
-    virtual ~FDungeonGridSize() = default;
+	/**
+	デストラクタ
+	destructor
+	*/
+	virtual ~FDungeonGridSize() = default;
 
-    /**
-    コピー代入
-    copy assignment
-    */
-    FDungeonGridSize& operator=(const FDungeonGridSize& other) noexcept
-    {
-        HorizontalSize = other.HorizontalSize;
-        VerticalSize = other.VerticalSize;
-        return *this;
-    }
+	/**
+	コピー代入
+	copy assignment
+	*/
+	FDungeonGridSize& operator=(const FDungeonGridSize& other) noexcept
+	{
+		HorizontalSize = other.HorizontalSize;
+		VerticalSize = other.VerticalSize;
+		return *this;
+	}
 
-    /**
-    ムーブ代入
-    move assignment
-    */
-    FDungeonGridSize& operator=(FDungeonGridSize&& other) noexcept
-    {
-        HorizontalSize = other.HorizontalSize;
-        VerticalSize = other.VerticalSize;
-        return *this;
-    }
+	/**
+	ムーブ代入
+	move assignment
+	*/
+	FDungeonGridSize& operator=(FDungeonGridSize&& other) noexcept
+	{
+		HorizontalSize = other.HorizontalSize;
+		VerticalSize = other.VerticalSize;
+		return *this;
+	}
 
-    /**
-    一致か調べます
-    equal
-    */
-    bool operator==(const FDungeonGridSize& other) const noexcept
-    {
-        return HorizontalSize == other.HorizontalSize && VerticalSize == other.VerticalSize;
-    }
+	/**
+	一致か調べます
+	equal
+	*/
+	bool IsNearlyEqual(const FDungeonGridSize& other, float tolerance = std::numeric_limits<float>::epsilon()) const noexcept
+	{
+		const auto horizontalDelta = std::abs(HorizontalSize - other.HorizontalSize);
+		const auto verticalDelta = std::abs(VerticalSize - other.VerticalSize);
+		return horizontalDelta <= tolerance && verticalDelta <= tolerance;
+	}
 
-    /**
-    不一致か調べます
-    not equal
-    */
-    bool operator!=(const FDungeonGridSize& other) const noexcept
-    {
-        return HorizontalSize != other.HorizontalSize || VerticalSize != other.VerticalSize;
-    }
+	/**
+	FVector2Dにキャストします
+	Cast to FVector2D
+	*/
+	FVector2D To2D() const noexcept
+	{
+		return FVector2D(HorizontalSize, VerticalSize);
+	}
 
-    /**
-    FVector2Dにキャストします
-    Cast to FVector2D
-    */
-    FVector2D To2D() const noexcept
-    {
-        return FVector2D(HorizontalSize, VerticalSize);
-    }
-
-    /**
-    FVectorにキャストします
-    Cast to FVector
-    */
-    FVector To3D() const noexcept
-    {
-        return FVector(HorizontalSize, HorizontalSize, VerticalSize);
-    }
+	/**
+	FVectorにキャストします
+	Cast to FVector
+	*/
+	FVector To3D() const noexcept
+	{
+		return FVector(HorizontalSize, HorizontalSize, VerticalSize);
+	}
 
 public:
-    /**
-     * 水平サイズ
-     */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
-    float HorizontalSize = 400.f;
+	/**
+	 * 水平サイズ
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
+	float HorizontalSize = 400.f;
 
-    /**
-     * 垂直サイズ
-     */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
-    float VerticalSize = 400.f;
+	/**
+	 * 垂直サイズ
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
+	float VerticalSize = 400.f;
 };

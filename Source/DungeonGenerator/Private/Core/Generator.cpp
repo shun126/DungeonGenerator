@@ -978,10 +978,11 @@ namespace dungeon
 		);
 #endif
 
-		std::list<std::pair<uint32_t, FIntVector>> sublevels;
+		// 必ず生成しなければならないサブレベル
+		std::list<std::pair<uint32_t, FIntVector>> alwaysLoadedSubLevels;
 		if (mOnQueryParts)
 		{
-			mOnQueryParts(sublevels);
+			mOnQueryParts(alwaysLoadedSubLevels);
 		}
 
 		for (const std::shared_ptr<Room>& room : mRooms)
@@ -1011,28 +1012,28 @@ namespace dungeon
 			case Room::Parts::Hall:
 			case Room::Parts::Hanare:
 				// サブレベルを部屋に関連付ける
-				if (sublevels.empty() == false)
+				if (alwaysLoadedSubLevels.empty() == false)
 				{
-					auto i = std::find_if(sublevels.begin(), sublevels.end(), [room](const std::pair<uint32_t, FIntVector>& sublevel)
+					auto i = std::find_if(alwaysLoadedSubLevels.begin(), alwaysLoadedSubLevels.end(), [room](const std::pair<uint32_t, FIntVector>& sublevel)
 					{
 						return
 							room->GetWidth() == sublevel.second.X &&
 							room->GetDepth() == sublevel.second.Y &&
 							room->GetHeight() == sublevel.second.Z;
 					});
-					if (i != sublevels.end())
+					if (i != alwaysLoadedSubLevels.end())
 					{
 						room->SetReservationNumber(i->first);
-						sublevels.erase(i);
+						alwaysLoadedSubLevels.erase(i);
 					}
 					else
 					{
-						const std::pair<uint32_t, FIntVector>& sublevel = sublevels.front();
-						room->SetReservationNumber(sublevel.first);
-						room->SetWidth(sublevel.second.X);
-						room->SetDepth(sublevel.second.Y);
-						room->SetHeight(sublevel.second.Z);
-						sublevels.pop_front();
+						const std::pair<uint32_t, FIntVector>& alwaysLoadedSubLevel = alwaysLoadedSubLevels.front();
+						room->SetReservationNumber(alwaysLoadedSubLevel.first);
+						room->SetWidth(alwaysLoadedSubLevel.second.X);
+						room->SetDepth(alwaysLoadedSubLevel.second.Y);
+						room->SetHeight(alwaysLoadedSubLevel.second.Z);
+						alwaysLoadedSubLevels.pop_front();
 					}
 				}
 				break;
@@ -1357,131 +1358,17 @@ namespace dungeon
 			check(startPoint->GetOwnerRoom()->GetRect().Contains(ToIntPoint(*startPoint)));
 			check(goalPoint->GetOwnerRoom()->GetRect().Contains(ToIntPoint(*goalPoint)));
 
-			// Change to voxel coordinates
-			FIntVector start = ToIntVector(*startPoint);
-			FIntVector goal = ToIntVector(*goalPoint);
-
-			// Conditions for reaching the passage. The endpoint can be anywhere in the goal room.
-			const std::shared_ptr<Room>& goalRoom = goalPoint->GetOwnerRoom();
-			check(goalRoom);
-			const PathGoalCondition pathGoalCondition(goalRoom->GetRect());
-
-			// ゴール地点周辺でゲートを生成できるボクセルを探す
-			constexpr size_t MaxResultCount = 8;
-			std::vector<Voxel::CandidateLocation> goalToStart;
-			if (mVoxel->SearchGateLocation(goalToStart, MaxResultCount, goal, goalPoint->GetOwnerRoom()->GetIdentifier(), start, mGenerateParameter.UseMissionGraph() == false) == true)
-			{
-				bool complete = false;
-
-				// 室内にスロープが生成できて、終了門が開始門よりも高い位置にある？
-				if (mGenerateParameter.IsGenerateSlopeInRoom() == true && start.Z < goal.Z)
-				{
-					RoomStructureGenerator roomStructureGenerator;
-					if (roomStructureGenerator.CheckSlopePlacement(mVoxel, startPoint->GetOwnerRoom(), goal, mGenerateParameter.GetRandom()))
-					{
-						std::vector<Voxel::CandidateLocation> startToGoal;
-						startToGoal.reserve(1);
-						startToGoal.emplace_back(0, roomStructureGenerator.GetGateLocation());
-
-						Voxel::AisleParameter aisleParameter;
-						aisleParameter.mGoalCondition = pathGoalCondition;
-						aisleParameter.mIdentifier = aisle.GetIdentifier();
-						aisleParameter.mMergeRooms = mGenerateParameter.IsMergeRooms();
-						aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
-						aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
-						aisleParameter.mLocked = aisle.IsLocked();
-						aisleParameter.mDepthRatioFromStart = depthRatioFromStart;
-						complete = mVoxel->Aisle(startToGoal, goalToStart, aisleParameter);
-						if (complete == true)
-						{
-							roomStructureGenerator.GenerateSlope(mVoxel);
-						}
-					}
-				}
-
-				if (complete == false)
-				{
-					// スタート地点周辺でゲートを生成できるボクセルを探す
-					std::vector<Voxel::CandidateLocation> startToGoal;
-					if (mVoxel->SearchGateLocation(startToGoal, MaxResultCount, start, startPoint->GetOwnerRoom()->GetIdentifier(), goal, mGenerateParameter.UseMissionGraph() == false))
-					{
-						Voxel::AisleParameter aisleParameter;
-						aisleParameter.mGoalCondition = pathGoalCondition;
-						aisleParameter.mIdentifier = aisle.GetIdentifier();
-						aisleParameter.mMergeRooms = mGenerateParameter.IsMergeRooms();
-						aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
-						aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
-						aisleParameter.mLocked = aisle.IsLocked();
-						aisleParameter.mDepthRatioFromStart = depthRatioFromStart;
-						complete = mVoxel->Aisle(startToGoal, goalToStart, aisleParameter);
-
-						// 幹線通路以外なら生成に失敗しても到達可能なので成功扱いにする
-						if (aisle.IsMain() == false)
-						{
-							complete = true;
-						}
-						// 幹線通路でも部屋を結合しているなら成功扱いにする
-						else if (mGenerateParameter.IsMergeRooms() == true)
-						{
-							complete = true;
-						}
-
-						if (complete == false)
-						{
-#if WITH_EDITOR
-							DUNGEON_GENERATOR_ERROR(TEXT("Generator: Route search failed. %d: ID=%d (%d,%d,%d)-(%d,%d,%d)"), i, static_cast<uint16_t>(aisle.GetIdentifier()), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
-							DUNGEON_GENERATOR_ERROR(TEXT("State of the grid in the starting room %d: ID=%d (%d,%d,%d) %d Gate"), i
-								, static_cast<uint16_t>(startPoint->GetOwnerRoom()->GetIdentifier())
-								, startPoint->GetOwnerRoom()->GetX(), startPoint->GetOwnerRoom()->GetY(), startPoint->GetOwnerRoom()->GetZ()
-								, startPoint->GetOwnerRoom()->GetGateCount());
-							DumpVoxel(startPoint);
-							DUNGEON_GENERATOR_ERROR(TEXT("State of the grid in the goal room %d: ID=%d (%d,%d,%d) %d Gate"), i
-								, static_cast<uint16_t>(goalPoint->GetOwnerRoom()->GetIdentifier())
-								, goalPoint->GetOwnerRoom()->GetX(), goalPoint->GetOwnerRoom()->GetY(), goalPoint->GetOwnerRoom()->GetZ()
-								, goalPoint->GetOwnerRoom()->GetGateCount());
-							DumpVoxel(goalPoint);
-							DumpAisleAndRoomInformation(i);
-#endif
-							mLastError = Error::RouteSearchFailed;
-							return false;
-						}
-					}
-					else
-					{
-						// 部屋が結合されているなら通路が無くても問題ないはず…
-						if (mGenerateParameter.IsMergeRooms() == false)
-						{
-#if WITH_EDITOR
-							DUNGEON_GENERATOR_ERROR(TEXT("Cannot find a start gate that can be generated. %d: ID=%d (%d,%d,%d) %d Gate"), i
-								, static_cast<uint16_t>(startPoint->GetOwnerRoom()->GetIdentifier())
-								, startPoint->GetOwnerRoom()->GetX(), startPoint->GetOwnerRoom()->GetY(), startPoint->GetOwnerRoom()->GetZ()
-								, startPoint->GetOwnerRoom()->GetGateCount());
-							DumpVoxel(startPoint);
-							DumpAisleAndRoomInformation(i);
-#endif
-							mLastError = Error::GateSearchFailed;
-							return false;
-						}
-					}
-				}
-			}
+			const int32 startPointZ = startPoint->Z;
+			const int32 goalPointZ = goalPoint->Z;
+			if (startPointZ == goalPointZ)
+				// 開始門と終了門が同じ高さにある？
+				GenerateAisleVoxel(i, aisle, startPoint, goalPoint, depthRatioFromStart, false);
+			else if (startPointZ < goalPointZ)
+				// 開始門が終了門よりも低い高さにある？
+				GenerateAisleVoxel(i, aisle, startPoint, goalPoint, depthRatioFromStart, mGenerateParameter.IsGenerateSlopeInRoom());
 			else
-			{
-				// 部屋が結合されているなら通路が無くても問題ないはず…
-				if (mGenerateParameter.IsMergeRooms() == false)
-				{
-#if WITH_EDITOR
-					DUNGEON_GENERATOR_ERROR(TEXT("Cannot find a goal gate that can be generated. %d: ID=%d (%d,%d,%d) %d Gate"), i
-						, static_cast<uint16_t>(goalPoint->GetOwnerRoom()->GetIdentifier())
-						, goalPoint->GetOwnerRoom()->GetX(), goalPoint->GetOwnerRoom()->GetY(), goalPoint->GetOwnerRoom()->GetZ()
-						, goalPoint->GetOwnerRoom()->GetGateCount());
-					DumpVoxel(goalPoint);
-					DumpAisleAndRoomInformation(i);
-#endif
-					mLastError = Error::GateSearchFailed;
-					return false;
-				}
-			}
+				// 終了門が開始門よりも低い高さにある？
+				GenerateAisleVoxel(i, aisle, goalPoint, startPoint, depthRatioFromStart, mGenerateParameter.IsGenerateSlopeInRoom());
 
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 			// 通信同期用に現在の乱数の種を出力する
@@ -1492,6 +1379,14 @@ namespace dungeon
 				DUNGEON_GENERATOR_LOG(TEXT("GenerateVoxel: aisle generated: RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x"), x, y, z, w, crc32);
 			}
 #endif
+		}
+
+		if (mGenerateParameter.IsGenerateStructuralColumn())
+		{
+			for (const auto& room : mRooms)
+			{
+				GenerateStructuralColumnVoxel(room);
+			}
 		}
 
 		if (mOnPostGenerateVoxel)
@@ -1514,6 +1409,239 @@ namespace dungeon
 #endif
 
 		return true;
+	}
+
+	bool Generator::GenerateAisleVoxel(const size_t aisleIndex, const Aisle& aisle, const std::shared_ptr<const Point>& startPoint, const std::shared_ptr<const Point>& goalPoint, const uint8_t depthRatioFromStart, const bool generateIndoorSlope) noexcept
+	{
+		constexpr size_t MaxResultCount = 8;
+
+		// Change to voxel coordinates
+		FIntVector start = ToIntVector(*startPoint);
+		FIntVector goal = ToIntVector(*goalPoint);
+
+		// Conditions for reaching the passage. The endpoint can be anywhere in the goal room.
+		const std::shared_ptr<Room>& goalRoom = goalPoint->GetOwnerRoom();
+		check(goalRoom);
+		const PathGoalCondition pathGoalCondition(goalRoom->GetRect());
+
+		// ゴール地点周辺でゲートを生成できるボクセルを探す
+		std::vector<Voxel::CandidateLocation> goalToStart;
+		if (!mVoxel->SearchGateLocation(goalToStart, MaxResultCount, goal, goalPoint->GetOwnerRoom()->GetIdentifier(), start, mGenerateParameter.UseMissionGraph() == false))
+			return false;
+
+		/*
+		 * 室内にスロープを生成します
+		 * 通路のスタート位置が通路のゴール位置よりも高い必要があります
+		 */
+		if (generateIndoorSlope)
+		{
+			RoomStructureGenerator roomStructureGenerator;
+			if (roomStructureGenerator.CheckSlopePlacement(mVoxel, startPoint->GetOwnerRoom(), goal, mGenerateParameter.GetRandom()))
+			{
+				std::vector<Voxel::CandidateLocation> startToGoal;
+				startToGoal.reserve(1);
+				startToGoal.emplace_back(0, roomStructureGenerator.GetGateLocation());
+
+				Voxel::AisleParameter aisleParameter;
+				aisleParameter.mGoalCondition = pathGoalCondition;
+				aisleParameter.mIdentifier = aisle.GetIdentifier();
+				aisleParameter.mMergeRooms = mGenerateParameter.IsMergeRooms();
+				aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
+				aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
+				aisleParameter.mLocked = aisle.IsLocked();
+				aisleParameter.mDepthRatioFromStart = depthRatioFromStart;
+				if (mVoxel->Aisle(startToGoal, goalToStart, aisleParameter))
+				{
+					roomStructureGenerator.GenerateSlope(mVoxel);
+					return true;
+				}
+			}
+		}
+
+		// スタート地点周辺でゲートを生成できるボクセルを探す
+		std::vector<Voxel::CandidateLocation> startToGoal;
+		if (mVoxel->SearchGateLocation(startToGoal, MaxResultCount, start, startPoint->GetOwnerRoom()->GetIdentifier(), goal, mGenerateParameter.UseMissionGraph() == false))
+		{
+			Voxel::AisleParameter aisleParameter;
+			aisleParameter.mGoalCondition = pathGoalCondition;
+			aisleParameter.mIdentifier = aisle.GetIdentifier();
+			aisleParameter.mMergeRooms = mGenerateParameter.IsMergeRooms();
+			aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
+			aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
+			aisleParameter.mLocked = aisle.IsLocked();
+			aisleParameter.mDepthRatioFromStart = depthRatioFromStart;
+			bool complete = mVoxel->Aisle(startToGoal, goalToStart, aisleParameter);
+
+			// 幹線通路以外なら生成に失敗しても到達可能なので成功扱いにする
+			if (aisle.IsMain() == false)
+			{
+				complete = true;
+			}
+			// 幹線通路でも部屋を結合しているなら成功扱いにする
+			else if (mGenerateParameter.IsMergeRooms() == true)
+			{
+				complete = true;
+			}
+			// 生成失敗？
+			if (complete == false)
+			{
+#if WITH_EDITOR
+				DUNGEON_GENERATOR_ERROR(TEXT("Generator: Route search failed. %d: ID=%d (%d,%d,%d)-(%d,%d,%d)"), aisleIndex, static_cast<uint16_t>(aisle.GetIdentifier()), start.X, start.Y, start.Z, goal.X, goal.Y, goal.Z);
+				DUNGEON_GENERATOR_ERROR(TEXT("State of the grid in the starting room %d: ID=%d (%d,%d,%d) %d Gate"), aisleIndex
+					, static_cast<uint16_t>(startPoint->GetOwnerRoom()->GetIdentifier())
+					, startPoint->GetOwnerRoom()->GetX(), startPoint->GetOwnerRoom()->GetY(), startPoint->GetOwnerRoom()->GetZ()
+					, startPoint->GetOwnerRoom()->GetGateCount());
+				DumpVoxel(startPoint);
+				DUNGEON_GENERATOR_ERROR(TEXT("State of the grid in the goal room %d: ID=%d (%d,%d,%d) %d Gate"), aisleIndex
+					, static_cast<uint16_t>(goalPoint->GetOwnerRoom()->GetIdentifier())
+					, goalPoint->GetOwnerRoom()->GetX(), goalPoint->GetOwnerRoom()->GetY(), goalPoint->GetOwnerRoom()->GetZ()
+					, goalPoint->GetOwnerRoom()->GetGateCount());
+				DumpVoxel(goalPoint);
+				DumpAisleAndRoomInformation(aisleIndex);
+#endif
+				mLastError = Error::RouteSearchFailed;
+			}
+			return false;
+		}
+		else
+		{
+			// 部屋が結合されているなら通路が無くても問題ないはず…
+			if (mGenerateParameter.IsMergeRooms() == false)
+			{
+#if WITH_EDITOR
+				DUNGEON_GENERATOR_ERROR(TEXT("Cannot find a start gate that can be generated. %d: ID=%d (%d,%d,%d) %d Gate"), aisleIndex
+					, static_cast<uint16_t>(startPoint->GetOwnerRoom()->GetIdentifier())
+					, startPoint->GetOwnerRoom()->GetX(), startPoint->GetOwnerRoom()->GetY(), startPoint->GetOwnerRoom()->GetZ()
+					, startPoint->GetOwnerRoom()->GetGateCount());
+				DumpVoxel(startPoint);
+				DumpAisleAndRoomInformation(aisleIndex);
+#endif
+				mLastError = Error::GateSearchFailed;
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	void Generator::GenerateStructuralColumnVoxel(const std::shared_ptr<Room>& room) const
+	{
+		// サブレベル生成済みの部屋には構造柱を生成できない
+		if (room->IsValidReservationNumber())
+			return;
+
+		const int32 minZ = room->GetBackground();
+		const int32 maxZ = room->GetForeground();
+
+		const int32 count = room->GetRect().Area() / 4;
+		for (uint8 i = 0; i < count; ++i)
+		{
+			const int32 x = mGenerateParameter.GetRandom()->Get(room->GetLeft(), room->GetRight());
+			const int32 y = mGenerateParameter.GetRandom()->Get(room->GetTop(), room->GetBottom());
+			if (CanFillStructuralColumnVoxel(x, y, minZ, maxZ))
+				FillStructuralColumnVoxel(x, y, minZ, maxZ);
+		}
+
+		if (mGenerateParameter.GetRandom()->Get(3) == 0)
+		{
+			const int32 x = room->GetLeft();
+			const int32 y = room->GetTop();
+			if (CanFillStructuralColumnVoxel(x, y, minZ, maxZ))
+				FillStructuralColumnVoxel(x, y, minZ, maxZ);
+		}
+		if (mGenerateParameter.GetRandom()->Get(3) == 0)
+		{
+			const int32 x = room->GetRight() - 1;
+			const int32 y = room->GetTop();
+			if (CanFillStructuralColumnVoxel(x, y, minZ, maxZ))
+				FillStructuralColumnVoxel(x, y, minZ, maxZ);
+		}
+		if (mGenerateParameter.GetRandom()->Get(3) == 0)
+		{
+			const int32 x = room->GetLeft();
+			const int32 y = room->GetBottom() - 1;
+			if (CanFillStructuralColumnVoxel(x, y, minZ, maxZ))
+				FillStructuralColumnVoxel(x, y, minZ, maxZ);
+		}
+		if (mGenerateParameter.GetRandom()->Get(3) == 0)
+		{
+			const int32 x = room->GetRight() - 1;
+			const int32 y = room->GetBottom() - 1;
+			if (CanFillStructuralColumnVoxel(x, y, minZ, maxZ))
+				FillStructuralColumnVoxel(x, y, minZ, maxZ);
+		}
+	}
+
+	bool Generator::CanFillStructuralColumnVoxel(const int32 x, const int32 y, const int32 minZ, const int32 maxZ) const
+	{
+		check(minZ <= maxZ);
+		static const std::array<FIntVector2, 8> offsets = {
+			{
+				FIntVector2(-1, -1), FIntVector2(0, -1), FIntVector2(1, -1),
+				FIntVector2(-1,  0),                             FIntVector2(1,  0),
+				FIntVector2(-1,  1), FIntVector2(0,  1), FIntVector2(1,  1)
+			}
+		};
+		int32 z = minZ;
+		while (z < maxZ)
+		{
+			// 中心（構造柱の中）の確認
+			{
+				const FIntVector location(x, y, z);
+				const Grid& grid = mVoxel->Get(location);
+				if (grid.IsCatwalk())
+					return false;
+				switch (grid.GetType())
+				{
+				case Grid::Type::Gate:
+				case Grid::Type::Slope:
+				case Grid::Type::Stairwell:
+				case Grid::Type::DownSpace:
+				case Grid::Type::UpSpace:
+				case Grid::Type::StructuralColumn:
+					return false;
+
+				//case Grid::Type::Aisle: 部屋の中に通路があったら異常な状態
+				default:
+					break;
+				}
+			}
+
+			// 周辺の確認
+			for (const auto& offset : offsets)
+			{
+				const FIntVector location(
+					x + offset.X,
+					y + offset.Y,
+					z
+				);
+				switch (mVoxel->Get(location).GetType())
+				{
+				case Grid::Type::Slope:
+				case Grid::Type::StructuralColumn:
+					return false;
+
+				default:
+					break;
+				}
+			}
+			++z;
+		}
+		return true;
+	}
+
+	void Generator::FillStructuralColumnVoxel(const int32 x, const int32 y, const int32 minZ, const int32 maxZ) const
+	{
+		check(minZ <= maxZ);
+		FIntVector location(x, y, minZ);
+		while (location.Z < maxZ)
+		{
+			auto grid = mVoxel->Get(location);
+			grid.SetType(Grid::Type::StructuralColumn);
+			grid.ResetIdentifier();
+			mVoxel->Set(location, grid);
+			++location.Z;
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////

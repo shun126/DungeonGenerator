@@ -25,16 +25,17 @@ namespace dungeon
 		*/
 		enum class Type : uint8_t
 		{
-			Floor,			//!< 平らな地面（柱の生成判定なし）
-			Deck,			//!< Floorの周辺または部屋の一階部分（柱の生成判定あり）
-			Gate,			//!< 門
-			Aisle,			//!< 通路
-			Slope,			//!< 斜面
-			Stairwell,		//!< 斜面の上側空白(吹き抜け）
-			DownSpace,		//!< 斜面の下側空白
-			UpSpace,		//!< 斜面の上側空白(吹き抜け）
-			Empty,			//!< 空白
-			OutOfBounds		//!< 範囲外（必ず最後に定義して下さい）
+			Floor,				//!< 平らな地面（柱の生成判定なし）
+			Deck,				//!< Floorの周辺または部屋の一階部分（柱の生成判定あり）
+			Gate,				//!< 門
+			Aisle,				//!< 通路
+			Slope,				//!< 斜面
+			Stairwell,			//!< 斜面の上側空白(吹き抜け）
+			DownSpace,			//!< 斜面の下側空白
+			UpSpace,			//!< 斜面の上側空白(吹き抜け）
+			StructuralColumn,	//!< 部屋の内部にある柱
+			Empty,				//!< 空白
+			OutOfBounds			//!< 範囲外（必ず最後に定義して下さい）
 		};
 		static constexpr size_t TypeSize = static_cast<size_t>(Type::OutOfBounds) + 1;
 
@@ -120,6 +121,11 @@ namespace dungeon
 		識別子を設定します
 		*/
 		void SetIdentifier(Identifier identifier) noexcept;
+
+		/**
+		識別子をリセット（無効化）します
+		*/
+		void ResetIdentifier() noexcept;
 
 		/**
 		無効な識別子か判定します？

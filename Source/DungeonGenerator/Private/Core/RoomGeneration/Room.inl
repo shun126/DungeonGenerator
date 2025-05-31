@@ -130,6 +130,22 @@ namespace dungeon
 		return FVector(x, y, z);
 	}
 
+	inline FVector Room::GetMin() const noexcept
+	{
+		const auto x = static_cast<float>(GetX());
+		const auto y = static_cast<float>(GetY());
+		const auto z = static_cast<float>(GetZ());
+		return FVector(x, y, z);
+	}
+
+	inline FVector Room::GetMax() const noexcept
+	{
+		const auto x = static_cast<float>(GetX()) + static_cast<float>(GetWidth());
+		const auto y = static_cast<float>(GetY()) + static_cast<float>(GetDepth());
+		const auto z = static_cast<float>(GetZ()) + static_cast<float>(GetHeight());
+		return FVector(x, y, z);
+	}
+
 	inline Point Room::GetGroundCenter() const noexcept
 	{
 		const float x = static_cast<float>(GetX()) + static_cast<float>(GetWidth()) * 0.5f;

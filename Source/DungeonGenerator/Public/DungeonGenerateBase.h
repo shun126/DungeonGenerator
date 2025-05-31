@@ -109,31 +109,21 @@ public:
 public:
 	/**
 	Get start position
-	@return		Coordinates of start position
 	*/
 	FVector GetStartLocation() const;
 
 	/**
-	Get start Transform
-	@return		Transform of starting position
-	*/
-	FTransform GetStartTransform() const;
+	 * スタート部屋のバウンディングボックスを取得します
+	 */
+	FBox GetStartBoundingBox() const;
 
 	/**
 	Get goal position
-	@return		Goal position coordinates
 	*/
 	FVector GetGoalLocation() const;
 
 	/**
-	Get goal Transform
-	@return		Transform of goal position
-	*/
-	FTransform GetGoalTransform() const;
-
-	/**
 	Get a bounding box covering the entire generated dungeon
-	@return		bounding box
 	*/
 	FBox CalculateBoundingBox() const;
 

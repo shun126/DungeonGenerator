@@ -5,8 +5,6 @@ All Rights Reserved.
 */
 
 #include "Parameter/DungeonGenerateParameter.h"
-#include "Parameter/DungeonAisleMeshSetDatabase.h"
-#include "Parameter/DungeonRoomMeshSetDatabase.h"
 #include "PluginInformation.h"
 #include "Core/Debug/BuildInformation.h"
 #include "Core/Debug/Debug.h"
@@ -37,8 +35,6 @@ UDungeonGenerateParameter* UDungeonGenerateParameter::GenerateRandomParameter(co
 	{
 		parameter->GridSize = sourceParameter->GridSize;
 		parameter->VerticalGridSize = sourceParameter->VerticalGridSize;
-		parameter->DungeonRoomPartsDatabase = sourceParameter->DungeonRoomPartsDatabase;
-		parameter->DungeonAislePartsDatabase = sourceParameter->DungeonAislePartsDatabase;
 		parameter->DungeonRoomMeshPartsDatabase = sourceParameter->DungeonRoomMeshPartsDatabase;
 		parameter->DungeonAisleMeshPartsDatabase = sourceParameter->DungeonAisleMeshPartsDatabase;
 		parameter->PillarPartsSelectionMethod = sourceParameter->PillarPartsSelectionMethod;
@@ -71,6 +67,7 @@ void UDungeonGenerateParameter::SetRandomParameter() noexcept
 	MergeRooms = random->Get<bool>();
 	Flat = random->Get<bool>();
 	GenerateSlopeInRoom = random->Get<bool>();
+	GenerateStructuralColumn = random->Get<bool>();
 
 	if (MergeRooms == true)
 	{
@@ -223,20 +220,6 @@ void UDungeonGenerateParameter::DumpToJson() const
 		jsonString += TEXT("  \"HorizontalSize\":") + FString::SanitizeFloat(GridSize) + TEXT(",\n");
 		jsonString += TEXT("  \"VerticalSize\":") + FString::SanitizeFloat(VerticalGridSize) + TEXT("\n");
 		jsonString += TEXT(" }");
-		if (IsValid(DungeonRoomPartsDatabase))
-		{
-			jsonString += TEXT(",\n");
-			jsonString += TEXT(" \"DungeonRoomPartsDatabase\":{\n");
-			jsonString += DungeonRoomPartsDatabase->DumpToJson(2) + TEXT("\n");
-			jsonString += TEXT(" }");
-		}
-		if (IsValid(DungeonAislePartsDatabase))
-		{
-			jsonString += TEXT(",\n");
-			jsonString += TEXT(" \"DungeonAislePartsDatabase\":{\n");
-			jsonString += DungeonAislePartsDatabase->DumpToJson(2) + TEXT("\n");
-			jsonString += TEXT(" }");
-		}
 		if (IsValid(DungeonRoomMeshPartsDatabase))
 		{
 			jsonString += TEXT(",\n");
@@ -314,15 +297,6 @@ FString UDungeonGenerateParameter::GetJsonDefaultDirectory() const
 }
 #endif
 
-
-const FDungeonTemporaryMeshSet* UDungeonGenerateParameter::SelectParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const dungeon::Grid& grid)
-{
-	if (IsValid(dungeonPartsDatabase) == false)
-		return nullptr;
-
-	return dungeonPartsDatabase->AtImplement(grid.GetIdentifier());
-}
-
 const FDungeonMeshSet* UDungeonGenerateParameter::SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
 	if (IsValid(dungeonMeshSetDatabase) == false)
@@ -330,56 +304,6 @@ const FDungeonMeshSet* UDungeonGenerateParameter::SelectParts(const UDungeonMesh
 
 	return dungeonMeshSetDatabase->SelectImplement(grid.GetIdentifier(), grid.GetDepthRatioFromStart(), random);
 }
-
-const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
-{
-	if (const auto* parts = SelectParts(dungeonPartsDatabase, grid))
-	{
-		const auto* roomMeshSet = static_cast<const FDungeonRoomMeshSet*>(parts);
-		if (const auto* result = roomMeshSet->SelectFloorParts(gridIndex, grid, random))
-			return result;
-	}
-
-	return nullptr;
-}
-
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectWallParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
-{
-	if (const auto* parts = SelectParts(dungeonPartsDatabase, grid))
-	{
-		const auto* roomMeshSet = static_cast<const FDungeonRoomMeshSet*>(parts);
-		if (const auto* result = roomMeshSet->SelectWallParts(gridIndex, grid, random))
-			return result;
-	}
-	return nullptr;
-}
-
-const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectRoofParts(const UDungeonTemporaryMeshSetDatabase* dungeonPartsDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
-{
-	if (IsValid(dungeonPartsDatabase))
-	{
-		if (const auto* parts = dungeonPartsDatabase->AtImplement(grid.GetIdentifier()))
-		{
-			const auto* roomMeshSet = static_cast<const FDungeonRoomMeshSet*>(parts);
-			if (const auto* result = roomMeshSet->SelectRoofParts(gridIndex, grid, random))
-				return result;
-		}
-	}
-	return nullptr;
-}
-
-const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
-{
-	if (const auto* parts = SelectParts(DungeonAislePartsDatabase, grid))
-	{
-		const auto* aisleMeshSet = static_cast<const FDungeonAisleMeshSet*>(parts);
-		if (const auto* result = aisleMeshSet->SelectSlopeParts(gridIndex, grid, random))
-			return result;
-	}
-	return nullptr;
-}
-
-
 
 const FDungeonMeshPartsWithDirection* UDungeonGenerateParameter::SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 {
@@ -422,38 +346,26 @@ const FDungeonMeshParts* UDungeonGenerateParameter::SelectSlopeParts(const UDung
 	return nullptr;
 }
 
-
-
 const FDungeonMeshParts* UDungeonGenerateParameter::SelectPillarParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 {
-	return FDungeonRoomMeshSet::SelectParts(gridIndex, grid, random, PillarParts, PillarPartsSelectionMethod);
+	return FDungeonMeshSet::SelectPartsByGrid(gridIndex, grid, random, PillarParts, PillarPartsSelectionMethod);
 }
 
 const FDungeonRandomActorParts* UDungeonGenerateParameter::SelectTorchParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 {
-	return FDungeonRoomMeshSet::SelectRandomActorParts(gridIndex, grid, random, TorchParts, TorchPartsSelectionMethod);
+	return FDungeonMeshSet::SelectRandomActorParts(gridIndex, grid, random, TorchParts, TorchPartsSelectionMethod);
 }
 
 const FDungeonDoorActorParts* UDungeonGenerateParameter::SelectDoorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const
 {
-	return FDungeonRoomMeshSet::SelectParts(gridIndex, grid, random, DoorParts, DoorPartsSelectionMethod);
+	return FDungeonMeshSet::SelectPartsByGrid(gridIndex, grid, random, DoorParts, DoorPartsSelectionMethod);
 }
-
-
 
 void UDungeonGenerateParameter::EachRoomFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
 {
 	if (IsValid(DungeonRoomMeshPartsDatabase))
 	{
 		DungeonRoomMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
-			{
-				parts.EachFloorParts(function);
-			}
-		);
-	}
-	else if (IsValid(DungeonRoomPartsDatabase))
-	{
-		DungeonRoomPartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
 			{
 				parts.EachFloorParts(function);
 			}
@@ -471,14 +383,6 @@ void UDungeonGenerateParameter::EachAisleFloorParts(const std::function<void(con
 			}
 		);
 	}
-	else if (IsValid(DungeonAislePartsDatabase))
-	{
-		DungeonAislePartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
-			{
-				parts.EachFloorParts(function);
-			}
-		);
-	}
 }
 
 void UDungeonGenerateParameter::EachRoomWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const
@@ -486,14 +390,6 @@ void UDungeonGenerateParameter::EachRoomWallParts(const std::function<void(const
 	if (IsValid(DungeonRoomMeshPartsDatabase))
 	{
 		DungeonRoomMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
-			{
-				parts.EachWallParts(function);
-			}
-		);
-	}
-	else if (IsValid(DungeonRoomPartsDatabase))
-	{
-		DungeonRoomPartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
 			{
 				parts.EachWallParts(function);
 			}
@@ -511,14 +407,6 @@ void UDungeonGenerateParameter::EachAisleWallParts(const std::function<void(cons
 			}
 		);
 	}
-	else if (IsValid(DungeonAislePartsDatabase))
-	{
-		DungeonAislePartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
-			{
-				parts.EachWallParts(function);
-			}
-		);
-	}
 }
 
 void UDungeonGenerateParameter::EachRoomRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
@@ -531,14 +419,6 @@ void UDungeonGenerateParameter::EachRoomRoofParts(const std::function<void(const
 			}
 		);
 	}
-	else if (IsValid(DungeonRoomPartsDatabase))
-	{
-		DungeonRoomPartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
-			{
-				parts.EachRoofParts(function);
-			}
-		);
-	}
 }
 
 void UDungeonGenerateParameter::EachAisleRoofParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const
@@ -546,14 +426,6 @@ void UDungeonGenerateParameter::EachAisleRoofParts(const std::function<void(cons
 	if (IsValid(DungeonAisleMeshPartsDatabase))
 	{
 		DungeonAisleMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
-			{
-				parts.EachRoofParts(function);
-			}
-		);
-	}
-	else if (IsValid(DungeonAislePartsDatabase))
-	{
-		DungeonAislePartsDatabase->Each([&function](const FDungeonRoomMeshSet& parts)
 			{
 				parts.EachRoofParts(function);
 			}
@@ -578,14 +450,6 @@ void UDungeonGenerateParameter::EachAisleSlopeParts(const std::function<void(con
 	if (IsValid(DungeonAisleMeshPartsDatabase))
 	{
 		DungeonAisleMeshPartsDatabase->Each([&function](const FDungeonMeshSet& parts)
-			{
-				parts.EachSlopeParts(function);
-			}
-		);
-	}
-	else if (IsValid(DungeonAislePartsDatabase))
-	{
-		DungeonAislePartsDatabase->Each([&function](const FDungeonAisleMeshSet& parts)
 			{
 				parts.EachSlopeParts(function);
 			}
@@ -619,5 +483,5 @@ void UDungeonGenerateParameter::EachAisleCatwalkParts(const std::function<void(c
 
 void UDungeonGenerateParameter::EachPillarParts(const std::function<void(const FDungeonMeshParts&)>& function) const
 {
-	FDungeonRoomMeshSet::EachParts(PillarParts, function);
+	FDungeonMeshSet::EachParts(PillarParts, function);
 }

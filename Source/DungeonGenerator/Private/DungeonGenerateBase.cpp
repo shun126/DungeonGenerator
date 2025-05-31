@@ -15,6 +15,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配�
 #include "Core/Debug/Debug.h"
 #include "Core/Debug/Config.h"
 #include "Core/Helper/Direction.h"
+#include "Core/Helper/Finalizer.h"
 #include "Core/Helper/Identifier.h"
 #include "Core/Helper/Stopwatch.h"
 #include "Core/Math/Math.h"
@@ -28,8 +29,6 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配�
 
 
 #include "PluginInformation.h"
-
-#include "Core/Helper/Finalizer.h"
 
 #include "Helper/DungeonAisleGridMap.h"
 
@@ -288,20 +287,16 @@ void ADungeonGenerateBase::DestroySpawnedActors(UWorld* world)
 		{
 			const FFolder& folder = actor->GetFolder();
 
-#if UE_VERSION_NEWER_THAN(5, 1, 0)
 			if (!folder.IsValid())
 				continue;
-#endif
 			if (folder.GetPath() == folder.GetEmptyPath())
 				continue;
 
-#if UE_VERSION_NEWER_THAN(5, 1, 0)
 			if (const auto* actorFolder = folder.GetActorFolder())
 			{
 				if (!actorFolder->IsValid())
 					continue;
 			}
-#endif
 
 			deleteFolders.AddUnique(folder);
 		}
@@ -460,6 +455,8 @@ bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, 
 		generateParameter.SetMissionGraph(mParameter->IsUseMissionGraph());
 		generateParameter.SetAisleComplexity(mParameter->GetAisleComplexity());
 		generateParameter.SetGenerateSlopeInRoom(mParameter->GenerateSlopeInRoom);
+		generateParameter.SetGenerateStructuralColumn(mParameter->GenerateStructuralColumn);
+
 		if (mParameter->MergeRooms)
 		{
 			generateParameter.SetHorizontalRoomMargin(0);
@@ -827,13 +824,6 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 				mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
 			}
 		}
-		else
-		{
-			if (const FDungeonMeshParts* parts = mParameter->SelectSlopeParts(cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
-			{
-				mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
-			}
-		}
 	}
 	else if (mOnAddFloor && cp.mGrid.CanBuildFloor(true))
 	{
@@ -862,19 +852,6 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 				{
 					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
 				}
-			}
-		}
-		else
-		{
-			const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
-			if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
-			else
-				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
-
-			if (const FDungeonMeshParts* parts = mParameter->SelectFloorParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
-			{
-				mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
 			}
 		}
 	}
@@ -907,15 +884,6 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			// グリッドによるパーツ選択を行う場合はここで抽選する
 			if (dungeonPartsSelectionMethod != EDungeonPartsSelectionMethod::GridIndex)
 				parts = mParameter->SelectWallPartsByGrid(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
-		}
-		else
-		{
-			const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
-			if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
-			else
-				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
-			parts = mParameter->SelectWallParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
 		}
 	}
 
@@ -1016,28 +984,6 @@ void ADungeonGenerateBase::CreateImplement_AddRoof(const CreateImplementParamete
 			*/
 			const FTransform transform(cp.mCenterPosition);
 			if (const FDungeonMeshPartsWithDirection* parts = mParameter->SelectRoofParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
-			{
-				mOnAddRoof(
-					parts->StaticMesh,
-					parts->CalculateWorldTransform(GetSynchronizedRandom(), transform)
-				);
-			}
-		}
-		else
-		{
-			const UDungeonTemporaryMeshSetDatabase* dungeonTemporaryMeshSetDatabase;
-			//if (cp.mGrid.IsKindOfRoomType())
-			if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonRoomPartsDatabase();
-			else
-				dungeonTemporaryMeshSetDatabase = mParameter->GetDungeonAislePartsDatabase();
-
-			/*
-			壁のメッシュを生成
-			メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
-			*/
-			const FTransform transform(cp.mCenterPosition);
-			if (const FDungeonMeshPartsWithDirection* parts = mParameter->SelectRoofParts(dungeonTemporaryMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
 			{
 				mOnAddRoof(
 					parts->StaticMesh,
@@ -1529,7 +1475,7 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 		{
 			EachActors<APlayerStartPIE>([&startPointsInSubLevels](APlayerStartPIE* playerStartPIE)
 				{
-					APlayerStart* playerStart = startPointsInSubLevels[FMath::RandRange(0, startPointsInSubLevels.Num() - 1)];
+					APlayerStart* playerStart = startPointsInSubLevels[FMath::RandHelper(startPointsInSubLevels.Num())];
 					if (IsValid(playerStart))
 					{
 						const auto& transform = playerStart->GetActorTransform();
@@ -1550,7 +1496,7 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	// TODO: メニュー内の「ここから開始」で問題が起きるかもしれません
 	EachActors<APlayerStartPIE>([&startPoints](APlayerStartPIE* playerStartPIE)
 		{
-			APlayerStart* playerStart = startPoints[FMath::RandRange(0, startPoints.Num() - 1)];
+			APlayerStart* playerStart = startPoints[FMath::RandHelper(startPoints.Num())];
 			if (IsValid(playerStart))
 			{
 				const auto& transform = playerStart->GetActorTransform();
@@ -1570,17 +1516,13 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	// Calculate the position to shift APlayerStart
 	const double halfHorizontalSize = mParameter->GetGridSize().HorizontalSize / 2;
 	const double halfVerticalSize = mParameter->GetGridSize().VerticalSize / 2;
-	const double placementRadius = halfHorizontalSize;
-	const double placementAngle = (3.1415926535897932384626433832795 * 2.) / static_cast<double>(startPoints.Num());
-
-	const FVector& startRoomLocation = GetStartLocation();
-	const FVector& goalRoomLocation = GetGoalLocation();
+	const auto& startRoomBoundingBox = GetStartBoundingBox();
+	const auto& startRoomCenterLocation = startRoomBoundingBox.GetCenter();
 
 	for (int32 index = 0; index < startPoints.Num(); ++index)
 	{
-		APlayerStart* playerStart = startPoints[index];
-
 		// APlayerStart cannot use GetSimpleCollisionCylinder because collision is disabled.
+		APlayerStart* playerStart = startPoints[index];
 		if (USceneComponent* rootComponent = playerStart->GetRootComponent())
 		{
 			// Create a small margin to avoid grounding.
@@ -1589,50 +1531,38 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 			// Temporarily set EComponentMobility to Movable
 			const EComponentMobility::Type mobility = rootComponent->Mobility;
 			rootComponent->SetMobility(EComponentMobility::Movable);
-			{
-				float cylinderRadius, cylinderHalfHeight;
-				rootComponent->CalcBoundingCylinder(cylinderRadius, cylinderHalfHeight);
 
-				// If there are multiple APlayerStart, shift APlayerStart from the center of the room
-				FVector location = startRoomLocation;
-				location.X += placementRadius * std::cos(placementAngle * static_cast<double>(index));
-				location.Y += placementRadius * std::sin(placementAngle * static_cast<double>(index));
+			float cylinderRadius, cylinderHalfHeight;
+			rootComponent->CalcBoundingCylinder(cylinderRadius, cylinderHalfHeight);
 
-				// Grounding the APlayerStart
-				FHitResult hitResult;
+			FHitResult hitResult;
+			do {
+				const FVector location(
+					FMath::RandRange(startRoomBoundingBox.Min.X + halfHorizontalSize, startRoomBoundingBox.Max.X - halfHorizontalSize),
+					FMath::RandRange(startRoomBoundingBox.Min.Y + halfHorizontalSize, startRoomBoundingBox.Max.Y - halfHorizontalSize),
+					startRoomBoundingBox.Min.Z
+				);
+
 				const FVector startLocation = location + FVector(0, 0, halfVerticalSize);
 				const FVector endLocation = location - FVector(0, 0, halfVerticalSize);
 				if (playerStart->GetWorld()->LineTraceSingleByChannel(hitResult, startLocation, endLocation, ECollisionChannel::ECC_Pawn))
 				{
-					location = hitResult.ImpactPoint;
-				}
-				location.Z += cylinderHalfHeight + heightMargin;
+					hitResult.ImpactPoint.Z += cylinderHalfHeight + heightMargin;
 
-				// ゴールの部屋の方向を向く
-				auto rotator = playerStart->GetActorRotation();
-				rotator.Yaw = dungeon::math::ToDegree(
+					// 部屋の中心を向く
+					auto rotator = playerStart->GetActorRotation();
+					rotator.Yaw = dungeon::math::ToDegree(
 						std::atan2(
-							goalRoomLocation.Y - location.Y,
-							goalRoomLocation.X - location.X
+							startRoomCenterLocation.Y - location.Y,
+							startRoomCenterLocation.X - location.X
 						)
 					);
 
-				playerStart->SetActorTransform(FTransform(rotator, location));
-
-#if WITH_EDITOR
-				FCollisionShape collisionShape;
-				collisionShape.SetCapsule(cylinderRadius, cylinderHalfHeight);
-				if (playerStart->GetWorld()->OverlapBlockingTestByChannel(location, playerStart->GetActorQuat(), ECollisionChannel::ECC_Pawn, collisionShape))
-				{
-					DUNGEON_GENERATOR_ERROR(TEXT("PlayerStart(%s: %f, %f, %f) is in contact with something")
-						, *playerStart->GetName()
-						, location.X
-						, location.Y
-						, location.Z
-					);
+					// 位置を設定
+					playerStart->SetActorTransform(FTransform(rotator, hitResult.ImpactPoint));
 				}
-#endif
-			}
+			} while (hitResult.bBlockingHit == false);
+
 			// Undo EComponentMobility
 			rootComponent->SetMobility(mobility);
 		}
@@ -1776,16 +1706,6 @@ void ADungeonGenerateBase::FinishRoomSensorActorSpawning(ADungeonRoomSensorBase*
 	}
 };
 
-FTransform ADungeonGenerateBase::GetStartTransform() const
-{
-	return FTransform(GetStartLocation());
-}
-
-FTransform ADungeonGenerateBase::GetGoalTransform() const
-{
-	return FTransform(GetGoalLocation());
-}
-
 FVector ADungeonGenerateBase::GetStartLocation() const
 {
 	if (IsValid(mParameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
@@ -1795,6 +1715,22 @@ FVector ADungeonGenerateBase::GetStartLocation() const
 		return location;
 	}
 	return FVector::ZeroVector;
+}
+
+FBox ADungeonGenerateBase::GetStartBoundingBox() const
+{
+	if (IsValid(mParameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
+	{
+		if (const auto& startRoom = mGenerator->GetStartPoint()->GetOwnerRoom())
+		{
+			FBox boundingBox(
+				startRoom->GetMin() * mParameter->GetGridSize().To3D(),
+				startRoom->GetMax() * mParameter->GetGridSize().To3D()
+			);
+			return boundingBox.ShiftBy(GetActorLocation());
+		}
+	}
+	return FBox();
 }
 
 FVector ADungeonGenerateBase::GetGoalLocation() const

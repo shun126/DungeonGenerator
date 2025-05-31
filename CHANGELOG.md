@@ -1,8 +1,32 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (48)
+## Unreleased-1.6.* (50)
 ### Changes
 ### 変更点
+
+## 20250601-1.6.20 (49)
+### Changes
+* Discontinued support for DungeonAisleMeshSet and DungeonRoomMeshSet
+* Fixed a bug that caused sublevels to be generated on top of each other
+* Fixed a bug in which crossing decisions were being made without sublevels being released.
+* Added option to generate structural columns in rooms
+* Fixed several bugs
+### 変更点
+* DungeonAisleMeshSetとDungeonRoomMeshSetのサポートを終了
+* サブレベルが重なって生成される不具合を修正
+* サブレベルが解放されないまま交差判定が行われていた不具合を修正
+* 部屋の中に構造柱の生成オプションを追加
+* いくつかの不具合を修正
+
+## 20250519-1.6.19 (48)
+### Changes
+* Added minimap mask textures
+* changed sublevel size and grid size to be set by DungeonSubLevelScriptActor
+* Fixed several bugs
+### 変更点
+* ミニマップマスクテクスチャを追加
+* サブレベルのサイズとグリッドサイズをDungeonSubLevelScriptActorで設定するように変更
+* いくつかの不具合を修正
 
 ## 20150315-1.6.18 (47)
 ### Changes
