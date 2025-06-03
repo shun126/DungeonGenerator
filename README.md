@@ -1,4 +1,5 @@
 <div align="center">
+<img src="Document/DungeonGenerator-Logo.png" />
 <h1>Dungeon generator plugin for Unreal Engine 5</h1>
 <p>
 <a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/issues">Issues</a>,
@@ -76,11 +77,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 Or, [Fab](https://fab.com/s/f5587c55bad0) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
-# 🎮 Demo
-[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a sample project for first-person exploration.
-
-This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
-
 # 👀 See also
 * [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
 * [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
@@ -92,6 +88,11 @@ The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhance
 * A mini-map of the dungeon can be generated.
 * Interior decoration. [beta version]
 * Foriage decoration. [beta version]
+
+## 🎮 Demo
+[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a sample project for first-person exploration.
+
+This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
 
 # 😀 Authors
 * Nonbiri ([X.com](https://x.com/happy_game_dev) / [YouTube](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q))
