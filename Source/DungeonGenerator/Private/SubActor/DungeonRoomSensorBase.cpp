@@ -16,6 +16,8 @@ All Rights Reserved.
 #include <GameFramework/PlayerController.h>
 #include <cmath>
 
+#include "Core/Math/Math.h"
+
 #if WITH_EDITOR
 #include <DrawDebugHelpers.h>
 
@@ -470,10 +472,22 @@ bool ADungeonRoomSensorBase::GetFloorHeightPosition(FVector& result, FVector sta
 
 bool ADungeonRoomSensorBase::FindFloorHeightPosition(FVector& result, const FVector& startPosition, const FVector& endPosition, const float offsetHeight) const
 {
+	UWorld* world = GetWorld();
+	if (!IsValid(world))
+		return false;
+
 	FHitResult hitResult(ForceInit);
 	FCollisionQueryParams params("ADungeonRoomSensorBase::FindFloorHeightPosition", true);
 	constexpr ECollisionChannel traceChannel = ECollisionChannel::ECC_Pawn;
-	if (!GetWorld()->LineTraceSingleByChannel(hitResult, startPosition, endPosition, traceChannel, params))
+	if (!world->LineTraceSingleByChannel(hitResult, startPosition, endPosition, traceChannel, params))
+		return false;
+
+	// 埋没している？
+	if (hitResult.bStartPenetrating)
+		return false;
+
+	// 床ではない？
+	if (FVector::DotProduct(FVector::UpVector, hitResult.ImpactNormal) < std::cos(dungeon::math::ToRadian(45.0)))
 		return false;
 
 	//result = result.Location;

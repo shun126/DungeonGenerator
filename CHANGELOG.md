@@ -1,8 +1,20 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (50)
+## Unreleased-1.6.* (51)
 ### Changes
 ### 変更点
+
+## 20250603-1.6.21 (50)
+### Changes
+* Changed to run Build for interiors and sublevels before Cook
+* Fixed problem with interior stair landings getting trapped
+* Reduced problem with enemies being buried
+* Fixed several bugs
+### 変更点
+* Cook前にインテリアとサブレベルのBuildを実行するように変更
+* 室内の階段の踊り場が閉じ込められる問題を修正
+* 敵が埋没する問題を軽減
+* いくつかの不具合を修正
 
 ## 20250601-1.6.20 (49)
 ### Changes

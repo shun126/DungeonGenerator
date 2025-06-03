@@ -1,4 +1,5 @@
 <div align="center">
+<img src="Document/DungeonGenerator-Logo.png" />
 <h1>Dungeon generator plugin for Unreal Engine 5</h1>
 <p>
 <a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/issues">Issues</a>,
@@ -33,7 +34,7 @@ Revolutionize your dungeon creation process with our new Unreal Engine plugin! E
 - [See also](#-see-also)
 - [Author](#-authors)
 
-# 🤔 Why Dungeon Generator?
+# 👾 Why Dungeon Generator?
 One day I wanted to create a video game, but I didn't have the level design know-how. So I decided to create a procedural dungeon generator.
 The dungeon generator was based on Vazgriz's algorithm. You can read more about [Vazgriz's algorithm here](https://vazgriz.com/119/procedurally-generated-dungeons/).
 
@@ -59,11 +60,11 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 * [Unreal Engine 5.1 ~ Unreal Engine 5.5](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
-# 🎮 How to install
+# 💾 How to install
 * Open Unreal Engine Editor and create a project using the First Person template or Third Person template.
 * Install the Dungeon Generator plugin via Epic Games Launcher, or copy it to the `Plugins` directory of your project.
 * Enable the plugin content.
-* Open `Plugins/Dungeon Generator/Contents/Demonstration`.
+* Open `Plugins/Dungeon Generator/Contents/Demonstration.
 
 ![](Document/ContentBrowser.gif)
 
@@ -75,11 +76,6 @@ you can redistribute it and/or modify it under the terms of the GNU General Publ
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied arranty of MERCHANTABILITY or FITNESS FOR A ARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 Or, [Fab](https://fab.com/s/f5587c55bad0) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
-
-# 👾 Demo
-[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a BluePrint sample project for first-person exploration.
-
-This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
 
 # 👀 See also
 * [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
@@ -93,7 +89,12 @@ The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhance
 * Interior decoration. [beta version]
 * Foriage decoration. [beta version]
 
-# 👾 Authors
+## 🎮 Demo
+[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a sample project for first-person exploration.
+
+This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
+
+# 😀 Authors
 * Nonbiri ([X.com](https://x.com/happy_game_dev) / [YouTube](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q))
 * Shun Moriya ([X.com](https://x.com/monjiro1972))
 

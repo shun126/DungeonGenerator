@@ -16,15 +16,18 @@ namespace dungeon
 	struct Offset final
 	{
 		int32 mX, mZ;
+		bool bShouldWriteGrid;
 		Grid::Type mWriteGridType;
 	};
-	static const std::array<Offset, 5> Offsets = {
+	static const std::array<Offset, 7> Offsets = {
 		{
-			{ 0, 1, Grid::Type::Aisle },
-			{ 1, 1, Grid::Type::Stairwell },
-			{ 2, 1, Grid::Type::UpSpace },
-			{ 1, 0, Grid::Type::DownSpace },
-			{ 2, 0, Grid::Type::Slope }
+			{ 0, 1, true, Grid::Type::Aisle },		// 属性のみ設定
+			{ 1, 1, true, Grid::Type::Stairwell },
+			{ 2, 1, true, Grid::Type::UpSpace },
+			{ 1, 0, true, Grid::Type::DownSpace },
+			{ 2, 0, true, Grid::Type::Slope },
+			{ 0, 0, false, Grid::Type::OutOfBounds },
+			{ 3, 0, false, Grid::Type::OutOfBounds },
 		},
 	};
 
@@ -60,24 +63,23 @@ namespace dungeon
 						return false;
 					if (offset.mZ == 0)
 					{
-						if (grid.GetType() != Grid::Type::Deck)
-							return false;
+						if (offset.bShouldWriteGrid)
+						{
+							if (grid.GetType() != Grid::Type::Deck)
+								return false;
+						}
+						else
+						{
+							// 踊り場の判定
+							if (grid.GetType() != Grid::Type::Deck && grid.GetType() != Grid::Type::Gate)
+								return false;
+						}
 					}
 					else
 					{
 						if (grid.GetType() != Grid::Type::Floor)
 							return false;
 					}
-				}
-				// スロープ前に必要な床(踊り場)の判定
-				{
-					const Grid& grid = voxel->Get(x + 3 * xFlip, y + 3 * yFlip, z);
-					if (!commonChecker(grid, identifier))
-						return false;
-
-					const auto gridType = grid.GetType();
-					if (gridType != Grid::Type::Deck && gridType != Grid::Type::Gate)
-						return false;
 				}
 				// スロープ前にいずれかが必要な床(踊り場への接続)の判定
 				{
@@ -365,11 +367,18 @@ namespace dungeon
 
 			const int32 oz = mLocation.Z + offset.mZ;
 			auto grid = voxel->Get(ox, oy, oz);
-			grid.SetType(offset.mWriteGridType);
-			grid.SetDirection(direction);
-			grid.SetCatwalkDirection(catwalkDirection);
-			if (offset.mZ > 0)
+			if (offset.bShouldWriteGrid)
+			{
+				grid.SetType(offset.mWriteGridType);
+				grid.SetDirection(direction);
+				grid.SetCatwalkDirection(catwalkDirection);
+				if (offset.mZ > 0)
+					grid.Catwalk(true);
+			}
+			else
+			{
 				grid.Catwalk(true);
+			}
 			voxel->Set(ox, oy, oz, grid);
 		}
 	}
