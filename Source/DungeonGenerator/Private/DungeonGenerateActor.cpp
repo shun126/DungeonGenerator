@@ -471,6 +471,8 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 						message.Append(TEXT("Type: ") + grid.GetTypeName() + TEXT("\n"));
 						message.Append(TEXT("Props: ") + grid.GetPropsName() + TEXT("\n"));
 						message.Append(TEXT("Direction: ") + grid.GetDirection().GetName() + TEXT("\n"));
+						if (grid.IsReserved())
+							message.Append(TEXT("Reserved\n"));
 						if (grid.IsCatwalk())
 						{
 							message.Append(TEXT("Catwalk\n"));
@@ -516,6 +518,8 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 		output.Add(TEXT("DepthRatioFromStart:") + FString::SanitizeFloat(static_cast<float>(grid.GetDepthRatioFromStart()) / 255.f));
 		output.Add(TEXT("Type: ") + grid.GetTypeName());
 		output.Add(TEXT("Props: ") + grid.GetPropsName());
+		if (grid.IsReserved())
+			output.Add(TEXT("Reserved"));
 		if (grid.IsCatwalk())
 			output.Add(TEXT("Catwalk"));
 		if (grid.IsSubLevel())

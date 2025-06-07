@@ -264,6 +264,16 @@ namespace dungeon
 		return mPack.IsAttributeEnabled(Attribute::MergeAisle);
 	}
 
+	inline void Grid::Reserve(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::Reserved, enable);
+	}
+
+	inline bool Grid::IsReserved() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::Reserved);
+	}
+
 	inline void Grid::Catwalk(const bool enable) noexcept
 	{
 		mPack.SetAttribute(Attribute::Catwalk, enable);

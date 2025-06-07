@@ -1589,6 +1589,8 @@ namespace dungeon
 			{
 				const FIntVector location(x, y, z);
 				const Grid& grid = mVoxel->Get(location);
+				if (grid.IsReserved())
+					return false;
 				if (grid.IsCatwalk())
 					return false;
 				switch (grid.GetType())

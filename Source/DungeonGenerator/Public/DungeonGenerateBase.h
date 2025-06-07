@@ -308,7 +308,7 @@ private:
 		UClass* actorClass,
 		const dungeon::Identifier& identifier,
 		const FVector& center,
-		const FVector& extent,
+		const FVector& extents,
 		EDungeonRoomParts parts,
 		EDungeonRoomItem item,
 		uint8 branchId,

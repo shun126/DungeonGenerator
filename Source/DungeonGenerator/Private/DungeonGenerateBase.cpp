@@ -581,7 +581,6 @@ bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, 
 		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
 		CreateImplement_QueryAisleGeneration(hasAuthority);
 		CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
-		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
 		/*
 		 * 壁を生成します。
 		 * CreateImplement_FinishSpawnInteriorよりも前にする事で内装物を壁にめり込まないようにします
@@ -589,6 +588,8 @@ bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, 
 		 */
 		CreateImplement_AddWall();
 		CreateImplement_Navigation(hasAuthority);
+		// DungeonRoomSensor::OnInitializeを呼び出す
+		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
 	}
 
 
@@ -1668,7 +1669,7 @@ DungeonRoomSensorBaseをスポーンします
 ADungeonRoomSensorBaseはリプリケートされる前提のアクターなので
 同期乱数(GetSynchronizedRandom)を使ってはならない。
 */
-ADungeonRoomSensorBase* ADungeonGenerateBase::SpawnRoomSensorActorDeferred(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extent, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId, const uint8 depthFromStart, const uint8 deepestDepthFromStart) const
+ADungeonRoomSensorBase* ADungeonGenerateBase::SpawnRoomSensorActorDeferred(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extents, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId, const uint8 depthFromStart, const uint8 deepestDepthFromStart) const
 {
 	const FTransform transform(center);
 	ADungeonRoomSensorBase* actor = SpawnActorDeferredImpl<ADungeonRoomSensorBase>(actorClass, SensorsFolderPath, transform, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
@@ -1678,7 +1679,8 @@ ADungeonRoomSensorBase* ADungeonGenerateBase::SpawnRoomSensorActorDeferred(UClas
 			GetRandom(),
 			identifier,
 			center,
-			extent,
+			extents,
+			mParameter->GridSize,
 			parts,
 			item,
 			branchId,

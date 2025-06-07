@@ -363,6 +363,16 @@ namespace dungeon
 		bool CanMergeAisle() const noexcept;
 
 		/**
+		 * 予約済みか設定します
+		 */
+		void Reserve(const bool enable) noexcept;
+
+		/**
+		 * 予約済みか取得します
+		 */
+		bool IsReserved() const noexcept;
+
+		/**
 		 * 中二階通路か設定します
 		 */
 		void Catwalk(const bool enable) noexcept;
@@ -414,7 +424,6 @@ namespace dungeon
 		bool CanBuildWall_SlopeVsAisle(const Grid& toGrid, const Direction::Index direction) const noexcept;
 		bool CanBuildWall_SlopeVsSlope(const Grid& toGrid, const Direction::Index direction) const noexcept;
 
-	private:
 		// 生成属性
 		enum class Attribute : uint8_t
 		{
@@ -425,10 +434,11 @@ namespace dungeon
 			NoFloorMeshGeneration,
 			NoRoofMeshGeneration,
 			MergeAisle,
+			Reserved,
 			Catwalk,
 			SubLevel,
 		};
-		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::MergeAisle) + 1;
+		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::SubLevel) + 1;
 
 		// Directionクラスの方向数
 		static constexpr size_t DirectionSize = 4;
@@ -439,7 +449,6 @@ namespace dungeon
 		public:
 			using ValueType = uint32_t;
 
-		public:
 			Pack();
 			~Pack() = default;
 
@@ -519,7 +528,6 @@ namespace dungeon
 				mBitSet |= shiftValue;
 			}
 
-		private:
 			ValueType mBitSet = 0;
 		};
 		Pack mPack;

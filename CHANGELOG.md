@@ -1,8 +1,20 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (51)
+## Unreleased-1.6.* (52)
 ### Changes
 ### 変更点
+
+## 20250607-1.6.22 (51)
+### Changes
+* Unreal Engine 5.6 support
+* Moved DungeonRoomSensor's Initialize timing to after interior creation
+* Changed the drawing method of RandomTransform in DungeonRoomSensor
+* Fixed some bugs
+### 変更点
+* Unreal Engine 5.6対応
+* DungeonRoomSensorのInitializeタイミングを内装生成後に移動
+* DungeonRoomSensorのRandomTransformの抽選方法を変更
+* いくつかの不具合を修正
 
 ## 20250603-1.6.21 (50)
 ### Changes

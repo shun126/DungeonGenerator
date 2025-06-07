@@ -43,6 +43,9 @@ namespace dungeon
 						// 識別子が違うなら不許可
 						if (grid.GetIdentifier() != identifier)
 							return false;
+						// 予約済みなら不許可
+						if (grid.IsReserved())
+							return false;
 						// 中二階なら不許可
 						if (grid.IsCatwalk())
 							return false;
@@ -367,6 +370,7 @@ namespace dungeon
 
 			const int32 oz = mLocation.Z + offset.mZ;
 			auto grid = voxel->Get(ox, oy, oz);
+			grid.Reserve(true);
 			if (offset.bShouldWriteGrid)
 			{
 				grid.SetType(offset.mWriteGridType);
@@ -374,10 +378,6 @@ namespace dungeon
 				grid.SetCatwalkDirection(catwalkDirection);
 				if (offset.mZ > 0)
 					grid.Catwalk(true);
-			}
-			else
-			{
-				grid.Catwalk(true);
 			}
 			voxel->Set(ox, oy, oz, grid);
 		}

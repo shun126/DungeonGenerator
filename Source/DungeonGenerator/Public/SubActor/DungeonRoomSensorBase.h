@@ -318,6 +318,7 @@ private:
 		const int32 identifier,
 		const FVector& center,
 		const FVector& extents,
+		const float horizontalGridSize,
 		const EDungeonRoomParts parts,
 		const EDungeonRoomItem item,
 		const uint8 branchId,
@@ -511,7 +512,8 @@ protected:
 private:
 	CDungeonRandom mSynchronizedRandom;
 	CDungeonRandom mLocalRandom;
-	size_t mOverlapCount = 0;
+	float mHorizontalGridSize = 0.f;
+	uint16_t mOverlapCount = 0;
 
 	enum class State : uint8_t
 	{

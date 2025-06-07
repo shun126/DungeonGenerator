@@ -189,6 +189,7 @@ bool ADungeonRoomSensorBase::InvokePrepare(
 	const int32 identifier,
 	const FVector& center,
 	const FVector& extents,
+	const float horizontalGridSize,
 	const EDungeonRoomParts parts,
 	const EDungeonRoomItem item,
 	const uint8 branchId,
@@ -202,6 +203,7 @@ bool ADungeonRoomSensorBase::InvokePrepare(
 	Bounding->SetBoxExtent(extents + margin);
 	RoomSize = FBox::BuildAABB(Bounding->GetComponentLocation(), extents);
 
+	mHorizontalGridSize = horizontalGridSize;
 	Identifier = identifier;
 	Parts = parts;
 	Item = item;
@@ -328,7 +330,7 @@ void ADungeonRoomSensorBase::SpawnActorInRoomImpl(const FSoftObjectPath& spawnAc
 			const FSoftObjectPath path(spawnActorPath.ToString() + "_C");
 			const TSoftClassPtr<AActor> softClassPointer(path);
 			auto* actorClass = softClassPointer.LoadSynchronous();
-			SpawnActorFromClass(actorClass, transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn, nullptr, true);
+			SpawnActorFromClass(actorClass, transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding, nullptr, true);
 			break;
 		}
 	} while (force);
@@ -391,47 +393,18 @@ int32 ADungeonRoomSensorBase::IdealNumberOfActor(const float areaRequiredPerPers
 	return std::min(numberOfActor, maxNumberOfActor);
 }
 
-namespace
-{
-	/*
-	正規乱数
-	https://ja.wikipedia.org/wiki/%E3%83%9C%E3%83%83%E3%82%AF%E3%82%B9%EF%BC%9D%E3%83%9F%E3%83%A5%E3%83%A9%E3%83%BC%E6%B3%95
-	*/
-	inline void NormalRandom(float& x, float& y, const CDungeonRandom& random)
-	{
-		const auto A = random.GetNumber();
-		const auto B = random.GetNumber();
-		const auto X = std::sqrt(-2.f * std::log(A));
-		const auto Y = 2.f * 3.14159265359f * B;
-		x = X * std::cos(Y);
-		y = X * std::sin(Y);
-	}
-}
-
 bool ADungeonRoomSensorBase::RandomPoint(FVector& result, const float offsetHeight, const bool useLocalRandom) const
 {
-	float ratioX, ratioY;
-	if (useLocalRandom)
-		NormalRandom(ratioX, ratioY, const_cast<ADungeonRoomSensorBase*>(this)->mLocalRandom);
-	else
-		NormalRandom(ratioX, ratioY, const_cast<ADungeonRoomSensorBase*>(this)->mSynchronizedRandom);
-
-	static constexpr float maxRange = 0.9f;
-	ratioX = std::max(-maxRange, std::min(ratioX, maxRange));
-	ratioY = std::max(-maxRange, std::min(ratioY, maxRange));
-
+	auto& random = useLocalRandom ?
+		const_cast<ADungeonRoomSensorBase*>(this)->mLocalRandom :
+		const_cast<ADungeonRoomSensorBase*>(this)->mSynchronizedRandom;
 	const FVector& center = Bounding->Bounds.Origin;
 	const FVector& extent = Bounding->Bounds.BoxExtent;
-	const FVector startPosition(
-		center.X + extent.X * ratioX,
-		center.Y + extent.Y * ratioY,
-		center.Z
-	);
-	const FVector endPosition(
-		startPosition.X,
-		startPosition.Y,
-		center.Z - extent.Z * 2.
-	);
+	const auto halfHorizontalGridSize = mHorizontalGridSize * 0.5f;
+	const auto offsetX = random.GetNumber(-extent.X + halfHorizontalGridSize, extent.X - halfHorizontalGridSize);
+	const auto offsetY = random.GetNumber(-extent.Y + halfHorizontalGridSize, extent.Y - halfHorizontalGridSize);
+	const FVector startPosition(center.X + offsetX, center.Y + offsetY, center.Z);
+	const FVector endPosition(startPosition.X, startPosition.Y, center.Z - extent.Z * 2.);
 
 	// Find the nearest ground location
 	return FindFloorHeightPosition(result, startPosition, endPosition, offsetHeight);
@@ -477,7 +450,7 @@ bool ADungeonRoomSensorBase::FindFloorHeightPosition(FVector& result, const FVec
 		return false;
 
 	FHitResult hitResult(ForceInit);
-	FCollisionQueryParams params("ADungeonRoomSensorBase::FindFloorHeightPosition", true);
+	FCollisionQueryParams params("ADungeonRoomSensorBase::FindFloorHeightPosition");
 	constexpr ECollisionChannel traceChannel = ECollisionChannel::ECC_Pawn;
 	if (!world->LineTraceSingleByChannel(hitResult, startPosition, endPosition, traceChannel, params))
 		return false;
@@ -493,6 +466,7 @@ bool ADungeonRoomSensorBase::FindFloorHeightPosition(FVector& result, const FVec
 	//result = result.Location;
 	result = hitResult.ImpactPoint;
 	result.Z += offsetHeight;
+
 	return true;
 }
 
