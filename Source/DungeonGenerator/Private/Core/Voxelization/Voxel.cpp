@@ -28,6 +28,7 @@ namespace dungeon
 {
 	Voxel::Voxel(const GenerateParameter& parameter) noexcept
 		: mGrids(std::make_unique<Grid[]>(static_cast<size_t>(parameter.GetWidth())* parameter.GetDepth()* parameter.GetHeight()))
+		, mLongestStraightPath(EForceInit::ForceInitToZero)
 		, mWidth(parameter.GetWidth())
 		, mDepth(parameter.GetDepth())
 		, mHeight(parameter.GetHeight())
@@ -293,7 +294,19 @@ namespace dungeon
 		// パスをグリッドに書き込む
 		WriteAisleToGrid(pathResult, aisleParameter);
 
+		// 最も長い直線を計算します
+		const FIntVector2& longestStraightPath = pathResult->ComputeLongestStraightPath();
+		if (mLongestStraightPath.X < longestStraightPath.X)
+			mLongestStraightPath.X = longestStraightPath.X;
+		if (mLongestStraightPath.Y < longestStraightPath.Y)
+			mLongestStraightPath.Y = longestStraightPath.Y;
+
 		return true;
+	}
+
+	const FIntVector2& Voxel::GetLongestStraightPath() const noexcept
+	{
+		return mLongestStraightPath;
 	}
 
 	/**

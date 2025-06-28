@@ -13,8 +13,8 @@ class UInstancedStaticMeshComponent;
 class UStaticMesh;
 
 /**
-UInstancedStaticMeshComponentまたはUHierarchicalInstancedStaticMeshComponentのクラスターを管理します
-*/
+ * UInstancedStaticMeshComponentまたはUHierarchicalInstancedStaticMeshComponentのクラスターを管理します
+ */
 USTRUCT()
 struct FDungeonInstancedMeshCluster final
 {
@@ -65,11 +65,8 @@ public:
 
 protected:
 	/**
-	登録するInstancedStaticMeshComponentまたはHierarchicalInstancedStaticMeshComponent
-	*/
+	 * 登録するInstancedStaticMeshComponentまたはHierarchicalInstancedStaticMeshComponent
+	 */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UInstancedStaticMeshComponent>> mComponents;
-
-private:
-	static size_t mComponentCount;
 };

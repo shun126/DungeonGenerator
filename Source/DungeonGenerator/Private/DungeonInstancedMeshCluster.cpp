@@ -8,11 +8,6 @@ All Rights Reserved.
 #include "DungeonGenerateBase.h"
 #include <Components/HierarchicalInstancedStaticMeshComponent.h>
 
-/**
- * 登録したコンポーネントの数
- */
-size_t FDungeonInstancedMeshCluster::mComponentCount = 0;
-
 UInstancedStaticMeshComponent* FDungeonInstancedMeshCluster::FindOrCreateInstance(AActor* actor, UStaticMesh* staticMesh)
 {
 	for (auto& component : mComponents)
@@ -25,9 +20,7 @@ UInstancedStaticMeshComponent* FDungeonInstancedMeshCluster::FindOrCreateInstanc
 	}
 
     // UInstancedStaticMeshComponentを生成
-	++mComponentCount;
-	const FName componentName(TEXT("InstancedStaticMesh") + FString::FromInt(mComponentCount));
-	auto* component = NewObject<UInstancedStaticMeshComponent>(actor, componentName);
+	auto* component = NewObject<UInstancedStaticMeshComponent>(actor);
 	actor->AddInstanceComponent(component);
 	component->RegisterComponent();
 	component->SetStaticMesh(staticMesh);
@@ -47,9 +40,7 @@ UHierarchicalInstancedStaticMeshComponent* FDungeonInstancedMeshCluster::FindOrC
 	}
 
     // UHierarchicalInstancedStaticMeshComponentを生成
-	++mComponentCount;
-	const FName componentName(TEXT("InstancedStaticMesh") + FString::FromInt(mComponentCount));
-	auto* component = NewObject<UHierarchicalInstancedStaticMeshComponent>(actor, componentName);
+	auto* component = NewObject<UHierarchicalInstancedStaticMeshComponent>(actor);
 	actor->AddInstanceComponent(component);
 	component->RegisterComponent();
 	component->SetStaticMesh(staticMesh);

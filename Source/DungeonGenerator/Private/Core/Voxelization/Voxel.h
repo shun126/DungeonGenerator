@@ -10,11 +10,10 @@ All Rights Reserved.
 #include "Grid.h"
 #include "../Helper/Identifier.h"
 #include "../PathGeneration/PathGoalCondition.h"
+#include "../PathGeneration/PathFinder.h"
 #include <atomic>
 #include <memory>
 #include <vector>
-
-#include "Core/PathGeneration/PathFinder.h"
 
 namespace dungeon
 {
@@ -211,6 +210,11 @@ namespace dungeon
 		*/
 		bool Aisle(const std::vector<CandidateLocation>& startToGoal, const std::vector<CandidateLocation>& goalToStart, const AisleParameter& aisleParameter) noexcept;
 
+		/**
+		 * 最も長い直線の長さを取得します
+		 */
+		const FIntVector2& GetLongestStraightPath() const noexcept;
+
 	private:
 		struct Route final
 		{
@@ -341,6 +345,7 @@ namespace dungeon
 
 	private:
 		std::unique_ptr<Grid[]> mGrids;
+		FIntVector2 mLongestStraightPath;
 		uint32_t mWidth;
 		uint32_t mDepth;
 		uint32_t mHeight;

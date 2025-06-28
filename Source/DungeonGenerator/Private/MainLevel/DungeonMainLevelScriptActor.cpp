@@ -47,7 +47,8 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 	Super::PreInitializeComponents();
 
 	mBounding.Init();
-	mActiveExtents.Set(ActiveExtentHorizontalSize, ActiveExtentHorizontalSize, ActiveExtentVerticalSize);
+	mActiveExtents.Set(PartitionHorizontalMinSize, PartitionHorizontalMinSize, PartitionVerticalMinSize);
+	FVector maxDungeonRoomMaxSize(PartitionHorizontalMinSize, PartitionHorizontalMinSize, PartitionVerticalMinSize);
 	TArray<ADungeonGenerateActor*> dungeonGenerateActors;
 	float maxGridSize = 100.f;
 	if (ULevel* level = GetValid(GetLevel()))
@@ -60,31 +61,46 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 				continue;
 			dungeonGenerateActors.Add(dungeonGenerateActor);
 
-			const FBox& dungeonBoundingBox = dungeonGenerateActor->CalculateBoundingBox();
-			mBounding += dungeonBoundingBox;
+			// 世界全体の大きさを求める
+			mBounding += dungeonGenerateActor->CalculateBoundingBox();
 
+			// 最も長い通路の長さを求める
+			const auto& dungeonLongestStraightPath = dungeonGenerateActor->GetLongestStraightPath();
+
+			// 最も大きい部屋の大きさを求める
 			const FVector& dungeonRoomMaxSize = dungeonGenerateActor->GetRoomMaxSize();
-			if (mActiveExtents.X < dungeonRoomMaxSize.X)
-				mActiveExtents.X = dungeonRoomMaxSize.X;
-			if (mActiveExtents.Y < dungeonRoomMaxSize.Y)
-				mActiveExtents.Y = dungeonRoomMaxSize.Y;
+			if (maxDungeonRoomMaxSize.X < dungeonRoomMaxSize.X)
+				maxDungeonRoomMaxSize.X = dungeonRoomMaxSize.X;
+			if (maxDungeonRoomMaxSize.Y < dungeonRoomMaxSize.Y)
+				maxDungeonRoomMaxSize.Y = dungeonRoomMaxSize.Y;
+			if (maxDungeonRoomMaxSize.Z < dungeonRoomMaxSize.Z)
+				maxDungeonRoomMaxSize.Z = dungeonRoomMaxSize.Z;
+
+			// 最も大きい部屋と最も長い通路が接続した時の長さを求める
+			if (mActiveExtents.X < dungeonRoomMaxSize.X + dungeonLongestStraightPath.X)
+				mActiveExtents.X = dungeonRoomMaxSize.X + dungeonLongestStraightPath.X;
+			if (mActiveExtents.Y < dungeonRoomMaxSize.Y + dungeonLongestStraightPath.Y)
+				mActiveExtents.Y = dungeonRoomMaxSize.Y + dungeonLongestStraightPath.Y;
 			if (mActiveExtents.Z < dungeonRoomMaxSize.Z)
 				mActiveExtents.Z = dungeonRoomMaxSize.Z;
 
+			// 最も大きいグリッドの大きさを求める
 			const float gridSize = dungeonGenerateActor->GetGridSize();
 			if (maxGridSize < gridSize)
 				maxGridSize = gridSize;
 		}
-		if (dungeonGenerateActors.Num() > 0)
-		{
-			// アクティブ範囲とパーティエーションのサイズを求める
-			mPartitionSize = mActiveExtents.X;
-			if (mPartitionSize < mActiveExtents.Y)
-				mPartitionSize = mActiveExtents.Y;
-			if (mPartitionSize < mActiveExtents.Z)
-				mPartitionSize = mActiveExtents.Z;
-			mPartitionSize = std::ceil(mPartitionSize);
-		}
+
+		// パーティエーションの大きさを求める
+		maxDungeonRoomMaxSize *= 0.5;
+		maxDungeonRoomMaxSize.X = std::min(std::max(maxDungeonRoomMaxSize.X, PartitionHorizontalMinSize), PartitionHorizontalMaxSize);
+		maxDungeonRoomMaxSize.Y = std::min(std::max(maxDungeonRoomMaxSize.Y, PartitionHorizontalMinSize), PartitionHorizontalMaxSize);
+		maxDungeonRoomMaxSize.Z = std::min(std::max(maxDungeonRoomMaxSize.Z, PartitionVerticalMinSize), PartitionVerticalMaxSize);
+		mPartitionSize = maxDungeonRoomMaxSize.X;
+		if (mPartitionSize < maxDungeonRoomMaxSize.Y)
+			mPartitionSize = maxDungeonRoomMaxSize.Y;
+		if (mPartitionSize < maxDungeonRoomMaxSize.Z)
+			mPartitionSize = maxDungeonRoomMaxSize.Z;
+		mPartitionSize = std::ceil(mPartitionSize);
 	}
 
 	// パーティエーションを初期化
@@ -106,13 +122,14 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 		DungeonPartitions.Reserve(mPartitionWidth * mPartitionDepth);
 		for (size_t i = 0; i < mPartitionWidth * mPartitionDepth; ++i)
 		{
-			DungeonPartitions.Add(NewObject<UDungeonPartition>());
+			DungeonPartitions.Add(NewObject<UDungeonPartition>(this));
 		}
 
 		// カリング距離を求めてDungeonGenerateActorに設定する
+		const auto cullingDistance = mActiveExtents.Length();
 		const FInt32Interval cullingDistanceRange(
-			mBoundingSize * 0.8,
-			mBoundingSize * 0.9
+			cullingDistance * 0.9,
+			cullingDistance
 		);
 		for (ADungeonGenerateActor* dungeonGenerateActor : dungeonGenerateActors)
 		{
