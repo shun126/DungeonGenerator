@@ -131,11 +131,6 @@ void ADungeonGenerateActor::BeginInstanceTransaction()
 	}
 }
 
-void ADungeonGenerateActor::AddInstance(UStaticMesh* staticMesh, const FTransform& transform)
-{
-	AddInstance(staticMesh, transform, DungeonMeshGenerationMethod);
-}
-
 void ADungeonGenerateActor::AddInstance(UStaticMesh* staticMesh, const FTransform& transform, const EDungeonMeshGenerationMethod meshGenerationMethod)
 {
 	check(
@@ -222,46 +217,48 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 	{
 		OnAddFloor([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform);
+				AddInstance(staticMesh, transform, DungeonMeshGenerationMethod);
 			}
 		);
 		OnAddSlope([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform);
+				AddInstance(staticMesh, transform, DungeonMeshGenerationMethod);
 			}
 		);
 		OnAddCatwalk([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform);
+				AddInstance(staticMesh, transform, DungeonMeshGenerationMethod);
 			}
 		);
 	}
 
 	// インスタンスメッシュを登録
+	if (DungeonWallRoofPillarMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
 	{
 		OnAddWall([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform, EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh);
+				AddInstance(staticMesh, transform, DungeonWallRoofPillarMeshGenerationMethod);
 			}
 		);
 		OnAddRoof([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform, EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh);
+				AddInstance(staticMesh, transform, DungeonWallRoofPillarMeshGenerationMethod);
 			}
 		);
 		OnAddPillar([this](UStaticMesh* staticMesh, const FTransform& transform)
 			{
-				AddInstance(staticMesh, transform, EDungeonMeshGenerationMethod::HierarchicalInstancedStaticMesh);
+				AddInstance(staticMesh, transform, DungeonWallRoofPillarMeshGenerationMethod);
 			}
 		);
 	}
 
 	BeginInstanceTransaction();
 
-	if (Generate(DungeonGenerateParameter, HasAuthority()) == false)
+	if (BeginDungeonGeneration(DungeonGenerateParameter, HasAuthority()) == false)
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Failed to generate dungeon. Seed(%d)"), DungeonGenerateParameter->GetRandomSeed());
 
+		EndDungeonGeneration();
 		Dispose(false);
 		return;
 	}
@@ -311,6 +308,8 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 		);
 	}
 #endif
+
+	EndDungeonGeneration();
 }
 
 void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)

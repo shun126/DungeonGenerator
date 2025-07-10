@@ -15,6 +15,20 @@ ADungeonGeneratedActor::ADungeonGeneratedActor(const FObjectInitializer& initial
 {
 }
 
+bool ADungeonGeneratedActor::Generate(const UDungeonGenerateParameter* parameter)
+{
+	const bool generated = BeginDungeonGeneration(parameter, true);
+	if (generated)
+	{
+		TArray<APlayerStart*> startPoints;
+		CollectPlayerStartExceptPlayerStartPIE(startPoints);
+		MovePlayerStart(startPoints);
+	}
+	EndDungeonGeneration();
+
+	return generated;
+}
+
 ADungeonGeneratedActor* ADungeonGeneratedActor::SpawnDungeonActor(UWorld* world, const FVector& location)
 {
 	if (IsValid(world) == false)
@@ -32,9 +46,3 @@ ADungeonGeneratedActor* ADungeonGeneratedActor::SpawnDungeonActor(UWorld* world,
 	);
 	return Cast<ADungeonGeneratedActor>(actor);
 }
-
-void ADungeonGeneratedActor::DestroySpawnedActors(UWorld* world)
-{
-	Super::DestroySpawnedActors(world);	
-}
-

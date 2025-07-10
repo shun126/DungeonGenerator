@@ -53,10 +53,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGenerateBaseOnBeginGenerateSignature)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDungeonGenerateBaseOnEndGenerateSignature, UDungeonRandom*, synchronizedRandom, const UDungeonAisleGridMap*, aisleGridMap);
 
 /**
-ランタイム、エディタ共通のダンジョン生成機能をまとめています。
-仮想クラスなのでスポーンや配置をする事ができません。
-インスタンスを生成する場合は派生クラスを利用して下さい。
-*/
+ * This is a collection of dungeon generation functions common to both runtime and editor.
+ * Cannot be spawned or placed because it is a virtual class.
+ * Please use derived classes to generate instances.
+ * 
+ * ランタイム、エディタ共通のダンジョン生成機能をまとめています。
+ * 仮想クラスなのでスポーンや配置をする事ができません。
+ * インスタンスを生成する場合は派生クラスを利用して下さい。
+ */
 UCLASS(Abstract, ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API ADungeonGenerateBase : public AActor
 {
@@ -64,37 +68,50 @@ class DUNGEONGENERATOR_API ADungeonGenerateBase : public AActor
 
 public:
 	/**
-	Get tag name
-	*/
+	 * Get tag name
+	 * タグ名を取得します
+	 */
 	static const FName& GetDungeonGeneratorTag();
 
 	/**
-	Get tag name
-	*/
+	 * Get tag names of actors and components for terrain
+	 * 地形用アクターとコンポーネントのタグ名を取得します
+	 */
 	static const FName& GetDungeonGeneratorTerrainTag();
 
-public:
 	/**
-	constructor
-	コンストラクタ
-	*/
+	 * constructor
+	 * コンストラクタ
+	 */
 	explicit ADungeonGenerateBase(const FObjectInitializer& initializer);
 
 	/**
-	destructor
-	デストラクタ
-	*/
+	 * destructor
+	 * デストラクタ
+	 */
 	virtual ~ADungeonGenerateBase() override = default;
 
-public:
+protected:
 	/**
-	Generate dungeon
-	@param[in]	parameter		UDungeonGenerateParameter
-	@param[in]	hasAuthority	HasAuthority
-	@return		If false, generation fails
-	*/
-	bool Generate(const UDungeonGenerateParameter* parameter, const bool hasAuthority);
+	 * Begin Generate dungeon
+	 * After generation is complete, be sure to call EndDungeonGeneration.
+	 * 
+	 * ダンジョン生成開始
+	 * 生成完了後、必ずEndDungeonGenerationを呼び出してください。
+	 * 
+	 * @param[in]	parameter		UDungeonGenerateParameter
+	 * @param[in]	hasAuthority	HasAuthority
+	 * @return		If false, generation fails
+	 */
+	bool BeginDungeonGeneration(const UDungeonGenerateParameter* parameter, const bool hasAuthority);
 
+	/**
+	 * End Generate dungeon
+	 * ダンジョン生成を終了
+	 */
+	void EndDungeonGeneration();
+
+public:
 	/**
 	 * ダンジョンを生成済みか取得します
 	 * @return trueなら生成済み
@@ -102,14 +119,13 @@ public:
 	bool IsGenerated() const noexcept;
 
 	/**
-	Dispose dungeon
-	*/
+	 * Dispose dungeon
+	 */
 	virtual void Dispose(const bool flushStreamLevels);
 
-public:
 	/**
-	Get start position
-	*/
+	 * Get start position
+	 */
 	FVector GetStartLocation() const;
 
 	/**
@@ -118,14 +134,20 @@ public:
 	FBox GetStartBoundingBox() const;
 
 	/**
-	Get goal position
-	*/
+	 * Get goal position
+	 */
 	FVector GetGoalLocation() const;
 
 	/**
-	Get a bounding box covering the entire generated dungeon
-	*/
+	 * Get a bounding box covering the entire generated dungeon
+	 */
 	FBox CalculateBoundingBox() const;
+
+	/**
+	 * Get the length of the longest straight line
+	 * 最も長い直線の長さを取得します
+	 */
+	FVector2D GetLongestStraightPath() const noexcept;
 
 	////////////////////////////////////////////////////////////////////////////
 	// 乱数
@@ -190,21 +212,21 @@ protected:
 	FDungeonGeneratorActorNotifyGenerationFailureSignature OnGenerationFailure;
 
 	////////////////////////////////////////////////////////////////////////////
-	/*
+	/**
 	 * This event is called at the start of the Create function
 	 * Create関数開始時に呼び出されるイベントです
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
 	void BeginGeneration();
 
-	/*
+	/**
 	 * This event is called at the start of the Create function
 	 * Create関数開始時に呼び出されるイベントです
 	 */
 	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
 	FDungeonGenerateBaseOnBeginGenerateSignature OnBeginGeneration;
 
-	/*
+	/**
 	 * Event to query the creation of an aisle.
 	 * If true is returned, the roof and aisle meshes are not generated.
 	 * 通路の生成を問い合わせイベント
@@ -213,14 +235,14 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
 	bool OnQueryAisleGeneration(const FVector& center, const int32 identifier, const EDungeonDirection direction);
 
-	/*
+	/**
 	 * Event called at the end of the Create function
 	 * Create関数終了時に呼び出されるイベントです
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
 	void EndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap);
 
-	/*
+	/**
 	 * Event called at the end of the Create function
 	 * Create関数終了時に呼び出されるイベントです
 	 */

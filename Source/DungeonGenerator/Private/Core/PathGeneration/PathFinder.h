@@ -347,6 +347,11 @@ namespace dungeon
 			 */
 			void InvalidateGoalLocationType() noexcept;
 
+			/**
+			 * 最も長い直線を計算します
+			 */
+			FIntVector2 ComputeLongestStraightPath() const noexcept;
+
 		private:
 			std::vector<BaseNode> mRoute;
 

@@ -281,16 +281,12 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 		return FReply::Unhandled();
 	}
 
-	if (!dungeonActor->Generate(dungeonGenerateParameter, true))
+	if (!dungeonActor->Generate(dungeonGenerateParameter))
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to generate dungeon"));
 		OnClickedClearButton();
 		return FReply::Unhandled();
 	}
-
-	TArray<APlayerStart*> startPoints;
-	dungeonActor->CollectPlayerStartExceptPlayerStartPIE(startPoints);
-	dungeonActor->MovePlayerStart(startPoints);
 
 	// ダンジョンアクターを記録
 	mDungeonActor = dungeonActor;
@@ -313,10 +309,6 @@ FReply FDungeonGenerateEditorModule::OnClickedClearButton()
 
 void FDungeonGenerateEditorModule::DisposeDungeon(UWorld* world, const bool flushLevelStreaming)
 {
-
-	// Delete all generated actors
-	ADungeonGeneratedActor::DestroySpawnedActors(world);
-	mDungeonActor.Reset();
 
 	// Delete all generated actors
 	ADungeonGeneratedActor::DestroySpawnedActors(world);

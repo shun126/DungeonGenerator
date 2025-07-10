@@ -1,8 +1,24 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## Unreleased-1.6.* (52)
+## 20250622-1.6.24 (53)
 ### Changes
+* Fixed a hang issue with editor generation
+* Fixed several bugs
 ### 変更点
+* エディタ生成でハングアップする問題を修正
+* いくつかの不具合を修正
+
+## 20250619-1.6.23 (52)
+### Changes
+* Modified to switch between wall, ceiling, and column component types
+* Revised culling distances
+* Cleaned up assets by adding comments and removing incorrect nodes in BPs
+* Fixed several bugs
+### 変更点
+* 壁、天井、柱のコンポーネントの種類を切り替えられるように変更
+* カリング距離を見直し
+* BP内のコメント追加や不正ノードの除去などアセットを整理
+* いくつかの不具合を修正
 
 ## 20250607-1.6.22 (51)
 ### Changes

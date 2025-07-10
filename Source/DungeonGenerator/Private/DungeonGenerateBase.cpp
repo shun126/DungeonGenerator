@@ -215,7 +215,7 @@ UDungeonComponentActivatorComponent* ADungeonGenerateBase::FindOrAddComponentAct
 		component = actor->FindComponentByClass<UDungeonComponentActivatorComponent>();
 		if (component == nullptr)
 		{
-			component = NewObject<UDungeonComponentActivatorComponent>(actor, TEXT("ComponentActivator"));
+			component = NewObject<UDungeonComponentActivatorComponent>(actor);
 			actor->AddInstanceComponent(component);
 			component->RegisterComponent();
 		}
@@ -381,7 +381,7 @@ void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
 例えばリプリケートするアクターはサーバー側でのみ実行されるため乱数の同期ずれが発生します。
 */
-bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
+bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
 {
 	check(mGenerated == false);
 
@@ -508,7 +508,7 @@ bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, 
 #endif
 
 	// 通路グリッド記録クラスを生成
-	mAisleGridMap = NewObject<UDungeonAisleGridMap>();
+	mAisleGridMap = NewObject<UDungeonAisleGridMap>(this);
 
 	// 生成終了イベントの登録
 	dungeon::Finalizer finalizer([this]()
@@ -518,7 +518,7 @@ bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, 
 #endif
 
 			// Blueprintから使用できる乱数を生成します
-			UDungeonRandom* random = NewObject<UDungeonRandom>();
+			UDungeonRandom* random = NewObject<UDungeonRandom>(this);
 			random->SetOwner(GetSynchronizedRandom());
 			EndGeneration(random, mAisleGridMap);
 			OnEndGeneration.Broadcast(random, mAisleGridMap);
@@ -592,7 +592,6 @@ bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, 
 		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
 	}
 
-
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 	// 通信同期用に現在の乱数の種を出力する
 	if (mGenerator)
@@ -611,6 +610,10 @@ bool ADungeonGenerateBase::Generate(const UDungeonGenerateParameter* parameter, 
 
 	mGenerated = true;
 	return true;
+}
+
+void ADungeonGenerateBase::EndDungeonGeneration()
+{
 }
 
 void ADungeonGenerateBase::BeginGeneration_Implementation()
@@ -1384,7 +1387,7 @@ void ADungeonGenerateBase::FitNavMeshBoundsVolume()
 
 #if WITH_EDITOR
 			// ブラシビルダーを生成 (UnrealEd)
-			if (UCubeBuilder* cubeBuilder = NewObject<UCubeBuilder>())
+			if (UCubeBuilder* cubeBuilder = NewObject<UCubeBuilder>(this))
 			{
 				cubeBuilder->X = boundingExtent.X * 2.0;
 				cubeBuilder->Y = boundingExtent.Y * 2.0;
@@ -1586,8 +1589,7 @@ AStaticMeshActor* ADungeonGenerateBase::SpawnStaticMeshActor(UStaticMesh* static
 	if (IsValid(actor) == false)
 		return nullptr;
 
-	UStaticMeshComponent* staticMeshComponent = actor->GetStaticMeshComponent();
-	if (IsValid(staticMeshComponent) == true)
+	if (auto* staticMeshComponent = GetValid(actor->GetStaticMeshComponent()))
 	{
 		if (const UWorld* world = actor->GetWorld())
 		{
@@ -1768,6 +1770,22 @@ FBox ADungeonGenerateBase::CalculateBoundingBox() const
 	}
 
 	return FBox(EForceInit::ForceInitToZero);
+}
+
+FVector2D ADungeonGenerateBase::GetLongestStraightPath() const noexcept
+{
+	if (mGenerator && IsValid(mParameter))
+	{
+		if (std::shared_ptr<dungeon::Voxel> voxel = mGenerator->GetVoxel())
+		{
+			const auto& longestStraightPath = voxel->GetLongestStraightPath();
+			return FVector2D(
+				longestStraightPath.X * mParameter->GetGridSize().VerticalSize,
+				longestStraightPath.Y * mParameter->GetGridSize().VerticalSize
+			);
+		}
+	}
+	return FVector2D(ForceInitToZero);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

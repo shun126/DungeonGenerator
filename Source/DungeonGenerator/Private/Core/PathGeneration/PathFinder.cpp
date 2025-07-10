@@ -286,4 +286,52 @@ namespace dungeon
 		check(static_cast<uint8_t>(SearchDirection::West) == static_cast<uint8_t>(Direction::West));
 		return static_cast<SearchDirection>(direction.Get());
 	}
+
+	FIntVector2 PathFinder::Result::ComputeLongestStraightPath() const noexcept
+	{
+		FIntVector2 longestStraight = { 0, 0 };
+		if (!mRoute.empty())
+		{
+			auto current = mRoute.rbegin();
+			auto lastIsNorthSouth = current->mDirection.IsNorthSouth();
+			++current;
+
+			int32 straight = 1;
+			while (current != mRoute.rend())
+			{
+				const auto isNorthSouth = current->mDirection.IsNorthSouth();
+				if (lastIsNorthSouth == isNorthSouth)
+				{
+					++straight;
+				}
+				else
+				{
+					if (isNorthSouth)
+					{
+						if (longestStraight.Y < straight)
+							longestStraight.Y = straight;
+					}
+					else
+					{
+						if (longestStraight.X < straight)
+							longestStraight.X = straight;
+					}
+					straight = 1;
+					lastIsNorthSouth = isNorthSouth;
+				}
+				++current;
+			}
+			if (lastIsNorthSouth)
+			{
+				if (longestStraight.Y < straight)
+					longestStraight.Y = straight;
+			}
+			else
+			{
+				if (longestStraight.X < straight)
+					longestStraight.X = straight;
+			}
+		}
+		return longestStraight;
+	}
 }

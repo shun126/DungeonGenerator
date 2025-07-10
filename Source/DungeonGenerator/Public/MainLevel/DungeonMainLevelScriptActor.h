@@ -33,16 +33,28 @@ class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptAct
 	GENERATED_BODY()
 
 	/**
-	Distance from horizontal player to activate partition
-	パーティションをアクティブにする水平方向のプレイヤーからの距離
-	*/
-	static constexpr double ActiveExtentHorizontalSize = 20.0 * 100.0;
+	 * Minimum distance from horizontal player to activate partition
+	 * パーティションをアクティブにする水平方向のプレイヤーからの最小距離
+	 */
+	static constexpr double PartitionHorizontalMinSize = 20.0 * 100.0;
 
 	/**
-	Distance from vertical player to activate partition
-	パーティションをアクティブにする垂直方向のプレイヤーからの距離
-	*/
-	static constexpr double ActiveExtentVerticalSize = 10.0 * 100.0;
+	 * Maximum distance from horizontal player to activate partition
+	 * パーティションをアクティブにする水平方向のプレイヤーからの最大距離
+	 */
+	static constexpr double PartitionHorizontalMaxSize = 100.0 * 100.0;
+
+	/**
+	 * Distance from vertical player to activate partition
+	 * パーティションをアクティブにする垂直方向のプレイヤーからの最小距離
+	 */
+	static constexpr double PartitionVerticalMinSize = 10.0 * 100.0;
+
+	/**
+	 * Maximum distance from vertical player to activate partition
+	 * パーティションをアクティブにする垂直方向のプレイヤーからの最大距離
+	 */
+	static constexpr double PartitionVerticalMaxSize = 100.0 * 100.0;
 
 public:
 	explicit ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer);
@@ -147,10 +159,10 @@ protected:
 
 private:
 	FBox mBounding;
-	double mBoundingSize = ActiveExtentHorizontalSize;
+	double mBoundingSize = PartitionHorizontalMinSize;
 	size_t mPartitionWidth = 0;
 	size_t mPartitionDepth = 0;
-	double mPartitionSize = ActiveExtentHorizontalSize / 2;
+	double mPartitionSize = PartitionHorizontalMinSize / 2;
 	FVector mActiveExtents;
 	bool mLastEnableLoadControl;
 };
