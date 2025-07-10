@@ -16,10 +16,11 @@
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
 [![youtube](https://img.shields.io/youtube/views/1igd4pls5x8?style=social)](https://youtu.be/1igd4pls5x8)
 
-Please also take a look at the [Fab](https://fab.com/s/f5587c55bad0) version.
-
+Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/)
 * Trailer video: [YouTube](https://youtu.be/1igd4pls5x8)
 * Tutorial videos: [YouTube](https://www.youtube.com/playlist?list=PLlMDkSa8bQnK4PDIfkXYorQIucn47ifKO)
+
+Please also take a look at the [Fab](https://fab.com/s/f5587c55bad0) version.
 
 Revolutionize your dungeon creation process with our new Unreal Engine plugin! Enjoy freedom and customize your own rulesets to offer players unique and engaging dungeon exploration experiences. Say goodbye to the hassle of manual dungeon building and welcome the new age of dungeon exploration!
 
