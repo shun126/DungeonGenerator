@@ -1,11 +1,33 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## 20250622-1.6.24 (53)
+## 20250722-1.7.2 (55)
+### Changes
+* Fixed plug-in asset reference errors
+* Fixed several bugs
+### 変更点
+* プラグインアセットの参照エラーを修正
+* いくつかの不具合を修正
+
+## 20250718-1.7.1 (54)
+### Changes
+* Modified sensor properties of DungeonRoomSensor to be editable.
+* Fixed plug-in asset reference errors
+* Fixed several bugs
+### 変更点
+* DungeonRoomSensorのセンサーのプロパティを変更可能に修正
+* プラグインアセットの参照エラーを修正
+* いくつかの不具合を修正
+
+## 20250622-1.7.0 (53)
 ### Changes
 * Fixed a hang issue with editor generation
+* Fixed a problem that prevented saving when updating the sublevel database with the sublevel target level open.
+* Fixed an issue where the minimap could not be continuously saved to texture assets
 * Fixed several bugs
 ### 変更点
 * エディタ生成でハングアップする問題を修正
+* サブレベル対象レベルを開いた状態でサブレベルデータベースを更新すると保存ができなくなる問題を修正
+* ミニマップをテクスチャアセットに連続で保存できない問題を修正
 * いくつかの不具合を修正
 
 ## 20250619-1.6.23 (52)

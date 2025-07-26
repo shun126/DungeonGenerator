@@ -1141,6 +1141,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 	メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
 	*/
 	FIntVector checkLocation = cp.mGridLocation;
+	bool castTorchLightShadow = false;
 	for (const auto& wallChecker : WallCheckers)
 	{
 		const FIntVector& direction = dungeon::Direction::GetVector(wallChecker.mDirection);
@@ -1153,38 +1154,42 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 		{
 			++validGridCount;
 
-			bool generationPermit = true;
+			bool generationPermit = fromGrid.IsKindOfSpatialType() == false;
 			if (mParameter->GetFrequencyOfTorchlightGeneration() >= EFrequencyOfGeneration::Occasionally)
 			{
 				generationPermit = fromGrid.Is(dungeon::Grid::Type::Floor) == false;
 			}
-
-			static const auto Registerer = [](std::vector<TorchChecker>& torchCheckers, const uint16_t identifier, const FIntVector& normal)
-				{
-					auto i = std::find_if(torchCheckers.begin(), torchCheckers.end(), [identifier](const TorchChecker& torch)
-						{
-							return torch.mIdentifier == identifier;
-						}
-					);
-					if (i == torchCheckers.end())
-					{
-						torchCheckers.emplace_back(identifier, normal);
-					}
-					else
-					{
-						++i->mCount;
-						i->mNormal += normal;
-					}
-				};
-
-			// 燭台を生成できないグリッドを含んでいる？
-			if (
-				generationPermit &&
-				fromGrid.Is(dungeon::Grid::Type::DownSpace) == false &&
-				fromGrid.Is(dungeon::Grid::Type::Slope) == false &&
-				fromGrid.IsKindOfSpatialType() == false)
+			if (generationPermit)
 			{
-				Registerer(torchCheckers, fromGrid.GetIdentifier(), direction * -1);
+				static const auto Registerer = [](std::vector<TorchChecker>& torchCheckers, const uint16_t identifier, const FIntVector& normal)
+					{
+						auto i = std::find_if(torchCheckers.begin(), torchCheckers.end(), [identifier](const TorchChecker& torch)
+							{
+								return torch.mIdentifier == identifier;
+							}
+						);
+						if (i == torchCheckers.end())
+						{
+							torchCheckers.emplace_back(identifier, normal);
+						}
+						else
+						{
+							++i->mCount;
+							i->mNormal += normal;
+						}
+					};
+
+				// 燭台を生成できないグリッドを含んでいない？
+				if (
+					fromGrid.Is(dungeon::Grid::Type::DownSpace) == false &&
+					fromGrid.Is(dungeon::Grid::Type::Slope) == false)
+				{
+					Registerer(torchCheckers, fromGrid.GetIdentifier(), direction * -1);
+
+					// 二階部分のライトは影を落とさない
+					if (fromGrid.Is(dungeon::Grid::Type::Floor) == false)
+						castTorchLightShadow = true;
+				}
 			}
 		}
 	}
@@ -1261,8 +1266,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 							worldTransform,
 							dungeonRoomSensorBase,
 							ESpawnActorCollisionHandlingMethod::AlwaysSpawn,
-							// 二階以上のライトは影を落とさない
-							cp.mGrid.Is(dungeon::Grid::Type::Floor)
+							castTorchLightShadow
 						);
 					}
 				}
@@ -1647,13 +1651,13 @@ AActor* ADungeonGenerateBase::SpawnTorchActor(UClass* actorClass, const FTransfo
 		// 負荷制御コンポーネントを追加する
 		FindOrAddComponentActivatorComponent(actor);
 
+		// ポイントライトまたはスポットライトのCastShadowを制御する
 		if (castShadow == false)
 		{
-			// ポイントライトまたはスポットライトのCastShadowを制御する
 			for (UActorComponent* component : actor->GetComponents())
 			{
 				if (UPointLightComponent* pointLightComponent = Cast<UPointLightComponent>(component))
-					pointLightComponent->SetCastShadows(castShadow);
+					pointLightComponent->SetCastShadows(false);
 			}
 		}
 

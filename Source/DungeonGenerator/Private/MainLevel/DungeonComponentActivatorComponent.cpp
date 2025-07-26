@@ -171,8 +171,7 @@ void UDungeonComponentActivatorComponent::CallCastShadowActivate()
 
 void UDungeonComponentActivatorComponent::CallCastShadowInactivate()
 {
-	AActor* owner = GetOwner();
-	if (IsValid(owner))
+	if (const AActor* owner = GetValid(GetOwner()))
 	{
 		if (EnableLightShadowControl)
 			SaveAndDisableCastShadow(EDungeonComponentActivateReason::Partition, owner);
@@ -182,8 +181,7 @@ void UDungeonComponentActivatorComponent::CallCastShadowInactivate()
 // Actor
 void UDungeonComponentActivatorComponent::SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason)
 {
-	AActor* owner = GetOwner();
-	if (IsValid(owner))
+	if (AActor* owner = GetValid(GetOwner()))
 		SaveAndDisableActorTickEnable(activateReason, owner);
 }
 
