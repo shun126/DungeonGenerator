@@ -40,6 +40,16 @@ class DUNGEONGENERATOR_API UDungeonPartition : public UObject
 	};
 
 public:
+#if WITH_EDITORONLY_DATA
+	enum class ActiveStateType : uint8
+	{
+		Inactivate,
+		Bounding,
+		ViewFrustum,
+		Segment,
+	};
+#endif
+
 	explicit UDungeonPartition(const FObjectInitializer& objectInitializer);
 	virtual ~UDungeonPartition() override = default;
 
@@ -53,6 +63,11 @@ private:
 	void Mark(const ActiveState activeState) noexcept;
 	void Unmark() noexcept;
 	ActiveState IsMarked() const noexcept;
+
+#if WITH_EDITOR
+	ActiveStateType GetActiveStateType() const;
+	void SetActiveStateType(const ActiveStateType activeStateType);
+#endif
 
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
@@ -71,6 +86,10 @@ private:
 	bool mPartitionActivate = true;
 	bool mCallCastShadowActivate = true;
 	ActiveState mMarked = ActiveState::Inactivate;
+
+#if WITH_EDITORONLY_DATA
+	ActiveStateType mActiveStateType = ActiveStateType::Inactivate;
+#endif
 
 	friend class ADungeonMainLevelScriptActor;
 	friend class UDungeonComponentActivatorComponent;
@@ -110,3 +129,15 @@ inline UDungeonPartition::ActiveState UDungeonPartition::IsMarked() const noexce
 {
 	return mMarked;
 }
+
+#if WITH_EDITOR
+inline UDungeonPartition::ActiveStateType UDungeonPartition::GetActiveStateType() const
+{
+	return mActiveStateType;
+}
+
+inline void UDungeonPartition::SetActiveStateType(const ActiveStateType activeStateType)
+{
+	mActiveStateType = activeStateType;
+}
+#endif

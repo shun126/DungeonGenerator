@@ -193,7 +193,7 @@ protected:
 	 * Types of floors, ramps, and mezzanine meshes used for dungeon generation
 	 * ダンジョン生成に使用する床、スロープ、中二階のメッシュの種類
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", DisplayName = "DungeonFloorSlopeMeshGenerationMethod")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", DisplayName = "Dungeon Floor Slope Mesh Generation Method")
 	EDungeonMeshGenerationMethod DungeonMeshGenerationMethod = EDungeonMeshGenerationMethod::StaticMesh;
 
 	/**

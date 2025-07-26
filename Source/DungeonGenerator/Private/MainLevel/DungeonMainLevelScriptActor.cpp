@@ -24,15 +24,6 @@ All Rights Reserved.
 #include <array>
 #endif
 
-/**
- * Ratio from the overall size to find the visible distance
- * 0.5 means you can see half the distance of the world
- * 
- * 見える距離を求める為の全体のサイズからの比率
- * 0.5なら世界の半分の距離が見える事になる
- */
-static constexpr double VisibleDistanceRatio = 0.5;
-
 ADungeonMainLevelScriptActor::ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer)
 	: Super(objectInitializer)
 	, mActiveExtents(0)
@@ -185,6 +176,7 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 	{
 		if (const UWorld* world = GetValid(GetWorld()))
 		{
+			const auto activeHalfExtents = mActiveExtents / 2;
 			Begin();
 			for (FConstPlayerControllerIterator iterator = world->GetPlayerControllerIterator(); iterator; ++iterator)
 			{
@@ -197,7 +189,7 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 				{
 					// プレイヤー周辺をマークする
 					const FVector& playerLocation = playerPawn->GetActorLocation();
-					Mark(FBox(playerLocation - mActiveExtents, playerLocation + mActiveExtents));
+					Mark(FBox(playerLocation - activeHalfExtents, playerLocation + activeHalfExtents));
 
 					// 視錐台に含まれているならマークする
 					if (const FSceneView* sceneView = GetSceneView(playerController))
@@ -271,24 +263,26 @@ void ADungeonMainLevelScriptActor::Begin()
 	{
 		check(IsValid(partition));
 		partition->Unmark();
+#if WITH_EDITOR
+		partition->SetActiveStateType(UDungeonPartition::ActiveStateType::Inactivate);
+#endif
 	}
 }
 
 void ADungeonMainLevelScriptActor::Mark(const FBox& activeBounds)
 {
+	// mBounding.Minを原点にした座標系に変換
 	const FVector start = (activeBounds.Min - mBounding.Min) / mPartitionSize;
 	const FVector end = (activeBounds.Max - mBounding.Min) / mPartitionSize;
-	const double sx = std::max(0.0, static_cast<double>(std::floor(start.X)));
-	const double sy = std::max(0.0, static_cast<double>(std::floor(start.Y)));
-	const double ex = std::max(0.0, static_cast<double>(std::ceil(end.X)));
-	const double ey = std::max(0.0, static_cast<double>(std::ceil(end.Y)));
-	const size_t iex = std::min(static_cast<size_t>(ex), mPartitionWidth);
-	const size_t iey = std::min(static_cast<size_t>(ey), mPartitionDepth);
-	const size_t cx = std::round((sx + ex) / 2);
-	const size_t cy = std::round((sx + ex) / 2);
-	for (size_t y = static_cast<size_t>(sy); y < iey; ++y)
+	const int32_t sx = std::max<int32_t>(0.0, start.X);
+	const int32_t sy = std::max<int32_t>(0.0, start.Y);
+	const int32_t ex = std::min<int32_t>(std::ceil(end.X), mPartitionWidth);
+	const int32_t ey = std::min<int32_t>(std::ceil(end.Y), mPartitionDepth);
+	const int32_t cx = start.X + (end.X - start.X) / 2;
+	const int32_t cy = start.Y + (end.Y - start.Y) / 2;
+	for (int32_t y = sy; y < ey; ++y)
 	{
-		for (size_t x = static_cast<size_t>(sx); x < iex; ++x)
+		for (int32_t x = sx; x < ex; ++x)
 		{
 			const size_t index = mPartitionWidth * y + x;
 			UDungeonPartition* partition = DungeonPartitions[index];
@@ -298,16 +292,18 @@ void ADungeonMainLevelScriptActor::Mark(const FBox& activeBounds)
 				UDungeonPartition::ActiveState::ActivateNear : 
 				UDungeonPartition::ActiveState::ActivateFar
 			);
+#if WITH_EDITOR
+			partition->SetActiveStateType(UDungeonPartition::ActiveStateType::Bounding);
+#endif
 		}
 	}
 }
 
 void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 {
+	const FVector partitionExtent(mPartitionSize);
 	const double halfPartitionSize = mPartitionSize * 0.5;
-	const FVector partitionExtent(halfPartitionSize);
-	const double visibleDistanceSquared = FMath::Square(mBoundingSize * VisibleDistanceRatio);
-	const double castShadowDistanceSquared = FMath::Square(mPartitionSize);
+	const double visibleDistanceSquared = mActiveExtents.SquaredLength();
 
 	size_t index = 0;
 	FVector origin;
@@ -321,41 +317,22 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 			const double distanceSquared = FVector::DistSquared(sceneView.ViewLocation, origin);
 			if (distanceSquared < visibleDistanceSquared)
 			{
-				if (sceneView.ViewFrustum.IntersectBox(origin, partitionExtent))
+				// UDungeonPartition::ActiveState::ActivateNearは計算をスキップ
+				if (DungeonPartitions[index]->IsMarked() < UDungeonPartition::ActiveState::ActivateNear)
 				{
-					DungeonPartitions[index]->Mark(
-						distanceSquared < castShadowDistanceSquared ?
-						UDungeonPartition::ActiveState::ActivateNear :
-						UDungeonPartition::ActiveState::ActivateFar
-					);
+					// 視点から遠すぎる場合は計算をスキップ
+					if (sceneView.ViewFrustum.IntersectBox(origin, partitionExtent))
+					{
+						DungeonPartitions[index]->Mark(
+							UDungeonPartition::ActiveState::ActivateNear
+						);
+#if WITH_EDITOR
+						DungeonPartitions[index]->SetActiveStateType(
+							UDungeonPartition::ActiveStateType::ViewFrustum
+						);
+#endif
+					}
 				}
-			}
-			++index;
-			origin.X += mPartitionSize;
-		}
-		origin.Y += mPartitionSize;
-	}
-}
-
-void ADungeonMainLevelScriptActor::Mark(const FRotator& viewRotator, const FVector& viewLocation)
-{
-	const FVector segmentEnd = viewLocation + viewRotator.Vector() * (mBoundingSize * VisibleDistanceRatio);
-
-	const double halfPartitionSize = mPartitionSize * 0.5;
-	const FVector partitionExtent(halfPartitionSize, halfPartitionSize, (mBounding.Max.Z - mBounding.Min.Z) * 0.5);
-
-	size_t index = 0;
-	FVector origin;
-	origin.Y = mBounding.Min.Y + halfPartitionSize;
-	origin.Z = mBounding.Min.Z + (mBounding.Max.Z - mBounding.Min.Z) * 0.5;
-	while (origin.Y < mBounding.Max.Y + halfPartitionSize)
-	{
-		origin.X = mBounding.Min.X + halfPartitionSize;
-		while (origin.X < mBounding.Max.X + halfPartitionSize)
-		{
-			if (TestSegmentAABB(viewLocation, segmentEnd, origin, partitionExtent))
-			{
-				DungeonPartitions[index]->Mark(UDungeonPartition::ActiveState::ActivateNear);
 			}
 			++index;
 			origin.X += mPartitionSize;
@@ -452,7 +429,8 @@ void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 	// パーティエーションの状態を線で描画します
 	const double h = (mBounding.Max.Z - mBounding.Min.Z) * 0.5;
 	const double z = mBounding.Min.Z;
-	const FVector halfSize(mPartitionSize * 0.5, mPartitionSize * 0.5, h);
+	constexpr double margin = 10;
+	const FVector halfSize(mPartitionSize * 0.5 - margin, mPartitionSize * 0.5 - margin, h - margin);
 	for (double y = mBounding.Min.Y; y < mBounding.Max.Y; y += mPartitionSize)
 	{
 		for (double x = mBounding.Min.X; x < mBounding.Max.X; x += mPartitionSize)
@@ -463,15 +441,21 @@ void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 					{
 						FColor::Blue,
 						FColor::Green,
-						FColor::Red
+						FColor::Red,
 					} };
-
+				auto color = colors.at(static_cast<uint8>(partition->IsMarked()));
+				if (partition->GetActiveStateType() == UDungeonPartition::ActiveStateType::ViewFrustum)
+				{
+					color.R -= color.R / 16;
+					color.G -= color.G / 16;
+					color.B -= color.B / 16;
+				}
 				const FVector location(x, y, z);
 				UKismetSystemLibrary::DrawDebugBox(
 					GetWorld(),
 					location + halfSize,
 					halfSize,
-					colors.at(static_cast<uint8>(partition->IsMarked())),
+					color,
 					FRotator::ZeroRotator,
 					0.f,
 					10.f
