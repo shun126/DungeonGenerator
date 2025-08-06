@@ -1,10 +1,22 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20250722-1.7.3 (56)
+### Changes
+* Added widget class to assist in creating mini-maps
+* Adjusted the effective range of point light and spot light shadows
+* Fixed several bugs
+### 変更点
+* ミニマップの作成を補助するウィジットクラスを追加
+* ポイントライト、スポットライトの影の有効範囲を調整
+* いくつかの不具合を修正
+
 ## 20250722-1.7.2 (55)
 ### Changes
+* Fixed an issue where point light and spot light shadows were not enabled
 * Fixed plug-in asset reference errors
 * Fixed several bugs
 ### 変更点
+* ポイントライト、スポットライトの影が有効にならない問題を修正
 * プラグインアセットの参照エラーを修正
 * いくつかの不具合を修正
 

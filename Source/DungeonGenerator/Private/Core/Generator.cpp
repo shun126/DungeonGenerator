@@ -1533,8 +1533,8 @@ namespace dungeon
 		const int32 minZ = room->GetBackground();
 		const int32 maxZ = room->GetForeground();
 
-		const int32 count = room->GetRect().Area() / 4;
-		for (uint8 i = 0; i < count; ++i)
+		const int32 count = room->GetRect().Area() / 8;
+		for (int32 i = 0; i < count; ++i)
 		{
 			const int32 x = mGenerateParameter.GetRandom()->Get(room->GetLeft(), room->GetRight());
 			const int32 y = mGenerateParameter.GetRandom()->Get(room->GetTop(), room->GetBottom());

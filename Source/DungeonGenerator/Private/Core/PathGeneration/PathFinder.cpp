@@ -306,7 +306,7 @@ namespace dungeon
 				}
 				else
 				{
-					if (isNorthSouth)
+					if (lastIsNorthSouth)
 					{
 						if (longestStraight.Y < straight)
 							longestStraight.Y = straight;

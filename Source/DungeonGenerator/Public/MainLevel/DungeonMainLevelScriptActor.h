@@ -36,7 +36,7 @@ class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptAct
 	 * Minimum distance from horizontal player to activate partition
 	 * パーティションをアクティブにする水平方向のプレイヤーからの最小距離
 	 */
-	static constexpr double PartitionHorizontalMinSize = 10.0 * 100.0;
+	static constexpr double PartitionHorizontalMinSize = 5.0 * 100.0;
 
 	/**
 	 * Maximum distance from horizontal player to activate partition
@@ -112,8 +112,8 @@ private:
 	const FSceneView* GetSceneView(const APlayerController* playerController) const;
 
 	void Begin();
-	void Mark(const FBox& activeBounds);
-	void Mark(const FSceneView& sceneView);
+	void Mark(const FVector& playerLocation);
+	void Mark(const FSceneView* sceneView);
 	void End(const float deltaSeconds);
 
 	void ForceActivate();

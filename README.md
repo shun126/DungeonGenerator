@@ -78,10 +78,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 Or, [Fab](https://fab.com/s/f5587c55bad0) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
 # 👀 See also
+* [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
+* [DeepWiki](https://deepwiki.com/shun126/DungeonGenerator)
+* [Doxygen](https://mnu.sakura.ne.jp/_doxygen/dungeon_generator/)
 * [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
 * [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
-* [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
-* [Doxygen](https://mnu.sakura.ne.jp/_doxygen/dungeon_generator/)
 
 The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhancements.
 * Sub-levels can be applied as dungeon rooms
