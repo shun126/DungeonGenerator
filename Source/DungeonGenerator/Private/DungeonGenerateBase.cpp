@@ -1113,9 +1113,6 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 			return 2 <= mCount && mCount <= 3;
 		}
 	};
-	std::vector<TorchChecker> torchCheckers;
-	uint8_t validGridCount = 0;
-
 	struct WallChecker final
 	{
 		dungeon::Direction::Index mDirection;
@@ -1136,64 +1133,84 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 			WallChecker(dungeon::Direction::South),
 		} };
 
+	// 燭台の方向や設定を求める
+	std::vector<TorchChecker> torchCheckers;
+	uint8_t validGridCount = 0;
+
+	// 間引きパラメータ
+	bool suppressGenerationThrottling;
+	{
+		const int32 column = cp.mGridLocation.X & 1;
+		const int32 row = cp.mGridLocation.Y & 1;
+		suppressGenerationThrottling = (cp.mGridLocation.Z & 1) ? row == column : row != column;
+	}
+
+	bool castTorchLightShadow = suppressGenerationThrottling;
+	{
+		FIntVector checkLocation = cp.mGridLocation;
+		uint8_t validCastTorchLightShadowCount = 0;
+
+		// 燭台の正面を求める
+		for (const auto& wallChecker : WallCheckers)
+		{
+			const auto& fromGrid = mGenerator->GetVoxel()->Get(checkLocation);
+			const FIntVector& direction = dungeon::Direction::GetVector(wallChecker.mDirection);
+			checkLocation += direction;
+			const auto& toGrid = mGenerator->GetVoxel()->Get(checkLocation);
+
+			// 床が無いグリッドか？
+			if (fromGrid.IsKindOfSpatialType() || fromGrid.Is(dungeon::Grid::Type::Floor) || fromGrid.Is(dungeon::Grid::Type::DownSpace))
+				++validCastTorchLightShadowCount;
+
+			// 柱必要か調べます
+			if (fromGrid.CanBuildWall(toGrid, wallChecker.mDirection, mParameter->IsMergeRooms()) == true)
+			{
+				++validGridCount;
+
+				// 燭台の生成が必要か判定します
+				bool generationPermit =
+					fromGrid.IsKindOfSpatialType() == false &&
+					fromGrid.Is(dungeon::Grid::Type::DownSpace) == false &&
+					fromGrid.Is(dungeon::Grid::Type::Slope) == false;
+				// Occasionally以上は燭台を二階以上の場所に生成しない
+				if (generationPermit && mParameter->GetFrequencyOfTorchlightGeneration() >= EFrequencyOfGeneration::Occasionally)
+				{
+					generationPermit = fromGrid.Is(dungeon::Grid::Type::Floor) == false;
+				}
+				// 燭台の方向を計算
+				if (generationPermit)
+				{
+					static const auto Registerer = [](std::vector<TorchChecker>& torchCheckers, const uint16_t identifier, const FIntVector& normal)
+						{
+							auto i = std::find_if(torchCheckers.begin(), torchCheckers.end(), [identifier](const TorchChecker& torch)
+								{
+									return torch.mIdentifier == identifier;
+								}
+							);
+							if (i == torchCheckers.end())
+							{
+								torchCheckers.emplace_back(identifier, normal);
+							}
+							else
+							{
+								++i->mCount;
+								i->mNormal += normal;
+							}
+						};
+					Registerer(torchCheckers, fromGrid.GetIdentifier(), direction * -1);
+				}
+			}
+		}
+
+		// 地面が遠いなら影を落とさない
+		if (validCastTorchLightShadowCount >= WallCheckers.size())
+			castTorchLightShadow = false;
+	}
+
 	/*
 	柱のメッシュを生成
 	メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
 	*/
-	FIntVector checkLocation = cp.mGridLocation;
-	bool castTorchLightShadow = false;
-	for (const auto& wallChecker : WallCheckers)
-	{
-		const FIntVector& direction = dungeon::Direction::GetVector(wallChecker.mDirection);
-		const auto& fromGrid = mGenerator->GetVoxel()->Get(checkLocation);
-		checkLocation += direction;
-		const auto& toGrid = mGenerator->GetVoxel()->Get(checkLocation);
-
-		// 柱必要か調べます
-		if (fromGrid.CanBuildWall(toGrid, wallChecker.mDirection, mParameter->IsMergeRooms()) == true)
-		{
-			++validGridCount;
-
-			bool generationPermit = fromGrid.IsKindOfSpatialType() == false;
-			if (mParameter->GetFrequencyOfTorchlightGeneration() >= EFrequencyOfGeneration::Occasionally)
-			{
-				generationPermit = fromGrid.Is(dungeon::Grid::Type::Floor) == false;
-			}
-			if (generationPermit)
-			{
-				static const auto Registerer = [](std::vector<TorchChecker>& torchCheckers, const uint16_t identifier, const FIntVector& normal)
-					{
-						auto i = std::find_if(torchCheckers.begin(), torchCheckers.end(), [identifier](const TorchChecker& torch)
-							{
-								return torch.mIdentifier == identifier;
-							}
-						);
-						if (i == torchCheckers.end())
-						{
-							torchCheckers.emplace_back(identifier, normal);
-						}
-						else
-						{
-							++i->mCount;
-							i->mNormal += normal;
-						}
-					};
-
-				// 燭台を生成できないグリッドを含んでいない？
-				if (
-					fromGrid.Is(dungeon::Grid::Type::DownSpace) == false &&
-					fromGrid.Is(dungeon::Grid::Type::Slope) == false)
-				{
-					Registerer(torchCheckers, fromGrid.GetIdentifier(), direction * -1);
-
-					// 二階部分のライトは影を落とさない
-					if (fromGrid.Is(dungeon::Grid::Type::Floor) == false)
-						castTorchLightShadow = true;
-				}
-			}
-		}
-	}
-
 	if (1 <= validGridCount)
 	{
 		const FTransform rootTransform(cp.mPosition);
@@ -1216,32 +1233,22 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 			break;
 		case EFrequencyOfGeneration::Sometime:
 		case EFrequencyOfGeneration::Occasionally:
-		{
-			const int32 column = cp.mGridLocation.X & 1;
-			const int32 row = cp.mGridLocation.Y & 1;
-			spawnTorchActor = (cp.mGridLocation.Z & 1) ? row == column : row != column;
-		}
-		break;
+			spawnTorchActor = suppressGenerationThrottling;
+			break;
 		case EFrequencyOfGeneration::Rarely:
 			if (GetRandom()->Get<bool>())
-			{
-				const int32 column = cp.mGridLocation.X & 1;
-				const int32 row = cp.mGridLocation.Y & 1;
-				spawnTorchActor = (cp.mGridLocation.Z & 1) ? row == column : row != column;
-			}
+				spawnTorchActor = suppressGenerationThrottling;
 			break;
 		case EFrequencyOfGeneration::AlmostNever:
 			if ((GetRandom()->Get<uint32_t>() & 7) == 0)
-			{
-				const int32 column = cp.mGridLocation.X & 1;
-				const int32 row = cp.mGridLocation.Y & 1;
-				spawnTorchActor = (cp.mGridLocation.Z & 1) ? row == column : row != column;
-			}
+				spawnTorchActor = suppressGenerationThrottling;
 			break;
 		case EFrequencyOfGeneration::Never:
 		default:
 			break;
 		}
+
+		// 燭台をスポーン
 		if (spawnTorchActor)
 		{
 			for (auto& torchChecker : torchCheckers)
@@ -1654,9 +1661,9 @@ AActor* ADungeonGenerateBase::SpawnTorchActor(UClass* actorClass, const FTransfo
 		// ポイントライトまたはスポットライトのCastShadowを制御する
 		if (castShadow == false)
 		{
-			for (UActorComponent* component : actor->GetComponents())
+			for (auto* component : actor->GetComponents())
 			{
-				if (UPointLightComponent* pointLightComponent = Cast<UPointLightComponent>(component))
+				if (auto* pointLightComponent = Cast<UPointLightComponent>(component))
 					pointLightComponent->SetCastShadows(false);
 			}
 		}
@@ -1784,8 +1791,8 @@ FVector2D ADungeonGenerateBase::GetLongestStraightPath() const noexcept
 		{
 			const auto& longestStraightPath = voxel->GetLongestStraightPath();
 			return FVector2D(
-				longestStraightPath.X * mParameter->GetGridSize().VerticalSize,
-				longestStraightPath.Y * mParameter->GetGridSize().VerticalSize
+				longestStraightPath.X * mParameter->GetGridSize().HorizontalSize,
+				longestStraightPath.Y * mParameter->GetGridSize().HorizontalSize
 			);
 		}
 	}

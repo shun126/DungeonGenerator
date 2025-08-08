@@ -85,6 +85,10 @@ public:
 	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
 	void LoadAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
 
+	// コンポーネントを更新します
+	template<typename T>
+	void EachComponent(const std::function<void(T&)>& function) const;
+
 	// overrides
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type endPlayReason) override;
@@ -262,4 +266,18 @@ inline void UDungeonComponentActivatorComponent::SetEnableLightCastShadowControl
 inline void UDungeonComponentActivatorComponent::SetEnableCollisionEnableControl(const bool enable) noexcept
 {
 	EnableCollisionEnableControl = enable;
+}
+
+template<typename T>
+void UDungeonComponentActivatorComponent::EachComponent(const std::function<void(T&)>& function) const
+{
+	static_assert(std::is_base_of_v<UActorComponent, T> , "Specify the class from which UActorComponent is derived");
+	if (const auto* ownerActor = GetOwner())
+	{
+		for (auto* component : ownerActor->GetComponents())
+		{
+			if (auto* targetComponent = GetValid(Cast<T>(component)))
+				function(*targetComponent);
+		}
+	}
 }

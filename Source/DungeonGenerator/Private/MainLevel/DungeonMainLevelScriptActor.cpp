@@ -38,10 +38,10 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 	Super::PreInitializeComponents();
 
 	mBounding.Init();
-	mActiveExtents.Set(PartitionHorizontalMinSize, PartitionHorizontalMinSize, PartitionVerticalMinSize);
-	FVector maxDungeonRoomMaxSize(PartitionHorizontalMinSize, PartitionHorizontalMinSize, PartitionVerticalMinSize);
+	mActiveExtents.Set(0, 0, 0);
+	FVector dungeonRoomMaxSize(0, 0, 0);
 	TArray<ADungeonGenerateActor*> dungeonGenerateActors;
-	float maxGridSize = 100.f;
+	float maxGridSize = 0.f;
 	if (ULevel* level = GetValid(GetLevel()))
 	{
 		// DungeonGenerateActorの部屋の大きさからアクティブ範囲を求める
@@ -59,13 +59,13 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 			const auto& dungeonLongestStraightPath = dungeonGenerateActor->GetLongestStraightPath();
 
 			// 最も大きい部屋の大きさを求める
-			const FVector& dungeonRoomMaxSize = dungeonGenerateActor->GetRoomMaxSize();
-			if (maxDungeonRoomMaxSize.X < dungeonRoomMaxSize.X)
-				maxDungeonRoomMaxSize.X = dungeonRoomMaxSize.X;
-			if (maxDungeonRoomMaxSize.Y < dungeonRoomMaxSize.Y)
-				maxDungeonRoomMaxSize.Y = dungeonRoomMaxSize.Y;
-			if (maxDungeonRoomMaxSize.Z < dungeonRoomMaxSize.Z)
-				maxDungeonRoomMaxSize.Z = dungeonRoomMaxSize.Z;
+			const auto& dungeonRoomSize = dungeonGenerateActor->GetRoomMaxSize();
+			if (dungeonRoomMaxSize.X < dungeonRoomSize.X)
+				dungeonRoomMaxSize.X = dungeonRoomSize.X;
+			if (dungeonRoomMaxSize.Y < dungeonRoomSize.Y)
+				dungeonRoomMaxSize.Y = dungeonRoomSize.Y;
+			if (dungeonRoomMaxSize.Z < dungeonRoomSize.Z)
+				dungeonRoomMaxSize.Z = dungeonRoomSize.Z;
 
 			// 最も大きい部屋と最も長い通路が接続した時の長さを求める
 			if (mActiveExtents.X < dungeonRoomMaxSize.X + dungeonLongestStraightPath.X)
@@ -79,18 +79,21 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 			const float gridSize = dungeonGenerateActor->GetGridSize();
 			if (maxGridSize < gridSize)
 				maxGridSize = gridSize;
+
+			DUNGEON_GENERATOR_LOG(TEXT("LongestStraightPath: X=%f, Y=%f"), dungeonLongestStraightPath.X, dungeonLongestStraightPath.Y);
+			DUNGEON_GENERATOR_LOG(TEXT("RoomMaxSize: X=%f, Y=%f"), dungeonRoomSize.X, dungeonRoomSize.Y);
+			DUNGEON_GENERATOR_LOG(TEXT("GridSize=%f"), gridSize);
 		}
 
 		// パーティエーションの大きさを求める
-		maxDungeonRoomMaxSize *= 0.5;
-		maxDungeonRoomMaxSize.X = std::min(std::max(maxDungeonRoomMaxSize.X, PartitionHorizontalMinSize), PartitionHorizontalMaxSize);
-		maxDungeonRoomMaxSize.Y = std::min(std::max(maxDungeonRoomMaxSize.Y, PartitionHorizontalMinSize), PartitionHorizontalMaxSize);
-		maxDungeonRoomMaxSize.Z = std::min(std::max(maxDungeonRoomMaxSize.Z, PartitionVerticalMinSize), PartitionVerticalMaxSize);
-		mPartitionSize = maxDungeonRoomMaxSize.X;
-		if (mPartitionSize < maxDungeonRoomMaxSize.Y)
-			mPartitionSize = maxDungeonRoomMaxSize.Y;
-		if (mPartitionSize < maxDungeonRoomMaxSize.Z)
-			mPartitionSize = maxDungeonRoomMaxSize.Z;
+		dungeonRoomMaxSize.X = std::min(std::max(dungeonRoomMaxSize.X, PartitionHorizontalMinSize), PartitionHorizontalMaxSize);
+		dungeonRoomMaxSize.Y = std::min(std::max(dungeonRoomMaxSize.Y, PartitionHorizontalMinSize), PartitionHorizontalMaxSize);
+		dungeonRoomMaxSize.Z = std::min(std::max(dungeonRoomMaxSize.Z, PartitionVerticalMinSize), PartitionVerticalMaxSize);
+		mPartitionSize = dungeonRoomMaxSize.X;
+		if (mPartitionSize < dungeonRoomMaxSize.Y)
+			mPartitionSize = dungeonRoomMaxSize.Y;
+		if (mPartitionSize < dungeonRoomMaxSize.Z)
+			mPartitionSize = dungeonRoomMaxSize.Z;
 		mPartitionSize = std::ceil(mPartitionSize);
 	}
 
@@ -176,7 +179,6 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 	{
 		if (const UWorld* world = GetValid(GetWorld()))
 		{
-			const auto activeHalfExtents = mActiveExtents / 2;
 			Begin();
 			for (FConstPlayerControllerIterator iterator = world->GetPlayerControllerIterator(); iterator; ++iterator)
 			{
@@ -188,21 +190,17 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 				if (IsValid(playerPawn) && playerPawn->IsPlayerControlled())
 				{
 					// プレイヤー周辺をマークする
-					const FVector& playerLocation = playerPawn->GetActorLocation();
-					Mark(FBox(playerLocation - activeHalfExtents, playerLocation + activeHalfExtents));
+					Mark(playerPawn->GetActorLocation());
 
 					// 視錐台に含まれているならマークする
-					if (const FSceneView* sceneView = GetSceneView(playerController))
-					{
-						Mark(*sceneView);
-					}
+					Mark(GetSceneView(playerController));
 #if WITH_EDITOR
 					// 有効な範囲を黄色い線で描画します
 					if (ShowDebugInformation)
 					{
 						UKismetSystemLibrary::DrawDebugBox(
 							GetWorld(),
-							playerLocation,
+							playerPawn->GetActorLocation(),
 							mActiveExtents,
 							FColor::Yellow,
 							FRotator::ZeroRotator,
@@ -263,14 +261,15 @@ void ADungeonMainLevelScriptActor::Begin()
 	{
 		check(IsValid(partition));
 		partition->Unmark();
-#if WITH_EDITOR
-		partition->SetActiveStateType(UDungeonPartition::ActiveStateType::Inactivate);
-#endif
 	}
 }
 
-void ADungeonMainLevelScriptActor::Mark(const FBox& activeBounds)
+void ADungeonMainLevelScriptActor::Mark(const FVector& playerLocation)
 {
+	//const auto activeHalfExtents = mActiveExtents / 2;
+	//const FBox activeBounds(playerLocation - activeHalfExtents, playerLocation + activeHalfExtents);
+	const FBox activeBounds(playerLocation - mActiveExtents, playerLocation + mActiveExtents);
+
 	// mBounding.Minを原点にした座標系に変換
 	const FVector start = (activeBounds.Min - mBounding.Min) / mPartitionSize;
 	const FVector end = (activeBounds.Max - mBounding.Min) / mPartitionSize;
@@ -287,23 +286,33 @@ void ADungeonMainLevelScriptActor::Mark(const FBox& activeBounds)
 			const size_t index = mPartitionWidth * y + x;
 			UDungeonPartition* partition = DungeonPartitions[index];
 			check(IsValid(partition));
-			partition->Mark(
-				x == cx && y == cy ?
-				UDungeonPartition::ActiveState::ActivateNear : 
-				UDungeonPartition::ActiveState::ActivateFar
-			);
-#if WITH_EDITOR
-			partition->SetActiveStateType(UDungeonPartition::ActiveStateType::Bounding);
-#endif
+			if (x == cx && y == cy)
+			{
+				partition->Mark(
+					UDungeonPartition::ActiveState::ActivateNear,
+					UDungeonPartition::ActiveReason::Bounding
+				);
+			}
+			else
+			{
+				partition->Mark(
+					UDungeonPartition::ActiveState::ActivateFar,
+					UDungeonPartition::ActiveReason::Bounding
+				);
+			}
 		}
 	}
 }
 
-void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
+void ADungeonMainLevelScriptActor::Mark(const FSceneView* sceneView)
 {
+	if (sceneView == nullptr)
+		return;
+
 	const FVector partitionExtent(mPartitionSize);
 	const double halfPartitionSize = mPartitionSize * 0.5;
-	const double visibleDistanceSquared = mActiveExtents.SquaredLength();
+	const double farVisibleDistance = mActiveExtents.Length();
+	const double nearVisibleDistance = farVisibleDistance * 0.5;
 
 	size_t index = 0;
 	FVector origin;
@@ -314,26 +323,33 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView& sceneView)
 		origin.X = mBounding.Min.X + halfPartitionSize;
 		while (origin.X < mBounding.Max.X + halfPartitionSize)
 		{
-			const double distanceSquared = FVector::DistSquared(sceneView.ViewLocation, origin);
-			if (distanceSquared < visibleDistanceSquared)
+			UDungeonPartition* partition = DungeonPartitions[index];
+			check(IsValid(partition));
+
+			// 視点から遠すぎる場合は計算をスキップ
+			const double distance = FVector::Distance(sceneView->ViewLocation, origin);
+			if (distance < farVisibleDistance)
 			{
-				// UDungeonPartition::ActiveState::ActivateNearは計算をスキップ
-				if (DungeonPartitions[index]->IsMarked() < UDungeonPartition::ActiveState::ActivateNear)
+				// パーティエーションが視錐台と交差している
+				if (sceneView->ViewFrustum.IntersectBox(origin, partitionExtent))
 				{
-					// 視点から遠すぎる場合は計算をスキップ
-					if (sceneView.ViewFrustum.IntersectBox(origin, partitionExtent))
+					if (distance < nearVisibleDistance)
 					{
-						DungeonPartitions[index]->Mark(
-							UDungeonPartition::ActiveState::ActivateNear
+						partition->Mark(
+							UDungeonPartition::ActiveState::ActivateNear,
+							UDungeonPartition::ActiveReason::ViewFrustum
 						);
-#if WITH_EDITOR
-						DungeonPartitions[index]->SetActiveStateType(
-							UDungeonPartition::ActiveStateType::ViewFrustum
+					}
+					else
+					{
+						partition->Mark(
+							UDungeonPartition::ActiveState::ActivateFar,
+							UDungeonPartition::ActiveReason::ViewFrustum
 						);
-#endif
 					}
 				}
 			}
+
 			++index;
 			origin.X += mPartitionSize;
 		}
@@ -444,7 +460,7 @@ void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 						FColor::Red,
 					} };
 				auto color = colors.at(static_cast<uint8>(partition->IsMarked()));
-				if (partition->GetActiveStateType() == UDungeonPartition::ActiveStateType::ViewFrustum)
+				if (partition->GetActiveStateType() == UDungeonPartition::ActiveReason::ViewFrustum)
 				{
 					color.R -= color.R / 16;
 					color.G -= color.G / 16;

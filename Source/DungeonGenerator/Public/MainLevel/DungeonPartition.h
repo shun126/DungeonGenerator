@@ -32,23 +32,28 @@ class DUNGEONGENERATOR_API UDungeonPartition : public UObject
 	*/
 	static constexpr float InactivateRemainTimer = 3.f;
 
+	/**
+	 * パーティエーションの状態
+	 * 大きいほど優先
+	 */
 	enum class ActiveState : uint8
 	{
-		Inactivate,
-		ActivateFar,
-		ActivateNear,
+		Inactivate,		//!< 非アクティブ
+		ActivateFar,	//!< アクティブ（遠景）
+		ActivateNear,	//!< アクティブ（近景）
 	};
 
 public:
-#if WITH_EDITORONLY_DATA
-	enum class ActiveStateType : uint8
+	/**
+	 * パーティエーションの状態になった理由
+	 * 大きいほど優先
+	 */
+	enum class ActiveReason : uint8
 	{
-		Inactivate,
-		Bounding,
-		ViewFrustum,
-		Segment,
+		Unknown,		//!< 未定
+		Bounding,		//!< バウンディングボックス
+		ViewFrustum,	//!< 視錐台
 	};
-#endif
 
 	explicit UDungeonPartition(const FObjectInitializer& objectInitializer);
 	virtual ~UDungeonPartition() override = default;
@@ -60,14 +65,10 @@ private:
 	bool UpdateInactivateRemainTimer(const float deltaSeconds);
 	bool IsValidInactivateRemainTimer() const noexcept;
 
-	void Mark(const ActiveState activeState) noexcept;
+	void Mark(const ActiveState activeState, const ActiveReason activeReason) noexcept;
 	void Unmark() noexcept;
 	ActiveState IsMarked() const noexcept;
-
-#if WITH_EDITOR
-	ActiveStateType GetActiveStateType() const;
-	void SetActiveStateType(const ActiveStateType activeStateType);
-#endif
+	ActiveReason GetActiveStateType() const;
 
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
@@ -86,10 +87,7 @@ private:
 	bool mPartitionActivate = true;
 	bool mCallCastShadowActivate = true;
 	ActiveState mMarked = ActiveState::Inactivate;
-
-#if WITH_EDITORONLY_DATA
-	ActiveStateType mActiveStateType = ActiveStateType::Inactivate;
-#endif
+	ActiveReason mActiveStateType = ActiveReason::Unknown;
 
 	friend class ADungeonMainLevelScriptActor;
 	friend class UDungeonComponentActivatorComponent;
@@ -114,15 +112,17 @@ inline bool UDungeonPartition::IsValidInactivateRemainTimer() const noexcept
 	return mInactivateRemainTimer > 0.f;
 }
 
-inline void UDungeonPartition::Mark(const ActiveState activeState) noexcept
+inline void UDungeonPartition::Mark(const ActiveState activeState, const ActiveReason activeReason) noexcept
 {
 	if (mMarked < activeState)
 		mMarked = activeState;
+	mActiveStateType = activeReason;
 }
 
 inline void UDungeonPartition::Unmark() noexcept
 {
 	mMarked = ActiveState::Inactivate;
+	mActiveStateType = ActiveReason::Unknown;
 }
 
 inline UDungeonPartition::ActiveState UDungeonPartition::IsMarked() const noexcept
@@ -130,14 +130,7 @@ inline UDungeonPartition::ActiveState UDungeonPartition::IsMarked() const noexce
 	return mMarked;
 }
 
-#if WITH_EDITOR
-inline UDungeonPartition::ActiveStateType UDungeonPartition::GetActiveStateType() const
+inline UDungeonPartition::ActiveReason UDungeonPartition::GetActiveStateType() const
 {
 	return mActiveStateType;
 }
-
-inline void UDungeonPartition::SetActiveStateType(const ActiveStateType activeStateType)
-{
-	mActiveStateType = activeStateType;
-}
-#endif

@@ -6,6 +6,7 @@ All Rights Reserved.
 
 #pragma once
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
 namespace dungeon
@@ -89,6 +90,90 @@ namespace dungeon
 		static constexpr T ToDegree(const T radian)
 		{
 			return radian * (static_cast<T>(180.0) / Pi<T>());
+		}
+
+		/**
+		角度を0～360に収めます
+		\param[in]	degree	角度
+		\return		0～360
+		*/
+		template<typename T>
+		static constexpr T RoundDegree(const T degree)
+		{
+			// https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
+			if (degree > static_cast<T>(0.))
+				return degree - static_cast<T>(360.) * std::floor(degree * static_cast<T>(1. / 360.));
+			else
+				return degree + static_cast<T>(360.) * std::floor(degree * static_cast<T>(1. / -360.));
+		}
+
+		/**
+		ラジアン角を0～2πに収めます
+		\param[in]	radian	ラジアン角
+		\return		0～2π
+		*/
+		template<typename T>
+		static constexpr T RoundRadian(const T radian)
+		{
+			// https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
+			if (radian > static_cast<T>(0.))
+				return radian - Pi2<T>() * std::floor(radian * (static_cast<T>(1.) / Pi2<T>()));
+			else
+				return radian + Pi2<T>() * std::floor(radian * (static_cast<T>(1.) / -Pi2<T>()));
+		}
+
+		/**
+		角度を-180～180に収めます
+		\param[in]	degree	角度
+		\return		-180～180
+		*/
+		template<typename T>
+		static constexpr T RoundDegreeWithSign(const T degree)
+		{
+			// https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
+			if (degree > static_cast<T>(0.))
+				return degree - static_cast<T>(360.) * std::floor((degree + static_cast<T>(180.)) * static_cast<T>(1. / 360.));
+			else
+				return degree + static_cast<T>(360.) * std::floor((degree - static_cast<T>(180.)) * static_cast<T>(1. / -360.));
+		}
+
+		/**
+		ラジアン角を-π～πに収めます
+		\param[in]	radian	ラジアン角
+		\return		-π～π
+		*/
+		template<typename T>
+		static constexpr T RoundRadianWithSign(const T radian)
+		{
+			// https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code
+			if (radian > static_cast<T>(0.))
+				return radian - Pi2<T>() * std::floor((radian + Pi<T>()) * (static_cast<T>(1.) / Pi2<T>()));
+			else
+				return radian + Pi2<T>() * std::floor((radian - Pi<T>()) * (static_cast<T>(1.) / -Pi2<T>()));
+		}
+
+		/**
+		角度の距離を取得します
+		\param[in]	a	角度
+		\param[in]	b	角度
+		\return			絶対差
+		*/
+		template<typename T>
+		static constexpr T DegreeDistance(const T a, const T b)
+		{
+			return std::abs(RoundDegreeWithSign(a - b));
+		}
+
+		/**
+		ラジアン角の距離を取得します
+		\param[in]	a	ラジアン角
+		\param[in]	b	ラジアン角
+		\return			絶対差
+		*/
+		template<typename T>
+		static constexpr T RadianDistance(const T a, const T b)
+		{
+			return std::abs(RoundRadianWithSign(a - b));
 		}
 	}
 }
