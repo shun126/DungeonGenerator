@@ -1,5 +1,11 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20250722-1.7.4 (57)
+### Changes
+* Fixed several bugs
+### 変更点
+* いくつかの不具合を修正
+
 ## 20250722-1.7.3 (56)
 ### Changes
 * Added widget class to assist in creating mini-maps
