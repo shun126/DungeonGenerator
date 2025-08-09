@@ -10,7 +10,7 @@
 </div>
 
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
-[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.5-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
+[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.6-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
 [![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
@@ -18,15 +18,10 @@
 
 Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/)
 
-* Trailer video: [YouTube](https://youtu.be/1igd4pls5x8)
-* Tutorial videos: [YouTube](https://www.youtube.com/playlist?list=PLlMDkSa8bQnK4PDIfkXYorQIucn47ifKO)
-
-Revolutionize your dungeon creation process with our new Unreal Engine plugin! Enjoy freedom and customize your own rulesets to offer players unique and engaging dungeon exploration experiences. Say goodbye to the hassle of manual dungeon building and welcome the new age of dungeon exploration!
-
 ![Screenshot](Document/Screenshot.gif)
 
 # 🚩 Table of Contents
-- [Why Dungeon Generator?](#-why-dungeon-generator)
+- [Endless Adventures, Instantly Generated](#-endless-adventures-instantly-generated)
 - [Features](#-features)
 - [Requirements](#-requirements)
 - [License](#-license)
@@ -34,11 +29,18 @@ Revolutionize your dungeon creation process with our new Unreal Engine plugin! E
 - [See also](#-see-also)
 - [Author](#-authors)
 
-# 👾 Why Dungeon Generator?
-One day I wanted to create a video game, but I didn't have the level design know-how. So I decided to create a procedural dungeon generator.
-The dungeon generator was based on Vazgriz's algorithm. You can read more about [Vazgriz's algorithm here](https://vazgriz.com/119/procedurally-generated-dungeons/).
+# 👾 Endless Adventures, Instantly Generated
+Bring your roguelike and hack-and-slash games to life with next-level dungeon generation.
+Whether you’re aiming for fast-paced, loot-filled battles or deep exploration with infinite replayability,
+this Unreal Engine plugin gives you the power to craft unique dungeons every time.
+
+With just a few parameters—such as grid scale, number of rooms, and your own generation rules—you can instantly produce fully playable layouts. The system works seamlessly both in-editor and at runtime, and is available in both C++ and Blueprint, giving you the flexibility to integrate it into any workflow.
 
 ## Visualization of dungeon generation status
+The dungeon generator was based on Vazgriz's algorithm. You can read more about [Vazgriz's algorithm here](https://vazgriz.com/119/procedurally-generated-dungeons/).
+
+To vazgriz,
+The foundational generation algorithm you shared was a major source of inspiration and became the starting point for my development of the DungeonGenerator plugin. Without your ideas, I don't think I would have arrived at its current form. I'm truly grateful for the knowledge you made available and the impact it had on my work.
 
 ![DungeonGeneratorStatus](Document/DungeonGenerator01.gif)
 
@@ -57,14 +59,14 @@ The dungeon generator was based on Vazgriz's algorithm. You can read more about 
 * Supported Target Build Platforms: Windows,Android,Linux (should be possible to target all platforms)
 
 # 🔧 Requirements
-* [Unreal Engine 5.1 ~ Unreal Engine 5.5](https://www.unrealengine.com/)
+* [Unreal Engine 5.1 ~ Unreal Engine 5.6](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 # 💾 How to install
 * Open Unreal Engine Editor and create a project using the First Person template or Third Person template.
 * Install the Dungeon Generator plugin via Epic Games Launcher, or copy it to the `Plugins` directory of your project.
 * Enable the plugin content.
-* Open `Plugins/Dungeon Generator/Contents/Demonstration.
+* Open `Plugins/Dungeon Generator/Contents/Demonstration`.
 
 ![](Document/ContentBrowser.gif)
 
