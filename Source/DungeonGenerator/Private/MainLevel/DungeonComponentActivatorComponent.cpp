@@ -5,14 +5,14 @@ All Rights Reserved.
 */
 
 #include "MainLevel/DungeonComponentActivatorComponent.h"
-
-#include "Components/SpotLightComponent.h"
-
 #include "MainLevel/DungeonMainLevelScriptActor.h"
+#include "Core/Debug/BuildInformation.h"
+#include "Core/Debug/Debug.h"
 #include <Engine/Level.h>
 #include <AIController.h>
 #include <BrainComponent.h>
 #include <Components/PrimitiveComponent.h>
+#include <Components/SpotLightComponent.h>
 
 static constexpr double DisplacementOfInitialLocation = 100;
 static constexpr double MovementDetectionDistance = 1;
@@ -43,6 +43,29 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 
 				// 初回起動のため少しずらした座標を記録
 				mLastLocation = ownerActor->GetActorLocation() + FVector(0, DisplacementOfInitialLocation, 0);
+
+
+
+				// 制御対象のポイントライト派生クラスを回収
+				for (auto* component : ownerActor->GetComponents())
+				{
+					// ポイントライト派生クラスか？
+					auto* pointLightComponent = Cast<UPointLightComponent>(component);
+					if (IsValid(pointLightComponent))
+					{
+						// 影を落とすライトのみ対象、BeginPlay以降にCastShadowsを変更しても制御対象には含まれない
+						if (pointLightComponent->CastShadows)
+						{
+							// 静的ライト以外なら制御対象として登録
+							if (pointLightComponent->Mobility != EComponentMobility::Type::Static)
+								mPointLightComponents.emplace_back(pointLightComponent);
+						}
+					}
+				}
+				mPointLightComponents.shrink_to_fit();
+
+
+
 			}
 		}
 		// ADungeonMainLevelScriptActorではないならTick不要
@@ -76,6 +99,29 @@ void UDungeonComponentActivatorComponent::TickComponent(float deltaTime, enum EL
 			mLastLocation = currentLocation;
 		}
 	}
+
+#if JENKINS_FOR_DEVELOP & UE_BUILD_DEBUG & 0
+	for (const auto& weakPointLightComponent : mPointLightComponents)
+	{
+		const auto pointLightComponent = weakPointLightComponent.Get();
+		if (IsValid(pointLightComponent))
+		{
+			if (pointLightComponent->CastShadows)
+			{
+				DrawDebugString(
+					pointLightComponent->GetWorld(),
+					pointLightComponent->GetComponentLocation(),
+					TEXT("ON"),
+					nullptr,
+					FColor::White,
+					0,
+					true,
+					1.f
+				);
+			}
+		}
+	}
+#endif
 }
 
 void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
@@ -161,21 +207,6 @@ void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 	}
 
 	OnPartitionInactivate();
-}
-
-void UDungeonComponentActivatorComponent::CallCastShadowActivate()
-{
-	if (EnableLightShadowControl)
-		LoadCastShadow(EDungeonComponentActivateReason::Partition);
-}
-
-void UDungeonComponentActivatorComponent::CallCastShadowInactivate()
-{
-	if (const AActor* owner = GetValid(GetOwner()))
-	{
-		if (EnableLightShadowControl)
-			SaveAndDisableCastShadow(EDungeonComponentActivateReason::Partition, owner);
-	}
 }
 
 // Actor
@@ -364,63 +395,6 @@ void UDungeonComponentActivatorComponent::LoadVisibility(const EDungeonComponent
 				if (auto* sceneComponent = Cast<USceneComponent>(component))
 				{
 					sceneComponent->SetVisibility(activation);
-				}
-			}
-		);
-	}
-}
-
-// CastShadow
-void UDungeonComponentActivatorComponent::SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason)
-{
-	AActor* owner = GetOwner();
-	if (IsValid(owner))
-		SaveAndDisableCastShadow(activateReason, owner);
-}
-
-void UDungeonComponentActivatorComponent::SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason, const AActor* owner)
-{
-	const bool previousEnabled = mLightCastShadow.all();
-	mLightCastShadow.reset(static_cast<size_t>(activateReason));
-	const bool currentEnabled = mLightCastShadow.all();
-	if (previousEnabled != currentEnabled)
-	{
-		mLightCastShadowSaver.Stash(owner, [](UActorComponent* component)
-			{
-				std::pair<bool, bool> result;
-
-				auto* pointLightComponent = Cast<UPointLightComponent>(component);
-				result.first = result.second =
-					IsValid(pointLightComponent) &&
-					pointLightComponent->Mobility != EComponentMobility::Type::Static &&
-					pointLightComponent->CastShadows != 0;
-				if (result.first)
-				{
-					pointLightComponent->SetCastShadows(false);
-				}
-				else
-				{
-					result.first = false;
-				}
-
-				return result;
-			}
-		);
-	}
-}
-
-void UDungeonComponentActivatorComponent::LoadCastShadow(const EDungeonComponentActivateReason activateReason)
-{
-	const bool previousEnabled = mLightCastShadow.all();
-	mLightCastShadow.set(static_cast<size_t>(activateReason));
-	const bool currentEnabled = mLightCastShadow.all();
-	if (previousEnabled != currentEnabled)
-	{
-		mLightCastShadowSaver.Pop([](UActorComponent* component, const bool castShadow)
-			{
-				if (auto* pointLightComponent = Cast<UPointLightComponent>(component))
-				{
-					pointLightComponent->SetCastShadows(castShadow);
 				}
 			}
 		);

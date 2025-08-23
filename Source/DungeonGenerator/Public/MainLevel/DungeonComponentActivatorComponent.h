@@ -7,13 +7,15 @@ All Rights Reserved.
 #pragma once
 #include "DungeonComponentActivationSaver.h"
 #include <CoreMinimal.h>
-#include <Components/ActorComponent.h>
+#include <Components/PointLightComponent.h>
 #include <Math/Box.h>
 #include <bitset>
+#include <vector>
 #include "DungeonComponentActivatorComponent.generated.h"
 
 class ADungeonMainLevelScriptActor;
 class UDungeonPartition;
+class UPointLightComponent;
 
 UENUM(Blueprintable)
 enum class EDungeonComponentActivateReason : uint8
@@ -29,8 +31,14 @@ OnPartitionActivate will be called when the DungeonPartition belonging to
 the player approaches the vicinity of the player.
 OnPartitionInactivate is called when the DungeonPartition moves away.
 
+The shadow control method for point light derived classes has been changed.
+Only lights with CastShadow enabled at the time of BeginPlay will have shadow enable/disable control.
+
 所属しているDungeonPartitionがプレイヤー周辺に近づいたらOnPartitionActivateが呼ばれます。
 離れたらOnPartitionInactivateが呼ばれます。
+
+ポイントライト派生クラスの影の制御方法が変更されました。
+BeginPlay時点でCastShadowが有効のライトのみ、影の有効無効制御が行われます。
 */
 UCLASS(ClassGroup = "DungeonGenerator", meta = (BlueprintSpawnableComponent))
 class DUNGEONGENERATOR_API UDungeonComponentActivatorComponent : public UActorComponent
@@ -75,19 +83,19 @@ public:
 	void SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason);
 	void LoadVisibility(const EDungeonComponentActivateReason activateReason);
 
-	// Cast Shadow
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-	void SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason);
-	void LoadCastShadow(const EDungeonComponentActivateReason activateReason);
-
 	// AI
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
 	void LoadAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
 
+	// LightCastShadow
+	void EachControlledLightCastShadow(const std::function<void(UPointLightComponent*)>& function) const;
+
+#if 0
 	// コンポーネントを更新します
 	template<typename T>
 	void EachComponent(const std::function<void(T&)>& function) const;
+#endif
 
 	// overrides
 	virtual void BeginPlay() override;
@@ -113,8 +121,6 @@ private:
 	void TickImplement(const FVector& location);
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
-	void CallCastShadowActivate();
-	void CallCastShadowInactivate();
 
 	// Actor
 	void SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason, AActor* owner);
@@ -127,9 +133,6 @@ private:
 
 	// Visibility
 	void SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason, const AActor* owner);
-
-	// CastShadow
-	void SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason, const AActor* owner);
 
 	// AI
 	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason, const APawn* owner);
@@ -180,30 +183,21 @@ protected:
 private:
 	// Actor
 	std::bitset<DungeonComponentActivateReasonSize> mIsTickEnabled = ~0;
-	bool mTickSaver = false;
-
-	// Component
 	std::bitset<DungeonComponentActivateReasonSize> mComponentActivation = ~0;
-	DungeonComponentActivationSaver<bool> mComponentActivationSaver;
-
-	// Visibility
 	std::bitset<DungeonComponentActivateReasonSize> mComponentVisibility = ~0;
-	DungeonComponentActivationSaver<bool> mComponentVisibilitySaver;
-
-	// CastShadow
-	std::bitset<DungeonComponentActivateReasonSize> mLightCastShadow = ~0;
-	DungeonComponentActivationSaver<bool> mLightCastShadowSaver;
-
-	// Collision
 	std::bitset<DungeonComponentActivateReasonSize> mComponentCollisionEnabled = ~0;
-	DungeonComponentActivationSaver<ECollisionEnabled::Type> mComponentCollisionEnabledSaver;
-
-	// Logic
 	std::bitset<DungeonComponentActivateReasonSize> mLogicEnabled = ~0;
+
+	DungeonComponentActivationSaver<bool> mComponentActivationSaver;
+	DungeonComponentActivationSaver<bool> mComponentVisibilitySaver;
+	DungeonComponentActivationSaver<ECollisionEnabled::Type> mComponentCollisionEnabledSaver;
+	std::vector<TWeakObjectPtr<UPointLightComponent>> mPointLightComponents;
 
 	TWeakObjectPtr<ADungeonMainLevelScriptActor> mDungeonLevelScriptActor;
 	TWeakObjectPtr<UDungeonPartition> mLastDungeonPartition;
 	FVector mLastLocation = FVector::ZeroVector;
+
+	bool mTickSaver = false;
 
 	friend class UDungeonPartition;
 };
@@ -268,6 +262,18 @@ inline void UDungeonComponentActivatorComponent::SetEnableCollisionEnableControl
 	EnableCollisionEnableControl = enable;
 }
 
+inline void UDungeonComponentActivatorComponent::EachControlledLightCastShadow(const std::function<void(UPointLightComponent*)>& function) const
+{
+	for (const auto& pointLightComponent : mPointLightComponents)
+	{
+		if (auto* pointer = GetValid(pointLightComponent.Get()))
+		{
+			function(pointer);
+		}
+	}
+}
+
+#if 0
 template<typename T>
 void UDungeonComponentActivatorComponent::EachComponent(const std::function<void(T&)>& function) const
 {
@@ -281,3 +287,4 @@ void UDungeonComponentActivatorComponent::EachComponent(const std::function<void
 		}
 	}
 }
+#endif

@@ -39,6 +39,7 @@ ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializ
 {
 	// Tick Enable
 	PrimaryActorTick.bCanEverTick = PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.TickInterval = 6.f / 60.f;
 
 	SetCanBeDamaged(false);
 }

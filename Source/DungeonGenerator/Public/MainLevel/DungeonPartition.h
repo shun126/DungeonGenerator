@@ -7,6 +7,7 @@ All Rights Reserved.
 #pragma once
 #include <CoreMinimal.h>
 #include <Containers/Set.h>
+#include <functional>
 #include "DungeonPartition.generated.h"
 
 class ADungeonMainLevelScriptActor;
@@ -73,10 +74,15 @@ private:
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
 
-	void CallCastShadowActivate();
-	void CallCastShadowInactivate();
-
 	bool IsEmpty() const;
+
+	void EachDungeonComponentActivatorComponent(const std::function<void(UDungeonComponentActivatorComponent*)>& function) const
+	{
+		for (const auto& dungeonComponentActivatorComponent : ActivatorComponents)
+		{
+			function(dungeonComponentActivatorComponent);
+		}
+	}
 
 protected:
 	UPROPERTY(Transient)
@@ -85,7 +91,6 @@ protected:
 private:
 	float mInactivateRemainTimer = 0.f;
 	bool mPartitionActivate = true;
-	bool mCallCastShadowActivate = true;
 	ActiveState mMarked = ActiveState::Inactivate;
 	ActiveReason mActiveStateType = ActiveReason::Unknown;
 

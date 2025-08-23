@@ -1620,6 +1620,7 @@ namespace dungeon
 				switch (mVoxel->Get(location).GetType())
 				{
 				case Grid::Type::Slope:
+				case Grid::Type::DownSpace:
 				case Grid::Type::StructuralColumn:
 					return false;
 

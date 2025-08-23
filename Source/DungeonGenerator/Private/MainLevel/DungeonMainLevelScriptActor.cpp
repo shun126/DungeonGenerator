@@ -5,20 +5,21 @@ All Rights Reserved.
 */
 
 #include "MainLevel/DungeonMainLevelScriptActor.h"
+#include "MainLevel/DungeonComponentActivatorComponent.h"
 #include "MainLevel/DungeonPartition.h"
 #include "DungeonGenerateActor.h"
 #include "Core/Debug/Debug.h"
 #include <SceneInterface.h>
 #include <SceneView.h>
 #include <UnrealClient.h>
-#include <Misc/EngineVersionComparison.h>
+#include <Components/PointLightComponent.h>
 #include <Engine/GameViewportClient.h>
 #include <Engine/LocalPlayer.h>
 #include <Engine/Level.h>
 #include <Engine/World.h>
 #include <GameFramework/Pawn.h>
 #include <Kismet/GameplayStatics.h>
-#include <cmath>
+#include <algorithm>
 
 #if WITH_EDITOR
 #include <array>
@@ -39,6 +40,7 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 
 	mBounding.Init();
 	mActiveExtents.Set(0, 0, 0);
+	FVector2D dungeonMaxLongestStraightPath(0, 0);
 	FVector dungeonRoomMaxSize(0, 0, 0);
 	TArray<ADungeonGenerateActor*> dungeonGenerateActors;
 	float maxGridSize = 0.f;
@@ -57,6 +59,10 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 
 			// 最も長い通路の長さを求める
 			const auto& dungeonLongestStraightPath = dungeonGenerateActor->GetLongestStraightPath();
+			if (dungeonMaxLongestStraightPath.X < dungeonLongestStraightPath.X)
+				dungeonMaxLongestStraightPath.X = dungeonLongestStraightPath.X;
+			if (dungeonMaxLongestStraightPath.Y < dungeonLongestStraightPath.Y)
+				dungeonMaxLongestStraightPath.Y = dungeonLongestStraightPath.Y;
 
 			// 最も大きい部屋の大きさを求める
 			const auto& dungeonRoomSize = dungeonGenerateActor->GetRoomMaxSize();
@@ -67,14 +73,6 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 			if (dungeonRoomMaxSize.Z < dungeonRoomSize.Z)
 				dungeonRoomMaxSize.Z = dungeonRoomSize.Z;
 
-			// 最も大きい部屋と最も長い通路が接続した時の長さを求める
-			if (mActiveExtents.X < dungeonRoomMaxSize.X + dungeonLongestStraightPath.X)
-				mActiveExtents.X = dungeonRoomMaxSize.X + dungeonLongestStraightPath.X;
-			if (mActiveExtents.Y < dungeonRoomMaxSize.Y + dungeonLongestStraightPath.Y)
-				mActiveExtents.Y = dungeonRoomMaxSize.Y + dungeonLongestStraightPath.Y;
-			if (mActiveExtents.Z < dungeonRoomMaxSize.Z)
-				mActiveExtents.Z = dungeonRoomMaxSize.Z;
-
 			// 最も大きいグリッドの大きさを求める
 			const float gridSize = dungeonGenerateActor->GetGridSize();
 			if (maxGridSize < gridSize)
@@ -84,6 +82,12 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 			DUNGEON_GENERATOR_LOG(TEXT("RoomMaxSize: X=%f, Y=%f"), dungeonRoomSize.X, dungeonRoomSize.Y);
 			DUNGEON_GENERATOR_LOG(TEXT("GridSize=%f"), gridSize);
 		}
+
+		// 最も大きい部屋と最も長い通路が接続した時の長さを求める
+		mActiveExtents.X = dungeonRoomMaxSize.X + dungeonMaxLongestStraightPath.X;
+		mActiveExtents.Y = dungeonRoomMaxSize.Y + dungeonMaxLongestStraightPath.Y;
+		mActiveExtents.Z = dungeonRoomMaxSize.Z;
+		mActiveExtents *= static_cast<double>(0.5f * ActivationRangeScale);
 
 		// パーティエーションの大きさを求める
 		dungeonRoomMaxSize.X = std::min(std::max(dungeonRoomMaxSize.X, PartitionHorizontalMinSize), PartitionHorizontalMaxSize);
@@ -194,24 +198,15 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 
 					// 視錐台に含まれているならマークする
 					Mark(GetSceneView(playerController));
-#if WITH_EDITOR
-					// 有効な範囲を黄色い線で描画します
-					if (ShowDebugInformation)
-					{
-						UKismetSystemLibrary::DrawDebugBox(
-							GetWorld(),
-							playerPawn->GetActorLocation(),
-							mActiveExtents,
-							FColor::Yellow,
-							FRotator::ZeroRotator,
-							0.f,
-							10.f
-						);
-					}
-#endif
 				}
 			}
 			End(deltaSeconds);
+
+			// ポイントライトおよびスポットライトの影を落とすか制御
+			if (MaxShadowCastingPointAndSpotLights > 0)
+				UpdateShadowCastingPointAndSpotLights();
+			//else
+			//	ForceActivateShadowCastingPointAndSpotLights();
 		}
 		else
 		{
@@ -226,6 +221,7 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 		{
 			mLastEnableLoadControl = bEnableLoadControl;
 			ForceActivate();
+			ForceActivateShadowCastingPointAndSpotLights();
 		}
 	}
 
@@ -236,8 +232,8 @@ void ADungeonMainLevelScriptActor::Tick(float deltaSeconds)
 }
 
 /*
-点で検索しているので、巨大なアクターは誤判定に注意してください。
-*/
+ * 点で検索しているので、巨大なアクターは誤判定に注意してください。
+ */
 UDungeonPartition* ADungeonMainLevelScriptActor::Find(const FVector& worldLocation) const noexcept
 {
 	if (DungeonPartitions.Num() <= 0)
@@ -266,8 +262,6 @@ void ADungeonMainLevelScriptActor::Begin()
 
 void ADungeonMainLevelScriptActor::Mark(const FVector& playerLocation)
 {
-	//const auto activeHalfExtents = mActiveExtents / 2;
-	//const FBox activeBounds(playerLocation - activeHalfExtents, playerLocation + activeHalfExtents);
 	const FBox activeBounds(playerLocation - mActiveExtents, playerLocation + mActiveExtents);
 
 	// mBounding.Minを原点にした座標系に変換
@@ -392,12 +386,10 @@ void ADungeonMainLevelScriptActor::End(const float deltaSeconds)
 		{
 		case UDungeonPartition::ActiveState::ActivateNear:
 			partition->CallPartitionActivate();
-			partition->CallCastShadowActivate();
 			break;
 
 		case UDungeonPartition::ActiveState::ActivateFar:
 			partition->CallPartitionActivate();
-			partition->CallCastShadowInactivate();
 			break;
 
 		case UDungeonPartition::ActiveState::Inactivate:
@@ -405,7 +397,6 @@ void ADungeonMainLevelScriptActor::End(const float deltaSeconds)
 				partition->CallPartitionActivate();
 			else
 				partition->CallPartitionInactivate();
-			partition->CallCastShadowInactivate();
 			break;
 		}
 	}
@@ -437,6 +428,110 @@ bool ADungeonMainLevelScriptActor::IsEnableLoadControl() const noexcept
 void ADungeonMainLevelScriptActor::EnableLoadControl(const bool enable) noexcept
 {
 	bEnableLoadControl = enable;
+}
+
+void ADungeonMainLevelScriptActor::UpdateShadowCastingPointAndSpotLights()
+{
+	const auto* playerController = UGameplayStatics::GetPlayerController(this, 0);
+	if (!IsValid(playerController))
+		return;
+
+	// ポイントライト継承クラスを回収するコンテナ
+	using PointLightPair = std::pair<float, UPointLightComponent*>;
+	std::vector<PointLightPair> pointLightComponents;
+
+	// カメラの位置と向きを取得
+	FVector cameraLocation;
+	FRotator cameraRotation;
+	playerController->GetPlayerViewPoint(cameraLocation, cameraRotation);
+	const FVector cameraDirection = cameraRotation.Vector();
+
+	// 有効な全てのパーティエーションを調べる
+	for (UDungeonPartition* partition : DungeonPartitions)
+	{
+		check(IsValid(partition));
+
+		if (partition->IsMarked() == UDungeonPartition::ActiveState::Inactivate)
+		{
+			partition->EachDungeonComponentActivatorComponent([](const UDungeonComponentActivatorComponent* dungeonComponentActivatorComponent)
+				{
+					dungeonComponentActivatorComponent->EachControlledLightCastShadow([](UPointLightComponent* pointLightComponent)
+						{
+							// 強制的に影を落とさない
+							pointLightComponent->SetCastShadows(false);
+						}
+					);
+				}
+			);
+		}
+		else
+		{
+			partition->EachDungeonComponentActivatorComponent([&pointLightComponents, &cameraLocation, &cameraDirection](const UDungeonComponentActivatorComponent* dungeonComponentActivatorComponent)
+				{
+					dungeonComponentActivatorComponent->EachControlledLightCastShadow([&pointLightComponents, &cameraLocation, &cameraDirection](UPointLightComponent* pointLightComponent)
+						{
+							const auto toTarget = pointLightComponent->GetComponentLocation() - cameraLocation;
+							const float distance = toTarget.Size();
+							if (!FMath::IsNearlyZero(distance))
+							{
+								const auto direction = toTarget / distance;
+								const float dot = FVector::DotProduct(cameraDirection, direction);
+								// 正面に近い（dot が大きい）ほど値が大きい
+								// 距離が短い（distance が小さい）ほど値が大きい
+								const float score = FMath::Max(FMath::Cos(FMath::DegreesToRadians(60.f)), dot) / FMath::Sqrt(distance);
+								pointLightComponents.emplace_back(score, pointLightComponent);
+							}
+						}
+					);
+				}
+			);
+		}
+	}
+
+	// 降順に並び替える
+	std::sort(pointLightComponents.begin(), pointLightComponents.end(), [](const PointLightPair& l, const PointLightPair& r)
+		{
+			return l.first > r.first;
+		}
+	);
+	
+	// UPointLightComponentへ反映する
+	{
+		size_t i = 0;
+		const auto enablePointLightComponentSize = std::min<size_t>(MaxShadowCastingPointAndSpotLights, pointLightComponents.size());
+		while (i < enablePointLightComponentSize)
+		{
+			pointLightComponents[i].second->SetCastShadows(true);
+			++i;
+		}
+		while (i < pointLightComponents.size())
+		{
+			pointLightComponents[i].second->SetCastShadows(false);
+			++i;
+		}
+	}
+}
+
+void ADungeonMainLevelScriptActor::ForceActivateShadowCastingPointAndSpotLights()
+{
+	for (UDungeonPartition* partition : DungeonPartitions)
+	{
+		check(IsValid(partition));
+
+		if (partition->IsMarked() == UDungeonPartition::ActiveState::Inactivate)
+		{
+			partition->EachDungeonComponentActivatorComponent([](const UDungeonComponentActivatorComponent* dungeonComponentActivatorComponent)
+				{
+					dungeonComponentActivatorComponent->EachControlledLightCastShadow([](UPointLightComponent* pointLightComponent)
+						{
+							// 強制的に影を落とす
+							pointLightComponent->SetCastShadows(true);
+						}
+					);
+				}
+			);
+		}
+	}
 }
 
 #if WITH_EDITOR
@@ -476,6 +571,30 @@ void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 					0.f,
 					10.f
 				);
+			}
+		}
+	}
+
+	// 有効な範囲を黄色い線で描画します
+	if (const UWorld* world = GetValid(GetWorld()))
+	{
+		for (FConstPlayerControllerIterator iterator = world->GetPlayerControllerIterator(); iterator; ++iterator)
+		{
+			if (const auto* playerController = iterator->Get())
+			{
+				const auto& playerPawn = playerController->GetPawn();
+				if (IsValid(playerPawn) && playerPawn->IsPlayerControlled())
+				{
+					UKismetSystemLibrary::DrawDebugBox(
+						GetWorld(),
+						playerPawn->GetActorLocation(),
+						mActiveExtents,
+						FColor::Yellow,
+						FRotator::ZeroRotator,
+						0.f,
+						10.f
+					);
+				}
 			}
 		}
 	}
