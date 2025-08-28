@@ -162,9 +162,9 @@ void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 			if (lastDungeonPartition != currentDungeonPartition)
 			{
 #if WITH_EDITOR
-				if (GetOwner())
+				if (const auto* ownerActor = GetOwner())
 				{
-					DUNGEON_GENERATOR_VERBOSE(TEXT("Actor '%s' has been registered for partitioning"), *GetOwner()->GetName());
+					DUNGEON_GENERATOR_VERBOSE(TEXT("Actor '%s' has been registered for partitioning"), *ownerActor->GetName());
 				}
 #endif
 
@@ -191,9 +191,9 @@ void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 void UDungeonComponentActivatorComponent::CallPartitionActivate()
 {
 #if WITH_EDITOR
-	if (GetOwner())
+	if (const auto* ownerActor = GetOwner())
 	{
-		DUNGEON_GENERATOR_VERBOSE(TEXT("Activate actor '%s"), *GetOwner()->GetName());
+		DUNGEON_GENERATOR_VERBOSE(TEXT("Activate actor '%s"), *ownerActor->GetName());
 	}
 #endif
 
@@ -238,7 +238,7 @@ void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 
 		if (EnableOwnerActorAiControl)
 		{
-			if (APawn* ownerPawn = Cast<APawn>(GetOwner()))
+			if (const auto* ownerPawn = Cast<APawn>(owner))
 				SaveAndStopAiLogic(EDungeonComponentActivateReason::Partition, TEXT("DungeonActivatorComponent"), ownerPawn);
 		}
 	}
@@ -272,7 +272,7 @@ void UDungeonComponentActivatorComponent::LoadActorTickEnable(const EDungeonComp
 	const bool currentEnabled = mIsTickEnabled.all();
 	if (previousEnabled != currentEnabled)
 	{
-		if (AActor* owner = GetOwner())
+		if (auto* owner = GetOwner())
 		{
 			owner->SetActorTickEnabled(mTickSaver);
 		}
@@ -282,7 +282,7 @@ void UDungeonComponentActivatorComponent::LoadActorTickEnable(const EDungeonComp
 // Component
 void UDungeonComponentActivatorComponent::SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason)
 {
-	auto* owner = GetOwner();
+	const auto* owner = GetOwner();
 	if (IsValid(owner))
 		SaveAndDisableComponentActivation(activateReason, owner);
 }
@@ -333,7 +333,7 @@ void UDungeonComponentActivatorComponent::LoadComponentActivation(const EDungeon
 // Collision
 void UDungeonComponentActivatorComponent::SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason)
 {
-	AActor* owner = GetOwner();
+	const auto* owner = GetOwner();
 	if (IsValid(owner))
 		SaveAndDisableCollisionEnable(activateReason, owner);
 }
@@ -387,7 +387,7 @@ void UDungeonComponentActivatorComponent::LoadCollisionEnable(const EDungeonComp
 // Visibility
 void UDungeonComponentActivatorComponent::SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason)
 {
-	AActor* owner = GetOwner();
+	const auto* owner = GetOwner();
 	if (IsValid(owner))
 		SaveAndDisableVisibility(activateReason, owner);
 }
@@ -441,7 +441,7 @@ void UDungeonComponentActivatorComponent::LoadVisibility(const EDungeonComponent
 // AI
 void UDungeonComponentActivatorComponent::SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason)
 {
-	if (auto* owner = Cast<APawn>(GetOwner()))
+	if (const auto* owner = Cast<APawn>(GetOwner()))
 	{
 		if (IsValid(owner))
 			SaveAndStopAiLogic(activateReason, reason, owner);
@@ -472,7 +472,7 @@ void UDungeonComponentActivatorComponent::LoadAiLogic(const EDungeonComponentAct
 {
 	if (mLogicEnabled.set(static_cast<size_t>(activateReason)).all())
 	{
-		if (auto* owner = Cast<APawn>(GetOwner()))
+		if (const auto* owner = Cast<APawn>(GetOwner()))
 		{
 			if (auto* controller = owner->GetController<AAIController>())
 			{

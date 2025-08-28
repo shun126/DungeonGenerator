@@ -3,9 +3,11 @@
 ## 20250823-1.7.5 (58)
 ### Changes
 * Enable/disable control of shadow generation in point light derived classes changed from per-partition to per-light.
+* Added actors that regularly spawn actors.
 * Fixed several bugs
 ### 変更点
 * ポイントライト派生クラスの影の生成の有効無効制御をパーティエーション単位からライト単位に変更
+* アクターを定期的にスポーンするアクターを追加
 * いくつかの不具合を修正
 
 ## 202500809-1.7.4 (57)

@@ -13,9 +13,9 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	/*
-	重み付き抽選
-	*/
+	/**
+	 * 重み付き抽選
+	 */
 	template <class InputIterator, class Predicate>
 	InputIterator DrawLots(const std::shared_ptr<Random>& random, InputIterator first, InputIterator last, Predicate pred) noexcept
 	{
@@ -31,7 +31,6 @@ namespace dungeon
 			InputIterator mBody;
 		};
 		std::vector<Entry> weights;
-		weights.reserve(std::distance(first, last));
 		for (InputIterator i = first; i != last; ++i)
 		{
 			auto weight = pred(*i);
