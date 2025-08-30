@@ -5,7 +5,7 @@
 <a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/issues">Issues</a>,
 <a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions">Discussions</a>,
 <a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki">Wiki</a>,
-<a href="https://mnu.sakura.ne.jp/_doxygen/dungeon_generator">Doxygen</a>
+<a href="https://happy-game-dev.undo.jp/_doxygen/dungeon_generator/index.html">Doxygen</a>
 </p>
 </div>
 
@@ -82,7 +82,7 @@ Or, [Fab](https://fab.com/s/f5587c55bad0) is releasing it under Epic license. If
 # 👀 See also
 * [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
 * [DeepWiki](https://deepwiki.com/shun126/DungeonGenerator)
-* [Doxygen](https://mnu.sakura.ne.jp/_doxygen/dungeon_generator/)
+* [Doxygen](https://happy-game-dev.undo.jp/_doxygen/dungeon_generator/index.html)
 * [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
 * [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
 

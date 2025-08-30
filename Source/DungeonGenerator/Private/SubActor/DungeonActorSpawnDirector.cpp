@@ -21,6 +21,8 @@
 #include "SubActor/DungeonActorSpawnDirector.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Helper/DrawLots.h"
+#include <Engine/World.h>
+#include <GameFramework/Pawn.h>
 
 ADungeonActorSpawnDirector::ADungeonActorSpawnDirector(const FObjectInitializer& objectInitializer)
     : Super(objectInitializer)

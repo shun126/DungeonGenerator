@@ -22,6 +22,9 @@ UDungeonComponentActivatorComponent::UDungeonComponentActivatorComponent(const F
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
+
+	// GameThread以外からの呼び出しを許可
+	PrimaryComponentTick.bRunOnAnyThread = true;
 }
 
 void UDungeonComponentActivatorComponent::BeginPlay()
@@ -104,6 +107,9 @@ void UDungeonComponentActivatorComponent::EndPlay(const EEndPlayReason::Type end
 #endif
 }
 
+/*
+ * GameThread以外から呼び出されるのでスレッドセーフに注意して下さい
+ */
 void UDungeonComponentActivatorComponent::TickComponent(float deltaTime, enum ELevelTick tickType, FActorComponentTickFunction* thisTickFunction)
 {
 	Super::TickComponent(deltaTime, tickType, thisTickFunction);
@@ -143,6 +149,9 @@ void UDungeonComponentActivatorComponent::TickComponent(float deltaTime, enum EL
 #endif
 }
 
+/*
+ * GameThread以外から呼び出されるのでスレッドセーフに注意して下さい
+ */
 void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 {
 	// ADungeonMainLevelScriptActorではないならTick不要
@@ -193,11 +202,9 @@ void UDungeonComponentActivatorComponent::CallPartitionActivate()
 #if WITH_EDITOR
 	if (const auto* ownerActor = GetOwner())
 	{
-		DUNGEON_GENERATOR_VERBOSE(TEXT("Activate actor '%s"), *ownerActor->GetName());
+		DUNGEON_GENERATOR_VERBOSE(TEXT("Activate the near component of Actor '%s'"), *ownerActor->GetName());
 	}
 #endif
-
-	OnPartitionActivate();
 
 	if (EnableComponentActivationControl)
 		LoadComponentActivation(EDungeonComponentActivateReason::Partition);
@@ -221,7 +228,7 @@ void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 	if (IsValid(owner))
 	{
 #if WITH_EDITOR
-		DUNGEON_GENERATOR_VERBOSE(TEXT("Inactivate actor '%s"), *owner->GetName());
+		DUNGEON_GENERATOR_VERBOSE(TEXT("Deactivate the near component of Actor '%s'"), *owner->GetName());
 #endif
 
 		if (EnableComponentActivationControl)
@@ -242,8 +249,6 @@ void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 				SaveAndStopAiLogic(EDungeonComponentActivateReason::Partition, TEXT("DungeonActivatorComponent"), ownerPawn);
 		}
 	}
-
-	OnPartitionInactivate();
 }
 
 // Actor

@@ -7,34 +7,58 @@ All Rights Reserved.
 #include "MainLevel/DungeonPartition.h"
 #include "MainLevel/DungeonComponentActivatorComponent.h"
 
+/*
+ * スレッドセーフにして下さい
+ */
 void UDungeonPartition::RegisterActivatorComponent(UDungeonComponentActivatorComponent* component)
 {
 	if (IsValid(component))
+	{
+		UE::TScopeLock lock(mActivatorAndRegisteredComponentsMutex);
+		RegisteredComponents.Emplace(component);
+		ActivatorComponents.Emplace(component);
+	}
+}
+
+/*
+ * スレッドセーフにして下さい
+ */
+void UDungeonPartition::UnregisterActivatorComponent(UDungeonComponentActivatorComponent* component)
+{
+	if (IsValid(component))
+	{
+		UE::TScopeLock lock(mActivatorAndRegisteredComponentsMutex);
+		RegisteredComponents.Remove(component);
+		ActivatorComponents.Remove(component);
+	}
+}
+
+void UDungeonPartition::UpdateRegisteredComponent()
+{
+	check(IsInGameThread());
+
+	for (const auto& component : RegisteredComponents)
 	{
 		if (mPartitionActivate)
 			component->CallPartitionActivate();
 		else
 			component->CallPartitionInactivate();
-		ActivatorComponents.Emplace(component);
 	}
+	RegisteredComponents.Reset();
 }
 
-void UDungeonPartition::UnregisterActivatorComponent(UDungeonComponentActivatorComponent* component)
+void UDungeonPartition::CallPartitionActivate(const bool resetPartitionInactivateRemainTimer)
 {
-	if (IsValid(component))
-	{
-		ActivatorComponents.Remove(component);
-	}
-}
+	UpdateRegisteredComponent();
 
-void UDungeonPartition::CallPartitionActivate()
-{
+	if (resetPartitionInactivateRemainTimer)
+		mPartitionInactivateRemainTimer = InactivateRemainTimer;
+
 	if (!mPartitionActivate)
 	{
 		mPartitionActivate = true;
-		mInactivateRemainTimer = InactivateRemainTimer;
 
-		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
+		for (const auto& component : ActivatorComponents)
 		{
 			if (IsValid(component))
 			{
@@ -46,6 +70,8 @@ void UDungeonPartition::CallPartitionActivate()
 
 void UDungeonPartition::CallPartitionInactivate()
 {
+	UpdateRegisteredComponent();
+
 	if (mPartitionActivate)
 	{
 		mPartitionActivate = false;

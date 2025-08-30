@@ -5,13 +5,14 @@ All Rights Reserved.
 */
 
 #pragma once
+#include "MainLevel/DungeonComponentActivatorComponent.h"
 #include <CoreMinimal.h>
 #include <Containers/Set.h>
+#include <Misc/SpinLock.h>
 #include <functional>
 #include "DungeonPartition.generated.h"
 
 class ADungeonMainLevelScriptActor;
-class UDungeonComponentActivatorComponent;
 
 /**
 This class represents the area delimited by the dungeon.
@@ -33,54 +34,31 @@ class DUNGEONGENERATOR_API UDungeonPartition : public UObject
 	*/
 	static constexpr float InactivateRemainTimer = 3.f;
 
-	/**
-	 * パーティエーションの状態
-	 * 大きいほど優先
-	 */
-	enum class ActiveState : uint8
-	{
-		Inactivate,		//!< 非アクティブ
-		ActivateFar,	//!< アクティブ（遠景）
-		ActivateNear,	//!< アクティブ（近景）
-	};
-
 public:
-	/**
-	 * パーティエーションの状態になった理由
-	 * 大きいほど優先
-	 */
-	enum class ActiveReason : uint8
-	{
-		Unknown,		//!< 未定
-		Bounding,		//!< バウンディングボックス
-		ViewFrustum,	//!< 視錐台
-	};
-
 	explicit UDungeonPartition(const FObjectInitializer& objectInitializer);
 	virtual ~UDungeonPartition() override = default;
 
 private:
 	void RegisterActivatorComponent(UDungeonComponentActivatorComponent* component);
 	void UnregisterActivatorComponent(UDungeonComponentActivatorComponent* component);
+	void UpdateRegisteredComponent();
 
-	bool UpdateInactivateRemainTimer(const float deltaSeconds);
-	bool IsValidInactivateRemainTimer() const noexcept;
+	bool UpdatePartitionInactivateRemainTimer(const float deltaSeconds);
+	bool IsValidPartitionInactivateRemainTimer() const noexcept;
 
-	void Mark(const ActiveState activeState, const ActiveReason activeReason) noexcept;
+	void Mark() noexcept;
 	void Unmark() noexcept;
-	ActiveState IsMarked() const noexcept;
-	ActiveReason GetActiveStateType() const;
-
-	void CallPartitionActivate();
+	bool IsMarked() const noexcept;
+	void CallPartitionActivate(const bool resetPartitionInactivateRemainTimer);
 	void CallPartitionInactivate();
 
 	bool IsEmpty() const;
-
 	void EachDungeonComponentActivatorComponent(const std::function<void(UDungeonComponentActivatorComponent*)>& function) const
 	{
-		for (const auto& dungeonComponentActivatorComponent : ActivatorComponents)
+		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
 		{
-			function(dungeonComponentActivatorComponent);
+			if (IsValid(component))
+				function(component);
 		}
 	}
 
@@ -88,11 +66,14 @@ protected:
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> ActivatorComponents;
 
+	UPROPERTY(Transient)
+	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> RegisteredComponents;
+
 private:
-	float mInactivateRemainTimer = 0.f;
+	float mPartitionInactivateRemainTimer = 0.f;
 	bool mPartitionActivate = true;
-	ActiveState mMarked = ActiveState::Inactivate;
-	ActiveReason mActiveStateType = ActiveReason::Unknown;
+	bool mMarked = false;
+	UE::FSpinLock mActivatorAndRegisteredComponentsMutex;
 
 	friend class ADungeonMainLevelScriptActor;
 	friend class UDungeonComponentActivatorComponent;
@@ -103,39 +84,31 @@ inline UDungeonPartition::UDungeonPartition(const FObjectInitializer& objectInit
 {
 }
 
-inline bool UDungeonPartition::UpdateInactivateRemainTimer(const float deltaSeconds)
+inline bool UDungeonPartition::UpdatePartitionInactivateRemainTimer(const float deltaSeconds)
 {
-	if (mInactivateRemainTimer > 0.f)
+	if (mPartitionInactivateRemainTimer > 0.f)
 	{
-		mInactivateRemainTimer -= deltaSeconds;
+		mPartitionInactivateRemainTimer -= deltaSeconds;
 	}
-	return mInactivateRemainTimer > 0.f;
+	return mPartitionInactivateRemainTimer > 0.f;
 }
 
-inline bool UDungeonPartition::IsValidInactivateRemainTimer() const noexcept
+inline bool UDungeonPartition::IsValidPartitionInactivateRemainTimer() const noexcept
 {
-	return mInactivateRemainTimer > 0.f;
+	return mPartitionInactivateRemainTimer > 0.f;
 }
 
-inline void UDungeonPartition::Mark(const ActiveState activeState, const ActiveReason activeReason) noexcept
+inline void UDungeonPartition::Mark() noexcept
 {
-	if (mMarked < activeState)
-		mMarked = activeState;
-	mActiveStateType = activeReason;
+	mMarked = true;
 }
 
 inline void UDungeonPartition::Unmark() noexcept
 {
-	mMarked = ActiveState::Inactivate;
-	mActiveStateType = ActiveReason::Unknown;
+	mMarked = false;
 }
 
-inline UDungeonPartition::ActiveState UDungeonPartition::IsMarked() const noexcept
+inline bool UDungeonPartition::IsMarked() const noexcept
 {
 	return mMarked;
-}
-
-inline UDungeonPartition::ActiveReason UDungeonPartition::GetActiveStateType() const
-{
-	return mActiveStateType;
 }

@@ -1533,13 +1533,17 @@ namespace dungeon
 		const int32 minZ = room->GetBackground();
 		const int32 maxZ = room->GetForeground();
 
-		const int32 count = room->GetRect().Area() / 8;
-		for (int32 i = 0; i < count; ++i)
+		int32 count = static_cast<int32>(std::sqrt(static_cast<float>(room->GetRect().Area())));
+		if (count >= 5)
 		{
-			const int32 x = mGenerateParameter.GetRandom()->Get(room->GetLeft(), room->GetRight());
-			const int32 y = mGenerateParameter.GetRandom()->Get(room->GetTop(), room->GetBottom());
-			if (CanFillStructuralColumnVoxel(x, y, minZ, maxZ))
-				FillStructuralColumnVoxel(x, y, minZ, maxZ);
+			count /= 2;
+			for (int32 i = 0; i < count; ++i)
+			{
+				const int32 x = mGenerateParameter.GetRandom()->Get(room->GetLeft(), room->GetRight());
+				const int32 y = mGenerateParameter.GetRandom()->Get(room->GetTop(), room->GetBottom());
+				if (CanFillStructuralColumnVoxel(x, y, minZ, maxZ))
+					FillStructuralColumnVoxel(x, y, minZ, maxZ);
+			}
 		}
 
 		if (mGenerateParameter.GetRandom()->Get(3) == 0)

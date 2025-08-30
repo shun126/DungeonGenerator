@@ -9,6 +9,7 @@ All Rights Reserved.
 #include <GameFramework/Actor.h>
 #include <functional>
 #include <utility>
+#include <vector>
 
 /**
 A class that assists in saving and restoring the active status of a component owned by an actor
@@ -18,7 +19,14 @@ template<typename T>
 class DungeonComponentActivationSaver final
 {
 public:
+	/**
+	 * コンストラクタ
+	 */
 	DungeonComponentActivationSaver() = default;
+
+	/**
+	 * デストラクタ
+	 */
 	~DungeonComponentActivationSaver() = default;
 
 	/**
@@ -41,13 +49,13 @@ public:
 	bool IsEmpty() const;
 
 private:
-	TMap<TWeakObjectPtr<UActorComponent>, T> mActivations;
+	std::vector<std::pair<TWeakObjectPtr<UActorComponent>, T>> mActivations;
 };
 
 template<typename T>
 inline void DungeonComponentActivationSaver<T>::Stash(const AActor* actor, const std::function<std::pair<bool, T>(UActorComponent*)>& function)
 {
-	mActivations.Reset();
+	mActivations.clear();
 
 	if (IsValid(actor))
 	{
@@ -63,7 +71,7 @@ inline void DungeonComponentActivationSaver<T>::Stash(const AActor* actor, const
 			const std::pair<bool, T> result = function(component);
 			if (result.first)
 			{
-				mActivations.Add(component, result.second);
+				mActivations.emplace_back(std::make_pair(component, result.second));
 			}
 		}
 	}
@@ -74,18 +82,18 @@ inline void DungeonComponentActivationSaver<T>::Pop(const std::function<void(UAc
 {
 	for (const auto& activation : mActivations)
 	{
-		UActorComponent* component = activation.Key.Get();
+		auto* component = activation.first.Get();
 		if (!IsValid(component))
 			continue;
 
-		function(component, activation.Value);
+		function(component, activation.second);
 	}
 
-	mActivations.Reset();
+	mActivations.clear();
 }
 
 template<typename T>
 inline bool DungeonComponentActivationSaver<T>::IsEmpty() const
 {
-	return mActivations.Num() <= 0;
+	return mActivations.empty();
 }

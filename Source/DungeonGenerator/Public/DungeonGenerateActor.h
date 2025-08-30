@@ -121,7 +121,7 @@ public:
 	 * Get the largest room size
 	 * 最も大きい部屋のサイズを取得します
 	 */
-	FVector GetRoomMaxSize() const;
+	FVector GetRoomMaxSizeWithMargin(const int32_t margin) const;
 
 	/**
 	 * Sets the culling distance for InstancedMesh
