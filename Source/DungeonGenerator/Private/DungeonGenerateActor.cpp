@@ -39,6 +39,7 @@ ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializ
 {
 	// Tick Enable
 	PrimaryActorTick.bCanEverTick = PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.TickInterval = 6.f / 60.f;
 
 	SetCanBeDamaged(false);
 }
@@ -389,14 +390,14 @@ float ADungeonGenerateActor::GetGridSize() const
 	return DungeonGenerateParameter && DungeonGenerateParameter->GridSize;
 }
 
-FVector ADungeonGenerateActor::GetRoomMaxSize() const
+FVector ADungeonGenerateActor::GetRoomMaxSizeWithMargin(const int32_t margin) const
 {
 	if (DungeonGenerateParameter)
 	{
 		FVector result;
-		result.X = DungeonGenerateParameter->GetRoomWidth().Max;
-		result.Y = DungeonGenerateParameter->GetRoomDepth().Max;
-		result.Z = DungeonGenerateParameter->GetRoomHeight().Max;
+		result.X = DungeonGenerateParameter->GetRoomWidth().Max + margin;
+		result.Y = DungeonGenerateParameter->GetRoomDepth().Max + margin;
+		result.Z = DungeonGenerateParameter->GetRoomHeight().Max + margin;
 		return result * DungeonGenerateParameter->GetGridSize().To3D();
 	}
 	return FVector::ZeroVector;

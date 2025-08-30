@@ -5,14 +5,14 @@ All Rights Reserved.
 */
 
 #include "MainLevel/DungeonComponentActivatorComponent.h"
-
-#include "Components/SpotLightComponent.h"
-
 #include "MainLevel/DungeonMainLevelScriptActor.h"
-#include <Engine/Level.h>
+#include "Core/Debug/BuildInformation.h"
+#include "Core/Debug/Debug.h"
 #include <AIController.h>
 #include <BrainComponent.h>
 #include <Components/PrimitiveComponent.h>
+#include <Engine/Level.h>
+#include <Engine/World.h>
 
 static constexpr double DisplacementOfInitialLocation = 100;
 static constexpr double MovementDetectionDistance = 1;
@@ -22,32 +22,70 @@ UDungeonComponentActivatorComponent::UDungeonComponentActivatorComponent(const F
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
+
+	// GameThread以外からの呼び出しを許可
+	PrimaryComponentTick.bRunOnAnyThread = true;
 }
 
 void UDungeonComponentActivatorComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (const AActor* ownerActor = GetOwner())
+	if (const auto* ownerActor = GetOwner())
 	{
-		if (const ULevel* level = GetComponentLevel())
+		/*
+		 * サブレベル上のアクターがUDungeonComponentActivatorComponentを所有している事があるので
+		 * パーシスタントレベルから直接ADungeonMainLevelScriptActorを取得するようにしている
+		 */
+		if (const auto* world = GetWorld())
 		{
-			if (ADungeonMainLevelScriptActor* levelScript = Cast<ADungeonMainLevelScriptActor>(level->GetLevelScriptActor()))
+			if (IsValid(world->PersistentLevel))
 			{
-				mDungeonLevelScriptActor = levelScript;
+				if (auto* levelScript = Cast<ADungeonMainLevelScriptActor>(world->PersistentLevel->GetLevelScriptActor()))
+				{
+					mDungeonLevelScriptActor = levelScript;
 
-				// 動かないならTick不要
-				const USceneComponent* rootSceneComponent = ownerActor->GetRootComponent();
-				if (rootSceneComponent && rootSceneComponent->Mobility != EComponentMobility::Movable)
-					SetComponentTickEnabled(false);
+					// 動かないならTick不要
+					const auto* rootSceneComponent = ownerActor->GetRootComponent();
+					if (rootSceneComponent && rootSceneComponent->Mobility != EComponentMobility::Movable)
+					{
+						DUNGEON_GENERATOR_VERBOSE(TEXT("The tick is stopped because the Mobility of actor ‘%s’ is Static."), *ownerActor->GetName());
+						SetComponentTickEnabled(false);
+					}
 
-				// 初回起動のため少しずらした座標を記録
-				mLastLocation = ownerActor->GetActorLocation() + FVector(0, DisplacementOfInitialLocation, 0);
+					// 初回起動のため少しずらした座標を記録
+					mLastLocation = ownerActor->GetActorLocation() + FVector(0, DisplacementOfInitialLocation, 0);
+
+
+
+					// 制御対象のポイントライト派生クラスを回収
+					for (auto* component : ownerActor->GetComponents())
+					{
+						// ポイントライト派生クラスか？
+						auto* pointLightComponent = Cast<UPointLightComponent>(component);
+						if (IsValid(pointLightComponent))
+						{
+							// 影を落とすライトのみ対象、BeginPlay以降にCastShadowsを変更しても制御対象には含まれない
+							if (pointLightComponent->CastShadows)
+							{
+								// 静的ライト以外なら制御対象として登録
+								if (pointLightComponent->Mobility != EComponentMobility::Type::Static)
+									mPointLightComponents.emplace_back(pointLightComponent);
+							}
+						}
+					}
+					mPointLightComponents.shrink_to_fit();
+
+
+
+				}
 			}
 		}
+
 		// ADungeonMainLevelScriptActorではないならTick不要
 		if (mDungeonLevelScriptActor.Get() == nullptr)
 		{
+			DUNGEON_GENERATOR_VERBOSE(TEXT("Stopping tick because persistent script for actor ‘%s’ not found."), *ownerActor->GetName());
 			SetComponentTickEnabled(false);
 		}
 
@@ -60,42 +98,85 @@ void UDungeonComponentActivatorComponent::EndPlay(const EEndPlayReason::Type end
 	Super::EndPlay(endPlayReason);
 
 	mDungeonLevelScriptActor.Reset();
+
+#if WITH_EDITOR
+	if (const auto* ownerActor = GetOwner())
+	{
+		DUNGEON_GENERATOR_VERBOSE(TEXT("Component control finished for actor '%s'"), *ownerActor->GetName());
+	}
+#endif
 }
 
+/*
+ * GameThread以外から呼び出されるのでスレッドセーフに注意して下さい
+ */
 void UDungeonComponentActivatorComponent::TickComponent(float deltaTime, enum ELevelTick tickType, FActorComponentTickFunction* thisTickFunction)
 {
 	Super::TickComponent(deltaTime, tickType, thisTickFunction);
 
-	if (const AActor* ownerActor = GetOwner())
+	if (const auto* ownerActor = GetOwner())
 	{
 		// 移動した？
-		const FVector& currentLocation = ownerActor->GetActorLocation();
+		const auto& currentLocation = ownerActor->GetActorLocation();
 		if (FVector::DistSquared(mLastLocation, currentLocation) >= MovementDetectionDistance * MovementDetectionDistance)
 		{
 			TickImplement(currentLocation);
 			mLastLocation = currentLocation;
 		}
 	}
+
+#if JENKINS_FOR_DEVELOP & UE_BUILD_DEBUG & 0
+	for (const auto& weakPointLightComponent : mPointLightComponents)
+	{
+		const auto pointLightComponent = weakPointLightComponent.Get();
+		if (IsValid(pointLightComponent))
+		{
+			if (pointLightComponent->CastShadows)
+			{
+				DrawDebugString(
+					pointLightComponent->GetWorld(),
+					pointLightComponent->GetComponentLocation(),
+					TEXT("ON"),
+					nullptr,
+					FColor::White,
+					0,
+					true,
+					1.f
+				);
+			}
+		}
+	}
+#endif
 }
 
+/*
+ * GameThread以外から呼び出されるのでスレッドセーフに注意して下さい
+ */
 void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 {
 	// ADungeonMainLevelScriptActorではないならTick不要
-	if (const ADungeonMainLevelScriptActor* levelScript = mDungeonLevelScriptActor.Get())
+	if (const auto* levelScript = mDungeonLevelScriptActor.Get())
 	{
 #if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 		if (levelScript->IsEnableLoadControl())
 		{
 #endif
 			// 新しい座標のUDungeonPartitionを検索
-			UDungeonPartition* currentDungeonPartition = levelScript->Find(location);
+			auto* currentDungeonPartition = levelScript->Find(location);
 
 			// 古い座標のUDungeonPartitionを検索
-			UDungeonPartition* lastDungeonPartition = mLastDungeonPartition.Get();
+			auto* lastDungeonPartition = mLastDungeonPartition.Get();
 
 			// UDungeonPartitionを移動した？
 			if (lastDungeonPartition != currentDungeonPartition)
 			{
+#if WITH_EDITOR
+				if (const auto* ownerActor = GetOwner())
+				{
+					DUNGEON_GENERATOR_VERBOSE(TEXT("Actor '%s' has been registered for partitioning"), *ownerActor->GetName());
+				}
+#endif
+
 				// 古いUDungeonPartitionから退出
 				if (IsValid(lastDungeonPartition))
 				{
@@ -118,7 +199,12 @@ void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 
 void UDungeonComponentActivatorComponent::CallPartitionActivate()
 {
-	OnPartitionActivate();
+#if WITH_EDITOR
+	if (const auto* ownerActor = GetOwner())
+	{
+		DUNGEON_GENERATOR_VERBOSE(TEXT("Activate the near component of Actor '%s'"), *ownerActor->GetName());
+	}
+#endif
 
 	if (EnableComponentActivationControl)
 		LoadComponentActivation(EDungeonComponentActivateReason::Partition);
@@ -138,9 +224,13 @@ void UDungeonComponentActivatorComponent::CallPartitionActivate()
 
 void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 {
-	AActor* owner = GetOwner();
+	auto* owner = GetOwner();
 	if (IsValid(owner))
 	{
+#if WITH_EDITOR
+		DUNGEON_GENERATOR_VERBOSE(TEXT("Deactivate the near component of Actor '%s'"), *owner->GetName());
+#endif
+
 		if (EnableComponentActivationControl)
 			SaveAndDisableComponentActivation(EDungeonComponentActivateReason::Partition, owner);
 
@@ -155,33 +245,16 @@ void UDungeonComponentActivatorComponent::CallPartitionInactivate()
 
 		if (EnableOwnerActorAiControl)
 		{
-			if (APawn* ownerPawn = Cast<APawn>(GetOwner()))
+			if (const auto* ownerPawn = Cast<APawn>(owner))
 				SaveAndStopAiLogic(EDungeonComponentActivateReason::Partition, TEXT("DungeonActivatorComponent"), ownerPawn);
 		}
-	}
-
-	OnPartitionInactivate();
-}
-
-void UDungeonComponentActivatorComponent::CallCastShadowActivate()
-{
-	if (EnableLightShadowControl)
-		LoadCastShadow(EDungeonComponentActivateReason::Partition);
-}
-
-void UDungeonComponentActivatorComponent::CallCastShadowInactivate()
-{
-	if (const AActor* owner = GetValid(GetOwner()))
-	{
-		if (EnableLightShadowControl)
-			SaveAndDisableCastShadow(EDungeonComponentActivateReason::Partition, owner);
 	}
 }
 
 // Actor
 void UDungeonComponentActivatorComponent::SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason)
 {
-	if (AActor* owner = GetValid(GetOwner()))
+	if (auto* owner = GetValid(GetOwner()))
 		SaveAndDisableActorTickEnable(activateReason, owner);
 }
 
@@ -204,7 +277,7 @@ void UDungeonComponentActivatorComponent::LoadActorTickEnable(const EDungeonComp
 	const bool currentEnabled = mIsTickEnabled.all();
 	if (previousEnabled != currentEnabled)
 	{
-		if (AActor* owner = GetOwner())
+		if (auto* owner = GetOwner())
 		{
 			owner->SetActorTickEnabled(mTickSaver);
 		}
@@ -214,7 +287,7 @@ void UDungeonComponentActivatorComponent::LoadActorTickEnable(const EDungeonComp
 // Component
 void UDungeonComponentActivatorComponent::SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason)
 {
-	AActor* owner = GetOwner();
+	const auto* owner = GetOwner();
 	if (IsValid(owner))
 		SaveAndDisableComponentActivation(activateReason, owner);
 }
@@ -265,7 +338,7 @@ void UDungeonComponentActivatorComponent::LoadComponentActivation(const EDungeon
 // Collision
 void UDungeonComponentActivatorComponent::SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason)
 {
-	AActor* owner = GetOwner();
+	const auto* owner = GetOwner();
 	if (IsValid(owner))
 		SaveAndDisableCollisionEnable(activateReason, owner);
 }
@@ -281,7 +354,7 @@ void UDungeonComponentActivatorComponent::SaveAndDisableCollisionEnable(const ED
 			{
 				std::pair<bool, ECollisionEnabled::Type> result;
 
-				if (UPrimitiveComponent* primitiveComponent = Cast<UPrimitiveComponent>(component))
+				if (auto* primitiveComponent = Cast<UPrimitiveComponent>(component))
 				{
 					result.first = true;
 					result.second = primitiveComponent->GetCollisionEnabled();
@@ -307,7 +380,7 @@ void UDungeonComponentActivatorComponent::LoadCollisionEnable(const EDungeonComp
 	{
 		mComponentCollisionEnabledSaver.Pop([](UActorComponent* component, const ECollisionEnabled::Type activation)
 			{
-				if (UPrimitiveComponent* primitiveComponent = Cast<UPrimitiveComponent>(component))
+				if (auto* primitiveComponent = Cast<UPrimitiveComponent>(component))
 				{
 					primitiveComponent->SetCollisionEnabled(activation);
 				}
@@ -319,7 +392,7 @@ void UDungeonComponentActivatorComponent::LoadCollisionEnable(const EDungeonComp
 // Visibility
 void UDungeonComponentActivatorComponent::SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason)
 {
-	AActor* owner = GetOwner();
+	const auto* owner = GetOwner();
 	if (IsValid(owner))
 		SaveAndDisableVisibility(activateReason, owner);
 }
@@ -370,76 +443,21 @@ void UDungeonComponentActivatorComponent::LoadVisibility(const EDungeonComponent
 	}
 }
 
-// CastShadow
-void UDungeonComponentActivatorComponent::SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason)
-{
-	AActor* owner = GetOwner();
-	if (IsValid(owner))
-		SaveAndDisableCastShadow(activateReason, owner);
-}
-
-void UDungeonComponentActivatorComponent::SaveAndDisableCastShadow(const EDungeonComponentActivateReason activateReason, const AActor* owner)
-{
-	const bool previousEnabled = mLightCastShadow.all();
-	mLightCastShadow.reset(static_cast<size_t>(activateReason));
-	const bool currentEnabled = mLightCastShadow.all();
-	if (previousEnabled != currentEnabled)
-	{
-		mLightCastShadowSaver.Stash(owner, [](UActorComponent* component)
-			{
-				std::pair<bool, bool> result;
-
-				auto* pointLightComponent = Cast<UPointLightComponent>(component);
-				result.first = result.second =
-					IsValid(pointLightComponent) &&
-					pointLightComponent->Mobility != EComponentMobility::Type::Static &&
-					pointLightComponent->CastShadows != 0;
-				if (result.first)
-				{
-					pointLightComponent->SetCastShadows(false);
-				}
-				else
-				{
-					result.first = false;
-				}
-
-				return result;
-			}
-		);
-	}
-}
-
-void UDungeonComponentActivatorComponent::LoadCastShadow(const EDungeonComponentActivateReason activateReason)
-{
-	const bool previousEnabled = mLightCastShadow.all();
-	mLightCastShadow.set(static_cast<size_t>(activateReason));
-	const bool currentEnabled = mLightCastShadow.all();
-	if (previousEnabled != currentEnabled)
-	{
-		mLightCastShadowSaver.Pop([](UActorComponent* component, const bool castShadow)
-			{
-				if (auto* pointLightComponent = Cast<UPointLightComponent>(component))
-				{
-					pointLightComponent->SetCastShadows(castShadow);
-				}
-			}
-		);
-	}
-}
-
 // AI
 void UDungeonComponentActivatorComponent::SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason)
 {
-	if (APawn* owner = Cast<APawn>(GetOwner()))
+	if (const auto* owner = Cast<APawn>(GetOwner()))
+	{
 		if (IsValid(owner))
 			SaveAndStopAiLogic(activateReason, reason, owner);
+	}
 }
 
 void UDungeonComponentActivatorComponent::SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason, const APawn* owner)
 {
 	if (mLogicEnabled.all())
 	{
-		if (AAIController* controller = owner->GetController<AAIController>())
+		if (auto* controller = owner->GetController<AAIController>())
 		{
 			UBrainComponent* brain = controller->BrainComponent;
 			if (IsValid(brain) == true && brain->IsPaused() == false)
@@ -459,9 +477,9 @@ void UDungeonComponentActivatorComponent::LoadAiLogic(const EDungeonComponentAct
 {
 	if (mLogicEnabled.set(static_cast<size_t>(activateReason)).all())
 	{
-		if (APawn* owner = Cast<APawn>(GetOwner()))
+		if (const auto* owner = Cast<APawn>(GetOwner()))
 		{
-			if (AAIController* controller = owner->GetController<AAIController>())
+			if (auto* controller = owner->GetController<AAIController>())
 			{
 				UBrainComponent* brain = controller->BrainComponent;
 				if (IsValid(brain) && brain->IsPaused())

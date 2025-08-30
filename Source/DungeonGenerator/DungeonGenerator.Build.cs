@@ -21,32 +21,33 @@ public class DungeonGenerator : ModuleRules
 			new string[]
 			{
 			});
-		*/
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
-                "AIModule"
-            });
+			});
+		*/
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"Core",
 				"CoreUObject",
 				"Engine",
+				"AIModule",
 				"NavigationSystem",
-                "NetCore",
+				"NetCore",
 				"SlateCore",
 				"UMG",
-                "Foliage"
-            });
+				"Foliage",
+			}
+		);
 		if (Target.bBuildEditor)
 		{
 			PrivateDependencyModuleNames.AddRange(
 				new string[] {
 					"UnrealEd",
-	                "JsonUtilities",
-                });
+					"JsonUtilities",
+				});
 		}
 
 		/*

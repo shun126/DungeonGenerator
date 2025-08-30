@@ -1,12 +1,26 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## 20250722-1.7.4 (57)
+## 20250831-1.7.5 (58)
+### Changes
+* Enable/disable control of shadow generation in point light derived classes changed from per-partition to per-light.
+* Fixed a misjudgment of the viewing cone in the determination of active partition.
+* Limit the transfer method of the minimap to only the area of the change.
+* Added actors that regularly spawn actors.
+* Fixed several bugs
+### 変更点
+* ポイントライト派生クラスの影の生成の有効無効制御をパーティエーション単位からライト単位に変更
+* アクティブパーティエーションの判定で視錐台の判定ミスを修正
+* ミニマップの転送方法を変更範囲のみに限定
+* アクターを定期的にスポーンするアクターを追加
+* いくつかの不具合を修正
+
+## 202500809-1.7.4 (57)
 ### Changes
 * Fixed several bugs
 ### 変更点
 * いくつかの不具合を修正
 
-## 20250722-1.7.3 (56)
+## 202500807-1.7.3 (56)
 ### Changes
 * Added widget class to assist in creating mini-maps
 * Adjusted the effective range of point light and spot light shadows

@@ -36,7 +36,7 @@ class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptAct
 	 * Minimum distance from horizontal player to activate partition
 	 * パーティションをアクティブにする水平方向のプレイヤーからの最小距離
 	 */
-	static constexpr double PartitionHorizontalMinSize = 5.0 * 100.0;
+	static constexpr double PartitionHorizontalMinSize = 10.0 * 100.0;
 
 	/**
 	 * Maximum distance from horizontal player to activate partition
@@ -57,50 +57,52 @@ class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptAct
 	static constexpr double PartitionVerticalMaxSize = 100.0 * 100.0;
 
 public:
+	/**
+	 * コンストラクタ
+	 */
 	explicit ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer);
+
+	/**
+	 * デストラクタ
+	 */
 	virtual ~ADungeonMainLevelScriptActor() override = default;
 
 public:
 	/**
 	 * Called before dungeon generation
+	 * 
 	 * ダンジョン生成前に呼ばれます
-	 * @param dungeonGenerateActor DungeonGenerateActor
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator")
 	void OnPreDungeonGeneration(ADungeonGenerateActor* dungeonGenerateActor);
 
 	/**
 	 * Called after dungeon generation
+	 * 
 	 * ダンジョン生成後に呼ばれます
-	 * @param dungeonGenerateActor	DungeonGenerateActor
-	 * @param result				trueならば生成成功
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator")
 	void OnPostDungeonGeneration(ADungeonGenerateActor* dungeonGenerateActor, const bool result);
 
-public:
 	/**
-	Find DungeonPartition by world location
-	ワールド座標からDungeonPartitionを検索します
-	*/
+	 * Find DungeonPartition by world location
+	 *
+	 * ワールド座標からDungeonPartitionを検索します
+	 */
 	UDungeonPartition* Find(const FVector& worldLocation) const noexcept;
 
 	/**
-	Get AABB Extents to determine if it is around the player
-	プレイヤー周辺と判断するためのAABBのExtentsを取得します
-	*/
-	const FVector& GetActiveExtents() const noexcept;
-
-	/**
-	Is load control effective?
-	負荷コントロールが有効か取得します
-	*/
+	 * Is load control effective?
+	 *
+	 * 負荷コントロールが有効か取得します
+	 */
 	bool IsEnableLoadControl() const noexcept;
 
 	/**
-	Enables or disables load control
-	負荷コントロールを有効または無効にします
-	*/
+	 * Enables or disables load control
+	 *
+	 * 負荷コントロールを有効または無効にします
+	 */
 	void EnableLoadControl(const bool enable) noexcept;
 
 	// override
@@ -109,16 +111,24 @@ public:
 	virtual void Tick(float deltaSeconds) override;
 
 private:
+	UDungeonPartition* Index(const size_t x, const size_t y) const noexcept;
 	const FSceneView* GetSceneView(const APlayerController* playerController) const;
 
-	void Begin();
-	void Mark(const FVector& playerLocation);
-	void Mark(const FSceneView* sceneView);
-	void End(const float deltaSeconds);
+	void Begin() const;
+	void Mark(const FVector& playerLocation) const;
+	void Mark(const FSceneView* sceneView) const;
+	void End(const float deltaSeconds) const;
+
+	/**
+	 * ポイントライトおよびスポットライトの影を落とすか制御します
+	 */
+	void UpdateShadowCastingPointAndSpotLights();
+	void ForceActivateShadowCastingPointAndSpotLights();
 
 	void ForceActivate();
 	void ForceInactivate();
 
+#if WITH_EDITOR
 	/**
 	 * 線分とAABBの交差判定
 	 * @param segmentStart	線分の開始位置
@@ -129,22 +139,47 @@ private:
 	 */
 	static bool TestSegmentAABB(const FVector& segmentStart, const FVector& segmentEnd, const FVector& aabbCenter, const FVector& aabbExtent);
 
-#if WITH_EDITOR
+	static void DrawFrustumLines(UWorld* world, const FVector& viewLocation, const FRotator& viewRotation,
+		float FovY, float aspect, float nearDistance, float farDistance,
+		const FColor& color, float lifeTime = 0.f, float thickness = 0.f);
+
 	void DrawDebugInformation() const;
 #endif
 
 protected:
 	/**
-	レベル内のダンジョンパーティエーション
-	*/
+	 * レベル内のダンジョンパーティエーション
+	 */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UDungeonPartition>> DungeonPartitions;
 
 	/**
-	Load control effectiveness
-	負荷コントロールの有効性
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
+	 * Scaling factor of the range used for the activation decision.
+	 * If 1.0, the set distance is used as is.
+	 * Larger values increase the effective range, smaller values decrease it.
+	 *
+	 * アクティベーション判定に用いる範囲のスケーリング係数。
+	 * 1.0 の場合は設定された距離をそのまま使用します。
+	 * 値を大きくすると有効範囲が広がり、小さくすると狭まります。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ClampMin = "1"))
+	float ActivationRangeScale = 1.0f;
+
+	/**
+	 * Maximum number of point lights or spotlights casting shadows
+	 * Unlimited if 0
+	 *
+	 * ポイントライトまたはスポットライトの影を落とす最大数
+	 * 0ならば無制限
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
+	uint8 MaxShadowCastingPointAndSpotLights = 12;
+
+	/**
+	 * Load control effectiveness
+	 * 負荷コントロールの有効性
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
 	bool bEnableLoadControl = true;
 
 #if WITH_EDITORONLY_DATA
@@ -154,6 +189,13 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
 	bool ShowDebugInformation = false;
+
+	/**
+	 * Displays debugging information
+	 * デバッグ情報を表示します
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
+	bool ShowFrustumInformation = false;
 #endif
 
 private:
@@ -161,12 +203,8 @@ private:
 	double mBoundingSize = PartitionHorizontalMinSize;
 	size_t mPartitionWidth = 0;
 	size_t mPartitionDepth = 0;
-	double mPartitionSize = PartitionHorizontalMinSize / 2;
-	FVector mActiveExtents;
+	double mPartitionSize = PartitionHorizontalMinSize;
+	FVector mActiveRegionExtent;
+	float mActiveViewRange = 0.f;
 	bool mLastEnableLoadControl;
 };
-
-inline const FVector& ADungeonMainLevelScriptActor::GetActiveExtents() const noexcept
-{
-	return mActiveExtents;
-}
