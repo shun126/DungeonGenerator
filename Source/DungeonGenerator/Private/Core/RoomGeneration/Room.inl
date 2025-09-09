@@ -10,7 +10,7 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	inline const Identifier& Room::GetIdentifier() const noexcept
+	inline const Identifier Room::GetIdentifier() const noexcept
 	{
 		return mIdentifier;
 	}

@@ -54,6 +54,8 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配�
 #include <numeric>
 #include <unordered_map>
 
+#include "SubActor/DungeonRoomSensorDatabase.h"
+
 #if WITH_EDITOR
 // UnrealEd
 #include <EditorActorFolders.h>
@@ -77,10 +79,21 @@ namespace
 	const FString LevelsFolderPath = TEXT("/Levels/");
 	const FString InteriorsFolderPath = TEXT("Interiors");
 
-	bool operator==(const EDungeonRoomItem left, const dungeon::Room::Item right)
+	constexpr bool operator==(const EDungeonRoomItem left, const dungeon::Room::Item right)
 	{
 		return static_cast<uint8_t>(left) == static_cast<uint8_t>(right);
 	}
+
+	constexpr EDungeonRoomItem Cast(const dungeon::Room::Item item)
+	{
+		return static_cast<EDungeonRoomItem>(item);
+	}
+
+	constexpr EDungeonRoomLocatorParts Cast(const dungeon::Room::Parts parts)
+	{
+		return static_cast<EDungeonRoomLocatorParts>(parts);
+	}
+	
 }
 
 ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer)
@@ -278,41 +291,45 @@ void ADungeonGenerateBase::DestroySpawnedActors(UWorld* world)
 	UGameplayStatics::GetAllActorsWithTag(world, GetDungeonGeneratorTag(), actors);
 
 #if WITH_EDITOR
-	TArray<FFolder> deleteFolders;
-
-	// TagにDungeonGeneratorTagがついているアクターのフォルダを回収
-	for (const AActor* actor : actors)
+	// Standaloneモードによる起動ではGEditorやGEngineが無効になる
+	if (IsValid(GEditor))
 	{
-		if (IsValid(actor))
+		TArray<FFolder> deleteFolders;
+
+		// TagにDungeonGeneratorTagがついているアクターのフォルダを回収
+		for (const AActor* actor : actors)
 		{
-			const FFolder& folder = actor->GetFolder();
-
-			if (!folder.IsValid())
-				continue;
-			if (folder.GetPath() == folder.GetEmptyPath())
-				continue;
-
-			if (const auto* actorFolder = folder.GetActorFolder())
+			if (IsValid(actor))
 			{
-				if (!actorFolder->IsValid())
+				const FFolder& folder = actor->GetFolder();
+
+				if (!folder.IsValid())
 					continue;
+				if (folder.GetPath() == folder.GetEmptyPath())
+					continue;
+
+				if (const auto* actorFolder = folder.GetActorFolder())
+				{
+					if (!actorFolder->IsValid())
+						continue;
+				}
+
+				deleteFolders.AddUnique(folder);
 			}
-
-			deleteFolders.AddUnique(folder);
 		}
-	}
 
-	// パスが長い順に並べ替え
-	deleteFolders.Sort([](const FFolder& l, const FFolder& r)
+		// パスが長い順に並べ替え
+		deleteFolders.Sort([](const FFolder& l, const FFolder& r)
+			{
+				return l.GetPath().GetStringLength() > r.GetPath().GetStringLength();
+			}
+		);
+
+		// フォルダを削除
+		for (FFolder& folder : deleteFolders)
 		{
-			return l.GetPath().GetStringLength() > r.GetPath().GetStringLength();
+			FActorFolders::Get().DeleteFolder(*world, folder);
 		}
-	);
-
-	// フォルダを削除
-	for (FFolder& folder : deleteFolders)
-	{
-		FActorFolders::Get().DeleteFolder(*world, folder);
 	}
 #endif
 
@@ -1297,18 +1314,35 @@ void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSen
 	// RoomSensorActorを生成
 	mGenerator->ForEach([this, &roomSensorCache](const std::shared_ptr<const dungeon::Room>& room)
 		{
-			ADungeonRoomSensorBase* roomSensorActor = SpawnRoomSensorActorDeferred(
-				mParameter->GetRoomSensorClass(),
-				room->GetIdentifier(),
-				room->GetCenter() * mParameter->GetGridSize().To3D() + GetActorLocation(),
-				room->GetExtent() * mParameter->GetGridSize().To3D(),
-				static_cast<EDungeonRoomParts>(room->GetParts()),
-				static_cast<EDungeonRoomItem>(room->GetItem()),
-				room->GetBranchId(),
-				room->GetDepthFromStart(),
-				mGenerator->GetDeepestDepthFromStart()
-			);
-			roomSensorCache[room.get()] = roomSensorActor;
+			auto* roomSensorClass = mParameter->GetRoomSensorClass();
+			if (const auto* roomSensorDatabase = mParameter->GetRoomSensorDatabase())
+			{
+				// TODO: ダンジョンの深さを0～255に正規化する関数を検討してください
+				auto depthFromStart = static_cast<float>(room->GetDepthFromStart());
+				depthFromStart /= static_cast<float>(mGenerator->GetDeepestDepthFromStart());
+				const auto depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
+
+				roomSensorClass = roomSensorDatabase->Select(
+					room->GetIdentifier(),
+					depthRatioFromStart,
+					GetSynchronizedRandom()
+				);
+			}
+			if (roomSensorClass)
+			{
+				auto* roomSensorActor = SpawnRoomSensorActorDeferred(
+					roomSensorClass,
+					room->GetIdentifier(),
+					room->GetCenter() * mParameter->GetGridSize().To3D() + GetActorLocation(),
+					room->GetExtent() * mParameter->GetGridSize().To3D(),
+					static_cast<EDungeonRoomParts>(room->GetParts()),
+					static_cast<EDungeonRoomItem>(room->GetItem()),
+					room->GetBranchId(),
+					room->GetDepthFromStart(),
+					mGenerator->GetDeepestDepthFromStart()
+				);
+				roomSensorCache[room.get()] = roomSensorActor;
+			}
 		}
 	);
 

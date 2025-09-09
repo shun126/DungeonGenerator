@@ -68,3 +68,23 @@ inline constexpr bool Equal(const EDungeonRoomLocatorParts locatorParts, const E
 {
 	return Equal(parts, locatorParts);
 }
+
+/**
+ * Cast from EDungeonRoomLocatorParts to EDungeonRoomParts
+ * 
+ * EDungeonRoomLocatorPartsからEDungeonRoomPartsへのキャスト
+ */
+inline constexpr EDungeonRoomParts Cast(const EDungeonRoomLocatorParts parts)
+{
+	return static_cast<EDungeonRoomParts>(parts);
+}
+
+/**
+ * Cast from EDungeonRoomParts to EDungeonRoomLocatorParts
+ * 
+ * EDungeonRoomPartsからEDungeonRoomLocatorPartsへのキャスト
+ */
+inline constexpr EDungeonRoomLocatorParts Cast(const EDungeonRoomParts parts)
+{
+	return static_cast<EDungeonRoomLocatorParts>(parts);
+}

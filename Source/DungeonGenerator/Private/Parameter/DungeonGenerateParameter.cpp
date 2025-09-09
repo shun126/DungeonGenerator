@@ -45,6 +45,7 @@ UDungeonGenerateParameter* UDungeonGenerateParameter::GenerateRandomParameter(co
 		parameter->DoorPartsSelectionMethod = sourceParameter->DoorPartsSelectionMethod;
 		parameter->DoorParts = sourceParameter->DoorParts;
 		parameter->DungeonRoomSensorClass = sourceParameter->DungeonRoomSensorClass;
+		parameter->DungeonRoomSensorDatabase = sourceParameter->DungeonRoomSensorDatabase;
 	}
 
 	return parameter;

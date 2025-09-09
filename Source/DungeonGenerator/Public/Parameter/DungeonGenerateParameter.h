@@ -14,6 +14,7 @@ All Rights Reserved.
 #include "DungeonGenerateParameter.generated.h"
 
 // forward declaration
+class UDungeonRoomSensorDatabase;
 
 /**
 Frequency of generation
@@ -68,6 +69,7 @@ public:
 
 
 	UClass* GetRoomSensorClass() const;
+	UDungeonRoomSensorDatabase* GetRoomSensorDatabase() const;
 
 	// Converts from a grid coordinate system to a world coordinate system
 	FVector ToWorld(const FIntVector& location) const;
@@ -399,20 +401,32 @@ protected:
 
 
 	/**
-	Specify the DungeonRoomSensorBase class,
-	which is a box sensor that covers the room and controls doors and enemy spawn.
-
-	DungeonRoomSensorBaseクラスを指定して下さい。
-	DungeonRoomSensorBaseは部屋を覆う箱センサーで、ドアや敵のスポーンを制御します。
-	*/
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", BlueprintReadWrite, meta = (AllowedClasses = "DungeonRoomSensorBase"))
+	 * Specify the DungeonRoomSensorBase class,
+	 * which is a box sensor that covers the room and controls doors and enemy spawn.
+	 * DungeonRoomSensorDatabase takes precedence
+	 *
+	 * DungeonRoomSensorBaseクラスを指定して下さい。
+	 * DungeonRoomSensorBaseは部屋を覆う箱センサーで、ドアや敵のスポーンを制御します。
+	 * DungeonRoomSensorDatabaseが優先されます
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", BlueprintReadWrite, meta = (AllowedClasses = "DungeonRoomSensorBase", DeprecatedProperty, ToolTip = "This variable is deprecated. Please use DungeonRoomSensorDatabase instead."))
 	TObjectPtr<UClass> DungeonRoomSensorClass;
 
 	/**
-	PluginVersion
+	 * Specify the room sensor database
+	 * The room sensor database specifies the arrangement and direction in the room
+	 *
+	 * ルームセンサーのデータベースを指定して下さい
+	 * ルームセンサーのデータベースは部屋の中の配置や演出を指定します
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", BlueprintReadWrite)
+	TObjectPtr<UDungeonRoomSensorDatabase> DungeonRoomSensorDatabase;
 
-	プラグインバージョン
-	*/
+	/**
+	 * PluginVersion
+	 *
+	 * プラグインバージョン
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	uint8 PluginVersion;
 
@@ -508,6 +522,11 @@ inline const UDungeonMeshSetDatabase* UDungeonGenerateParameter::GetDungeonAisle
 inline UClass* UDungeonGenerateParameter::GetRoomSensorClass() const
 {
 	return DungeonRoomSensorClass;
+}
+
+inline UDungeonRoomSensorDatabase* UDungeonGenerateParameter::GetRoomSensorDatabase() const
+{
+	return DungeonRoomSensorDatabase;
 }
 
 inline void UDungeonGenerateParameter::EachFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const

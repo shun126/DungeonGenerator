@@ -60,6 +60,11 @@ void ADungeonGenerateActor::PostInitializeComponents()
 	// Calling the parent class
 	Super::PostInitializeComponents();
 
+	if (AutoGenerateAtStart == true)
+	{
+		PostGenerateImplementation();
+	}
+
 	//if (GetNetMode() != NM_Standalone)
 	if (GetLocalRole() == ROLE_Authority)
 	{
@@ -201,16 +206,6 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 		return;
 	}
 
-	if (GetActorRotation().Equals(FRotator::ZeroRotator) == false)
-	{
-		DUNGEON_GENERATOR_ERROR(TEXT("The actor's rotation is not applied in the generated dungeon."));
-	}
-
-	if (GetActorScale().Equals(FVector::OneVector) == false)
-	{
-		DUNGEON_GENERATOR_ERROR(TEXT("The actor's scale is not applied in the generated dungeon."));
-	}
-
 	Dispose(true);
 
 	// インスタンスメッシュを登録
@@ -313,6 +308,19 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 	EndDungeonGeneration();
 }
 
+void ADungeonGenerateActor::PostGenerateImplementation() const
+{
+	if (GetActorRotation().Equals(FRotator::ZeroRotator) == false)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("The actor's rotation is not applied in the generated dungeon."));
+	}
+
+	if (GetActorScale().Equals(FVector::OneVector) == false)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("The actor's scale is not applied in the generated dungeon."));
+	}
+}
+
 void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)
 {
 	if (IsGenerated())
@@ -349,6 +357,7 @@ void ADungeonGenerateActor::MulticastOnGenerateDungeon_Implementation()
 	DUNGEON_GENERATOR_LOG(TEXT("MulticastOnGenerateDungeon: %s"), HasAuthority() ? TEXT("Server") : TEXT("Client"));
 #endif
 	PreGenerateImplementation();
+	PostGenerateImplementation();
 }
 
 void ADungeonGenerateActor::GenerateDungeonWithParameter(UDungeonGenerateParameter* dungeonGenerateParameter)

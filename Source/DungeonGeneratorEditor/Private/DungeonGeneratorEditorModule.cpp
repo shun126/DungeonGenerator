@@ -7,6 +7,7 @@ All Rights Reserved.
 #include "DungeonGeneratorEditorModule.h"
 #include "DungeonGeneratorStyle.h"
 #include "DungeonGeneratorCommands.h"
+#include "SubActor/DungeonRoomSensorDatabaseTypeActions.h"
 #include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
 #include "BuildInfomation.h"
@@ -80,6 +81,12 @@ void FDungeonGenerateEditorModule::StartupModule()
 		AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
 	}
 
+
+	// Register FDungeonRoomSensorDatabaseTypeActions
+	{
+		TSharedPtr<IAssetTypeActions> actionType = MakeShareable(new FDungeonRoomSensorDatabaseTypeActions(gameAssetCategory));
+		AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
+	}
 }
 
 void FDungeonGenerateEditorModule::ShutdownModule()
@@ -324,9 +331,11 @@ void FDungeonGenerateEditorModule::DisposeDungeon(UWorld* world, const bool flus
 
 UWorld* FDungeonGenerateEditorModule::GetWorldFromGameViewport()
 {
-	if (const FWorldContext* worldContext = GEngine->GetWorldContextFromGameViewport(GEngine->GameViewport))
-		return worldContext->World();
-
+	if (IsValid(GEngine))
+	{
+		if (const auto* worldContext = GEngine->GetWorldContextFromGameViewport(GEngine->GameViewport))
+			return worldContext->World();
+	}
 	return nullptr;
 }
 

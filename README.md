@@ -1,12 +1,6 @@
 <div align="center">
 <img src="Document/DungeonGenerator-Logo.png" />
 <h1>Dungeon generator plugin for Unreal Engine 5</h1>
-<p>
-<a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/issues">Issues</a>,
-<a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions">Discussions</a>,
-<a href="https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki">Wiki</a>,
-<a href="https://happy-game-dev.undo.jp/_doxygen/dungeon_generator/index.html">Doxygen</a>
-</p>
 </div>
 
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
@@ -16,7 +10,7 @@
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
 [![youtube](https://img.shields.io/youtube/views/1igd4pls5x8?style=social)](https://youtu.be/1igd4pls5x8)
 
-Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/)
+Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/index.html)
 
 ![Screenshot](Document/Screenshot.gif)
 
@@ -66,7 +60,7 @@ The foundational generation algorithm you shared was a major source of inspirati
 * Open Unreal Engine Editor and create a project using the First Person template or Third Person template.
 * Install the Dungeon Generator plugin via Epic Games Launcher, or copy it to the `Plugins` directory of your project.
 * Enable the plugin content.
-* Open `Plugins/Dungeon Generator/Contents/Demonstration`.
+* Open `Plugins/Dungeon Generator/Contents/Maps/Demonstration`.
 
 ![](Document/ContentBrowser.gif)
 
@@ -80,11 +74,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 Or, [Fab](https://fab.com/s/f5587c55bad0) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
 
 # 👀 See also
+* [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
+* [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
 * [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
 * [DeepWiki](https://deepwiki.com/shun126/DungeonGenerator)
 * [Doxygen](https://happy-game-dev.undo.jp/_doxygen/dungeon_generator/index.html)
-* [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
-* [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
 
 The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhancements.
 * Sub-levels can be applied as dungeon rooms
@@ -96,6 +90,8 @@ The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhance
 [DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a sample project for first-person exploration.
 
 This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
+
+Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/index.html)
 
 # 😀 Authors
 * Nonbiri ([X.com](https://x.com/happy_game_dev) / [YouTube](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q))
