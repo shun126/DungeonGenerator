@@ -153,6 +153,7 @@ private:
 	void ApplyInstancedMeshCullDistance();
 
 	void PreGenerateImplementation();
+	void PostGenerateImplementation() const;
 
 #if WITH_EDITOR
 	void DrawDebugInformation() const;

@@ -5,8 +5,8 @@ All Rights Reserved.
 */
 
 #pragma once
+#include "DungeonMeshSetSelectionMethod.h"
 #include "Parameter/DungeonMeshSet.h"
-#include <CoreMinimal.h>
 #include <memory>
 #include "DungeonMeshSetDatabase.generated.h"
 
@@ -15,18 +15,6 @@ namespace dungeon
 {
 	class Random;
 }
-
-/**
-Part Selection Method
-パーツを選択する方法
-*/
-UENUM(BlueprintType)
-enum class EDungeonMeshSetSelectionMethod : uint8
-{
-	Identifier,
-	DepthFromStart,
-	Random,
-};
 
 /**
 Database of dungeon mesh sets
@@ -73,7 +61,7 @@ protected:
 	パーツを選択する方法
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::Identifier;
+	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::DepthFromStart;
 
 	/**
 	Set the DungeonRoomMeshSet; multiple DungeonRoomMeshSets can be set.

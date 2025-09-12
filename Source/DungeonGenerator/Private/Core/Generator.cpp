@@ -1273,6 +1273,7 @@ namespace dungeon
 			uint8_t depthRatioFromStart = 0;
 			if (GetDeepestDepthFromStart() > 0)
 			{
+				// TODO: ダンジョンの深さを0～255に正規化する関数を検討してください
 				float depthFromStart = static_cast<float>(room->GetDepthFromStart());
 				depthFromStart /= static_cast<float>(GetDeepestDepthFromStart());
 				depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
@@ -1536,7 +1537,6 @@ namespace dungeon
 		int32 count = static_cast<int32>(std::sqrt(static_cast<float>(room->GetRect().Area())));
 		if (count >= 5)
 		{
-			count /= 2;
 			for (int32 i = 0; i < count; ++i)
 			{
 				const int32 x = mGenerateParameter.GetRandom()->Get(room->GetLeft(), room->GetRight());

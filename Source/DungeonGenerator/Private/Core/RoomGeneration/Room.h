@@ -80,7 +80,7 @@ namespace dungeon
 		識別子を取得
 		@return		識別子
 		*/
-		const Identifier& GetIdentifier() const noexcept;
+		const Identifier GetIdentifier() const noexcept;
 
 		/**
 		X座標を取得

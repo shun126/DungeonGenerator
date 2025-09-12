@@ -1,5 +1,21 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20250903-1.7.7 (60)
+### Changes
+* Add DungeonRoomSensorDatabase
+* Fixed several bugs
+### 変更点
+* DungeonRoomSensorDatabaseを追加
+* いくつかの不具合を修正
+
+## 20250903-1.7.6 (59)
+### Changes
+* Removed access to editor functions while in standalone mode.
+* Fixed several bugs
+### 変更点
+* スタンドアローンモード中にエディタ機能へアクセスしていたので削除
+* いくつかの不具合を修正
+
 ## 20250831-1.7.5 (58)
 ### Changes
 * Enable/disable control of shadow generation in point light derived classes changed from per-partition to per-light.
