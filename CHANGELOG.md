@@ -1,5 +1,13 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20251004-1.7.8 (61)
+### Changes
+* Changed DungeonRoomSensor to not spawn on the client side
+* Fixed several bugs
+### 変更点
+* DungeonRoomSensorをクライアント側でスポーンしないように変更
+* いくつかの不具合を修正
+
 ## 20250903-1.7.7 (60)
 ### Changes
 * Add DungeonRoomSensorDatabase

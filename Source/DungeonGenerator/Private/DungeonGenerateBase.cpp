@@ -595,7 +595,7 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 	// メッシュの生成
 	{
 		RoomAndRoomSensorMap roomSensorCache;
-		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache);
+		CreateImplement_PrepareSpawnRoomSensor(roomSensorCache, hasAuthority);
 		CreateImplement_QueryAisleGeneration(hasAuthority);
 		CreateImplement_AddTerrain(roomSensorCache, hasAuthority);
 		/*
@@ -1303,7 +1303,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 ADungeonRoomSensorBaseはリプリケートされない前提のアクターなので
 必ず同期乱数(GetSynchronizedRandom)を使ってください。
 */
-void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSensorMap& roomSensorCache) const
+void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const
 {
 	check(IsValid(mParameter));
 
@@ -1311,40 +1311,43 @@ void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSen
 	dungeon::Stopwatch stopwatch;
 #endif
 
-	// RoomSensorActorを生成
-	mGenerator->ForEach([this, &roomSensorCache](const std::shared_ptr<const dungeon::Room>& room)
-		{
-			auto* roomSensorClass = mParameter->GetRoomSensorClass();
-			if (const auto* roomSensorDatabase = mParameter->GetRoomSensorDatabase())
+	// サーバーならRoomSensorActorを生成
+	if (hasAuthority)
+	{
+		mGenerator->ForEach([this, &roomSensorCache](const std::shared_ptr<const dungeon::Room>& room)
 			{
-				// TODO: ダンジョンの深さを0～255に正規化する関数を検討してください
-				auto depthFromStart = static_cast<float>(room->GetDepthFromStart());
-				depthFromStart /= static_cast<float>(mGenerator->GetDeepestDepthFromStart());
-				const auto depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
+				auto* roomSensorClass = mParameter->GetRoomSensorClass();
+				if (const auto* roomSensorDatabase = mParameter->GetRoomSensorDatabase())
+				{
+					// TODO: ダンジョンの深さを0～255に正規化する関数を検討してください
+					auto depthFromStart = static_cast<float>(room->GetDepthFromStart());
+					depthFromStart /= static_cast<float>(mGenerator->GetDeepestDepthFromStart());
+					const auto depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
 
-				roomSensorClass = roomSensorDatabase->Select(
-					room->GetIdentifier(),
-					depthRatioFromStart,
-					GetSynchronizedRandom()
-				);
+					roomSensorClass = roomSensorDatabase->Select(
+						room->GetIdentifier(),
+						depthRatioFromStart,
+						GetSynchronizedRandom()
+					);
+				}
+				if (roomSensorClass)
+				{
+					auto* roomSensorActor = SpawnRoomSensorActorDeferred(
+						roomSensorClass,
+						room->GetIdentifier(),
+						room->GetCenter() * mParameter->GetGridSize().To3D() + GetActorLocation(),
+						room->GetExtent() * mParameter->GetGridSize().To3D(),
+						static_cast<EDungeonRoomParts>(room->GetParts()),
+						static_cast<EDungeonRoomItem>(room->GetItem()),
+						room->GetBranchId(),
+						room->GetDepthFromStart(),
+						mGenerator->GetDeepestDepthFromStart()
+					);
+					roomSensorCache[room.get()] = roomSensorActor;
+				}
 			}
-			if (roomSensorClass)
-			{
-				auto* roomSensorActor = SpawnRoomSensorActorDeferred(
-					roomSensorClass,
-					room->GetIdentifier(),
-					room->GetCenter() * mParameter->GetGridSize().To3D() + GetActorLocation(),
-					room->GetExtent() * mParameter->GetGridSize().To3D(),
-					static_cast<EDungeonRoomParts>(room->GetParts()),
-					static_cast<EDungeonRoomItem>(room->GetItem()),
-					room->GetBranchId(),
-					room->GetDepthFromStart(),
-					mGenerator->GetDeepestDepthFromStart()
-				);
-				roomSensorCache[room.get()] = roomSensorActor;
-			}
-		}
-	);
+		);
+	}
 
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 	DUNGEON_GENERATOR_LOG(TEXT("Prepare spawn DungeonRoomSensor actors: %lf seconds"), stopwatch.Lap());

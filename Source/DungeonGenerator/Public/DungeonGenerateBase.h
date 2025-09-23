@@ -5,7 +5,7 @@ All Rights Reserved.
 */
 
 #pragma once
-#include "helper/DungeonRandom.h"
+#include "Helper/DungeonRandom.h"
 #include "Mission/DungeonRoomItem.h"
 #include "Mission/DungeonRoomParts.h"
 #include "Mission/DungeonRoomProps.h"
@@ -302,7 +302,7 @@ private:
 	void CreateImplement_AddPillarAndTorch(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const;
 
 	// Room sensor
-	void CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSensorMap& roomSensorCache) const;
+	void CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const;
 	static void CreateImplement_FinishSpawnRoomSensor(const RoomAndRoomSensorMap& roomSensorCache);
 
 	// Navigation
