@@ -159,10 +159,10 @@ private:
 	// アクターのスポーンと破棄
 public:
 	/**
-	アクターをスポーンします。
-	DungeonGeneratorというタグを追加します。
-	スポーンしたアクターはDestroySpawnedActorsで破棄されます。
-	*/
+	 * アクターをスポーンします。
+	 * DungeonGeneratorというタグを追加します。
+	 * スポーンしたアクターはDestroySpawnedActorsで破棄されます。
+	 */
 	static AActor* SpawnActorImpl(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters);
 
 	/**
@@ -237,14 +237,24 @@ protected:
 
 	/**
 	 * Event called at the end of the Create function
+	 * synchronizedRandom is a random number that is synchronized between clients. It must always be called the same number of times on server and client.
+	 * aisleGridMap is a container for the generated aisle grid
+	 *
 	 * Create関数終了時に呼び出されるイベントです
+	 * synchronizedRandomは、クライアント間で同期する乱数です。かならずサーバーとクライアントで同じ回数を呼び出す必要があります
+	 * aisleGridMapは、生成された通路グリッドのコンテナ
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "DungeonGenerator")
 	void EndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap);
 
 	/**
 	 * Event called at the end of the Create function
+	 * synchronizedRandom is a random number that is synchronized between clients. It must always be called the same number of times on server and client.
+	 * aisleGridMap is a container for the generated aisle grid
+	 *
 	 * Create関数終了時に呼び出されるイベントです
+	 * synchronizedRandomは、クライアント間で同期する乱数です。かならずサーバーとクライアントで同じ回数を呼び出す必要があります
+	 * aisleGridMapは、生成された通路グリッドのコンテナ
 	 */
 	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
 	FDungeonGenerateBaseOnEndGenerateSignature OnEndGeneration;

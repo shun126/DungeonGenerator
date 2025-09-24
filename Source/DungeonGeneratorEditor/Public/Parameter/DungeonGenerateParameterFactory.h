@@ -9,7 +9,7 @@ All Rights Reserved.
 #include <Factories/Factory.h>
 #include "DungeonGenerateParameterFactory.generated.h"
 
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOREDITOR_API UDungeonGenerateParameterFactory : public UFactory
 {
 	GENERATED_BODY()

@@ -24,3 +24,19 @@ enum class EDungeonDirection : uint8
 	South,
 	West,
 };
+
+namespace dungeon
+{
+	namespace detail
+	{
+		inline double ToDegree(const EDungeonDirection dungeonDirection) noexcept
+		{
+			return static_cast<double>(dungeonDirection) * 90;
+		}
+
+		inline FRotator ToRotator(const EDungeonDirection dungeonDirection)
+		{
+			return FRotator(0, ToDegree(dungeonDirection), 0);
+		}
+	}
+}

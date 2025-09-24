@@ -110,7 +110,7 @@ private:
  * Random numbers for dungeon generation available from BluePrint
  * BluePrintから利用可能なダンジョン生成用乱数
  */
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API UDungeonRandom : public UObject
 {
 	GENERATED_BODY()

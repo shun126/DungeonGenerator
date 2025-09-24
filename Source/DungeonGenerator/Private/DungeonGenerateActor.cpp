@@ -16,6 +16,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配�
 #include "Core/Math/Vector.h"
 #include "Core/Voxelization/Grid.h"
 #include "Core/Voxelization/Voxel.h"
+#include "Helper/DungeonAisleGridMap.h"
 #include "MainLevel/DungeonMainLevelScriptActor.h"
 #include "Parameter/DungeonGenerateParameter.h"
 #include <Components/HierarchicalInstancedStaticMeshComponent.h>

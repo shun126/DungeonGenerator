@@ -15,7 +15,7 @@ class ADungeonRoomSensorBase;
 BluePrint function library
 ダンジョン生成ブループリント関数
 */
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class UDungeonBlueprint : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()

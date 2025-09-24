@@ -8,6 +8,7 @@ All Rights Reserved.
 #include "Helper/DungeonDirection.h"
 #include <CoreMinimal.h>
 #include <Kismet/BlueprintFunctionLibrary.h>
+#include <functional>
 #include <unordered_map>
 #include "DungeonAisleGridMap.generated.h"
 
@@ -41,13 +42,20 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FDungeonAisleGridMapLoopSignature, const TArra
  * Record aisle grid for each aisle
  * 通路毎に通路グリッドを記録します
  */
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API UDungeonAisleGridMap : public UObject
 {
 	GENERATED_BODY()
 
 public:
+	/**
+	 * コンストラクタ
+	 */
 	explicit UDungeonAisleGridMap(const FObjectInitializer& initializer);
+
+	/**
+	 * デストラクタ
+	 */
 	virtual ~UDungeonAisleGridMap() override = default;
 
 	/**
@@ -55,6 +63,23 @@ public:
 	 * 通路グリッドを登録します
 	*/
 	void Register(const int32 identifier, const EDungeonDirection direction, const FVector& location);
+
+	/**
+	 * Update aisle grid
+	 * 通路グリッドを更新します
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	void ForEach(const FDungeonAisleGridMapLoopSignature& OnLoop) const;
+
+	/**
+	 * Update aisle grid
+	 * 通路グリッドを更新します
+	 */
+	void Each(const std::function<void(const TArray<FDungeonAisleGrid>& aisleGridArray)>& func) const
+	{
+		for (const auto& aisleGrid : mAisleGridMap)
+			func(aisleGrid.second);
+	}
 
 private:
 	std::unordered_map<uint16_t, TArray<FDungeonAisleGrid>> mAisleGridMap;
@@ -66,7 +91,7 @@ private:
  * Class for BluePrint function to manipulate UDungeonAisleGridMap
  * UDungeonAisleGridMapを操作するBluePrint関数のクラス
  */
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class UDungeonAisleGridMapBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
