@@ -2,9 +2,11 @@
 
 ## 20251004-1.7.8 (61)
 ### Changes
+* Added the ability to assist actors spawning into the aisle grid
 * Changed DungeonRoomSensor to not spawn on the client side
 * Fixed several bugs
 ### 変更点
+* 通路グリッドへのアクターをスポーンを補助する機能を追加
 * DungeonRoomSensorをクライアント側でスポーンしないように変更
 * いくつかの不具合を修正
 

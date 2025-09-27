@@ -516,14 +516,6 @@ protected:
 	TObjectPtr<UDungeonRoomSensorDatabase> DungeonRoomSensorDatabase;
 
 	/**
-	 * Actor spawning in an aisle
-	 *
-	 * 通路にスポーンするアクター
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", meta = (AllowedClasses = "Blueprint"))
-	TArray<FSoftObjectPath> SpawnActorInAisle;
-
-	/**
 	 * PluginVersion
 	 *
 	 * プラグインバージョン

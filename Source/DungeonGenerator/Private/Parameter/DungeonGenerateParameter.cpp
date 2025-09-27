@@ -10,8 +10,7 @@ All Rights Reserved.
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
 #include "Core/Voxelization/Grid.h"
-#include "Helper/DungeonAisleGridMap.h"
-#include "Helper/DungeonRandom.h"
+#include "SubActor/DungeonRoomSensorDatabase.h"
 
 #include <Net/UnrealNetwork.h>
 #include <Net/Core/PushModel/PushModel.h>
@@ -492,37 +491,6 @@ void UDungeonGenerateParameter::EachPillarParts(const std::function<void(const F
 
 void UDungeonGenerateParameter::OnEndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap, const std::function<void(const FSoftObjectPath&, const FTransform&)>& spawnActor) const
 {
-	if (synchronizedRandom == nullptr)
-		return;
-	if (aisleGridMap == nullptr)
-		return;
-	if (SpawnActorInAisle.IsEmpty())
-		return;
-	aisleGridMap->Each([this, synchronizedRandom, spawnActor](const TArray<FDungeonAisleGrid>& aisleGridArray)
-		{
-			// スポーン先グリッドを抽選します
-			std::unordered_set<int32> gridIndexes;
-			const int32 totalGrids = aisleGridArray.Num();
-			const int32 count = totalGrids / 3;
-			for (int32 i = 0; i < count; ++i)
-			{
-				gridIndexes.emplace(synchronizedRandom->GetIntegerFrom(totalGrids));
-			}
-
-			const int32 totalActors = SpawnActorInAisle.Num();
-			for (const auto gridIndex : gridIndexes)
-			{
-				// スポーンする姿勢を求める
-				const auto& aisleGrid = aisleGridArray[gridIndex];
-				const FTransform transform(
-					dungeon::detail::ToRotator(aisleGrid.Direction),
-					aisleGrid.Location + FVector(0, 0, VerticalGridSize / 2.f)
-				);
-
-				// アクターをスポーンします
-				const int32 actorType = synchronizedRandom->GetIntegerFrom(totalActors);
-				spawnActor(SpawnActorInAisle[actorType], transform);
-			}
-		}
-	);
+	if (DungeonRoomSensorDatabase)
+		DungeonRoomSensorDatabase->OnEndGeneration(synchronizedRandom, aisleGridMap, VerticalGridSize, spawnActor);
 }

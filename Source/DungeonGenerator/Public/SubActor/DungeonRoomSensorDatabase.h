@@ -6,8 +6,12 @@ All Rights Reserved.
 
 #pragma once
 #include "Parameter/DungeonMeshSetSelectionMethod.h"
+#include <functional>
 #include <memory>
 #include "DungeonRoomSensorDatabase.generated.h"
+
+class UDungeonAisleGridMap;
+class UDungeonRandom;
 
 namespace dungeon
 {
@@ -50,19 +54,36 @@ public:
 	 */
 	UClass* Select(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random) const;
 
+	/**
+	 * ダンジョン生成終了時に通知されるイベント
+	 * @param synchronizedRandom クライアント・サーバー間で同期される乱数
+	 * @param aisleGridMap 通路のグリッドを記録したコンテナ
+	 * @param verticalGridSize グリッドの垂直方向の大きさ
+	 * @param spawnActor アクターをスポーンする関数
+	 */
+	void OnEndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap, const float verticalGridSize, const std::function<void(const FSoftObjectPath&, const FTransform&)>& spawnActor) const;
+
 protected:
 	/**
 	 * Room Sensor Generation Rules
 	 * ルームセンサーの生成ルール
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator")
-	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::Identifier;
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor")
+	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::DepthFromStart;
 
 	/**
 	 * Register the RoomSensor to be placed.
 	 *
 	 * 配置するRoomSensorを登録して下さい。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "DungeonRoomSensorBase"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", meta = (AllowedClasses = "DungeonRoomSensorBase"))
 	TArray<TObjectPtr<UClass>> DungeonRoomSensorClass;
+
+	/**
+	 * Actor spawning in an aisle
+	 *
+	 * 通路にスポーンするアクター
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Aisle", meta = (AllowedClasses = "Blueprint"))
+	TArray<FSoftObjectPath> SpawnActorInAisle;
 };
