@@ -27,7 +27,7 @@ registered in the partition.
 ダンジョンを指定の範囲のパーティションで区切り、パーティションに登録されたコンポーネントの
 アクティブ性を制御します。
 */
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptActor
 {
 	GENERATED_BODY()

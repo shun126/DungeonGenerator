@@ -10,6 +10,7 @@ All Rights Reserved.
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
 #include "Core/Voxelization/Grid.h"
+#include "SubActor/DungeonRoomSensorDatabase.h"
 
 #include <Net/UnrealNetwork.h>
 #include <Net/Core/PushModel/PushModel.h>
@@ -17,6 +18,7 @@ All Rights Reserved.
 #if WITH_EDITOR
 #include <Misc/FileHelper.h>
 #endif
+#include <unordered_set>
 
 UDungeonGenerateParameter::UDungeonGenerateParameter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -485,4 +487,10 @@ void UDungeonGenerateParameter::EachAisleCatwalkParts(const std::function<void(c
 void UDungeonGenerateParameter::EachPillarParts(const std::function<void(const FDungeonMeshParts&)>& function) const
 {
 	FDungeonMeshSet::EachParts(PillarParts, function);
+}
+
+void UDungeonGenerateParameter::OnEndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap, const std::function<void(const FSoftObjectPath&, const FTransform&)>& spawnActor) const
+{
+	if (DungeonRoomSensorDatabase)
+		DungeonRoomSensorDatabase->OnEndGeneration(synchronizedRandom, aisleGridMap, VerticalGridSize, spawnActor);
 }

@@ -34,14 +34,17 @@ void UDungeonAisleGridMap::Register(const int32 identifier, const EDungeonDirect
 	}
 }
 
+void UDungeonAisleGridMap::ForEach(const FDungeonAisleGridMapLoopSignature& OnLoop) const
+{
+	for (const auto& aisleGrid : mAisleGridMap)
+	{
+		if (OnLoop.ExecuteIfBound(aisleGrid.second) == false)
+			break;
+	}
+}
+
 void UDungeonAisleGridMapBlueprintFunctionLibrary::ForEach(const UDungeonAisleGridMap* aisleGridArray, const FDungeonAisleGridMapLoopSignature& OnLoop)
 {
 	if (aisleGridArray)
-	{
-		for (const auto& aisleGrid : aisleGridArray->mAisleGridMap)
-		{
-			if (OnLoop.ExecuteIfBound(aisleGrid.second) == false)
-				break;
-		}
-	}
+		aisleGridArray->ForEach(OnLoop);
 }

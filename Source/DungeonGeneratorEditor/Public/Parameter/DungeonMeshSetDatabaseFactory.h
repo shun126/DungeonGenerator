@@ -12,7 +12,7 @@ All Rights Reserved.
 /*
 UDungeonMeshSetDatabaseを生成するファクトリークラス
 */
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOREDITOR_API UDungeonMeshSetDatabaseFactory : public UFactory
 {
 	GENERATED_BODY()

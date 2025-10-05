@@ -23,7 +23,7 @@ If the partition is away from the player, deactivate it.
 プレイヤー周辺のパーティションならDungeonComponentActivatorComponentをアクティブ化します。
 プレイヤーから離れているパーティションなら非アクティブ化します。
 */
-UCLASS()
+UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API UDungeonPartition : public UObject
 {
 	GENERATED_BODY()
