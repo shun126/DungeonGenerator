@@ -1,0 +1,59 @@
+###############################################################################
+# Unreal Engine Git LFS Configuration
+###############################################################################
+
+# -- Large binary files (use LFS)
+# Unreal Assets
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.umap   filter=lfs diff=lfs merge=lfs -text
+
+# Models
+*.fbx    filter=lfs diff=lfs merge=lfs -text
+*.obj    filter=lfs diff=lfs merge=lfs -text
+*.glb    filter=lfs diff=lfs merge=lfs -text
+*.gltf   filter=lfs diff=lfs merge=lfs -text
+
+# Textures
+*.png    filter=lfs diff=lfs merge=lfs -text
+*.jpg    filter=lfs diff=lfs merge=lfs -text
+*.jpeg   filter=lfs diff=lfs merge=lfs -text
+*.tga    filter=lfs diff=lfs merge=lfs -text
+*.tiff   filter=lfs diff=lfs merge=lfs -text
+*.exr    filter=lfs diff=lfs merge=lfs -text
+*.hdr    filter=lfs diff=lfs merge=lfs -text
+*.bmp    filter=lfs diff=lfs merge=lfs -text
+
+# Materials / Shaders
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.ush    text
+*.usf    text
+
+# Audio
+*.wav    filter=lfs diff=lfs merge=lfs -text
+*.mp3    filter=lfs diff=lfs merge=lfs -text
+*.ogg    filter=lfs diff=lfs merge=lfs -text
+*.flac   filter=lfs diff=lfs merge=lfs -text
+
+# Movies
+*.mp4    filter=lfs diff=lfs merge=lfs -text
+*.mov    filter=lfs diff=lfs merge=lfs -text
+
+# Fonts
+*.ttf    filter=lfs diff=lfs merge=lfs -text
+*.otf    filter=lfs diff=lfs merge=lfs -text
+
+# Misc binaries
+*.dds    filter=lfs diff=lfs merge=lfs -text
+*.ico    filter=lfs diff=lfs merge=lfs -text
+*.bin    filter=lfs diff=lfs merge=lfs -text
+*.pak    filter=lfs diff=lfs merge=lfs -text
+*.zip    filter=lfs diff=lfs merge=lfs -text
+
+###############################################################################
+# Exclude engine/binaries from LFS
+###############################################################################
+# Don’t store compiled or generated content
+/Binaries/**        filter=lfs diff=lfs merge=lfs -text
+/Intermediate/**    filter=lfs diff=lfs merge=lfs -text
+/Saved/**           filter=lfs diff=lfs merge=lfs -text
+/DerivedDataCache/** filter=lfs diff=lfs merge=lfs -text
