@@ -9,6 +9,7 @@ All Rights Reserved.
 #include "MainLevel/DungeonPartition.h"
 #include "DungeonGenerateActor.h"
 #include "Core/Debug/Debug.h"
+#include <DrawDebugHelpers.h>
 #include <SceneView.h>
 #include <UnrealClient.h>
 #include <Async/ParallelFor.h>

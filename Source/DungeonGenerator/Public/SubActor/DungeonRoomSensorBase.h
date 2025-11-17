@@ -482,7 +482,7 @@ protected:
 	 * 部屋にスポーンするアクター
 	 * 細やかな制御をおこなう場合はOnNativeInitializeやOnInitializeでアクターを個別にスポーンして下さい
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Helper|SpawnActorInRoom", meta = (AllowedClasses = "Blueprint"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Helper|SpawnActorInRoom", meta = (AllowedClasses = "/Script/Engine.Blueprint"))
 	TArray<FSoftObjectPath> SpawnActors;
 
 	/**
@@ -494,7 +494,7 @@ protected:
 	 * 指定した場合は部屋のランダムな位置にスポーンします。
 	 * 宝箱や敵を倒した時に鍵を入手させたい場合は独自に実装して下さい。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Helper|MissionGraph", meta = (AllowedClasses = "Blueprint"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Helper|MissionGraph", meta = (AllowedClasses = "/Script/Engine.Blueprint"))
 	FSoftObjectPath SpawnKeyActor;
 
 	/**
@@ -506,7 +506,7 @@ protected:
 	 * 指定した場合は部屋のランダムな位置にスポーンします。
 	 * 宝箱や敵を倒した時に鍵を入手させたい場合は独自に実装して下さい。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Helper|MissionGraph", meta = (AllowedClasses = "Blueprint"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Helper|MissionGraph", meta = (AllowedClasses = "/Script/Engine.Blueprint"))
 	FSoftObjectPath SpawnUniqueKeyActor;
 
 private:

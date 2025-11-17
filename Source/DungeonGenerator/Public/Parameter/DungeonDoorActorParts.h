@@ -28,6 +28,6 @@ public:
 	Class of actor to spawn
 	スポーンするアクターのクラス
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowedClasses = "DungeonDoorBase"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonDoorBase"))
 	TObjectPtr<UClass> ActorClass = nullptr;
 };

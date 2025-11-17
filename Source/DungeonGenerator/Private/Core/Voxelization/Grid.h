@@ -15,14 +15,14 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
-	グリッドクラス
-	*/
+	 * グリッドクラス
+	 */
 	class Grid final
 	{
 	public:
 		/**
-		グリッド内のセルの種類
-		*/
+		 * グリッド内のセルの種類
+		 */
 		enum class Type : uint8_t
 		{
 			Floor,				//!< 平らな地面（柱の生成判定なし）
@@ -40,8 +40,8 @@ namespace dungeon
 		static constexpr size_t TypeSize = static_cast<size_t>(Type::OutOfBounds) + 1;
 
 		/**
-		グリッド内のセルにある小物
-		*/
+		 * グリッド内のセルにある小物
+		 */
 		enum class Props : uint8_t
 		{
 			None,			//!< 何も無い
@@ -50,237 +50,233 @@ namespace dungeon
 		};
 		static constexpr size_t PropsSize = static_cast<size_t>(Props::UniqueLock) + 1;
 
-	public:
 		/**
-		コンストラクタ
-		*/
+		 * コンストラクタ
+		 */
 		Grid() noexcept;
 
 		/**
-		コンストラクタ
-		@param[in]	type	グリッドの種類
-		*/
+		 * コンストラクタ
+		 * @param[in]	type	グリッドの種類
+		 */
 		explicit Grid(const Type type) noexcept;
 
 		/**
-		コンストラクタ
-		@param[in]	type		グリッドの種類
-		@param[in]	direction	グリッドの方向
-		*/
+		 * コンストラクタ
+		 * @param[in]	type		グリッドの種類
+		 * @param[in]	direction	グリッドの方向
+		 */
 		Grid(const Type type, const Direction& direction) noexcept;
 
 		/**
-		コンストラクタ
-		@param[in]	type		グリッドの種類
-		@param[in]	direction	グリッドの方向
-		@param[in]	identifier	識別子
-		*/
+		 * コンストラクタ
+		 * @param[in]	type		グリッドの種類
+		 * @param[in]	direction	グリッドの方向
+		 * @param[in]	identifier	識別子
+		 */
 		Grid(const Type type, const Direction& direction, const uint16_t identifier) noexcept;
 
 		/**
-		コンストラクタ
-		@param[in]	type		グリッドの種類
-		@param[in]	direction	グリッドの方向
-		@param[in]	identifier	識別子
-		@param[in]	depthRatioFromStart	スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
-		*/
+		 * コンストラクタ
+		 * @param[in]	type		グリッドの種類
+		 * @param[in]	direction	グリッドの方向
+		 * @param[in]	identifier	識別子
+		 * @param[in]	depthRatioFromStart	スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
+		 */
 		Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
 
 		/**
-		デストラクタ
-		*/
+		 * デストラクタ
+		 */
 		~Grid() = default;
 
-	public:
 		/**
-		グリッドの方向を取得します
-		*/
+		 * グリッドの方向を取得します
+		 */
 		Direction GetDirection() const noexcept;
 
 		/**
-		グリッドの方向を設定します
-		*/
+		 * グリッドの方向を設定します
+		 */
 		void SetDirection(const Direction direction) noexcept;
 
 		/**
-		中二階モデルの方向を取得します
-		*/
+		 * 中二階モデルの方向を取得します
+		 */
 		Direction GetCatwalkDirection() const noexcept;
 
 		/**
-		中二階モデルの方向を設定します
-		*/
+		 * 中二階モデルの方向を設定します
+		 */
 		void SetCatwalkDirection(const Direction direction) noexcept;
 
 		/**
-		識別子を取得します
-		*/
+		 * 識別子を取得します
+		 */
 		Identifier GetIdentifier() const noexcept;
 
 		/**
-		識別子を設定します
-		*/
+		 * 識別子を設定します
+		 */
 		void SetIdentifier(Identifier identifier) noexcept;
 
 		/**
-		識別子をリセット（無効化）します
-		*/
+		 * 識別子をリセット（無効化）します
+		 */
 		void ResetIdentifier() noexcept;
 
 		/**
-		無効な識別子か判定します？
-		*/
+		 * 無効な識別子か判定します？
+		 */
 		bool IsInvalidIdentifier() const noexcept;
 
 		/**
-		小道具を取得します
-		*/
+		 * 小道具を取得します
+		 */
 		Props GetProps() const noexcept;
 
 		/**
-		小道具を設定します
-		*/
+		 * 小道具を設定します
+		 */
 		void SetProps(const Props props) noexcept;
 
 		/**
-		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）を取得します
-		@return		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
-		*/
+		 * スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）を取得します
+		 * @return		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
+		 */
 		uint8_t GetDepthRatioFromStart() const noexcept;
 
 		/**
-		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）を取得します
-		@param[in]	depthRatioFromStart		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
-		*/
+		 * スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）を取得します
+		 * @param[in]	depthRatioFromStart		スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
+		 */
 		void SetDepthRatioFromStart(const uint8_t depthRatioFromStart) noexcept;
 
-	public:
 		/**
-		グリッドの種類を取得します
-		*/
+		 * グリッドの種類を取得します
+		 */
 		Type GetType() const noexcept;
 
 		/**
-		グリッドの種類を設定します
-		*/
+		 * グリッドの種類を設定します
+		 */
 		void SetType(const Type type) noexcept;
 
 		/**
-		グリッドのタイプを判定します
-		*/
+		 * グリッドのタイプを判定します
+		 */
 		bool Is(const Type type) const noexcept;
 
 		/**
-		部屋系のグリッド？
-		@warning	門は部屋系のグリッドでもあります
-		@return		trueならば部屋系のグリッド
-		*/
+		 * 部屋系のグリッド？
+		 * @warning	門は部屋系のグリッドでもあります
+		 * @return		trueならば部屋系のグリッド
+		 */
 		bool IsKindOfRoomType() const noexcept;
 
 		/**
-		門以外の部屋系のグリッド？
-		@warning	門は部屋系のグリッドでもあります
-		@return		trueならば門以外の部屋系のグリッド
-		*/
+		 * 門以外の部屋系のグリッド？
+		 * @warning	門は部屋系のグリッドでもあります
+		 * @return		trueならば門以外の部屋系のグリッド
+		 */
 		bool IsKindOfRoomTypeWithoutGate() const noexcept;
 
 		/**
-		門系のグリッド？
-		@warning	門は部屋系のグリッドでもあります
-		@return		trueならば門系のグリッド
-		*/
+		 * 門系のグリッド？
+		 * @warning	門は部屋系のグリッドでもあります
+		 * @return		trueならば門系のグリッド
+		 */
 		bool IsKindOfGateType() const noexcept;
 
 		/**
-		通路系のグリッド？
-		@return		trueならば通路系のグリッド
-		*/
+		 * 通路系のグリッド？
+		 * @return		trueならば通路系のグリッド
+		 */
 		bool IsKindOfAisleType() const noexcept;
 
 		/**
-		斜面系のグリッド？
-		@return		trueならば斜面系のグリッド
-		*/
+		 * 斜面系のグリッド？
+		 * @return		trueならば斜面系のグリッド
+		 */
 		bool IsKindOfSlopeType() const noexcept;
 
 		/**
-		空間系のグリッド？
-		@return		trueならば空間系のグリッド
-		*/
+		 * 空間系のグリッド？
+		 * @return		trueならば空間系のグリッド
+		 */
 		bool IsKindOfSpatialType() const noexcept;
 
 		/**
-		水平方向に通行可能なセルか判定します
-		*/
+		 * 水平方向に通行可能なセルか判定します
+		 */
 		bool IsHorizontallyPassable() const noexcept;
 
 		/**
-		床（部屋）グリッドを生成します
-		*/
+		 * 床（部屋）グリッドを生成します
+		 */
 		static Grid CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
 
 		/**
-		デッキ（部屋の周辺）グリッドを生成します
-		*/
+		 * デッキ（部屋の周辺）グリッドを生成します
+		 */
 		static Grid CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
 
 		// 判定補助関数
 		/**
-		自身からtoGridを見た時に床が生成されるか判定します
-		@param[in]	checkNoMeshGeneration	メッシュ生成禁止判定
-		@return		trueならば床の生成が可能
-		*/
+		 * 自身からtoGridを見た時に床が生成されるか判定します
+		 * @param[in]	checkNoMeshGeneration	メッシュ生成禁止判定
+		 * @return		trueならば床の生成が可能
+		 */
 		bool CanBuildFloor(const bool checkNoMeshGeneration) const noexcept;
 
 		/**
-		斜面が生成されるか判定します
-		@return		trueならば斜面の生成が可能
-		*/
+		 * 斜面が生成されるか判定します
+		 * @return		trueならば斜面の生成が可能
+		 */
 		bool CanBuildSlope() const noexcept;
 
 		/**
-		自身からtoGridを見た時に屋根が生成されるか判定します
-		@param[in]	toUpperGrid				参照先グリッド（通常は一つ上のグリッド）
-		@param[in]	checkNoMeshGeneration	メッシュ生成禁止判定
-		@return		trueならば屋根の生成が可能
-		*/
+		 * 自身からtoGridを見た時に屋根が生成されるか判定します
+		 * @param[in]	toUpperGrid				参照先グリッド（通常は一つ上のグリッド）
+		 * @param[in]	checkNoMeshGeneration	メッシュ生成禁止判定
+		 * @return		trueならば屋根の生成が可能
+		 */
 		bool CanBuildRoof(const Grid& toUpperGrid, const bool checkNoMeshGeneration) const noexcept;
 
 		/**
-		自身からtoGridを見た時に扉が生成されるか判定します
-		@param[in]	toGrid		参照先グリッド
-		@param[in]	direction	自身からtoGridの方向
-		@param[in]	mergeRooms	trueならば部屋を結合する
-		@return		trueならば扉の生成が可能
-		*/
+		 * 自身からtoGridを見た時に扉が生成されるか判定します
+		 * @param[in]	toGrid		参照先グリッド
+		 * @param[in]	direction	自身からtoGridの方向
+		 * @param[in]	mergeRooms	trueならば部屋を結合する
+		 * @return		trueならば扉の生成が可能
+		 */
 		bool CanBuildGate(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
 
 		/**
-		自身からtoGridを見た時に壁が生成されるか判定します
-		@param[in]	toGrid		参照先グリッド
-		@param[in]	direction	自身からtoGridの方向
-		@param[in]	mergeRooms	部屋と部屋を結合する
-		@return		trueならば壁の生成が可能
-		*/
+		 * 自身からtoGridを見た時に壁が生成されるか判定します
+		 * @param[in]	toGrid		参照先グリッド
+		 * @param[in]	direction	自身からtoGridの方向
+		 * @param[in]	mergeRooms	部屋と部屋を結合する
+		 * @return		trueならば壁の生成が可能
+		 */
 		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
 
-	public:
 		/**
-		天井のメッシュ生成禁止に設定します
-		@param[in]	noRoofMeshGeneration	天井のメッシュ生成禁止
-		*/
+		 * 天井のメッシュ生成禁止に設定します
+		 * @param[in]	noRoofMeshGeneration	天井のメッシュ生成禁止
+		 */
 		void NoRoofMeshGeneration(const bool noRoofMeshGeneration) noexcept;
 
 		/**
-		床のメッシュ生成禁止に設定します
-		@param[in]	noFloorMeshGeneration	床のメッシュ生成禁止
-		*/
+		 * 床のメッシュ生成禁止に設定します
+		 * @param[in]	noFloorMeshGeneration	床のメッシュ生成禁止
+		 */
 		void NoFloorMeshGeneration(const bool noFloorMeshGeneration) noexcept;
 
 		/**
-		床のメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		 * 床のメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoFloorMeshGeneration() const noexcept;
 
 		/**
@@ -289,77 +285,77 @@ namespace dungeon
 		*/
 		bool IsNoRoofMeshGeneration() const noexcept;
 
-		/*
-		北側の壁がメッシュ生成禁止か設定します
-		*/
+		/**
+		 * 北側の壁がメッシュ生成禁止か設定します
+		 */
 		void NoNorthWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
-		/*
-		南側の壁がメッシュ生成禁止か設定します
-		*/
+		/**
+		 * 南側の壁がメッシュ生成禁止か設定します
+		 */
 		void NoSouthWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
-		/*
-		東側の壁がメッシュ生成禁止か設定します
-		*/
+		/**
+		 * 東側の壁がメッシュ生成禁止か設定します
+		 */
 		void NoEastWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
-		/*
-		西側の壁がメッシュ生成禁止か設定します
-		*/
+		/**
+		 * 西側の壁がメッシュ生成禁止か設定します
+		 */
 		void NoWestWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
-		/*
-		いずれかの方向で壁がメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		/**
+		 * いずれかの方向で壁がメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoWallMeshGeneration() const noexcept;
 
-		/*
-		指定の方向で壁がメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		/**
+		 * 指定の方向で壁がメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoWallMeshGeneration(const Direction direction) const noexcept;
 
-		/*
-		指定の方向で壁がメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		/**
+		 * 指定の方向で壁がメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoWallMeshGeneration(const Direction::Index direction) const noexcept;
 
-		/*
-		北側の壁がメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		/**
+		 * 北側の壁がメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoNorthWallMeshGeneration() const noexcept;
 
-		/*
-		南側の壁がメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		/**
+		 * 南側の壁がメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoSouthWallMeshGeneration() const noexcept;
 
-		/*
-		東側の壁がメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		/**
+		 * 東側の壁がメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoEastWallMeshGeneration() const noexcept;
 
-		/*
-		西側の壁がメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		/**
+		 * 西側の壁がメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoWestWallMeshGeneration() const noexcept;
 
 		/**
-		通路のマージ許可を設定します
-		*/
+		 * 通路のマージ許可を設定します
+		 */
 		void MergeAisle(const bool enable) noexcept;
 
 		/**
-		通路をマージ可能か取得します
-		@return		trueならマージ可能
-		*/
+		 * 通路をマージ可能か取得します
+		 * @return		trueならマージ可能
+		 */
 		bool CanMergeAisle() const noexcept;
 
 		/**
@@ -392,31 +388,75 @@ namespace dungeon
 		 */
 		bool IsSubLevel() const noexcept;
 
-	public:
 		/**
-		グリッドの種類の色を取得します
-		*/
+		 * 北側に壁があるか設定します
+		 */
+		void SetNorthWall(const bool enable) noexcept;
+
+		/**
+		 * 南側に壁があるか設定します
+		 */
+		void SetSouthWall(const bool enable) noexcept;
+
+		/**
+		 * 東側に壁があるか設定します
+		 */
+		void SetEastWall(const bool enable) noexcept;
+
+		/**
+		 * 西側に壁があるか設定します
+		 */
+		void SetWestWall(const bool enable) noexcept;
+
+		/**
+		 * 北側に壁があるか取得します
+		 */
+		bool HasNorthWall() const noexcept;
+
+		/**
+		 * 南側に壁があるか取得します
+		 */
+		bool HasSouthWall() const noexcept;
+
+		/**
+		 * 東側に壁があるか取得します
+		 */
+		bool HasEastWall() const noexcept;
+
+		/**
+		 * 西側に壁があるか取得します
+		 */
+		bool HasWestWall() const noexcept;
+
+		/**
+		 * グリッドの種類の色を取得します
+		 */
 		const FColor& GetTypeColor() const noexcept;
 
 		/**
-		グリッドの種類の色を取得します
-		*/
+		 * グリッドの種類の色を取得します
+		 */
 		static const FColor& GetTypeColor(const Grid::Type gridType) noexcept;
 
 		/**
-		グリッドの種類の名前を取得します
-		*/
+		 * グリッドの種類の名前を取得します
+		 */
 		const FString& GetTypeName() const noexcept;
 
 		/**
-		グリッドの小道具の名前を取得します
-		*/
+		 * グリッドの小道具の名前を取得します
+		 */
 		const FString& GetPropsName() const noexcept;
 
 		/**
-		グリッドの生成禁止状態の名前を取得します
-		*/
+		 * グリッドの生成禁止状態の名前を取得します
+		 */
 		FString GetNoMeshGenerationName() const noexcept;
+
+		/**
+		 * グリッドの壁の状態の名前を取得します
+		 */
+		FString GetWallName() const noexcept;
 
 	private:
 		static bool CanBuildWall_SlopeVsRoom() noexcept;
@@ -437,8 +477,12 @@ namespace dungeon
 			Reserved,
 			Catwalk,
 			SubLevel,
+			NorthWallMesh,				//!< 北方向に壁がある
+			EastWallMesh,				//!< 東方向に壁がある
+			SouthWallMesh,				//!< 南方向に壁がある
+			WestWallMesh,				//!< 西方向に壁がある
 		};
-		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::SubLevel) + 1;
+		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::WestWallMesh) + 1;
 
 		// Directionクラスの方向数
 		static constexpr size_t DirectionSize = 4;

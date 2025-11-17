@@ -5,14 +5,22 @@ All Rights Reserved.
 */
 
 #pragma once
+#include <Input/Reply.h>
 #include <Modules/ModuleManager.h>
+#include <Widgets/Docking/SDockTab.h>
+#include <Widgets/Input/SEditableTextBox.h>
 
 // Forward declaration
 class ADungeonGeneratedActor;
-class UDungeonGenerateParameter;
-class FToolBarBuilder;
 class FMenuBuilder;
+class FUICommandList;
+class FSpawnTabArgs;
+class FToolBarBuilder;
+class SButton;
+class UDungeonGenerateParameter;
 class UStaticMesh;
+class UTexture2D;
+struct FAssetData;
 
 class FDungeonGenerateEditorModule : public IModuleInterface
 {

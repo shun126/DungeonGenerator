@@ -30,7 +30,7 @@ struct FDungeonSpawnActorParameter
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "Actor"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.Actor"))
 	TObjectPtr<UClass> ActorClass = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = "1"))

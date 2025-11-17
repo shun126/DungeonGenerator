@@ -1,10 +1,10 @@
 /**
-ダンジョン生成ソースファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ダンジョン生成ソースファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Generator.h"
 #include "GenerateParameter.h"
@@ -1819,14 +1819,59 @@ namespace dungeon
 			(room->GetParts() == Room::Parts::Hall || room->GetParts() == Room::Parts::Hanare);
 	}
 
-	const Grid& Generator::GetGrid(const FIntVector& location) const noexcept
+	void Generator::SetNorthWall(const FIntVector& position, const bool enable) const noexcept
 	{
-		return mVoxel->Get(location.X, location.Y, location.Z);
+		mVoxel->SetNorthWall(position, enable);
+	}
+
+	void Generator::SetSouthWall(const FIntVector& position, const bool enable) const noexcept
+	{
+		mVoxel->SetSouthWall(position, enable);
+	}
+
+	void Generator::SetEastWall(const FIntVector& position, const bool enable) const noexcept
+	{
+		mVoxel->SetEastWall(position, enable);
+	}
+
+	void Generator::SetWestWall(const FIntVector& position, const bool enable) const noexcept
+	{
+		mVoxel->SetWestWall(position, enable);
+	}
+
+	bool Generator::HasNorthWall(const FIntVector& position) const noexcept
+	{
+		return mVoxel->HasNorthWall(position);
+	}
+
+	bool Generator::HasSouthWall(const FIntVector& position) const noexcept
+	{
+		return mVoxel->HasSouthWall(position);
+	}
+
+	bool Generator::HasEastWall(const FIntVector& position) const noexcept
+	{
+		return mVoxel->HasEastWall(position);
+	}
+
+	bool Generator::HasWestWall(const FIntVector& position) const noexcept
+	{
+		return mVoxel->HasWestWall(position);
 	}
 
 	uint32_t Generator::CalculateCRC32(const uint32_t hash) const noexcept
 	{
 		return mVoxel ? mVoxel->CalculateCRC32(hash) : hash;
+	}
+
+	const Grid& Generator::GetGrid(const FIntVector& location) const noexcept
+	{
+		return mVoxel->Get(location.X, location.Y, location.Z);
+	}
+
+	const Grid& Generator::GetGrid(const int32 x, const int32 y, const int32 z) const noexcept
+	{
+		return mVoxel->Get(x, y, z);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////

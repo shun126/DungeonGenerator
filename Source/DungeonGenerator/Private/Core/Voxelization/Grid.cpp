@@ -430,4 +430,34 @@ namespace dungeon
 
 		return FString(TEXT("NoGeneration: ")) + noMeshGenerationName;
 	}
+
+	FString Grid::GetWallName() const noexcept
+	{
+		FString name;
+
+		if (mPack.IsAttributeEnabled(Attribute::NorthWallMesh))
+		{
+			name += TEXT("NorthWall");
+		}
+		if (mPack.IsAttributeEnabled(Attribute::SouthWallMesh))
+		{
+			if (!name.IsEmpty())
+				name += TEXT(",");
+			name += TEXT("SouthWall");
+		}
+		if (mPack.IsAttributeEnabled(Attribute::EastWallMesh))
+		{
+			if (!name.IsEmpty())
+				name += TEXT(",");
+			name += TEXT("EastWall");
+		}
+		if (mPack.IsAttributeEnabled(Attribute::WestWallMesh))
+		{
+			if (!name.IsEmpty())
+				name += TEXT(",");
+			name += TEXT("WestWall");
+		}
+
+		return FString(TEXT("Wall: ")) + name;
+	}
 }

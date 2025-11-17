@@ -76,7 +76,7 @@ protected:
 	 *
 	 * 配置するRoomSensorを登録して下さい。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", meta = (AllowedClasses = "DungeonRoomSensorBase"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonRoomSensorBase"))
 	TArray<TObjectPtr<UClass>> DungeonRoomSensorClass;
 
 	/**
@@ -84,6 +84,6 @@ protected:
 	 *
 	 * 通路にスポーンするアクター
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Aisle", meta = (AllowedClasses = "Blueprint"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Aisle", meta = (AllowedClasses = "/Script/Engine.Blueprint"))
 	TArray<FSoftObjectPath> SpawnActorInAisle;
 };

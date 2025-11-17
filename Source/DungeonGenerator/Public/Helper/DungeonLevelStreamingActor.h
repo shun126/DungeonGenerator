@@ -48,6 +48,6 @@ protected:
 	/**
 	 * Level streaming path
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowedClasses = "World"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.World"))
 	FSoftObjectPath Path;
 };

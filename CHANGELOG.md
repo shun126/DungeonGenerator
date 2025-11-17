@@ -1,5 +1,15 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20251118-1.7.10 (62)
+### Changes
+* Unreal Engine 5.7 support
+* Revised plant distribution methods
+* Fixed several bugs
+### 変更点
+* Unreal Engine 5.7対応
+* 植物の分布方法を修正
+* いくつかの不具合を修正
+
 ## 20251004-1.7.8 (61)
 ### Changes
 * Added the ability to assist actors spawning into the aisle grid
