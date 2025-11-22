@@ -1,10 +1,10 @@
 /**
-パーリンノイズに関するヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * パーリンノイズに関するヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <array>
@@ -15,29 +15,31 @@ namespace dungeon
 {
 	class Random;
 
-	/*!
-	パーリンノイズクラス
-	*/
+	/**
+	 * パーリンノイズクラス
+	 */
 	class PerlinNoise final
 	{
 	public:
 		explicit PerlinNoise(const std::shared_ptr<Random>& random);
 		~PerlinNoise() = default;
 
-		// SEED値を設定する
+		/**
+		 * SEED値を設定する
+		 */
 		void SetSeed(const std::shared_ptr<Random>& random);
 
-		/*
-		オクターブ無しノイズを取得する
-		[-1.0 ~ 1.0]
-		*/
+		/**
+		 * オクターブ無しノイズを取得する
+		 * [-1.0 ~ 1.0]
+		 */
 		float Noise(float x, float y) const noexcept;
 		float Noise(float x, float y, float z) const noexcept;
 
-		/*
-		オクターブ有りノイズを取得する
-		[-1.0 ~ 1.0]
-		*/
+		/**
+		 * オクターブ有りノイズを取得する
+		 * [-1.0 ~ 1.0]
+		 */
 		float OctaveNoise(const std::size_t octaves, float x, float y) const noexcept;
 		float OctaveNoise(const std::size_t octaves, float x, float y, float z) const noexcept;
 
@@ -50,7 +52,6 @@ namespace dungeon
 		float SetOctaveNoise(const std::size_t octaves, float x, float y) const noexcept;
 		float SetOctaveNoise(const std::size_t octaves, float x, float y, float z) const noexcept;
 
-	private:
 		std::array<std::uint8_t, 512> mHash;
 	};
 

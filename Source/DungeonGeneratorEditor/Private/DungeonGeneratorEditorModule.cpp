@@ -23,6 +23,7 @@ All Rights Reserved.
 #include <PackageTools.h>
 #include <ToolMenus.h>
 #include <AssetRegistry/AssetRegistryModule.h>
+#include <Engine/Texture2D.h>
 #include <GameFramework/PlayerStart.h>
 #include <Misc/EngineVersionComparison.h>
 #include <Misc/MessageDialog.h>

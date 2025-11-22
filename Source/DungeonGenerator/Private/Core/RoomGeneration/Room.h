@@ -11,6 +11,7 @@ All Rights Reserved.
 #include "../Math/Point.h"
 #include <Math/IntRect.h>
 #include <Math/IntVector.h>
+#include <string>
 #include <string_view>
 
 namespace dungeon

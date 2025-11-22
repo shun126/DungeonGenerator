@@ -502,7 +502,7 @@ protected:
 	 * DungeonRoomSensorBaseは部屋を覆う箱センサーで、ドアや敵のスポーンを制御します。
 	 * DungeonRoomSensorDatabaseが優先されます
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", BlueprintReadWrite, meta = (AllowedClasses = "DungeonRoomSensorBase", DeprecatedProperty, ToolTip = "This variable is deprecated. Please use DungeonRoomSensorDatabase instead."))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", BlueprintReadWrite, meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonRoomSensorBase", DeprecatedProperty, ToolTip = "This variable is deprecated. Please use DungeonRoomSensorDatabase instead."))
 	TObjectPtr<UClass> DungeonRoomSensorClass;
 
 	/**

@@ -10,6 +10,8 @@ All Rights Reserved.
 #include "Helper/DungeonDebugUtility.h"
 #endif
 
+#include <Engine/StaticMesh.h>
+
 #if WITH_EDITOR
 FString FDungeonMeshParts::DumpToJson(const uint32 indent) const
 {

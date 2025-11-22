@@ -1,10 +1,10 @@
 /**
-ダンジョン生成ヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ダンジョン生成ヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once 
 #include "GenerateParameter.h"
@@ -27,8 +27,8 @@ namespace dungeon
 	class Voxel;
 
 	/**
-	ダンジョン生成クラス
-	*/
+	 * ダンジョン生成クラス
+	 */
 	class Generator : public std::enable_shared_from_this<Generator>
 	{
 	public:
@@ -47,48 +47,56 @@ namespace dungeon
 
 	public:
 		/**
-		コンストラクタ
-		*/
+		 * コンストラクタ
+		 */
 		Generator() = default;
 		Generator(const Generator&) = delete;
 		Generator& operator=(const Generator&) = delete;
 
 		/**
-		デストラクタ
-		*/
+		 * デストラクタ
+		 */
 		virtual ~Generator() = default;
 
 		/**
-		生成
-		@param[in]	parameter	生成パラメータ
-		@return		trueならば生成成功。falseならばGetLastErrorにて詳細を取得できます。
-		*/
+		 * 生成
+		 * @param[in]	parameter	生成パラメータ
+		 * @return		trueならば生成成功。falseならばGetLastErrorにて詳細を取得できます。
+		 */
 		bool Generate(const GenerateParameter& parameter) noexcept;
 
 		/**
-		生成時に発生したエラーを取得します
-		*/
+		 * 生成時に発生したエラーを取得します
+		 */
 		Error GetLastError() const noexcept;
 
 		/**
-		生成パラメータを取得します
-		*/
+		 * 生成パラメータを取得します
+		 */
 		const GenerateParameter& GetGenerateParameter() const noexcept;
 
 		/**
-		グリッド化された情報を取得
-		*/
+		 * グリッド化された情報を取得
+		 */
 		const std::shared_ptr<Voxel>& GetVoxel() const noexcept;
 
+		/**
+		 * グリッド化された情報を取得
+		 */
 		const Grid& GetGrid(const FIntVector& location) const noexcept;
+
+		/**
+		 * グリッド化された情報を取得
+		 */
+		const Grid& GetGrid(const int32 x, const int32 y, const int32 z) const noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// Room
 		size_t GetRoomCount() const noexcept;
 
 		/**
-		生成された部屋を更新します
-		*/
+		 * 生成された部屋を更新します
+		 */
 		template<typename Function>
 		void ForEach(Function&& function) noexcept
 		{
@@ -99,8 +107,8 @@ namespace dungeon
 		}
 
 		/**
-		生成された部屋を参照します
-		*/
+		 * 生成された部屋を参照します
+		 */
 		template<typename Function>
 		void ForEach(Function&& function) const noexcept
 		{
@@ -110,16 +118,24 @@ namespace dungeon
 			}
 		}
 
-		// 深度による検索
+		/**
+		 * 深度による検索
+		 */
 		std::shared_ptr<Room> FindByIdentifier(const Identifier& identifier) const noexcept;
 
-		// 深度による検索
+		/**
+		 * 深度による検索
+		 */
 		std::vector<std::shared_ptr<Room>> FindByDepth(const uint8_t depth) const noexcept;
 
-		// ブランチによる検索
+		/**
+		 * ブランチによる検索
+		 */
 		std::vector<std::shared_ptr<Room>> FindByBranch(const uint8_t branchId) const noexcept;
 
-		// 到達可能な部屋を検索
+		/**
+		 * 到達可能な部屋を検索
+		 */
 		std::vector<std::shared_ptr<Room>> FindByRoute(const std::shared_ptr<Room>& room) const noexcept;
 
 	private:
@@ -191,31 +207,31 @@ namespace dungeon
 		// Point
 	public:
 		/**
-		位置から部屋を検索します
-		最初にヒットした部屋を返します
-		@param[in]	point		検索位置
-		@return		nullptrなら検索失敗
-		*/
+		 * 位置から部屋を検索します
+		 * 最初にヒットした部屋を返します
+		 * @param[in]	point		検索位置
+		 * @return		nullptrなら検索失敗
+		 */
 		std::shared_ptr<Room> Find(const Point& point) const noexcept;
 
 		/**
-		位置から部屋を検索します
-		検索位置を含むすべての部屋を返します
-		@param[in]	point		検索位置
-		@return		コンテナのサイズが0なら検索失敗
-		*/
+		 * 位置から部屋を検索します
+		 * 検索位置を含むすべての部屋を返します
+		 * @param[in]	point		検索位置
+		 * @return		コンテナのサイズが0なら検索失敗
+		 */
 		std::vector<std::shared_ptr<Room>> FindAll(const Point& point) const noexcept;
 
 		/**
-		開始地点にふさわしい点を取得します
-		@return		開始地点にふさわしい点
-		*/
+		 * 開始地点にふさわしい点を取得します
+		 * @return		開始地点にふさわしい点
+		 */
 		const std::shared_ptr<const Point>& GetStartPoint() const noexcept;
 
 		/**
-		ゴール地点にふさわしい点を取得します
-		@return		ゴール地点にふさわしい点
-		*/
+		 * ゴール地点にふさわしい点を取得します
+		 * @return		ゴール地点にふさわしい点
+		 */
 		const std::shared_ptr<const Point>& GetGoalPoint() const noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,11 +255,53 @@ namespace dungeon
 		void MarkBranchIdAndDepthFromStartRecursive(const std::shared_ptr<Room>& room, uint8_t& branchId, const uint8_t depth) noexcept;
 
 		////////////////////////////////////////////////////////////////////////////////////////////
+		// Attribute
 	public:
 		/**
-		Calculate CRC32
-		@return		CRC32
-		*/
+		 * 北側に壁があるか設定します
+		 */
+		void SetNorthWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 南側に壁があるか設定します
+		 */
+		void SetSouthWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 東側に壁があるか設定します
+		 */
+		void SetEastWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 西側に壁があるか設定します
+		 */
+		void SetWestWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 北側に壁があるか取得します
+		 */
+		bool HasNorthWall(const FIntVector& position) const noexcept;
+
+		/**
+		 * 南側に壁があるか取得します
+		 */
+		bool HasSouthWall(const FIntVector& position) const noexcept;
+
+		/**
+		 * 東側に壁があるか取得します
+		 */
+		bool HasEastWall(const FIntVector& position) const noexcept;
+
+		/**
+		 * 西側に壁があるか取得します
+		 */
+		bool HasWestWall(const FIntVector& position) const noexcept;
+
+		////////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		 * Calculate CRC32
+		 * @return		CRC32
+		 */
 		uint32_t CalculateCRC32(const uint32_t hash = 0xffffffffU) const noexcept;
 
 	private:
@@ -273,8 +331,8 @@ namespace dungeon
 		void FillStructuralColumnVoxel(const int32 x, const int32 y, const int32 minZ, const int32 maxZ) const;
 
 		/**
-		リセット
-		*/
+		 * リセット
+		 */
 		void Reset();
 
 
@@ -311,9 +369,9 @@ namespace dungeon
 		void DumpRoomDiagram(std::ofstream& stream, std::unordered_set<const Aisle*>& passableAisles, const std::shared_ptr<const Room>& room) const noexcept;
 
 		/**
-		デバッグ用に部屋と通路の情報をダンプします
-		@param[in]	index	通路配列番号
-		*/
+		 * デバッグ用に部屋と通路の情報をダンプします
+		 * @param[in]	index	通路配列番号
+		 */
 		void DumpAisleAndRoomInformation(const size_t index) const noexcept;
 
 		void DumpVoxel(const std::shared_ptr<const Point>& point) const noexcept;

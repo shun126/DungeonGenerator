@@ -305,6 +305,7 @@ private:
 	void CreateImplement_AddTerrain(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority);
 	void CreateImplement_AddFloorAndSlope(const CreateImplementParameter& cp) const;
 	void CreateImplement_ReserveWall(const CreateImplementParameter& cp);
+	void CreateImplement_ReserveVegetationGenerationAisleBounds(const CreateImplementParameter& cp) const;
 	void CreateImplement_AddWall();
 	void CreateImplement_AddRoof(const CreateImplementParameter& cp) const;
 	void CreateImplement_AddDoor(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const;

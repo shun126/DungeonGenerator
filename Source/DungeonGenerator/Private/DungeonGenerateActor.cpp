@@ -19,6 +19,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配�
 #include "Helper/DungeonAisleGridMap.h"
 #include "MainLevel/DungeonMainLevelScriptActor.h"
 #include "Parameter/DungeonGenerateParameter.h"
+#include <GameFramework/Pawn.h>
 #include <Components/HierarchicalInstancedStaticMeshComponent.h>
 #include <Engine/LevelStreaming.h>
 #include <Kismet/GameplayStatics.h>
@@ -490,7 +491,8 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 						}
 						if (grid.IsSubLevel())
 							message.Append(TEXT("SubLevel\n"));
-						message.Append(grid.GetNoMeshGenerationName());
+						message.Append(grid.GetNoMeshGenerationName() + TEXT("\n"));
+						message.Append(grid.GetWallName());
 						DrawDebugString(
 							GetWorld(),
 							center,
@@ -535,14 +537,15 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 		if (grid.IsSubLevel())
 			output.Add(TEXT("SubLevel"));
 		
+		output.Add(grid.GetNoMeshGenerationName());
+		output.Add(grid.GetWallName());
+
 		FString message;
 		for (const FString& line : output)
 		{
 			message.Append(line);
 			message.Append(TEXT("\n"));
 		}
-
-		message.Append(grid.GetNoMeshGenerationName() + TEXT("\n"));
 
 		DrawDebugString(
 			playerPawn->GetWorld(),
