@@ -4,7 +4,7 @@
 </div>
 
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
-[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.6-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
+[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.7-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
 [![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
@@ -53,7 +53,7 @@ The foundational generation algorithm you shared was a major source of inspirati
 * Supported Target Build Platforms: Windows,Android,Linux (should be possible to target all platforms)
 
 # 🔧 Requirements
-* [Unreal Engine 5.1 ~ Unreal Engine 5.6](https://www.unrealengine.com/)
+* [Unreal Engine 5.1 ~ Unreal Engine 5.7](https://www.unrealengine.com/)
 * [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 # 💾 How to install
