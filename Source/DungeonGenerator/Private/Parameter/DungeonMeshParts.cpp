@@ -1,14 +1,16 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Parameter/DungeonMeshParts.h"
 
 #if WITH_EDITOR
 #include "Helper/DungeonDebugUtility.h"
 #endif
+
+#include <Engine/StaticMesh.h>
 
 #if WITH_EDITOR
 FString FDungeonMeshParts::DumpToJson(const uint32 indent) const

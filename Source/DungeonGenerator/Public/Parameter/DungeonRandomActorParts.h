@@ -1,17 +1,17 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Parameter/DungeonActorPartsWithDirection.h"
 #include "DungeonRandomActorParts.generated.h"
 
 /**
-Actor parts with Probability
-ランダム選択するアクターのパーツ
-*/
+ * Actor parts with Probability
+ * ランダム選択するアクターのパーツ
+ */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonRandomActorParts : public FDungeonActorPartsWithDirection
 {
@@ -25,9 +25,9 @@ public:
 
 public:
 	/**
-	Production frequency
-	配置する頻度
-	*/
+	 * Production frequency
+	 * 配置する頻度
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "0.", ClampMax = "1."))
 	float Frequency = 1.f;
 };

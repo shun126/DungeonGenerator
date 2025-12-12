@@ -1,1 +1,5 @@
+# Built data for doxygen
+doxygen
+
+# Ignore files
 .bak

@@ -1,10 +1,8 @@
 /**
-方向
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Direction.h"
 
@@ -13,9 +11,9 @@ namespace dungeon
 	namespace detail
 	{
 		/**
-		方向
-		EDungeonDirection、Direction::IndexとPathFinder::SearchDirectionに並びを合わせて下さい
-		*/
+		 * 方向
+		 * EDungeonDirection、Direction::IndexとPathFinder::SearchDirectionに並びを合わせて下さい
+		 */
 		static const std::array<FIntVector, 4> Offsets = {
 			{
 				{  0, -1,  0 },	// 北

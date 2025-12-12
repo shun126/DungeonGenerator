@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Parameter/DungeonGenerateParameter.h"
 #include "PluginInformation.h"
@@ -22,7 +22,7 @@ All Rights Reserved.
 
 UDungeonGenerateParameter::UDungeonGenerateParameter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, PluginVersion(DUNGENERATOR_PLUGIN_VERSION)
+	, PluginVersion(DUNGEON_GENERATOR_PLUGIN_VERSION)
 {
 }
 
@@ -63,12 +63,13 @@ void UDungeonGenerateParameter::SetRandomParameter() noexcept
 	RoomDepth.Max = RoomDepth.Min + random->Get<int32>(1, 5);
 	RoomHeight.Min = random->Get<int32>(1, 3);
 	RoomHeight.Max = RoomHeight.Min + random->Get<int32>(1, 3);
-	RoomMargin = random->Get<uint8>(1, 5);
-	VerticalRoomMargin = random->Get<uint8>(5);
-	NumberOfCandidateRooms = random->Get<uint8>(5, 50);
-	NumberOfCandidateFloors = random->Get<uint8>(5);
-	MergeRooms = random->Get<bool>();
-	Flat = random->Get<bool>();
+        RoomMargin = random->Get<uint8>(1, 5);
+        VerticalRoomMargin = random->Get<uint8>(5);
+        NumberOfCandidateRooms = random->Get<uint8>(5, 50);
+        NumberOfCandidateFloors = random->Get<uint8>(5);
+        MergeRooms = random->Get<bool>();
+        ExpansionPolicy = static_cast<EDungeonExpansionPolicy>(random->Get<uint8>(0, static_cast<uint8>(EDungeonExpansionPolicy::Flat)));
+        Flat = ExpansionPolicy == EDungeonExpansionPolicy::Flat;
 	GenerateSlopeInRoom = random->Get<bool>();
 	GenerateStructuralColumn = random->Get<bool>();
 
@@ -106,6 +107,38 @@ bool UDungeonGenerateParameter::IsSupportedForNetworking() const
 {
 	//return Super::IsSupportedForNetworking();
 	return true;
+}
+
+void UDungeonGenerateParameter::PostLoad()
+{
+	Super::PostLoad();
+
+	if (Flat && ExpansionPolicy != EDungeonExpansionPolicy::Flat)
+	{
+		ExpansionPolicy = EDungeonExpansionPolicy::Flat;
+	}
+
+	if (ExpansionPolicy == EDungeonExpansionPolicy::Flat)
+	{
+		Flat = false;
+	}
+
+	if (MovePlayerStartToStartingPoint == false && StartLocationPolicy != EDungeonStartLocationPolicy::NoAdjustment)
+	{
+		StartLocationPolicy = EDungeonStartLocationPolicy::NoAdjustment;
+	}
+
+	if (StartLocationPolicy == EDungeonStartLocationPolicy::NoAdjustment)
+	{
+		MovePlayerStartToStartingPoint = false;
+	}
+
+	if (UseMissionGraph &&
+		(StartLocationPolicy == EDungeonStartLocationPolicy::UseCentralPoint ||
+			StartLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart))
+	{
+		StartLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
+	}
 }
 
 #if WITH_EDITOR
@@ -191,7 +224,7 @@ void UDungeonGenerateParameter::DumpToJson() const
 
 	FString jsonString(TEXT("{\n"));
 	{
-		jsonString += TEXT(" \"Version\":\"") + FString(TEXT(DUNGENERATOR_PLUGIN_VERSION_NAME)) + TEXT("\",\n");
+		jsonString += TEXT(" \"Version\":\"") + FString(TEXT(DUNGEON_GENERATOR_PLUGIN_VERSION_NAME)) + TEXT("\",\n");
 		jsonString += TEXT(" \"Tag\":\"") + FString(TEXT(JENKINS_JOB_TAG)) + TEXT("\",\n");
 		jsonString += TEXT(" \"UUID\":\"") + FString(TEXT(JENKINS_UUID)) + TEXT("\",\n");
 		jsonString += TEXT(" \"License\":\"") + FString(TEXT(JENKINS_LICENSE)) + TEXT("\",\n");

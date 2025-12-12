@@ -1,17 +1,17 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Parameter/DungeonPartsTransform.h"
 #include "DungeonActorParts.generated.h"
 
 /**
-Actor Parts
-アクターのパーツ
-*/
+ * Actor Parts
+ * アクターのパーツ
+ */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonActorParts : public FDungeonPartsTransform
 {
@@ -25,9 +25,9 @@ public:
 
 public:
 	/**
-	Class of actor to spawn
-	スポーンするアクターのクラス
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowedClasses = "Actor"))
+	 * Class of actor to spawn
+	 * スポーンするアクターのクラス
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.Actor"))
 	TObjectPtr<UClass> ActorClass = nullptr;
 };

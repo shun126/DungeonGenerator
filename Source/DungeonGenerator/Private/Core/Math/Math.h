@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <algorithm>
@@ -93,10 +93,10 @@ namespace dungeon
 		}
 
 		/**
-		角度を0～360に収めます
-		\param[in]	degree	角度
-		\return		0～360
-		*/
+		 * 角度を0～360に収めます
+		 * \param[in]	degree	角度
+		 * \return		0～360
+		 */
 		template<typename T>
 		static constexpr T RoundDegree(const T degree)
 		{
@@ -108,10 +108,10 @@ namespace dungeon
 		}
 
 		/**
-		ラジアン角を0～2πに収めます
-		\param[in]	radian	ラジアン角
-		\return		0～2π
-		*/
+		 * ラジアン角を0～2πに収めます
+		 * \param[in]	radian	ラジアン角
+		 * \return		0～2π
+		 */
 		template<typename T>
 		static constexpr T RoundRadian(const T radian)
 		{
@@ -123,10 +123,10 @@ namespace dungeon
 		}
 
 		/**
-		角度を-180～180に収めます
-		\param[in]	degree	角度
-		\return		-180～180
-		*/
+		 * 角度を-180～180に収めます
+		 * \param[in]	degree	角度
+		 * \return		-180～180
+		 */
 		template<typename T>
 		static constexpr T RoundDegreeWithSign(const T degree)
 		{
@@ -138,10 +138,10 @@ namespace dungeon
 		}
 
 		/**
-		ラジアン角を-π～πに収めます
-		\param[in]	radian	ラジアン角
-		\return		-π～π
-		*/
+		 * ラジアン角を-π～πに収めます
+		 * \param[in]	radian	ラジアン角
+		 * \return		-π～π
+		 */
 		template<typename T>
 		static constexpr T RoundRadianWithSign(const T radian)
 		{
@@ -153,11 +153,11 @@ namespace dungeon
 		}
 
 		/**
-		角度の距離を取得します
-		\param[in]	a	角度
-		\param[in]	b	角度
-		\return			絶対差
-		*/
+		 * 角度の距離を取得します
+		 * \param[in]	a	角度
+		 * \param[in]	b	角度
+		 * \return			絶対差
+		 */
 		template<typename T>
 		static constexpr T DegreeDistance(const T a, const T b)
 		{
@@ -165,11 +165,11 @@ namespace dungeon
 		}
 
 		/**
-		ラジアン角の距離を取得します
-		\param[in]	a	ラジアン角
-		\param[in]	b	ラジアン角
-		\return			絶対差
-		*/
+		 * ラジアン角の距離を取得します
+		 * \param[in]	a	ラジアン角
+		 * \param[in]	b	ラジアン角
+		 * \return			絶対差
+		 */
 		template<typename T>
 		static constexpr T RadianDistance(const T a, const T b)
 		{

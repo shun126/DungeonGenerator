@@ -2,7 +2,7 @@
  * @author		Shun Moriya
  * @copyright	2025- Shun Moriya
  * All Rights Reserved.
- * 
+ *
  * A spawner class that spawns actors at regular intervals.
  * ADungeonActorSpawnDirector provides the ability to spawn actors in the game at specified intervals.
  * The type of actor to be spawned and the probability of its occurrence are defined by the FDungeonSpawnActorParameter structure.

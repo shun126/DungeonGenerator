@@ -1,10 +1,10 @@
 /**
-Helper function header file
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * Helper function header file
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 
@@ -49,13 +49,13 @@ namespace dungeon
 		};
 	}
 
-	/*!
-	Generate CRC32
-	@param[in] text Pointer to text
-	@param[in] size Size of text
-	@param[in] hash Initial hash value
-	@return		CRC32
-	*/
+	/**
+	 * Generate CRC32
+	 * @param[in] text Pointer to text
+	 * @param[in] size Size of text
+	 * @param[in] hash Initial hash value
+	 * @return		CRC32
+	 */
 	static constexpr uint32_t GenerateCrc32FromText(const char* text, const size_t size, uint32_t hash = 0xffffffffU) noexcept
 	{
 		for (size_t i = 0; i < size; ++i)
@@ -66,13 +66,13 @@ namespace dungeon
 		return hash ^ 0xffffffffU;
 	}
 
-	/*!
-	Generate CRC32
-	@param[in] data Pointer to data
-	@param[in] size Size of data
-	@param[in] hash Initial hash value
-	@return		CRC32
-	*/
+	/**
+	 * Generate CRC32
+	 * @param[in] data Pointer to data
+	 * @param[in] size Size of data
+	 * @param[in] hash Initial hash value
+	 * @return		CRC32
+	 */
 	static constexpr uint32_t GenerateCrc32FromData(const void* data, const size_t size, uint32_t hash = 0xffffffffU) noexcept
 	{
 		return GenerateCrc32FromText(static_cast<const char*>(data), size, hash);

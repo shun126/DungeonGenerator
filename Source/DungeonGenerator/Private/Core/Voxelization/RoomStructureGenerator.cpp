@@ -1,10 +1,10 @@
 /**
-部屋の中に構造物を生成できるか調査・生成します
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 部屋の中に構造物を生成できるか調査・生成します
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "RoomStructureGenerator.h"
 #include "Voxel.h"

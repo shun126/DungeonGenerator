@@ -1,10 +1,10 @@
 /**
-平面に関するヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 平面に関するヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <Math/Vector.h>
@@ -12,8 +12,8 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
-	平面クラス
-	*/
+	 * 平面クラス
+	 */
 	class Plane final
 	{
 	public:

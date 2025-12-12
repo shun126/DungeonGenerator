@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <CoreMinimal.h>
@@ -12,9 +12,9 @@ All Rights Reserved.
 class UBoxComponent;
 
 /**
-Helper class that loads the level when the player enters the OverlapVolume
-プレイヤーが OverlapVolume に入るときにレベルをロードするヘルパークラス
-*/
+ * Helper class that loads the level when the player enters the OverlapVolume
+ * プレイヤーが OverlapVolume に入るときにレベルをロードするヘルパークラス
+ */
 UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API ADungeonLevelStreamingActor : public AActor
 {
@@ -22,13 +22,13 @@ class DUNGEONGENERATOR_API ADungeonLevelStreamingActor : public AActor
 
 public:
 	/**
-	constructor
-	*/
+	 * constructor
+	 */
 	explicit ADungeonLevelStreamingActor(const FObjectInitializer& initializer);
 
 	/**
-	destructor
-	*/
+	 * destructor
+	 */
 	virtual ~ADungeonLevelStreamingActor() override = default;
 
 protected:
@@ -48,6 +48,6 @@ protected:
 	/**
 	 * Level streaming path
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowedClasses = "World"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.World"))
 	FSoftObjectPath Path;
 };

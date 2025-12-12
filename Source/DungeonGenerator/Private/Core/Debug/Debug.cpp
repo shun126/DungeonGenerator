@@ -1,13 +1,13 @@
 /**
-Debug function source files
-
-To prevent conflicts with other Windows macros,
-do not include this file from the header.
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * Debug function source files
+ *
+ * To prevent conflicts with other Windows macros,
+ * do not include this file from the header.
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Debug.h"
 #include <GenericPlatform/GenericPlatformFile.h>
@@ -28,10 +28,10 @@ namespace dungeon
 #if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING == 0
 #if defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
 	/**
-	Output to VisualStudio output window
-	Assumed to be included only from source files,
-	so static functions are fine.
-	*/
+	 * Output to VisualStudio output window
+	 * Assumed to be included only from source files,
+	 * so static functions are fine.
+	 */
 	extern void OutputDebugStringWithArgument(const char* pszFormat, ...)
 	{
 		va_list	argp;

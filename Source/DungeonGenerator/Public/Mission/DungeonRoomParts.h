@@ -1,20 +1,20 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <CoreMinimal.h>
 #include "DungeonRoomParts.generated.h"
 
 /**
-Type of room parts
-Same content as dungeon::Room::Parts
-
-ルームパーツの種類
-dungeon::Room::Parts と同じ内容です。
-*/
+ * Type of room parts
+ * Same content as dungeon::Room::Parts
+ *
+ * ルームパーツの種類
+ * dungeon::Room::Parts と同じ内容です。
+ */
 UENUM(BlueprintType)
 enum class EDungeonRoomParts : uint8
 {
@@ -26,12 +26,12 @@ enum class EDungeonRoomParts : uint8
 };
 
 /**
-Type of room parts
-Same content as dungeon::Room::Parts
-
-ルームパーツの種類
-dungeon::Room::Parts と同じ内容です。
-*/
+ * Type of room parts
+ * Same content as dungeon::Room::Parts
+ *
+ * ルームパーツの種類
+ * dungeon::Room::Parts と同じ内容です。
+ */
 UENUM(BlueprintType)
 enum class EDungeonRoomLocatorParts : uint8
 {
@@ -41,29 +41,29 @@ enum class EDungeonRoomLocatorParts : uint8
 };
 
 /**
-Number of different room parts
-*/
+ * Number of different room parts
+ */
 static constexpr uint8 DungeonRoomPartsSize = static_cast<uint8>(EDungeonRoomParts::Goal) + 1;
 
 /**
-Get the symbol name of a room part.
-Same content as dungeon::Room::Parts
-@param[in]	parts	EDungeonRoomParts
-@return		Symbol name for EDungeonRoomParts
-*/
+ * Get the symbol name of a room part.
+ * Same content as dungeon::Room::Parts
+ * @param[in]	parts	EDungeonRoomParts
+ * @return		Symbol name for EDungeonRoomParts
+ */
 extern const FString& GetDungeonRoomPartsName(const EDungeonRoomParts parts);
 
 /**
-Compare EDungeonRoomParts and EDungeonRoomLocatorParts
-*/
+ * Compare EDungeonRoomParts and EDungeonRoomLocatorParts
+ */
 inline constexpr bool Equal(const EDungeonRoomParts parts, const EDungeonRoomLocatorParts locatorParts)
 {
 	return static_cast<uint8>(parts) == static_cast<uint8>(locatorParts);
 }
 
 /**
-Compare EDungeonRoomParts and EDungeonRoomLocatorParts
-*/
+ * Compare EDungeonRoomParts and EDungeonRoomLocatorParts
+ */
 inline constexpr bool Equal(const EDungeonRoomLocatorParts locatorParts, const EDungeonRoomParts parts)
 {
 	return Equal(parts, locatorParts);
@@ -71,7 +71,7 @@ inline constexpr bool Equal(const EDungeonRoomLocatorParts locatorParts, const E
 
 /**
  * Cast from EDungeonRoomLocatorParts to EDungeonRoomParts
- * 
+ *
  * EDungeonRoomLocatorPartsからEDungeonRoomPartsへのキャスト
  */
 inline constexpr EDungeonRoomParts Cast(const EDungeonRoomLocatorParts parts)
@@ -81,7 +81,7 @@ inline constexpr EDungeonRoomParts Cast(const EDungeonRoomLocatorParts parts)
 
 /**
  * Cast from EDungeonRoomParts to EDungeonRoomLocatorParts
- * 
+ *
  * EDungeonRoomPartsからEDungeonRoomLocatorPartsへのキャスト
  */
 inline constexpr EDungeonRoomLocatorParts Cast(const EDungeonRoomParts parts)

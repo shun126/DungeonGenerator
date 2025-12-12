@@ -1,10 +1,10 @@
 /**
-A*によるパス検索 ヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * A*によるパス検索 ヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 
@@ -82,11 +82,11 @@ namespace dungeon
 	BaseNode
 	*/
 	/**
-	コンストラクタ
-	@param[in]	nodeType		ノードの種類
-	@param[in]	location		現在位置
-	@param[in]	direction		検索してきた方向
-	*/
+	 * コンストラクタ
+	 * @param[in]	nodeType		ノードの種類
+	 * @param[in]	location		現在位置
+	 * @param[in]	direction		検索してきた方向
+	 */
 	inline PathFinder::BaseNode::BaseNode(const NodeType nodeType, const FIntVector& location, const Direction& direction) noexcept
 		: mLocation(location)
 		, mNodeType(nodeType)
@@ -112,14 +112,14 @@ namespace dungeon
 	OpenNode
 	*/
 	/**
-	コンストラクタ
-	@param[in]	parentKey		親ノードのキー
-	@param[in]	nodeType		ノードの種類
-	@param[in]	location		現在位置
-	@param[in]	direction		検索してきた方向
-	@param[in]	searchDirection	検索可能な方向
-	@param[in]	cost			コスト
-	*/
+	 * コンストラクタ
+	 * @param[in]	parentKey		親ノードのキー
+	 * @param[in]	nodeType		ノードの種類
+	 * @param[in]	location		現在位置
+	 * @param[in]	direction		検索してきた方向
+	 * @param[in]	searchDirection	検索可能な方向
+	 * @param[in]	cost			コスト
+	 */
 	inline PathFinder::OpenNode::OpenNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction& direction, const SearchDirection searchDirection, const uint32_t cost) noexcept
 		: BaseNode(nodeType, location, direction)
 		, mParentKey(parentKey)
@@ -148,13 +148,13 @@ namespace dungeon
 	CloseNode
 	*/
 	/**
-	コンストラクタ
-	@param[in]	parentKey		親ノードのキー
-	@param[in]	nodeType		ノードの種類
-	@param[in]	location		現在位置
-	@param[in]	direction		検索してきた方向
-	@param[in]	cost			コスト
-	*/
+	 * コンストラクタ
+	 * @param[in]	parentKey		親ノードのキー
+	 * @param[in]	nodeType		ノードの種類
+	 * @param[in]	location		現在位置
+	 * @param[in]	direction		検索してきた方向
+	 * @param[in]	cost			コスト
+	 */
 	inline PathFinder::CloseNode::CloseNode(const uint64_t parentKey, const NodeType nodeType, const FIntVector& location, const Direction& direction, const uint32_t cost) noexcept
 		: BaseNode(nodeType, location, direction)
 		, mParentKey(parentKey)

@@ -1,20 +1,21 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "DungeonGeneratorEditorModule.h"
 #include "DungeonGeneratorStyle.h"
 #include "DungeonGeneratorCommands.h"
+#include "BuildInformation.h"
+#include "DungeonGeneratedActor.h"
+#include "Helper/DungeonFinalizer.h"
+#include "Debug/Debug.h"
 #include "SubActor/DungeonRoomSensorDatabaseTypeActions.h"
 #include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
-#include "BuildInfomation.h"
-
-#include "DungeonGeneratedActor.h"
-#include "Helper/DungeonFinalizer.h"
 #include "Parameter/DungeonGenerateParameter.h"
+
 
 #include <PropertyCustomizationHelpers.h>
 #include <AssetToolsModule.h>
@@ -23,6 +24,7 @@ All Rights Reserved.
 #include <PackageTools.h>
 #include <ToolMenus.h>
 #include <AssetRegistry/AssetRegistryModule.h>
+#include <Engine/Texture2D.h>
 #include <GameFramework/PlayerStart.h>
 #include <Misc/EngineVersionComparison.h>
 #include <Misc/MessageDialog.h>
@@ -32,14 +34,6 @@ All Rights Reserved.
 static const FName DungeonGeneratorTabName("DungeonGenerator");
 
 #define LOCTEXT_NAMESPACE "FDungeonGenerateEditorModule"
-
-DECLARE_LOG_CATEGORY_EXTERN(DungeonGeneratorLogger, Log, All);
-#define DUNGEON_GENERATOR_ERROR(Format, ...)		UE_LOG(DungeonGeneratorLogger, Error, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_WARNING(Format, ...)		UE_LOG(DungeonGeneratorLogger, Warning, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_DISPLAY(Format, ...)		UE_LOG(DungeonGeneratorLogger, Display, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_LOG(Format, ...)			UE_LOG(DungeonGeneratorLogger, Log, Format, ##__VA_ARGS__)
-#define DUNGEON_GENERATOR_VERBOSE(Format, ...)		UE_LOG(DungeonGeneratorLogger, Verbose, Format, ##__VA_ARGS__)
-DEFINE_LOG_CATEGORY(DungeonGeneratorLogger);
 
 void FDungeonGenerateEditorModule::StartupModule()
 {

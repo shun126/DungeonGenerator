@@ -1,17 +1,17 @@
 /**
-@author		Shun Moriya
-@copyright	2024- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2024- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <CoreMinimal.h>
 #include "DungeonGridSize.generated.h"
 
 /**
-Dungeon grid size
-ダンジョンのグリッドサイズ
-*/
+ * Dungeon grid size
+ * ダンジョンのグリッドサイズ
+ */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonGridSize
 {
@@ -19,15 +19,15 @@ struct DUNGEONGENERATOR_API FDungeonGridSize
 
 public:
 	/**
-	コンストラクタ
-	constructor
-	*/
+	 * コンストラクタ
+	 * constructor
+	 */
 	FDungeonGridSize() = default;
 
 	/**
-	コンストラクタ
-	constructor
-	*/
+	 * コンストラクタ
+	 * constructor
+	 */
 	FDungeonGridSize(const float horizontalSize, const float verticalSize) noexcept
 		: HorizontalSize(horizontalSize)
 		, VerticalSize(verticalSize)
@@ -35,9 +35,9 @@ public:
 	}
 
 	/**
-	コピーコンストラクタ
-	copy constructor
-	*/
+	 * コピーコンストラクタ
+	 * copy constructor
+	 */
 	FDungeonGridSize(const FDungeonGridSize& other) noexcept
 		: HorizontalSize(other.HorizontalSize)
 		, VerticalSize(other.VerticalSize)
@@ -45,9 +45,9 @@ public:
 	}
 
 	/**
-	ムーブコンストラクタ
-	move constructor
-	*/
+	 * ムーブコンストラクタ
+	 * move constructor
+	 */
 	FDungeonGridSize(FDungeonGridSize&& other) noexcept
 		: HorizontalSize(other.HorizontalSize)
 		, VerticalSize(other.VerticalSize)
@@ -55,15 +55,15 @@ public:
 	}
 
 	/**
-	デストラクタ
-	destructor
-	*/
+	 * デストラクタ
+	 * destructor
+	 */
 	virtual ~FDungeonGridSize() = default;
 
 	/**
-	コピー代入
-	copy assignment
-	*/
+	 * コピー代入
+	 * copy assignment
+	 */
 	FDungeonGridSize& operator=(const FDungeonGridSize& other) noexcept
 	{
 		HorizontalSize = other.HorizontalSize;
@@ -72,9 +72,9 @@ public:
 	}
 
 	/**
-	ムーブ代入
-	move assignment
-	*/
+	 * ムーブ代入
+	 * move assignment
+	 */
 	FDungeonGridSize& operator=(FDungeonGridSize&& other) noexcept
 	{
 		HorizontalSize = other.HorizontalSize;
@@ -83,9 +83,9 @@ public:
 	}
 
 	/**
-	一致か調べます
-	equal
-	*/
+	 * 一致か調べます
+	 * equal
+	 */
 	bool IsNearlyEqual(const FDungeonGridSize& other, float tolerance = std::numeric_limits<float>::epsilon()) const noexcept
 	{
 		const auto horizontalDelta = std::abs(HorizontalSize - other.HorizontalSize);
@@ -94,18 +94,18 @@ public:
 	}
 
 	/**
-	FVector2Dにキャストします
-	Cast to FVector2D
-	*/
+	 * FVector2Dにキャストします
+	 * Cast to FVector2D
+	 */
 	FVector2D To2D() const noexcept
 	{
 		return FVector2D(HorizontalSize, VerticalSize);
 	}
 
 	/**
-	FVectorにキャストします
-	Cast to FVector
-	*/
+	 * FVectorにキャストします
+	 * Cast to FVector
+	 */
 	FVector To3D() const noexcept
 	{
 		return FVector(HorizontalSize, HorizontalSize, VerticalSize);

@@ -1,10 +1,10 @@
 /**
-部屋に関するソースファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 部屋に関するソースファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Room.h"
 #include "../GenerateParameter.h"
@@ -15,11 +15,11 @@ All Rights Reserved.
 namespace
 {
 	/**
-	サイズを乱数で選択
-	@param[in]	minimum		最小値
-	@param[in]	maximum		最大値
-	@return		乱数で決めたサイズ
-	*/
+	 * サイズを乱数で選択
+	 * @param[in]	minimum		最小値
+	 * @param[in]	maximum		最大値
+	 * @return		乱数で決めたサイズ
+	 */
 	static uint32_t randSize(const std::shared_ptr<dungeon::Random>& random, const uint32_t minimum, const uint32_t maximum)
 	{
 		return random->Get<uint32_t>(minimum, maximum + 1);

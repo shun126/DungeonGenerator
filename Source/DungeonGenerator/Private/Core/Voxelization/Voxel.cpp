@@ -1,10 +1,10 @@
 /**
-グリッドに関するソースファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * グリッドに関するソースファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Voxel.h"
 #include "../GenerateParameter.h"
@@ -706,6 +706,12 @@ namespace dungeon
 		return mGrids.get()[index];
 	}
 
+	Grid& Voxel::GetRef(const size_t index) const noexcept
+	{
+		check(index < static_cast<size_t>(mWidth) * mDepth * mHeight);
+		return mGrids.get()[index];
+	}
+
 	void Voxel::Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) const noexcept
 	{
 		if (x < mWidth && y < mDepth && z < mHeight)
@@ -800,6 +806,62 @@ namespace dungeon
 
 		// 部屋の一階部分の属性なら進入許可
 		return grid.Is(Grid::Type::Deck);
+	}
+
+	void Voxel::SetNorthWall(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetNorthWall(enable);
+		}
+	}
+
+	void Voxel::SetSouthWall(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetSouthWall(enable);
+		}
+	}
+
+	void Voxel::SetEastWall(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetEastWall(enable);
+		}
+	}
+
+	void Voxel::SetWestWall(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetWestWall(enable);
+		}
+	}
+
+	bool Voxel::HasNorthWall(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasNorthWall();
+	}
+
+	bool Voxel::HasSouthWall(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasSouthWall();
+	}
+
+	bool Voxel::HasEastWall(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasEastWall();
+	}
+
+	bool Voxel::HasWestWall(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasWestWall();
 	}
 
 	uint32_t Voxel::CalculateCRC32(const uint32_t hash) const noexcept

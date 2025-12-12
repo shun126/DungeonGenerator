@@ -1,17 +1,17 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Parameter/DungeonActorParts.h"
 #include "DungeonActorPartsWithDirection.generated.h"
 
 /**
-Actor parts with direction specification
-方向付きアクターのパーツ
-*/
+ * Actor parts with direction specification
+ * 方向付きアクターのパーツ
+ */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonActorPartsWithDirection : public FDungeonActorParts
 {
@@ -31,9 +31,9 @@ public:
 
 public:
 	/**
-	Direction of placement
-	配置する方向
-	*/
+	 * Direction of placement
+	 * 配置する方向
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
 	EDungeonPartsPlacementDirection PlacementDirection = EDungeonPartsPlacementDirection::RandomDirection;
 };

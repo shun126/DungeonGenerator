@@ -28,17 +28,21 @@ public class DungeonGeneratorEditor : ModuleRules
 			new string[]
 			{
 				"Projects",
-				"InputCore",
+				"DeveloperSettings",
+                "EditorSubsystem",
+                "InputCore",
 				"ToolMenus",
 				"CoreUObject",
 				"Engine",
 				"Slate",
 				"SlateCore",
-                "DesktopWidgets",
-                "PropertyEditor",
-                "Foliage",
-                "DungeonGenerator",
-			}
+				"DesktopWidgets",
+				"PropertyEditor",
+				"Foliage",
+				"DungeonGenerator",
+				"HTTP",
+				"Json",
+            }
 		);
 
 		if (Target.bBuildEditor)

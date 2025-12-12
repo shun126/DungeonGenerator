@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "DungeonPartition.h"
@@ -17,16 +17,16 @@ class APlayerController;
 class FSceneView;
 
 /**
-This class manages the DungeonComponentActivatorComponent validity
-within a runtime-generated dungeon.
-The dungeon is partitioned into a specified range of partitions,
-and the components registered in the partitions component
-registered in the partition.
-
-ランタイム生成ダンジョン内のDungeonComponentActivatorComponent有効性を管理するクラスです。
-ダンジョンを指定の範囲のパーティションで区切り、パーティションに登録されたコンポーネントの
-アクティブ性を制御します。
-*/
+ * This class manages the DungeonComponentActivatorComponent validity
+ * within a runtime-generated dungeon.
+ * The dungeon is partitioned into a specified range of partitions,
+ * and the components registered in the partitions component
+ * registered in the partition.
+ *
+ * ランタイム生成ダンジョン内のDungeonComponentActivatorComponent有効性を管理するクラスです。
+ * ダンジョンを指定の範囲のパーティションで区切り、パーティションに登録されたコンポーネントの
+ * アクティブ性を制御します。
+ */
 UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptActor
 {
@@ -54,7 +54,7 @@ class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptAct
 	 * Maximum distance from vertical player to activate partition
 	 * パーティションをアクティブにする垂直方向のプレイヤーからの最大距離
 	 */
-	static constexpr double PartitionVerticalMaxSize = 100.0 * 100.0;
+	static constexpr double PartitionVerticalMaxSize = 50.0 * 100.0;
 
 public:
 	/**
@@ -70,7 +70,7 @@ public:
 public:
 	/**
 	 * Called before dungeon generation
-	 * 
+	 *
 	 * ダンジョン生成前に呼ばれます
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator")
@@ -78,7 +78,7 @@ public:
 
 	/**
 	 * Called after dungeon generation
-	 * 
+	 *
 	 * ダンジョン生成後に呼ばれます
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator")
@@ -111,7 +111,14 @@ public:
 	virtual void Tick(float deltaSeconds) override;
 
 private:
-	UDungeonPartition* Index(const size_t x, const size_t y) const noexcept;
+	size_t ToIndex(const size_t x, const size_t y, const size_t z) const noexcept;
+	size_t ToIndex(const FIntVector& vector) const noexcept;
+	size_t ToIndex(const FVector& vector) const noexcept;
+	FIntVector ToIntVector(const size_t index) const noexcept;
+	FVector ToVector(const size_t index) const noexcept;
+
+	UDungeonPartition* Index(const size_t x, const size_t y, const size_t z) const noexcept;
+	UDungeonPartition* Index(const FIntVector& vector) const noexcept;
 	const FSceneView* GetSceneView(const APlayerController* playerController) const;
 
 	void Begin() const;
@@ -139,7 +146,7 @@ private:
 	 */
 	static bool TestSegmentAABB(const FVector& segmentStart, const FVector& segmentEnd, const FVector& aabbCenter, const FVector& aabbExtent);
 
-	static void DrawFrustumLines(UWorld* world, const FVector& viewLocation, const FRotator& viewRotation,
+	static void DrawFrustumLines(const UWorld* world, const FVector& viewLocation, const FRotator& viewRotation,
 		float FovY, float aspect, float nearDistance, float farDistance,
 		const FColor& color, float lifeTime = 0.f, float thickness = 0.f);
 
@@ -191,8 +198,8 @@ protected:
 	bool ShowDebugInformation = false;
 
 	/**
-	 * Displays debugging information
-	 * デバッグ情報を表示します
+	 * Debug display of the view frustum
+	 * 視錐台をデバッグ表示します
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
 	bool ShowFrustumInformation = false;
@@ -201,10 +208,11 @@ protected:
 private:
 	FBox mBounding;
 	double mBoundingSize = PartitionHorizontalMinSize;
-	size_t mPartitionWidth = 0;
-	size_t mPartitionDepth = 0;
 	double mPartitionSize = PartitionHorizontalMinSize;
-	FVector mActiveRegionExtent;
+	uint16_t mPartitionWidth = 0;
+	uint16_t mPartitionDepth = 0;
+	uint16_t mPartitionHeight = 0;
 	float mActiveViewRange = 0.f;
 	bool mLastEnableLoadControl;
+	FVector mActiveRegionExtent;
 };

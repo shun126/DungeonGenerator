@@ -20,7 +20,7 @@ namespace dungeon
  * A parameter structure that defines the type and probability of the actor to be spawned.
  * FDungeonSpawnActorParameter is used by Spawner to specify the class type of the actor to be spawned and
  * the class type of the actor to be spawned and its probability of occurrence.
- * 
+ *
  * スポーンするアクターの型と確率を定義するパラメータ構造体。
  * FDungeonSpawnActorParameter は Spawner によって利用され、生成対象となるアクターのクラス型と
  * その発生確率を指定します。
@@ -30,7 +30,7 @@ struct FDungeonSpawnActorParameter
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "Actor"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.Actor"))
 	TObjectPtr<UClass> ActorClass = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = "1"))
@@ -82,7 +82,7 @@ protected:
 
 	/**
 	 * Specify the class type of the actor to be generated and its probability of occurrence.
-	 * 
+	 *
 	 * 生成対象となるアクターのクラス型とその発生確率を指定して下さい。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")

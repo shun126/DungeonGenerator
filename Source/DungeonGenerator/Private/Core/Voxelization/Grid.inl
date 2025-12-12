@@ -1,10 +1,10 @@
 /**
-ボクセルなどに利用するグリッド情報のヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ボクセルなどに利用するグリッド情報のヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "../Helper/Direction.h"
@@ -293,6 +293,47 @@ namespace dungeon
 	{
 		return mPack.IsAttributeEnabled(Attribute::SubLevel);
 	}
+
+	inline void Grid::SetNorthWall(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::NorthWallMesh, enable);
+	}
+
+	inline void Grid::SetSouthWall(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::SouthWallMesh, enable);
+	}
+
+	inline void Grid::SetEastWall(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::EastWallMesh, enable);
+	}
+
+	inline void Grid::SetWestWall(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::WestWallMesh, enable);
+	}
+
+	inline bool Grid::HasNorthWall() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::NorthWallMesh);
+	}
+
+	inline bool Grid::HasSouthWall() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::SouthWallMesh);
+	}
+
+	inline bool Grid::HasEastWall() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::EastWallMesh);
+	}
+
+	inline bool Grid::HasWestWall() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::WestWallMesh);
+	}
+
 
 
 

@@ -1,10 +1,10 @@
 /**
-グリッドに関するヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 立体的なグリッドに関するヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Grid.h"
@@ -13,6 +13,7 @@ All Rights Reserved.
 #include "../PathGeneration/PathFinder.h"
 #include <atomic>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace dungeon
@@ -24,8 +25,8 @@ namespace dungeon
 	struct GenerateParameter;
 
 	/**
-	グリッドクラス
-	*/
+	 * 立体的なグリッドクラス
+	 */
 	class Voxel final
 	{
 	public:
@@ -35,122 +36,131 @@ namespace dungeon
 			GoalPointIsOutsideGoalRange,
 		};
 
-	public:
 		/**
-		コンストラクタ
-		*/
+		 * コンストラクタ
+		 */
 		explicit Voxel(const GenerateParameter& parameter) noexcept;
 
 		/**
-		デストラクタ
-		*/
+		 * デストラクタ
+		 */
 		~Voxel() = default;
 
 		/**
-		ボクセル空間の幅を取得します
-		*/
+		 * ボクセル空間の幅を取得します
+		 */
 		uint32_t GetWidth() const noexcept;
 
 		/**
-		ボクセル空間の奥行きを取得します
-		*/
+		 * ボクセル空間の奥行きを取得します
+		 */
 		uint32_t GetDepth() const noexcept;
 
 		/**
-		ボクセル空間の高さを取得します
-		*/
+		 * ボクセル空間の高さを取得します
+		 */
 		uint32_t GetHeight() const noexcept;
 
 		/**
-		グリッド内のグリッドを取得します
-		@param[in]	x		X座標
-		@param[in]	y		Y座標
-		@param[in]	z		Z座標
-		TODO: 座標関連はFIntVectorに統一して下さい
-		@return		グリッド
-		*/
+		 * グリッド内のグリッドを取得します
+		 * @param[in]	x		X座標
+		 * @param[in]	y		Y座標
+		 * @param[in]	z		Z座標
+		 * TODO: 座標関連はFIntVectorに統一して下さい
+		 * @return		グリッド
+		 */
 		const Grid& Get(const uint32_t x, const uint32_t y, const uint32_t z) const noexcept;
 
 		/**
-		グリッド内のグリッドを取得します
-		@param[in]	location	グリッド座標
-		@return		グリッド
-		*/
+		 * グリッド内のグリッドを取得します
+		 * @param[in]	location	グリッド座標
+		 * @return		グリッド
+		 */
 		const Grid& Get(const FIntVector& location) const noexcept;
 
 		/**
-		グリッド内のグリッドを取得します
-		@param[in]	index	配列番号
-		@return		グリッド
-		*/
+		 * グリッド内のグリッドを取得します
+		 * @param[in]	index	配列番号
+		 * @return		グリッド
+		 */
 		const Grid& Get(const size_t index) const noexcept;
 
 		/**
-		グリッド内のグリッドを設定します
-		@param[in]	x		X座標
-		@param[in]	y		Y座標
-		@param[in]	z		Z座標
-		@param[in]	grid	グリッド
-		TODO: 座標関連はFIntVectorに統一して下さい
-		*/
+		 * グリッド内のグリッドを設定します
+		 * @param[in]	x		X座標
+		 * @param[in]	y		Y座標
+		 * @param[in]	z		Z座標
+		 * @param[in]	grid	グリッド
+		 * TODO: 座標関連はFIntVectorに統一して下さい
+		 */
 		void Set(const uint32_t x, const uint32_t y, const uint32_t z, const Grid& grid) const noexcept;
 
 		/**
-		グリッド内のグリッドを設定します
-		@param[in]	location	グリッド座標
-		@param[in]	grid	グリッド
-		*/
+		 * グリッド内のグリッドを設定します
+		 * @param[in]	location	グリッド座標
+		 * @param[in]	grid	グリッド
+		 */
 		void Set(const FIntVector& location, const Grid& grid) const noexcept;
 
+	private:
 		/**
-		矩形の範囲にGridを書き込みます
-		@param[in]	min			最小座標
-		@param[in]	max			最大座標
-		@param[in]	fillGrid	塗りつぶすグリッド
-		@param[in]	floorGrid	一階部分のグリッド
-		*/
+		 * グリッド内のグリッド参照を取得します
+		 * 範囲外を指定した場合はアサートで停止するのでContainでindexを調べて下さい。
+		 * @param[in]	index	配列番号
+		 * @return		グリッド参照
+		 */
+		Grid& GetRef(const size_t index) const noexcept;
+
+	public:
+		/**
+		 * 矩形の範囲にGridを書き込みます
+		 * @param[in]	min			最小座標
+		 * @param[in]	max			最大座標
+		 * @param[in]	fillGrid	塗りつぶすグリッド
+		 * @param[in]	floorGrid	一階部分のグリッド
+		 */
 		void Rectangle(const FIntVector& min, const FIntVector& max, const Grid& fillGrid, const Grid& floorGrid) const noexcept;
 
 		/**
-		天井がメッシュ生成禁止か設定します
-		@param[in]	location				グリッドの位置
-		@param[in]	noRoofMeshGeneration	天井メッシュの生成禁止
-		*/
+		 * 天井がメッシュ生成禁止か設定します
+		 * @param[in]	location				グリッドの位置
+		 * @param[in]	noRoofMeshGeneration	天井メッシュの生成禁止
+		 */
 		void NoRoofMeshGeneration(const FIntVector& location, const bool noRoofMeshGeneration) const noexcept;
 
 		/**
-		床がメッシュ生成禁止か設定します
-		@param[in]	location				グリッドの位置
-		@param[in]	noFloorMeshGeneration	床メッシュの生成禁止
-		*/
+		 * 床がメッシュ生成禁止か設定します
+		 * @param[in]	location				グリッドの位置
+		 * @param[in]	noFloorMeshGeneration	床メッシュの生成禁止
+		 */
 		void NoFloorMeshGeneration(const FIntVector& location, const bool noFloorMeshGeneration) const noexcept;
 
 		/**
-		北側の壁がメッシュ生成禁止か設定します
-		@param[in]	location				グリッドの位置
-		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
-		*/
+		 * 北側の壁がメッシュ生成禁止か設定します
+		 * @param[in]	location				グリッドの位置
+		 * @param[in]	noWallMeshGeneration	壁メッシュの生成禁止
+		 */
 		void NoNorthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
 		/**
-		南側の壁がメッシュ生成禁止か設定します
-		@param[in]	location				グリッドの位置
-		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
-		*/
+		 * 南側の壁がメッシュ生成禁止か設定します
+		 * @param[in]	location				グリッドの位置
+		 * @param[in]	noWallMeshGeneration	壁メッシュの生成禁止
+		 */
 		void NoSouthWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
 		/**
-		東側の壁がメッシュ生成禁止か設定します
-		@param[in]	location				グリッドの位置
-		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
-		*/
+		 * 東側の壁がメッシュ生成禁止か設定します
+		 * @param[in]	location				グリッドの位置
+		 * @param[in]	noWallMeshGeneration	壁メッシュの生成禁止
+		 */
 		void NoEastWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
 		/**
-		西側の壁がメッシュ生成禁止か設定します
-		@param[in]	location				グリッドの位置
-		@param[in]	noWallMeshGeneration	壁メッシュの生成禁止
-		*/
+		 * 西側の壁がメッシュ生成禁止か設定します
+		 * @param[in]	location				グリッドの位置
+		 * @param[in]	noWallMeshGeneration	壁メッシュの生成禁止
+		 */
 		void NoWestWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
 		/**
@@ -174,17 +184,17 @@ namespace dungeon
 		};
 
 		/**
-		門を生成可能な場所を探します
-		1. 部屋の内部から部屋の外郭を検索します。
-		2. 部屋の外のグリッドは Grid::Type::Empty である必要があります。
-		@param[out]		result				FIntVector配列
-		@param[in]		maxResultCount		resultの最大数
-		@param[in]		start				スタート部屋のFIntVector
-		@param[in]		identifier			スタート部屋のIdentifier
-		@param[in]		goal				ゴール部屋のFIntVector
-		@param[in]		shared				trueなら通路を共有する
-		@return			trueならば検索成功
-		*/
+		 * 門を生成可能な場所を探します
+		 * 1. 部屋の内部から部屋の外郭を検索します。
+		 * 2. 部屋の外のグリッドは Grid::Type::Empty である必要があります。
+		 * @param[out]		result				FIntVector配列
+		 * @param[in]		maxResultCount		resultの最大数
+		 * @param[in]		start				スタート部屋のFIntVector
+		 * @param[in]		identifier			スタート部屋のIdentifier
+		 * @param[in]		goal				ゴール部屋のFIntVector
+		 * @param[in]		shared				trueなら通路を共有する
+		 * @return			trueならば検索成功
+		 */
 		bool SearchGateLocation(std::vector<CandidateLocation>& result, const size_t maxResultCount, const FIntVector& start, const Identifier& identifier, const FIntVector& goal, const bool shared) const noexcept;
 
 		/**
@@ -202,12 +212,12 @@ namespace dungeon
 		};
 
 		/**
-		経路をGridに書き込みます
-		@param[in]	startToGoal				始点にできる位置
-		@param[in]	goalToStart				終点に出来る位置
-		@param[in]	aisleParameter			通路生成パラメータ
-		@return		falseならば到達できなかった
-		*/
+		 * 経路をGridに書き込みます
+		 * @param[in]	startToGoal				始点にできる位置
+		 * @param[in]	goalToStart				終点に出来る位置
+		 * @param[in]	aisleParameter			通路生成パラメータ
+		 * @return		falseならば到達できなかった
+		 */
 		bool Aisle(const std::vector<CandidateLocation>& startToGoal, const std::vector<CandidateLocation>& goalToStart, const AisleParameter& aisleParameter) noexcept;
 
 		/**
@@ -237,9 +247,9 @@ namespace dungeon
 
 	public:
 		/**
-		グリッド内のグリッドを更新します
-		@param[in]	function	グリッドを参照して更新する関数
-		*/
+		 * グリッド内のグリッドを更新します
+		 * @param[in]	function	グリッドを参照して更新する関数
+		 */
 		template<typename Function>
 		void Each(Function&& function) const noexcept
 		{
@@ -259,84 +269,124 @@ namespace dungeon
 		}
 
 		/**
-		グリッド内のグリッドを取得します
-		@param[in]	index	配列番号
-		@return		グリッド
-		*/
+		 * グリッド内のグリッドを取得します
+		 * @param[in]	index	配列番号
+		 * @return		グリッド
+		 */
 		Grid& operator[](const size_t index) noexcept;
 
 		/**
-		グリッド内のグリッドを取得します
-		@param[in]	index	配列番号
-		@return		グリッド
-		*/
+		 * グリッド内のグリッドを取得します
+		 * @param[in]	index	配列番号
+		 * @return		グリッド
+		 */
 		const Grid& operator[](const size_t index) const noexcept;
 
 		/**
-		座標からボクセルのインデックスを取得します
-		@param[in]	x		X座標
-		@param[in]	y		Y座標
-		@param[in]	z		Z座標
-		@return		インデックス
-		*/
+		 * 座標からボクセルのインデックスを取得します
+		 * @param[in]	x		X座標
+		 * @param[in]	y		Y座標
+		 * @param[in]	z		Z座標
+		 * @return		インデックス
+		 */
 		size_t Index(const uint32_t x, const uint32_t y, const uint32_t z) const noexcept;
 
 		/**
-		座標からボクセルのインデックスを取得します
-		@param[in]	location	座標
-		@return		インデックス
-		*/
+		 * 座標からボクセルのインデックスを取得します
+		 * @param[in]	location	座標
+		 * @return		インデックス
+		 */
 		size_t Index(const FIntVector& location) const noexcept;
 
 		/**
-		座標がボクセル空間内に含まれているか調べます
-		@param[in]	location	座標
-		@return		trueならば座標はボクセル空間内内部を指している
-		*/
+		 * 座標がボクセル空間内に含まれているか調べます
+		 * @param[in]	location	座標
+		 * @return		trueならば座標はボクセル空間内内部を指している
+		 */
 		bool Contain(const FIntVector& location) const noexcept;
 
 		/**
-		生成時に発生したエラーを取得します
-		*/
+		 * 生成時に発生したエラーを取得します
+		 */
 		Error GetLastError() const noexcept;
 
 		/**
-		Calculate CRC32
-		@return		CRC32
-		*/
+		 * Calculate CRC32
+		 * @return		CRC32
+		 */
 		uint32_t CalculateCRC32(const uint32_t hash = 0xffffffffU) const noexcept;
 
 	private:
 		/**
-		通行可能か調べます
-		@param[in]	location		座標
-		@param[in]	includeAisle	通行可能なグリッドに通路を含める
-		@return		trueならば通行可能
-		*/
+		 * 通行可能か調べます
+		 * @param[in]	location		座標
+		 * @param[in]	includeAisle	通行可能なグリッドに通路を含める
+		 * @return		trueならば通行可能
+		 */
 		bool IsPassable(const FIntVector& location, const bool includeAisle) const noexcept;
 
 		/**
-		ゴールに到達したか？
-		進入方向の許可を含めた確認が必要ならDirection付きの関数を利用する事
-		@param[in]	location		座標
-		@param[in]	goalAltitude	ゴールの高度
-		@param[in]	goalCondition	ゴールの条件
-		@return		trueならばゴールに到達
-		*/
+		 * ゴールに到達したか？
+		 * 進入方向の許可を含めた確認が必要ならDirection付きの関数を利用する事
+		 * @param[in]	location		座標
+		 * @param[in]	goalAltitude	ゴールの高度
+		 * @param[in]	goalCondition	ゴールの条件
+		 * @return		trueならばゴールに到達
+		 */
 		static bool IsReachedGoal(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition) noexcept;
 
 		/**
-		ゴールに到達したか？
-		進入方向の許可を含めた確認をします。不要ならDirection無しの関数を利用する事
-		@param[in]	location			座標
-		@param[in]	goalAltitude		ゴールの高度
-		@param[in]	goalCondition		ゴールの条件
-		@param[in]	enteringDirection	進入方向
-		@return		trueならばゴールに到達
-		*/
+		 * ゴールに到達したか？
+		 * 進入方向の許可を含めた確認をします。不要ならDirection無しの関数を利用する事
+		 * @param[in]	location			座標
+		 * @param[in]	goalAltitude		ゴールの高度
+		 * @param[in]	goalCondition		ゴールの条件
+		 * @param[in]	enteringDirection	進入方向
+		 * @return		trueならばゴールに到達
+		 */
 		bool IsReachedGoalWithDirection(const FIntVector& location, const int32_t goalAltitude, const PathGoalCondition& goalCondition, const Direction& enteringDirection) const noexcept;
 
 	public:
+		/**
+		 * 北側に壁があるか設定します
+		 */
+		void SetNorthWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 南側に壁があるか設定します
+		 */
+		void SetSouthWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 東側に壁があるか設定します
+		 */
+		void SetEastWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 西側に壁があるか設定します
+		 */
+		void SetWestWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 北側に壁があるか取得します
+		 */
+		bool HasNorthWall(const FIntVector& position) const noexcept;
+
+		/**
+		 * 南側に壁があるか取得します
+		 */
+		bool HasSouthWall(const FIntVector& position) const noexcept;
+
+		/**
+		 * 東側に壁があるか取得します
+		 */
+		bool HasEastWall(const FIntVector& position) const noexcept;
+
+		/**
+		 * 西側に壁があるか取得します
+		 */
+		bool HasWestWall(const FIntVector& position) const noexcept;
+
 		/**
 		 * デバッグ用の画像を出力します
 		 * @param filename	ファイル名

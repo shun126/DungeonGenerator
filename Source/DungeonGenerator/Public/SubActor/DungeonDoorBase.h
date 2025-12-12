@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "DungeonVerifiableActor.h"
@@ -20,14 +20,14 @@ namespace dungeon
 }
 
 /**
-Dungeon Door Actor
-DungeonDoorBase is an actor intended to be replicated.
-Please be very careful with server-client synchronization.
-
-ダンジョンドアアクター
-DungeonDoorBaseはレプリケーションする前提のアクターです。
-サーバーとクライアントの同期に十分注意して下さい。
-*/
+ * Dungeon Door Actor
+ * DungeonDoorBase is an actor intended to be replicated.
+ * Please be very careful with server-client synchronization.
+ *
+ * ダンジョンドアアクター
+ * DungeonDoorBaseはレプリケーションする前提のアクターです。
+ * サーバーとクライアントの同期に十分注意して下さい。
+ */
 UCLASS(Abstract, ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API ADungeonDoorBase : public ADungeonVerifiableActor
 {
@@ -38,35 +38,35 @@ public:
 	virtual ~ADungeonDoorBase() override = default;
 
 	/**
-	Get DungeonRoomProps
-	DungeonRoomPropsを取得します
-	*/
+	 * Get DungeonRoomProps
+	 * DungeonRoomPropsを取得します
+	 */
 	EDungeonRoomProps GetRoomProps() const;
 
 	/**
-	Set DungeonRoomProps
-	DungeonRoomPropsを設定します
-	*/
+	 * Set DungeonRoomProps
+	 * DungeonRoomPropsを設定します
+	 */
 	void SetRoomProps(const EDungeonRoomProps props);
 
 	/**
-	Is locked door?
-	鍵付きドアか？
-	*/
+	 * Is locked door?
+	 * 鍵付きドアか？
+	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator")
 	bool IsLockedDoor() const;
 
 	/**
-	Function called during initialization after object creation
-	オブジェクト生成後に呼び出される初期化用関数
-	*/
+	 * Function called during initialization after object creation
+	 * オブジェクト生成後に呼び出される初期化用関数
+	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator", meta = (CallInEditor = "true"))
 	void OnInitialize(const EDungeonRoomProps props);
 
 	/**
-	Finalize function called before object destruction
-	オブジェクト破棄前に呼び出される終了用関数
-	*/
+	 * Finalize function called before object destruction
+	 * オブジェクト破棄前に呼び出される終了用関数
+	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator", meta = (CallInEditor = "true"))
 	void OnFinalize(const bool finish);
 
@@ -75,21 +75,21 @@ public:
 
 protected:
 	/**
-	Functions for initialization after object creation
-	オブジェクト生成後の初期化用関数
-	*/
+	 * Functions for initialization after object creation
+	 * オブジェクト生成後の初期化用関数
+	 */
 	virtual void OnNativeInitialize(const EDungeonRoomProps props);
 
 	/**
-	Function called before object destruction
-	オブジェクト破棄前の終了用関数
-	*/
+	 * Function called before object destruction
+	 * オブジェクト破棄前の終了用関数
+	 */
 	virtual void OnNativeFinalize();
 
 	/**
-	Get random numbers common to dungeon generation systems
-	ダンジョン生成システム共通の乱数を取得します
-	*/
+	 * Get random numbers common to dungeon generation systems
+	 * ダンジョン生成システム共通の乱数を取得します
+	 */
 	CDungeonRandom& GetRandom() noexcept;
 
 private:
@@ -98,9 +98,9 @@ private:
 
 private:
 	/**
-	Types of props attached to the door
-	ドアに付属する小道具の種類
-	*/
+	 * Types of props attached to the door
+	 * ドアに付属する小道具の種類
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
 	EDungeonRoomProps Props = EDungeonRoomProps::None;
 

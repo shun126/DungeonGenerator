@@ -1,11 +1,11 @@
 /**
-最小スパニングツリーに関するソースファイル
-
-@cite		https://algo-logic.info/kruskal-mst/
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 最小スパニングツリーに関するソースファイル
+ *
+ * @cite		https://algo-logic.info/kruskal-mst/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "MinimumSpanningTree.h"
 #include "PathFinder.h"
@@ -15,6 +15,7 @@ All Rights Reserved.
 #include "../RoomGeneration/Room.h"
 #include <algorithm>
 #include <array>
+#include <unordered_set>
 
 namespace dungeon
 {
@@ -101,18 +102,18 @@ namespace dungeon
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	/*
-	UnionFind：素集合系管理の構造体(union by rank)
-	IsSame(x, y): x と y が同じ集合にいるか。 計算量はならし O(α(n))
-	Unite(x, y): x と y を同じ集合にする。計算量はならし O(α(n))
-	*/
+	/**
+	 * UnionFind：素集合系管理の構造体(union by rank)
+	 * IsSame(x, y): x と y が同じ集合にいるか。 計算量はならし O(α(n))
+	 * Unite(x, y): x と y を同じ集合にする。計算量はならし O(α(n))
+	 */
 	class UnionFind final
 	{
 	public:
 		/**
-		コンストラクタ
-		@param[in]	edgeSize	edgeの数
-		*/
+		 * コンストラクタ
+		 * @param[in]	edgeSize	edgeの数
+		 */
 		explicit UnionFind(const size_t edgeSize) noexcept
 		{
 			mRank.resize(edgeSize, 0);
@@ -124,21 +125,21 @@ namespace dungeon
 		}
 
 		/**
-		x と y が同じ集合にいるか調べます
-		@param[in]	x	頂点番号
-		@param[in]	y	頂点番号	
-		@return		trueならば同じ集合にいるか調べます
-		*/
+		 * x と y が同じ集合にいるか調べます
+		 * @param[in]	x	頂点番号
+		 * @param[in]	y	頂点番号
+		 * @return		trueならば同じ集合にいるか調べます
+		 */
 		bool IsSame(const size_t x, const size_t y) noexcept
 		{
 			return FindRoot(x) == FindRoot(y);
 		}
 
 		/**
-		x と y を同じ集合にする
-		@param[in]	x	頂点番号
-		@param[in]	y	頂点番号
-		*/
+		 * x と y を同じ集合にする
+		 * @param[in]	x	頂点番号
+		 * @param[in]	y	頂点番号
+		 */
 		void Unite(size_t x, size_t y) noexcept
 		{
 			x = FindRoot(x);
@@ -159,9 +160,9 @@ namespace dungeon
 
 	private:
 		/**
-		木の生成
-		@param[in]	index	頂点番号
-		*/
+		 * 木の生成
+		 * @param[in]	index	頂点番号
+		 */
 		void MakeTree(const size_t index) noexcept
 		{
 			mParents[index] = index;
@@ -169,10 +170,10 @@ namespace dungeon
 		}
 
 		/**
-		親の頂点番号を検索
-		@param[in]	index	頂点番号
-		@return		親の頂点番号
-		*/
+		 * 親の頂点番号を検索
+		 * @param[in]	index	頂点番号
+		 * @return		親の頂点番号
+		 */
 		size_t FindRoot(size_t index) noexcept
 		{
 			if (index != mParents[index])
@@ -180,13 +181,12 @@ namespace dungeon
 			return mParents[index];
 		}
 
-	private:
 		std::vector<size_t> mRank;
 		std::vector<size_t> mParents;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	MinimumSpanningTree::MinimumSpanningTree(const std::shared_ptr<Random>& random, const DelaunayTriangulation3D& delaunayTriangulation, const uint8_t aisleComplexity) noexcept
+MinimumSpanningTree::MinimumSpanningTree(const std::shared_ptr<Random>& random, const DelaunayTriangulation3D& delaunayTriangulation, const uint8_t aisleComplexity, const StartLocationPolicy startLocationPolicy, const uint8_t startRoomCount) noexcept
 	{
 		Verteces verteces;
 		std::vector<IndexedEdge> indexedEdges;
@@ -214,10 +214,10 @@ namespace dungeon
 		});
 
 		// 初期化
-		Initialize(random, verteces, indexedEdges, aisleComplexity);
+		Initialize(random, verteces, indexedEdges, aisleComplexity, startLocationPolicy, startRoomCount);
 	}
 
-	MinimumSpanningTree::MinimumSpanningTree(const std::shared_ptr<Random>& random, const std::vector<std::shared_ptr<const Point>>& points, const uint8_t aisleComplexity) noexcept
+MinimumSpanningTree::MinimumSpanningTree(const std::shared_ptr<Random>& random, const std::vector<std::shared_ptr<const Point>>& points, const uint8_t aisleComplexity, const StartLocationPolicy startLocationPolicy, const uint8_t startRoomCount) noexcept
 	{
 		Verteces verteces;
 
@@ -238,13 +238,13 @@ namespace dungeon
 		}
 
 		// 初期化
-		Initialize(random, verteces, indexedEdges, aisleComplexity);
+	Initialize(random, verteces, indexedEdges, aisleComplexity, startLocationPolicy, startRoomCount);
 	}
 
 	/*
-	クラスカル法で初期化します
-	*/
-	void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, const Verteces& verteces, std::vector<IndexedEdge>& edges, const uint8_t aisleComplexity) noexcept
+	 * クラスカル法で初期化します
+	 */
+void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, const Verteces& verteces, std::vector<IndexedEdge>& edges, const uint8_t aisleComplexity, const StartLocationPolicy startLocationPolicy, const uint8_t startRoomCount) noexcept
 	{
 		// コストが少ない順に整列
 		std::stable_sort(edges.begin(), edges.end(), [](const IndexedEdge& l, const IndexedEdge& r)
@@ -345,16 +345,35 @@ namespace dungeon
 		}
 
 		// スタートを記録
-		mStartPoint = FindStartPoint();
-		mStartPoint->GetOwnerRoom()->SetParts(Room::Parts::Start);
+		if (startLocationPolicy == StartLocationPolicy::UseMultiStart)
+		{
+			const auto startPoints = FindMultiStartPoints(startRoomCount);
+			if (startPoints.empty() == false)
+			{
+				mStartPoint = startPoints.front();
+				for (const auto& startPoint : startPoints)
+				{
+					startPoint->GetOwnerRoom()->SetParts(Room::Parts::Start);
+				}
+			}
+		}
 
-		// ゴールと各ポイントを記録
+		if (mStartPoint == nullptr)
+		{
+			mStartPoint = FindStartPoint(startLocationPolicy);
+			if (mStartPoint != nullptr)
+			{
+				mStartPoint->GetOwnerRoom()->SetParts(Room::Parts::Start);
+			}
+		}
+
+		// スタートから最も遠いポイントをゴールとして記録
+		// 同時に はなれ になるポイントを記録
 		size_t startPointIndex = verteces.Find(mStartPoint);
 		check(startPointIndex != static_cast<size_t>(~0));
 		// cppcheck-suppress [knownConditionTrueFalse]
 		if (startPointIndex != static_cast<size_t>(~0))
 		{
-			// ゴールを記録
 			std::vector<RouteNode> routeNodes;
 			Cost(routeNodes, edges, startPointIndex, 0.f);
 			if (routeNodes.empty())
@@ -364,7 +383,6 @@ namespace dungeon
 			}
 			else
 			{
-				// 最も遠いポイントをゴールとして記録
 				float maxCost = std::numeric_limits<float>::lowest();
 				size_t vertexIndex = 0;
 				for (const auto& routeNode : routeNodes)
@@ -449,62 +467,286 @@ namespace dungeon
 		return std::find_if(indexedEdges.begin(), indexedEdges.end(), comparer) != indexedEdges.end();
 	}
 
-	std::shared_ptr<const Point> MinimumSpanningTree::FindStartPoint() const noexcept
+	std::shared_ptr<const Point> MinimumSpanningTree::FindStartPoint(const StartLocationPolicy startLocationPolicy) const noexcept
 	{
-		/*
-		全ての辺の中央の位置と
-		Yが最も大きい点をを求める
-		*/
-		std::shared_ptr<Point> center = std::make_shared<Point>(0.f, 0.f, 0.f);
-		std::shared_ptr<const Point> bottom = nullptr;
-		size_t count = 0;
+		if (startLocationPolicy == StartLocationPolicy::UseCentralPoint)
 		{
-			float maxY = std::numeric_limits<float>::lowest();
-			for (const auto& edge : mEdges)
+			const auto points = CollectUniquePoints();
+			if (points.empty())
 			{
-				*center += static_cast<FVector>(*edge.GetPoint(0));
-				*center += static_cast<FVector>(*edge.GetPoint(1));
-				count += 2;
-
-				for (size_t i = 0; i < 2; ++i)
-				{
-					if (maxY < edge.GetPoint(i)->Y)
-					{
-						maxY = edge.GetPoint(i)->Y;
-						bottom = edge.GetPoint(i);
-					}
-				}
+				return nullptr;
 			}
-		}
 
-		if (bottom == nullptr)
-		{
-			return nullptr;
-		}
+			FVector center(0.f, 0.f, 0.f);
+			for (const auto& point : points)
+			{
+				center += static_cast<FVector>(*point);
+			}
+			center /= static_cast<float>(points.size());
 
-		if (count > 0)
-		{
-			*center /= static_cast<float>(count);
-		}
-
-		// 最もYが大きく、最も中央にある点を探す
-		{
-			const Point candidateStartPoint(center->X, bottom->Y, bottom->Z);
 			std::shared_ptr<const Point> resultPoint = nullptr;
 			double min = std::numeric_limits<double>::max();
-			for (const auto& edge : mEdges)
+			for (const auto& point : points)
 			{
-				for (size_t i = 0; i < 2; ++i)
+				const double distance = PathFinder::Heuristics(*point, center);
+				if (min > distance)
 				{
-					const double distance = PathFinder::Heuristics(*edge.GetPoint(i), candidateStartPoint);
-					if (min > distance)
-					{
-						min = distance;
-						resultPoint = edge.GetPoint(i);
-					}
+					min = distance;
+					resultPoint = point;
 				}
 			}
 			return resultPoint;
 		}
+
+		if (startLocationPolicy == StartLocationPolicy::UseHighestPoint)
+		{
+			// 最も高い部屋を探す
+			std::shared_ptr<const Point> result = nullptr;
+
+			float maxZ = std::numeric_limits<float>::lowest();
+			for (const auto& edge : mEdges)
+			{
+				for (size_t i = 0; i < 2; ++i)
+				{
+					if (maxZ < edge.GetPoint(i)->Z)
+					{
+						maxZ = edge.GetPoint(i)->Z;
+						result = edge.GetPoint(i);
+					}
+				}
+			}
+
+			return result;
+		}
+
+		if (startLocationPolicy == StartLocationPolicy::UseLowestPoint)
+		{
+			// 最も低い部屋を探す
+			std::shared_ptr<const Point> result = nullptr;
+
+			float minZ = std::numeric_limits<float>::max();
+			for (const auto& edge : mEdges)
+			{
+				for (size_t i = 0; i < 2; ++i)
+				{
+					if (minZ > edge.GetPoint(i)->Z)
+					{
+						minZ = edge.GetPoint(i)->Z;
+						result = edge.GetPoint(i);
+					}
+				}
+			}
+
+			return result;
+		}
+
+		//if (startLocationPolicy == StartLocationPolicy::UseSouthernMost)
+		{
+			/*
+			 * 全ての辺の中央の位置と
+			 * Yが最も大きい点をを求める
+			 */
+			std::shared_ptr<Point> center = std::make_shared<Point>(0.f, 0.f, 0.f);
+			std::shared_ptr<const Point> bottom = nullptr;
+			size_t count = 0;
+			{
+				float maxY = std::numeric_limits<float>::lowest();
+				for (const auto& edge : mEdges)
+				{
+					*center += static_cast<FVector>(*edge.GetPoint(0));
+					*center += static_cast<FVector>(*edge.GetPoint(1));
+					count += 2;
+
+					for (size_t i = 0; i < 2; ++i)
+					{
+						if (maxY < edge.GetPoint(i)->Y)
+						{
+							maxY = edge.GetPoint(i)->Y;
+							bottom = edge.GetPoint(i);
+						}
+					}
+				}
+			}
+
+			if (bottom == nullptr)
+			{
+				return nullptr;
+			}
+
+			if (count > 0)
+			{
+				*center /= static_cast<float>(count);
+			}
+
+			/*
+			 * 最もYが大きく、最も中央にある点を探す
+			 */
+			{
+				const Point candidateStartPoint(center->X, bottom->Y, bottom->Z);
+				std::shared_ptr<const Point> resultPoint = nullptr;
+				double min = std::numeric_limits<double>::max();
+				for (const auto& edge : mEdges)
+				{
+					for (size_t i = 0; i < 2; ++i)
+					{
+						const double distance = PathFinder::Heuristics(*edge.GetPoint(i), candidateStartPoint);
+						if (min > distance)
+						{
+							min = distance;
+							resultPoint = edge.GetPoint(i);
+						}
+					}
+				}
+				return resultPoint;
+			}
+		}
+	}
+
+	std::vector<std::shared_ptr<const Point>> MinimumSpanningTree::FindMultiStartPoints(const size_t startRoomCount) const noexcept
+	{
+		if (startRoomCount == 0)
+		{
+			return {};
+		}
+
+		const auto points = CollectUniquePoints();
+		if (points.empty())
+		{
+			return {};
+		}
+
+		const size_t targetCount = std::min(startRoomCount, points.size());
+
+		FVector minPoint = static_cast<FVector>(*points.front());
+		FVector maxPoint = static_cast<FVector>(*points.front());
+		FVector center(0.f, 0.f, 0.f);
+		for (const auto& point : points)
+		{
+			const FVector location = static_cast<FVector>(*point);
+			minPoint.X = std::min(minPoint.X, location.X);
+			minPoint.Y = std::min(minPoint.Y, location.Y);
+			minPoint.Z = std::min(minPoint.Z, location.Z);
+			maxPoint.X = std::max(maxPoint.X, location.X);
+			maxPoint.Y = std::max(maxPoint.Y, location.Y);
+			maxPoint.Z = std::max(maxPoint.Z, location.Z);
+			center += location;
+		}
+		center /= static_cast<float>(points.size());
+
+		std::unordered_set<Identifier> usedRoomIds;
+		std::vector<std::shared_ptr<const Point>> startPoints;
+
+		auto registerStartPoint = [&](const std::shared_ptr<const Point>& point)
+		{
+			if (point == nullptr || point->GetOwnerRoom() == nullptr)
+			{
+				return;
+			}
+			const auto roomId = point->GetOwnerRoom()->GetIdentifier();
+			if (usedRoomIds.emplace(roomId).second)
+			{
+				startPoints.emplace_back(point);
+			}
+		};
+
+		auto findClosestPoint = [&](const FVector& target) -> std::shared_ptr<const Point>
+		{
+			std::shared_ptr<const Point> resultPoint = nullptr;
+			double min = std::numeric_limits<double>::max();
+			for (const auto& point : points)
+			{
+				if (point->GetOwnerRoom() == nullptr)
+				{
+					continue;
+				}
+				const auto roomId = point->GetOwnerRoom()->GetIdentifier();
+				if (usedRoomIds.contains(roomId))
+				{
+					continue;
+				}
+				const double distance = PathFinder::Heuristics(*point, target);
+				if (min > distance)
+				{
+					min = distance;
+					resultPoint = point;
+				}
+			}
+			return resultPoint;
+		};
+
+		registerStartPoint(findClosestPoint(center));
+
+		const float centerZ = (minPoint.Z + maxPoint.Z) * 0.5f;
+		const std::array<FVector, 4> targets = {
+			FVector(minPoint.X, minPoint.Y, centerZ),
+			FVector(minPoint.X, maxPoint.Y, centerZ),
+			FVector(maxPoint.X, minPoint.Y, centerZ),
+			FVector(maxPoint.X, maxPoint.Y, centerZ),
+		};
+
+		for (const auto& target : targets)
+		{
+			registerStartPoint(findClosestPoint(target));
+		}
+
+		if (startPoints.size() < targetCount)
+		{
+			std::vector<std::shared_ptr<const Point>> remaining;
+			remaining.reserve(points.size());
+			for (const auto& point : points)
+			{
+				if (point->GetOwnerRoom() == nullptr)
+				{
+					continue;
+				}
+				const auto roomId = point->GetOwnerRoom()->GetIdentifier();
+				if (!usedRoomIds.contains(roomId))
+				{
+					remaining.emplace_back(point);
+				}
+			}
+
+			while (startPoints.size() < targetCount && remaining.empty() == false)
+			{
+				auto bestIt = remaining.begin();
+				double bestDistance = -1.0;
+				for (auto it = remaining.begin(); it != remaining.end(); ++it)
+				{
+					double minDistance = std::numeric_limits<double>::max();
+					for (const auto& selectedPoint : startPoints)
+					{
+						const double distance = PathFinder::Heuristics(**it, *selectedPoint);
+						minDistance = std::min(minDistance, distance);
+					}
+					if (minDistance > bestDistance)
+					{
+						bestDistance = minDistance;
+						bestIt = it;
+					}
+				}
+
+				registerStartPoint(*bestIt);
+				remaining.erase(bestIt);
+			}
+		}
+
+		return startPoints;
+	}
+
+	std::vector<std::shared_ptr<const Point>> MinimumSpanningTree::CollectUniquePoints() const noexcept
+	{
+		std::vector<std::shared_ptr<const Point>> points;
+		for (const auto& edge : mEdges)
+		{
+			for (size_t i = 0; i < 2; ++i)
+			{
+				const auto& point = edge.GetPoint(i);
+				if (std::find(points.begin(), points.end(), point) == points.end())
+				{
+					points.emplace_back(point);
+				}
+			}
+		}
+		return points;
 	}
 }

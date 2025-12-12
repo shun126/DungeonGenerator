@@ -1,11 +1,11 @@
 /**
-四面体 ヘッダーファイル
-
-@cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 四面体 ヘッダーファイル
+ *
+ * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Circle.h"
@@ -17,8 +17,8 @@ namespace dungeon
 	class Point;
 
 	/**
-	四面体クラス
-	*/
+	 * 四面体クラス
+	 */
 	class Tetrahedron final
 	{
 	public:
@@ -26,23 +26,23 @@ namespace dungeon
 
 	public:
 		/**
-		コンストラクタ
-		*/
+		 * コンストラクタ
+		 */
 		Tetrahedron() = default;
 
 		/**
-		コンストラクタ
-		*/
+		 * コンストラクタ
+		 */
 		Tetrahedron(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3) noexcept;
 
 		/**
-		デストラクタ
-		*/
+		 * デストラクタ
+		 */
 		~Tetrahedron() = default;
 
 		/**
-		他の四面体と共有点を持つか
-		*/
+		 * 他の四面体と共有点を持つか
+		 */
 		bool HasCommonPoints(const Tetrahedron& t) const noexcept;
 
 		/*
@@ -51,29 +51,29 @@ namespace dungeon
 		Circle GetCircumscribedSphere() const noexcept;
 
 		/**
-		値のハッシュ値を取得します
-		@return		値のハッシュ値
-		*/
+		 * 値のハッシュ値を取得します
+		 * @return		値のハッシュ値
+		 */
 		uint32_t GetHash() const noexcept;
 
 		/**
-		等価性の判定  
-		*/
+		 * 等価性の判定
+		 */
 		bool operator==(const Tetrahedron& t) const noexcept;
 
 		/**
-		等価性の判定
-		*/
+		 * 等価性の判定
+		 */
 		bool operator!=(const Tetrahedron& t) const noexcept;
 
 		/**
-		等価性の判定
-		*/
+		 * 等価性の判定
+		 */
 		bool operator<(const Tetrahedron& t) const noexcept;
 
 		/**
-		頂点を取得します
-		*/
+		 * 頂点を取得します
+		 */
 		const std::shared_ptr<const Point>& operator[](const size_t index) const noexcept;
 
 	private:

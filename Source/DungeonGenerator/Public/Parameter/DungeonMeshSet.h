@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Parameter/DungeonMeshParts.h"
@@ -25,9 +25,9 @@ namespace dungeon
 }
 
 /**
-Dungeon mesh set
-ダンジョンのメッシュセット
-*/
+ * Dungeon mesh set
+ * ダンジョンのメッシュセット
+ */
 USTRUCT(Blueprintable, BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonMeshSet
 {
@@ -177,8 +177,8 @@ public:
 	}
 
 	/**
-	壁のパーツを選択する方法を取得します
-	*/
+	 * 壁のパーツを選択する方法を取得します
+	 */
 	EDungeonPartsSelectionMethod GetWallPartsSelectionMethod() const noexcept
 	{
 		return WallPartsSelectionMethod;
@@ -192,72 +192,72 @@ public:
 
 protected:
 	/**
-	How to select floor parts
-	床のパーツを選択する方法
-	*/
+	 * How to select floor parts
+	 * 床のパーツを選択する方法
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
 	EDungeonPartsSelectionMethod FloorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
-	Specify the floor parts. Multiple parts can be set and will be selected based on FloorPartsSelectionMethod.
-	床のパーツを指定して下さい。パーツは複数設定する事ができ、FloorPartsSelectionMethodを元に選択されます。
-	*/
+	 * Specify the floor parts. Multiple parts can be set and will be selected based on FloorPartsSelectionMethod.
+	 * 床のパーツを指定して下さい。パーツは複数設定する事ができ、FloorPartsSelectionMethodを元に選択されます。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
 	TArray<FDungeonMeshPartsWithDirection> FloorParts;
 
 	/**
-	How to select wall parts
-	壁のパーツを選択する方法
-	*/
+	 * How to select wall parts
+	 * 壁のパーツを選択する方法
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
 	EDungeonPartsSelectionMethod WallPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
-	Specify the wall parts. Multiple parts can be set and will be selected based on WallPartsSelectionMethod.
-	壁のパーツを指定して下さい。パーツは複数設定する事ができ、WallPartsSelectionMethodを元に選択されます。
-	*/
+	 * Specify the wall parts. Multiple parts can be set and will be selected based on WallPartsSelectionMethod.
+	 * 壁のパーツを指定して下さい。パーツは複数設定する事ができ、WallPartsSelectionMethodを元に選択されます。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
 	TArray<FDungeonMeshParts> WallParts;
 
 	/**
-	How to select roof parts
-	天井のパーツを選択する方法
-	*/
+	 * How to select roof parts
+	 * 天井のパーツを選択する方法
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
 	EDungeonPartsSelectionMethod RoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
-	Specify the roof parts. Multiple parts can be set and will be selected based on RoofPartsSelectionMethod.
-	天井のパーツを指定して下さい。パーツは複数設定する事ができ、RoofPartsSelectionMethodを元に選択されます。
-	*/
+	 * Specify the roof parts. Multiple parts can be set and will be selected based on RoofPartsSelectionMethod.
+	 * 天井のパーツを指定して下さい。パーツは複数設定する事ができ、RoofPartsSelectionMethodを元に選択されます。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
 	TArray<FDungeonMeshPartsWithDirection> RoofParts;
 
 	/**
-	How to generate parts for stairs and ramps
-	階段やスロープの部品を生成する方法
-	*/
+	 * How to generate parts for stairs and ramps
+	 * 階段やスロープの部品を生成する方法
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
 	EDungeonPartsSelectionMethod SloopPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
-	Specify parts for stairs and ramps. Multiple parts can be set and will be selected based on the SloopPartsSelectionMethod.
-	階段やスロープのパーツを指定して下さい。パーツは複数設定する事ができ、SloopPartsSelectionMethodを元に選択されます。
-	*/
+	 * Specify parts for stairs and ramps. Multiple parts can be set and will be selected based on the SloopPartsSelectionMethod.
+	 * 階段やスロープのパーツを指定して下さい。パーツは複数設定する事ができ、SloopPartsSelectionMethodを元に選択されます。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
 	TArray<FDungeonMeshParts> SlopeParts;
 
 	/**
-	How to select catwalk parts
-	中二階通路のパーツを選択する方法
-	*/
+	 * How to select catwalk parts
+	 * 中二階通路のパーツを選択する方法
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite)
 	EDungeonPartsSelectionMethod CatwalkPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
-	Specify the catwalk parts. Multiple parts can be set and will be selected based on CatwalkPartsSelectionMethod.
-	中二階通路のパーツを指定して下さい。パーツは複数設定する事ができ、CatwalkPartsSelectionMethodを元に選択されます。
-	*/
+	 * Specify the catwalk parts. Multiple parts can be set and will be selected based on CatwalkPartsSelectionMethod.
+	 * 中二階通路のパーツを指定して下さい。パーツは複数設定する事ができ、CatwalkPartsSelectionMethodを元に選択されます。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite)
 	TArray<FDungeonMeshParts> CatwalkParts;
 

@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2025- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2025- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Helper/DungeonDirection.h"
@@ -61,7 +61,7 @@ public:
 	/**
 	 * Register aisle grid
 	 * 通路グリッドを登録します
-	*/
+	 */
 	void Register(const int32 identifier, const EDungeonDirection direction, const FVector& location);
 
 	/**

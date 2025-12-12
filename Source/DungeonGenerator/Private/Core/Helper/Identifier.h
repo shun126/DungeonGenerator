@@ -1,29 +1,31 @@
 /**
-識別子クラスヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 識別子クラスヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <cstdint>
+#include <functional>
 
 namespace dungeon
 {
 	/**
-	識別子クラス
-	*/
+	 * 識別子クラス
+	 */
 	class Identifier final
 	{
 	public:
-		//! 識別子の型
+		/**
+		 * 識別子の型
+		 */
 		using IdentifierType = uint16_t;
 
-	public:
 		/**
-		識別子のタイプ
-		*/
+		 * 識別子のタイプ
+		 */
 		enum class Type : uint8_t
 		{
 			Unknown = 0,
@@ -31,7 +33,6 @@ namespace dungeon
 			Aisle
 		};
 
-	public:
 		Identifier() noexcept;
 		explicit Identifier(const Type type) noexcept;
 		explicit Identifier(const IdentifierType other) noexcept;
@@ -65,6 +66,23 @@ namespace dungeon
 		static constexpr uint8_t Shift = sizeof(mIdentifier) * 8 - BitCount;
 		static constexpr IdentifierType MaskCounter = static_cast<IdentifierType>(~0) >> BitCount;
 		static IdentifierType mCounter;
+
+		friend struct std::hash<Identifier>;
+	};
+}
+
+namespace std
+{
+	/*!
+	 * ハッシュ関数
+	 */
+	template<>
+	struct hash<dungeon::Identifier>
+	{
+		size_t operator()(const dungeon::Identifier& identifier) const noexcept
+		{
+			return identifier.mIdentifier;
+		}
 	};
 }
 
