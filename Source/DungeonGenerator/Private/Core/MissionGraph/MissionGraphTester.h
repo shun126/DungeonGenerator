@@ -1,9 +1,9 @@
 /**
-ミッショングラフが攻略可能かテストします
-
-@author		Shun Moriya
-@copyright	2024- Shun Moriya
-All Rights Reserved.
+ * ミッショングラフが攻略可能かテストします
+ *
+ * @author		Shun Moriya
+ * @copyright	2024- Shun Moriya
+ * All Rights Reserved.
  */
 
 #pragma once

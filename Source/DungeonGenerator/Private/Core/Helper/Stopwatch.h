@@ -1,11 +1,10 @@
 /**
-@brief	Stopwatch class header files
-
-@file		Stopwatch.h
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * Stopwatch class header files
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <chrono>

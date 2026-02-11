@@ -152,10 +152,10 @@ namespace dungeon
 		const std::vector<int32_t>& GetFloorHeight() const;
 
 		/**
-		指定した座標が何階か検索します
-		@param[in]	height	ボクセル空間の高さ
-		@return		階層
-		*/
+		 * 指定した座標が何階か検索します
+		 * @param[in]	height	ボクセル空間の高さ
+		 * @return		階層
+		 */
 		size_t FindFloor(const int32_t height) const;
 
 	public:

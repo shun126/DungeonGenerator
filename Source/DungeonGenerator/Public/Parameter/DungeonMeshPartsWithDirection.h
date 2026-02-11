@@ -1,17 +1,17 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Parameter/DungeonMeshParts.h"
 #include "DungeonMeshPartsWithDirection.generated.h"
 
 /**
-Mesh parts with direction specification
-方向付きメッシュのパーツ
-*/
+ * Mesh parts with direction specification
+ * 方向付きメッシュのパーツ
+ */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonMeshPartsWithDirection : public FDungeonMeshParts
 {
@@ -19,9 +19,9 @@ struct DUNGEONGENERATOR_API FDungeonMeshPartsWithDirection : public FDungeonMesh
 
 public:
 	/**
-	Direction of placement
-	配置する方向
-	*/
+	 * Direction of placement
+	 * 配置する方向
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
 	EDungeonPartsPlacementDirection PlacementDirection = EDungeonPartsPlacementDirection::RandomDirection;
 

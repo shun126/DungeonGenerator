@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2025- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2025- Shun Moriya
+ * All Rights Reserved.
+ */
 
 /*
 通路グリッドをまとめたマップクラス

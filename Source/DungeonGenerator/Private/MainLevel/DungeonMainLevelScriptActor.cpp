@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "MainLevel/DungeonMainLevelScriptActor.h"
 #include "MainLevel/DungeonComponentActivatorComponent.h"
@@ -28,8 +28,8 @@ All Rights Reserved.
 
 ADungeonMainLevelScriptActor::ADungeonMainLevelScriptActor(const FObjectInitializer& objectInitializer)
 	: Super(objectInitializer)
-	, mActiveRegionExtent(0)
 	, mLastEnableLoadControl(bEnableLoadControl)
+	, mActiveRegionExtent(0)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
@@ -130,10 +130,11 @@ void ADungeonMainLevelScriptActor::PreInitializeComponents()
 			mBoundingSize = boundingSize.Y;
 
 		// パーティエーションを生成
-		mPartitionWidth = static_cast<size_t>(std::ceil(boundingSize.X / mPartitionSize));
-		mPartitionDepth = static_cast<size_t>(std::ceil(boundingSize.Y / mPartitionSize));
-		DungeonPartitions.Reserve(mPartitionWidth * mPartitionDepth);
-		for (size_t i = 0; i < mPartitionWidth * mPartitionDepth; ++i)
+		mPartitionWidth = std::ceil(boundingSize.X / mPartitionSize);
+		mPartitionDepth = std::ceil(boundingSize.Y / mPartitionSize);
+		mPartitionHeight = std::ceil(boundingSize.Z / mPartitionSize);
+		DungeonPartitions.Reserve(mPartitionWidth * mPartitionDepth * mPartitionHeight);
+		for (size_t i = 0; i < mPartitionWidth * mPartitionDepth * mPartitionHeight; ++i)
 		{
 			DungeonPartitions.Add(NewObject<UDungeonPartition>(this));
 		}
@@ -158,7 +159,7 @@ void ADungeonMainLevelScriptActor::EndPlay(const EEndPlayReason::Type endPlayRea
 {
 	Super::EndPlay(endPlayReason);
 
-	mPartitionWidth = mPartitionDepth = 0;
+	mPartitionWidth = mPartitionDepth = mPartitionHeight = 0;
 	DungeonPartitions.Reset();
 	mBounding.Init();
 }
@@ -237,20 +238,66 @@ UDungeonPartition* ADungeonMainLevelScriptActor::Find(const FVector& worldLocati
 		return nullptr;
 	if (localLocation.Y < 0 || mPartitionDepth <= localLocation.Y)
 		return nullptr;
+	if (localLocation.Z < 0 || mPartitionHeight <= localLocation.Z)
+		return nullptr;	
 
 	const size_t x = static_cast<size_t>(localLocation.X);
 	const size_t y = static_cast<size_t>(localLocation.Y);
-	return Index(x, y);
+	const size_t z = static_cast<size_t>(localLocation.Z);
+	return Index(x, y, z);
 }
 
-/*
- * スレッドセーフにして下さい
- */
-UDungeonPartition* ADungeonMainLevelScriptActor::Index(const size_t x, const size_t y) const noexcept
+size_t ADungeonMainLevelScriptActor::ToIndex(const size_t x, const size_t y, const size_t z) const noexcept
 {
 	check(x < mPartitionWidth);
 	check(y < mPartitionDepth);
-	const size_t index = mPartitionWidth * y + x;
+	check(z < mPartitionHeight);
+	return mPartitionWidth * mPartitionDepth * z + mPartitionWidth * y + x;
+}
+
+size_t ADungeonMainLevelScriptActor::ToIndex(const FIntVector& vector) const noexcept
+{
+	return ToIndex(vector.X, vector.Y, vector.Z);
+}
+
+size_t ADungeonMainLevelScriptActor::ToIndex(const FVector& vector) const noexcept
+{
+	return ToIndex(vector.X, vector.Y, vector.Z);
+}
+
+FIntVector ADungeonMainLevelScriptActor::ToIntVector(const size_t index) const noexcept
+{
+	const int32 x = index % mPartitionWidth;
+	const int32 y = index / mPartitionWidth % mPartitionDepth;
+	const int32 z = index / (mPartitionWidth * mPartitionDepth);
+	check(x < mPartitionWidth);
+	check(y < mPartitionDepth);
+	check(z < mPartitionHeight);
+	return { x, y, z };
+}
+
+FVector ADungeonMainLevelScriptActor::ToVector(const size_t index) const noexcept
+{
+	const int32 x = index % mPartitionWidth;
+	const int32 y = index / mPartitionWidth % mPartitionDepth;
+	const int32 z = index / (mPartitionWidth * mPartitionDepth);
+	check(x < mPartitionWidth);
+	check(y < mPartitionDepth);
+	check(z < mPartitionHeight);
+	return FVector(x, y, z);
+}
+
+UDungeonPartition* ADungeonMainLevelScriptActor::Index(const size_t x, const size_t y, const size_t z) const noexcept
+{
+	const size_t index = ToIndex(x, y, z);
+	UDungeonPartition* partition = DungeonPartitions[index];
+	check(IsValid(partition));
+	return partition;
+}
+
+UDungeonPartition* ADungeonMainLevelScriptActor::Index(const FIntVector& vector) const noexcept
+{
+	const size_t index = ToIndex(vector);
 	UDungeonPartition* partition = DungeonPartitions[index];
 	check(IsValid(partition));
 	return partition;
@@ -315,13 +362,18 @@ void ADungeonMainLevelScriptActor::Mark(const FVector& playerLocation) const
 	const FVector end = (activeBounds.Max - mBounding.Min) / mPartitionSize;
 	const int32_t sx = std::max<int32_t>(0.0, start.X);
 	const int32_t sy = std::max<int32_t>(0.0, start.Y);
+	const int32_t sz = std::max<int32_t>(0.0, start.Z);
 	const int32_t ex = std::min<int32_t>(std::ceil(end.X), mPartitionWidth);
 	const int32_t ey = std::min<int32_t>(std::ceil(end.Y), mPartitionDepth);
-	for (int32_t y = sy; y < ey; ++y)
+	const int32_t ez = std::min<int32_t>(std::ceil(end.Z), mPartitionHeight);
+	for (int32_t z = sz; z < ez; ++z)
 	{
-		for (int32_t x = sx; x < ex; ++x)
+		for (int32_t y = sy; y < ey; ++y)
 		{
-			Index(x, y)->Mark();
+			for (int32_t x = sx; x < ex; ++x)
+			{
+				Index(x, y, z)->Mark();
+			}
 		}
 	}
 }
@@ -334,17 +386,9 @@ void ADungeonMainLevelScriptActor::Mark(const FSceneView* sceneView) const
 	const FVector partitionExtent(mPartitionSize * 0.5);
 	ParallelFor(DungeonPartitions.Num(), [this, sceneView, partitionExtent](const size_t index)
 		{
-			const double x = index % mPartitionWidth * mPartitionSize;
-			const double y = index / mPartitionWidth * mPartitionSize;
-			const FVector origin(
-				mBounding.Min.X + x + partitionExtent.X,
-				mBounding.Min.Y + y + partitionExtent.Y,
-				mBounding.Min.Z + (mBounding.Max.Z - mBounding.Min.Z) * 0.5
-			);
-
 			// 視点から遠すぎる場合は計算をスキップ
-			const double distance = FVector::Dist2D(sceneView->ViewLocation, origin);
-			if (distance < mActiveViewRange)
+			const auto& origin = ToVector(index) * mPartitionSize + partitionExtent;
+			if (FVector::Distance(sceneView->ViewLocation, origin) < mActiveViewRange)
 			{
 				// パーティエーションが視錐台と交差している
 				if (sceneView->ViewFrustum.IntersectBox(origin, partitionExtent))
@@ -536,7 +580,7 @@ bool ADungeonMainLevelScriptActor::TestSegmentAABB(const FVector& segmentStart, 
 }
 
 void ADungeonMainLevelScriptActor::DrawFrustumLines(
-	UWorld* world, const FVector& viewLocation, const FRotator& viewRotation,
+	const UWorld* world, const FVector& viewLocation, const FRotator& viewRotation,
 	float FovY, float aspect, float nearDistance, float farDistance,
 	const FColor& color, float lifeTime, float thickness)
 {
@@ -575,27 +619,29 @@ void ADungeonMainLevelScriptActor::DrawFrustumLines(
 void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 {
 	// パーティエーションの状態を線で描画します
-	const double h = (mBounding.Max.Z - mBounding.Min.Z) * 0.5;
-	const double z = mBounding.Min.Z;
-	constexpr double margin = 10;
-	const FVector halfSize(mPartitionSize * 0.5 - margin, mPartitionSize * 0.5 - margin, h - margin);
-	for (double y = mBounding.Min.Y; y < mBounding.Max.Y; y += mPartitionSize)
+	constexpr double Margin = 10;
+	const FVector offset(mPartitionSize * 0.5);
+	const FVector halfSize(offset - FVector(Margin));
+	for (double z = mBounding.Min.Z; z < mBounding.Max.Z; z += mPartitionSize)
 	{
-		for (double x = mBounding.Min.X; x < mBounding.Max.X; x += mPartitionSize)
+		for (double y = mBounding.Min.Y; y < mBounding.Max.Y; y += mPartitionSize)
 		{
-			if (const auto* partition = Find(FVector(x + 1, y + 1, z)))
+			for (double x = mBounding.Min.X; x < mBounding.Max.X; x += mPartitionSize)
 			{
-				const auto color = partition->IsMarked() ? FColor::Red : FColor::Blue;
-				const FVector location(x, y, z);
-				UKismetSystemLibrary::DrawDebugBox(
-					GetWorld(),
-					location + halfSize,
-					halfSize,
-					color,
-					FRotator::ZeroRotator,
-					0.f,
-					10.f
-				);
+				const FVector worldLocation(x, y, z);
+				if (const auto* partition = Find(worldLocation + FVector::One()))
+				{
+					const auto color = partition->IsMarked() ? FColor::Red : FColor::Blue;
+					UKismetSystemLibrary::DrawDebugBox(
+						GetWorld(),
+						worldLocation + offset,
+						halfSize,
+						color,
+						FRotator::ZeroRotator,
+						0.f,
+						10.f
+					);
+				}
 			}
 		}
 	}
@@ -603,11 +649,11 @@ void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 	// 有効な範囲を黄色い線で描画します
 	if (const UWorld* world = GetValid(GetWorld()))
 	{
-		for (FConstPlayerControllerIterator iterator = world->GetPlayerControllerIterator(); iterator; ++iterator)
+		for (auto iterator = world->GetPlayerControllerIterator(); iterator; ++iterator)
 		{
 			if (const auto* playerController = iterator->Get())
 			{
-				const auto& playerPawn = playerController->GetPawn();
+				const APawn* playerPawn = playerController->GetPawn();
 				if (IsValid(playerPawn) && playerPawn->IsPlayerControlled())
 				{
 					UKismetSystemLibrary::DrawDebugBox(

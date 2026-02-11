@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Parameter/DungeonPartsPlacementDirection.h"
@@ -21,9 +21,9 @@ namespace dungeon
 }
 
 /**
-Parts transform
-パーツのトランスフォーム
-*/
+ * Parts transform
+ * パーツのトランスフォーム
+ */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonPartsTransform
 {
@@ -31,9 +31,9 @@ struct DUNGEONGENERATOR_API FDungeonPartsTransform
 
 public:
 	/**
-	Set the relative transform of the static mesh
-	スタティックメッシュの相対トランスフォームを設定して下さい
-	*/
+	 * Set the relative transform of the static mesh
+	 * スタティックメッシュの相対トランスフォームを設定して下さい
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
 	FTransform RelativeTransform;
 

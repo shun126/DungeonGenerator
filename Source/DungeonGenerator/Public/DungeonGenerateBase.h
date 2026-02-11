@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2024- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2024- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Helper/DungeonRandom.h"
@@ -56,7 +56,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDungeonGenerateBaseOnEndGenerateSi
  * This is a collection of dungeon generation functions common to both runtime and editor.
  * Cannot be spawned or placed because it is a virtual class.
  * Please use derived classes to generate instances.
- * 
+ *
  * ランタイム、エディタ共通のダンジョン生成機能をまとめています。
  * 仮想クラスなのでスポーンや配置をする事ができません。
  * インスタンスを生成する場合は派生クラスを利用して下さい。
@@ -95,10 +95,10 @@ protected:
 	/**
 	 * Begin Generate dungeon
 	 * After generation is complete, be sure to call EndDungeonGeneration.
-	 * 
+	 *
 	 * ダンジョン生成開始
 	 * 生成完了後、必ずEndDungeonGenerationを呼び出してください。
-	 * 
+	 *
 	 * @param[in]	parameter		UDungeonGenerateParameter
 	 * @param[in]	hasAuthority	HasAuthority
 	 * @return		If false, generation fails
@@ -192,22 +192,22 @@ private:
 	////////////////////////////////////////////////////////////////////////////
 protected:
 	/**
-	Get dungeon generation core object.
-	@return		dungeon::Generator
-	*/
+	 * Get dungeon generation core object.
+	 * @return		dungeon::Generator
+	 */
 	std::shared_ptr<const dungeon::Generator> GetGenerator() const;
 
 	/**
-	Notification when a dungeon is successfully created
-	ダンジョンの生成に成功した時の通知
-	*/
+	 * Notification when a dungeon is successfully created
+	 * ダンジョンの生成に成功した時の通知
+	 */
 	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
 	FDungeonGeneratorActorNotifyGenerationSuccessSignature OnGenerationSuccess;
 
 	/**
-	Notification when dungeon creation fails
-	ダンジョンの生成に失敗した時の通知
-	*/
+	 * Notification when dungeon creation fails
+	 * ダンジョンの生成に失敗した時の通知
+	 */
 	UPROPERTY(BlueprintAssignable, Category = "DungeonGenerator|Event")
 	FDungeonGeneratorActorNotifyGenerationFailureSignature OnGenerationFailure;
 
@@ -324,13 +324,13 @@ protected:
 	virtual void FitNavMeshBoundsVolume();
 
 	/**
-	PlayerStartPIEアクターを除くPlayerStartアクターを収集してstartPointsに記録します
-	*/
+	 * PlayerStartPIEアクターを除くPlayerStartアクターを収集してstartPointsに記録します
+	 */
 	void CollectPlayerStartExceptPlayerStartPIE(TArray<APlayerStart*>& startPoints);
 
 	/**
-	PlayerStartアクターを移動します
-	*/
+	 * PlayerStartアクターを移動します
+	 */
 	void MovePlayerStart(const TArray<APlayerStart*>& startPoints);
 
 private:
@@ -368,9 +368,9 @@ public:
 	// Debug
 public:
 	/**
-	Calculate CRC32
-	@return		CRC32
-	*/
+	 * Calculate CRC32
+	 * @return		CRC32
+	 */
 	uint32_t CalculateCRC32() const noexcept;
 
 #if WITH_EDITOR

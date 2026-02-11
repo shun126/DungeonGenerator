@@ -1,11 +1,11 @@
 /**
-四面体 ヘッダーファイル
-
-@cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 四面体 ヘッダーファイル
+ *
+ * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Point.h"
@@ -22,8 +22,8 @@ namespace dungeon
 namespace std
 {
 	/**
-	unordered_map,unordered_set等で利用するハッシュ関数
-	*/
+	 * unordered_map,unordered_set等で利用するハッシュ関数
+	 */
 	template<>
 	struct hash<dungeon::Tetrahedron>
 	{

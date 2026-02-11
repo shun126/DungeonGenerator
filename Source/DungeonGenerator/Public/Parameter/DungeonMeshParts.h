@@ -1,17 +1,17 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Parameter/DungeonPartsTransform.h"
 #include "DungeonMeshParts.generated.h"
 
 /**
-Mesh Parts
-メッシュのパーツ
-*/
+ * Mesh Parts
+ * メッシュのパーツ
+ */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonMeshParts : public FDungeonPartsTransform
 {
@@ -25,9 +25,9 @@ public:
 
 public:
 	/**
-	Class of static mesh to spawn
-	スポーンするスタティックメッシュ
-	*/
+	 * Class of static mesh to spawn
+	 * スポーンするスタティックメッシュ
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
 	TObjectPtr<UStaticMesh> StaticMesh = nullptr;
 };

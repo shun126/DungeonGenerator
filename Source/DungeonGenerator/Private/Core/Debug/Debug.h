@@ -1,14 +1,13 @@
 /**
-@brief	Debug function header files
-
-To prevent conflicts with other Windows macros,
-do not include this file from the header.
-
-@file		Debug.h
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * Debug function header files
+ *
+ * To prevent conflicts with other Windows macros,
+ * do not include this file from the header.
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <cstdio>
@@ -56,11 +55,11 @@ namespace dungeon
 {
 	static constexpr auto BaseDirectoryName = TEXT("DungeonGenerator");
 
-	/*!
-	Output to VisualStudio output window
-	Assumed to be included only from source files, so static functions are fine.
-	*/
-	extern void OutputDebugStringWithArgument(const char* pszFormat, ...);
+/**
+ * Output to VisualStudio output window
+ * Assumed to be included only from source files, so static functions are fine.
+ */
+extern void OutputDebugStringWithArgument(const char* pszFormat, ...);
 
 	extern const FString& GetBaseDirectoryName();
 
@@ -110,8 +109,8 @@ namespace dungeon
 #pragma pack()
 
 		/**
-		@brief Windows Bitmap canvas class
-		*/
+		 * @brief Windows Bitmap canvas class
+		 */
 		class Canvas final
 		{
 		public:

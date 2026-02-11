@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "DungeonMeshSetSelectionMethod.h"
@@ -17,9 +17,9 @@ namespace dungeon
 }
 
 /**
-Database of dungeon mesh sets
-ダンジョンのメッシュセットのデータベース
-*/
+ * Database of dungeon mesh sets
+ * ダンジョンのメッシュセットのデータベース
+ */
 UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API UDungeonMeshSetDatabase : public UObject
 {
@@ -30,13 +30,13 @@ public:
 	virtual ~UDungeonMeshSetDatabase() override = default;
 
 	/**
-	FDungeonMeshSetを取得します
-	*/
+	 * FDungeonMeshSetを取得します
+	 */
 	virtual const FDungeonMeshSet* AtImplement(const size_t index) const;
 
 	/**
-	FDungeonMeshSetをランダムに抽選します
-	*/
+	 * FDungeonMeshSetをランダムに抽選します
+	 */
 	virtual const FDungeonMeshSet* SelectImplement(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random) const;
 
 	template<typename Function>
@@ -57,16 +57,16 @@ public:
 
 protected:
 	/**
-	Part Selection Method
-	パーツを選択する方法
-	*/
+	 * Part Selection Method
+	 * パーツを選択する方法
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::DepthFromStart;
 
 	/**
-	Set the DungeonRoomMeshSet; multiple DungeonRoomMeshSets can be set.
-	DungeonRoomMeshSetを設定して下さい。DungeonRoomMeshSetは複数設定する事ができます。
-	*/
+	 * Set the DungeonRoomMeshSet; multiple DungeonRoomMeshSets can be set.
+	 * DungeonRoomMeshSetを設定して下さい。DungeonRoomMeshSetは複数設定する事ができます。
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	TArray<FDungeonMeshSet> Parts;
 };

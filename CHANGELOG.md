@@ -1,6 +1,28 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20251225-1.8.0 (63)
+### Changes
+* Added the ability to specify the direction in which dungeon rooms unfold.
+* Added options for starting positions.
+* Added a notification system for communicating breaking changes.
+* Fixed several bugs
+### 変更点
+* ダンジョンの部屋の展開方向の指定を追加
+* スタート位置の選択肢を追加
+* 破壊的な変更を連絡するための通知システムを追加
+* いくつかの不具合を修正
+
 ## 20251118-1.7.10 (62)
+### Changes
+* Unreal Engine 5.7 support
+* Revised plant distribution methods
+* Fixed several bugs
+### 変更点
+* Unreal Engine 5.7対応
+* 植物の分布方法を修正
+* いくつかの不具合を修正
+
+## 20251122-1.7.9 (62)
 ### Changes
 * Unreal Engine 5.7 support
 * Revised plant distribution methods

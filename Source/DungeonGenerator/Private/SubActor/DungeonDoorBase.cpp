@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "SubActor/DungeonDoorBase.h"
 #include "Core/Helper/Crc.h"

@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "DungeonComponentActivationSaver.h"
@@ -27,19 +27,19 @@ enum class EDungeonComponentActivateReason : uint8
 constexpr uint8_t DungeonComponentActivateReasonSize = 3;
 
 /**
-OnPartitionActivate will be called when the DungeonPartition belonging to
-the player approaches the vicinity of the player.
-OnPartitionInactivate is called when the DungeonPartition moves away.
-
-The shadow control method for point light derived classes has been changed.
-Only lights with CastShadow enabled at the time of BeginPlay will have shadow enable/disable control.
-
-所属しているDungeonPartitionがプレイヤー周辺に近づいたらOnPartitionActivateが呼ばれます。
-離れたらOnPartitionInactivateが呼ばれます。
-
-ポイントライト派生クラスの影の制御方法が変更されました。
-BeginPlay時点でCastShadowが有効のライトのみ、影の有効無効制御が行われます。
-*/
+ * OnPartitionActivate will be called when the DungeonPartition belonging to
+ * the player approaches the vicinity of the player.
+ * OnPartitionInactivate is called when the DungeonPartition moves away.
+ *
+ * The shadow control method for point light derived classes has been changed.
+ * Only lights with CastShadow enabled at the time of BeginPlay will have shadow enable/disable control.
+ *
+ * 所属しているDungeonPartitionがプレイヤー周辺に近づいたらOnPartitionActivateが呼ばれます。
+ * 離れたらOnPartitionInactivateが呼ばれます。
+ *
+ * ポイントライト派生クラスの影の制御方法が変更されました。
+ * BeginPlay時点でCastShadowが有効のライトのみ、影の有効無効制御が行われます。
+ */
 UCLASS(ClassGroup = "DungeonGenerator", meta = (BlueprintSpawnableComponent))
 class DUNGEONGENERATOR_API UDungeonComponentActivatorComponent : public UActorComponent
 {
@@ -104,16 +104,16 @@ public:
 
 protected:
 	/**
-	所属しているDungeonPartitionがプレイヤー周辺に近づいたら呼び出されます。
-	The DungeonPartition will be called when it approaches the player's vicinity.
-	*/
+	 * 所属しているDungeonPartitionがプレイヤー周辺に近づいたら呼び出されます。
+	 * The DungeonPartition will be called when it approaches the player's vicinity.
+	 */
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPartitionActivate();
 
 	/**
-	所属しているDungeonPartitionがプレイヤー周辺から離れたら呼び出されます。
-	It is called when the DungeonPartition to which it belongs leaves the player's vicinity.
-	*/
+	 * 所属しているDungeonPartitionがプレイヤー周辺から離れたら呼び出されます。
+	 * It is called when the DungeonPartition to which it belongs leaves the player's vicinity.
+	 */
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPartitionInactivate();
 
@@ -139,44 +139,44 @@ private:
 
 protected:
 	/**
-	If enabled, controls the validity of the owner actor's Tick
-	有効にするとオーナーアクターのTickの有効性を制御します
-	*/
+	 * If enabled, controls the validity of the owner actor's Tick
+	 * 有効にするとオーナーアクターのTickの有効性を制御します
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableOwnerActorTickControl = true;
 
 	/**
-	If enabled, controls the effectiveness of the owner actor's AI
-	有効にするとオーナーアクターのAIの有効性を制御します
-	*/
+	 * If enabled, controls the effectiveness of the owner actor's AI
+	 * 有効にするとオーナーアクターのAIの有効性を制御します
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableOwnerActorAiControl = true;
 
 	/**
-	If enabled, controls the activation of the owner actor's components
-	有効にするとオーナーアクターのコンポーネントのアクティブ性を制御します
-	*/
+	 * If enabled, controls the activation of the owner actor's components
+	 * 有効にするとオーナーアクターのコンポーネントのアクティブ性を制御します
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableComponentActivationControl = true;
 
 	/**
-	If enabled, controls the visibility of the owner actor's components
-	有効にするとオーナーアクターのコンポーネントの表示を制御します
-	*/
+	 * If enabled, controls the visibility of the owner actor's components
+	 * 有効にするとオーナーアクターのコンポーネントの表示を制御します
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableComponentVisibilityControl = true;
 
 	/**
-	If enabled, controls the Cast Shadow of the owner actor's point light and spotlight
-	有効にするとオーナーアクターのポイントライトとスポットライトのCast Shadowを制御します
-	*/
+	 * If enabled, controls the Cast Shadow of the owner actor's point light and spotlight
+	 * 有効にするとオーナーアクターのポイントライトとスポットライトのCast Shadowを制御します
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableLightShadowControl = true;
 
 	/**
-	If enabled, controls the enable of the collision component of the owner actor
-	有効にするとオーナーアクターのコリジョンコンポーネントの有効性を制御します
-	*/
+	 * If enabled, controls the enable of the collision component of the owner actor
+	 * 有効にするとオーナーアクターのコリジョンコンポーネントの有効性を制御します
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	bool EnableCollisionEnableControl = true;
 

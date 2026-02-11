@@ -1,10 +1,10 @@
 /**
-ゴール条件 ヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ゴール条件 ヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include <Math/IntPoint.h>
@@ -13,61 +13,61 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
-	ゴール条件クラス
-	*/
+	 * ゴール条件クラス
+	 */
 	class PathGoalCondition final
 	{
 	public:
 		/**
-		コンストラクタ
-		*/
+		 * コンストラクタ
+		 */
 		PathGoalCondition() = default;
 
 		/**
-		コンストラクタ
-		*/
+		 * コンストラクタ
+		 */
 		explicit PathGoalCondition(const FIntRect& rect) noexcept;
 
 		/**
-		コピーコンストラクタ
-		*/
+		 * コピーコンストラクタ
+		 */
 		explicit PathGoalCondition(const PathGoalCondition& other) noexcept;
 
 		/**
-		ムーブコンストラクタ
-		*/
+		 * ムーブコンストラクタ
+		 */
 		explicit PathGoalCondition(PathGoalCondition&& other) noexcept;
 
 		/**
-		デストラクタ
-		*/
+		 * デストラクタ
+		 */
 		~PathGoalCondition() = default;
 
 		/**
-		ゴール範囲を取得
-		*/
+		 * ゴール範囲を取得
+		 */
 		const FIntRect& Get() const noexcept;
 
 		/**
-		ゴール範囲を設定
-		*/
+		 * ゴール範囲を設定
+		 */
 		void Set(const FIntRect& rect) noexcept;
 
 		/**
-		座標がゴール条件を満たしているか？
-		@param[in]	location	座標
-		@return		trueならば条件を満たしている
-		*/
+		 * 座標がゴール条件を満たしているか？
+		 * @param[in]	location	座標
+		 * @return		trueならば条件を満たしている
+		 */
 		bool Contains(const FIntVector& location) const noexcept;
 
 		/**
-		コピー代入
-		*/
+		 * コピー代入
+		 */
 		PathGoalCondition& operator=(const PathGoalCondition& other) noexcept;
 
 		/**
-		ムーブ代入
-		*/
+		 * ムーブ代入
+		 */
 		PathGoalCondition& operator=(PathGoalCondition&& other) noexcept;
 
 	private:

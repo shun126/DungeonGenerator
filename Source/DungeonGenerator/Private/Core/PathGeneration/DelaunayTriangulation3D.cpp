@@ -1,11 +1,11 @@
 /**
-三次元ドロネー三角形分割に関するソースファイル
-
-@cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 三次元ドロネー三角形分割に関するソースファイル
+ *
+ * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "DelaunayTriangulation3D.h"
 #include <algorithm>

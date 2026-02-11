@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "DungeonGenerateBase.h"
@@ -245,7 +245,7 @@ protected:
 	/**
 	 * Location of the starting room of the dungeon
 	 * PlayerStart location can be found in Get All Actors of Class
-	 * 
+	 *
 	 * ダンジョンのスタート部屋の位置
 	 * PlayerStartの位置はGet All Actors of Classで検索して下さい
 	 */

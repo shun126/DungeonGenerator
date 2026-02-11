@@ -1,10 +1,10 @@
 /**
-ボクセルなどに利用するグリッド情報のヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ボクセルなどに利用するグリッド情報のヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "../Helper/Direction.h"

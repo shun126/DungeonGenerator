@@ -1,18 +1,18 @@
 /**
-ボクセルなどに利用するグリッド情報のソースファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ボクセルなどに利用するグリッド情報のソースファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Grid.h"
 
 namespace dungeon
 {
 	/**
-	自身からtoGridを見た時に床が生成されるか判定します
-	*/
+	 * 自身からtoGridを見た時に床が生成されるか判定します
+	 */
 	bool Grid::CanBuildFloor(const bool checkNoMeshGeneration) const noexcept
 	{
 		// 床の生成禁止領域か？
@@ -23,8 +23,8 @@ namespace dungeon
 	}
 
 	/**
-	斜面が生成されるか判定します
-	*/
+	 * 斜面が生成されるか判定します
+	 */
 	bool Grid::CanBuildSlope() const noexcept
 	{
 		// 床の生成禁止領域か？
@@ -35,8 +35,8 @@ namespace dungeon
 	}
 
 	/**
-	自身からtoGridを見た時に屋根が生成されるか判定します
-	*/
+	 * 自身からtoGridを見た時に屋根が生成されるか判定します
+	 */
 	bool Grid::CanBuildRoof(const Grid& toUpperGrid, const bool checkNoMeshGeneration) const noexcept
 	{
 		if (checkNoMeshGeneration && IsNoRoofMeshGeneration())
@@ -68,8 +68,8 @@ namespace dungeon
 	}
 
 	/**
-	自身からtoGridを見た時に扉が生成されるか判定します
-	*/
+	 * 自身からtoGridを見た時に扉が生成されるか判定します
+	 */
 	bool Grid::CanBuildGate(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
 	{
 		if (!Is(Type::Gate))
@@ -119,8 +119,8 @@ namespace dungeon
 	}
 
 	/**
-	自身からtoGridを見た時に壁が生成されるか判定します
-	*/
+	 * 自身からtoGridを見た時に壁が生成されるか判定します
+	 */
 	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
 	{
 		// TODO: NoWallMeshGenerationフラグは進入禁止に使用されている別途生成禁止フラグが必要

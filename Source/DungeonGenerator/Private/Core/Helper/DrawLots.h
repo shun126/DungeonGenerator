@@ -1,10 +1,8 @@
-/*
-抽選に関するヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+/**
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "../Math/Random.h"

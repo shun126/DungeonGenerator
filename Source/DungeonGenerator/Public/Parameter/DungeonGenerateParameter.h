@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "DungeonGridSize.h"
@@ -17,6 +17,35 @@ All Rights Reserved.
 class UDungeonAisleGridMap;
 class UDungeonRandom;
 class UDungeonRoomSensorDatabase;
+
+/**
+ * Dungeon expansion policy
+ * ダンジョンの拡張ポリシー
+ */
+UENUM()
+enum class EDungeonExpansionPolicy : uint8
+{
+	Flat,
+	ExpandHorizontally,
+	ExpandVertically,
+	ExpandAnyDirection,
+};
+
+/**
+ * Dungeon start location policy
+ *
+ * スタート位置の種類
+ */
+UENUM()
+enum class EDungeonStartLocationPolicy : uint8
+{
+	NoAdjustment,
+	UseSouthernMost,
+	UseHighestPoint,
+	UseLowestPoint,
+	UseCentralPoint,
+	UseMultiStart,
+};
 
 /**
  * Frequency of generation
@@ -141,7 +170,7 @@ public:
 
 	/**
 	 * Converts from a grid coordinate system to a world coordinate system
-	 * 
+	 *
 	 * グリッド座標系からワールド座標系への変換
 	 */
 	FVector ToWorld(const FIntVector& location) const;
@@ -250,6 +279,7 @@ public:
 	// overrides
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool IsSupportedForNetworking() const override;
+	virtual void PostLoad() override;
 
 protected:
 	/**
@@ -317,7 +347,7 @@ protected:
 	 * 垂直方向の部屋と部屋の空白
 	 * Room Vertical Marginを有効にするにはMergeRoomsのチェックを外す必要があります
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0", EditCondition = "!MergeRooms && !Flat "), DisplayName = "Vertical Room Margin")
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0", EditCondition = "!MergeRooms && ExpansionPolicy != EDungeonExpansionPolicy::Flat"), DisplayName = "Vertical Room Margin")
 	uint8 VerticalRoomMargin = 0;
 
 	/**
@@ -339,13 +369,24 @@ protected:
 	bool MergeRooms = false;
 
 	/**
+	 * Defines the direction in which rooms expand during dungeon generation.
+	 * Each value influences room proliferation logic and is used to control the dungeon's structure (tall, wide, or mixed).
+	 *
+	 * ダンジョン生成時に部屋をどの方向へ展開するかを定義します。
+	 * 各値は部屋の増殖ロジックに影響し、ダンジョンの構造（縦長・横長・混在）を
+	 * コントロールするために使用されます。
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (EditCondition = "!MergeRooms && !Flat"))
+	EDungeonExpansionPolicy ExpansionPolicy = EDungeonExpansionPolicy::ExpandHorizontally;
+
+	/**
 	 * Candidate Number of Generated Hierarchies This is used as a reference number of hierarchies for generation,
 	 * not as the final number of hierarchies.
 	 *
 	 * 生成される階層数の候補
 	 * これは最終的な階層の数ではなく生成時の参考階層数として利用されます。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "0", ClampMax = "5", EditCondition = "!Flat"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "0", ClampMax = "5", EditCondition = "ExpansionPolicy != EDungeonExpansionPolicy::Flat"))
 	uint8 NumberOfCandidateFloors = 3;
 
 	/**
@@ -353,7 +394,7 @@ protected:
 	 *
 	 * 平面的なダンジョンを生成します
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (EditCondition = "!MergeRooms"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (EditCondition = "!MergeRooms", DeprecatedProperty, DeprecationMessage = "Use ExpansionPolicy=Flat"))
 	bool Flat = false;
 
 	/**
@@ -361,8 +402,19 @@ protected:
 	 *
 	 * 開始時にPlayerStartを自動的にスタート部屋に移動します
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (DeprecatedProperty, DeprecationMessage = "Use StartLocationPolicy"))
 	bool MovePlayerStartToStartingPoint = true;
+
+	/**
+	 * When generating dungeons, this specifies the criteria for selecting the room where the player starts.
+	 * Each policy makes its determination based on the room's positional information (coordinates or floor level).
+	 *
+	 * ダンジョン生成時に、プレイヤーの開始位置となる部屋を
+	 * どの基準で選択するかを指定します。各ポリシーは部屋の
+	 * 位置情報（座標や階層）に基づいて判定を行います。
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
+	EDungeonStartLocationPolicy StartLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
 
 	/**
 	 * Enable MissionGraph to generate missions with keys.
@@ -397,7 +449,7 @@ protected:
 	/**
 	 * Generate structural columns in the room
 	 * May be enabled by future forcing.
-	 * 
+	 *
 	 * 部屋の中に構造柱を生成する
 	 * 将来的強制的に有効になる可能性があります。
 	 */
@@ -579,7 +631,7 @@ inline bool UDungeonGenerateParameter::IsMergeRooms() const noexcept
 
 inline bool UDungeonGenerateParameter::IsMovePlayerStartToStartingPoint() const noexcept
 {
-	return MovePlayerStartToStartingPoint;
+	return MovePlayerStartToStartingPoint && StartLocationPolicy != EDungeonStartLocationPolicy::NoAdjustment;
 }
 
 inline bool UDungeonGenerateParameter::IsUseMissionGraph() const noexcept

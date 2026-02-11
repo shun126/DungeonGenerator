@@ -198,9 +198,9 @@ namespace dungeon
 	}
 
 	/*
-	正規乱数
-	https://ja.wikipedia.org/wiki/%E3%83%9C%E3%83%83%E3%82%AF%E3%82%B9%EF%BC%9D%E3%83%9F%E3%83%A5%E3%83%A9%E3%83%BC%E6%B3%95
-	*/
+	 * 正規乱数
+	 * https://ja.wikipedia.org/wiki/%E3%83%9C%E3%83%83%E3%82%AF%E3%82%B9%EF%BC%9D%E3%83%9F%E3%83%A5%E3%83%A9%E3%83%BC%E6%B3%95
+	 */
 	inline void NormalRandom(float& x, float& y, const std::shared_ptr<Random>& random)
 	{
 		const auto A = random->Get<float>();
@@ -212,8 +212,8 @@ namespace dungeon
 	}
 
 	/**
-	mRoomsを生成します
-	*/
+	 * mRoomsを生成します
+	 */
 	bool Generator::GenerateRooms() noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
@@ -229,20 +229,18 @@ namespace dungeon
 		DUNGEON_GENERATOR_LOG(TEXT("Generate Rooms"));
 #endif
 
+		// ダンジョン全体のサイズを求める
 		float radius = std::sqrtf(mGenerateParameter.GetNumberOfCandidateRooms());
-		const float maxRoomWidth = std::max(mGenerateParameter.GetMaxRoomWidth(), mGenerateParameter.GetMaxRoomDepth());
+		const float maxRoomWidth = std::min(mGenerateParameter.GetMinRoomWidth(), mGenerateParameter.GetMinRoomDepth());
 		radius *= maxRoomWidth + mGenerateParameter.GetHorizontalRoomMargin();
 		radius *= 0.5f;
 		if (radius < 1.f)
 			radius = 1.f;
 
-#define USE_SIN_CURVE 1
-
 		const float mapOffsetX = mGenerateParameter.GetRandom()->Get<float>(dungeon::math::Pi2<float>());
 		const float mapOffsetY = mGenerateParameter.GetRandom()->Get<float>(dungeon::math::Pi2<float>());
 		const float mapScaleX = mGenerateParameter.GetRandom()->Get<float>(0.5f, 1.5f);
 		const float mapScaleY = mGenerateParameter.GetRandom()->Get<float>(0.5f, 1.5f);
-#if USE_SIN_CURVE
 		const auto getHeight = [mapOffsetX, mapOffsetY, mapScaleX, mapScaleY](const float x, const float y) -> float
 			{
 				const float tx = mapOffsetX + x * mapScaleX * dungeon::math::Pi2();
@@ -250,46 +248,28 @@ namespace dungeon
 				const float noise = std::sin(tx) * std::sin(ty);
 				return noise * 0.5f + 0.5f;
 			};
-#else
-		PerlinNoise perlinNoise(mGenerateParameter.GetRandom());
-		constexpr float noiseBoostRatio = 1.333f;
-		constexpr size_t octaves = 4;
-#endif
 
 		// Register Rooms
 		for (size_t i = 0; i < mGenerateParameter.GetNumberOfCandidateRooms(); ++i)
 		{
 			float x, y;
 			NormalRandom(x, y, mGenerateParameter.GetRandom());
-			x = std::max(-1.f, std::min(x / 4.f, 1.f));
-			y = std::max(-1.f, std::min(y / 4.f, 1.f));
-#if USE_SIN_CURVE
-			const float z = getHeight(x, y);
+			x = std::max(-1.f, std::min(x / 4.f, 1.f)) * radius;
+			y = std::max(-1.f, std::min(y / 4.f, 1.f)) * radius;
+			const float z = getHeight(x, y) * mGenerateParameter.GetNumberOfCandidateFloors();
 
 			FIntVector location(
-				static_cast<int32_t>(std::round(x * radius)),
-				static_cast<int32_t>(std::round(y * radius)),
-				static_cast<int32_t>(std::round(z * mGenerateParameter.GetNumberOfCandidateFloors()))
+				static_cast<int32_t>(std::round(x)),
+				static_cast<int32_t>(std::round(y)),
+				static_cast<int32_t>(std::round(z))
 			);
-#else
-			float noise = perlinNoise.OctaveNoise(octaves, x * 0.5, y * 0.5);
-			noise = noise * 0.5f + 0.5f;
-			noise *= noiseBoostRatio;
-			noise = std::max(0.f, std::min(noise, 1.f));
-
-			FIntVector location(
-				static_cast<int32_t>(std::round(x * radius)),
-				static_cast<int32_t>(std::round(y * radius)),
-				static_cast<int32_t>(std::round(noise * mGenerateParameter.GetNumberOfCandidateFloors()))
-			);
-#endif
 
 			if (mGenerateParameter.GetHorizontalRoomMargin() == 0)
 			{
 				/*
-				RoomMarginが0の場合、部屋と部屋の間にスロープを作る隙間が無いので、
-				部屋の高さを必ず同じにする。
-				*/
+				 * RoomMarginが0の場合、部屋と部屋の間にスロープを作る隙間が無いので、
+				 * 部屋の高さを必ず同じにする。
+				 */
 				location.Z = 0;
 			}
 
@@ -305,12 +285,6 @@ namespace dungeon
 			mRooms.emplace_back(std::move(room));
 		}
 
-#if USE_SIN_CURVE == 0 & defined(DEBUG_GENERATE_BITMAP_FILE)
-		GenerateHeightImageForDebug(perlinNoise, octaves, noiseBoostRatio, "/debug/0_HeightMap.bmp");
-		// 2_SeparateRooms_0.bmpと同様の内容になるのでコメントアウト
-		// GenerateRoomImageForDebug("/debug/1_GenerateRooms.bmp");
-#endif
-
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 		// 通信同期用に現在の乱数の種を出力する
 		{
@@ -324,8 +298,8 @@ namespace dungeon
 	}
 
 	/**
-	部屋の重なりを解消します
-	*/
+	 * 部屋の重なりを解消します
+	 */
 	Generator::SeparateRoomsResult Generator::SeparateRooms(const size_t phase, const size_t subPhase) noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
@@ -557,7 +531,18 @@ namespace dungeon
 			else
 			{
 				const auto limit = std::sin(math::ToRadian(11.25));
-				direction.Z = std::max(-limit, std::min(direction.Z, limit));
+				if (mGenerateParameter.GetExpansionPolicy() == ExpansionPolicy::ExpandHorizontally)
+				{
+					// 展開を水平方向に制限
+					direction.Z = std::max(-limit, std::min(direction.Z, limit));
+				}
+				else if (mGenerateParameter.GetExpansionPolicy() == ExpansionPolicy::ExpandVertically)
+				{
+					// 展開を垂直方向に制限
+					direction.X = std::max(-limit, std::min(direction.X, limit));
+					direction.Y = std::max(-limit, std::min(direction.Y, limit));
+					direction.Z = 1;
+				}
 			}
 			if (direction.Normalize() == false)
 			{
@@ -824,14 +809,26 @@ namespace dungeon
 #endif
 
 			// 最小スパニングツリー
-			MinimumSpanningTree minimumSpanningTree(mGenerateParameter.GetRandom(), delaunayTriangulation, aisleComplexity);
+			MinimumSpanningTree minimumSpanningTree(
+				mGenerateParameter.GetRandom(),
+				delaunayTriangulation,
+				aisleComplexity,
+				mGenerateParameter.GetStartLocationPolicy(),
+				mGenerateParameter.GetStartRoomCount()
+			);
 			if (GenerateAisle(minimumSpanningTree) == false)
 				return false;
 		}
 		else
 		{
 			// 最小スパニングツリー
-			MinimumSpanningTree minimumSpanningTree(mGenerateParameter.GetRandom(), points, aisleComplexity);
+			MinimumSpanningTree minimumSpanningTree(
+				mGenerateParameter.GetRandom(),
+				points,
+				aisleComplexity,
+				mGenerateParameter.GetStartLocationPolicy(),
+				mGenerateParameter.GetStartRoomCount()
+			);
 			if (GenerateAisle(minimumSpanningTree) == false)
 				return false;
 		}
@@ -903,6 +900,31 @@ namespace dungeon
 			mStartPoint = std::make_shared<Point>(mRooms.front());
 		}
 		mStartRoom = mStartPoint->GetOwnerRoom();
+
+		{
+			size_t startRoomCount = 0;
+			for (const auto& room : mRooms)
+			{
+				if (room->GetParts() == Room::Parts::Start)
+					++startRoomCount;
+			}
+
+			if (mGenerateParameter.GetStartLocationPolicy() == StartLocationPolicy::UseMultiStart)
+			{
+				const uint8_t expectedStartRoomCount = mGenerateParameter.GetStartRoomCount();
+				if (startRoomCount != expectedStartRoomCount)
+				{
+					DUNGEON_GENERATOR_WARNING(TEXT("UseMultiStart expected %d start rooms but found %d."), expectedStartRoomCount, startRoomCount);
+				}
+			}
+			else
+			{
+				if (startRoomCount != 1)
+				{
+					DUNGEON_GENERATOR_WARNING(TEXT("Expected a single start room for this StartLocationPolicy, but found %d."), startRoomCount);
+				}
+			}
+		}
 
 		// ゴール位置を記録
 		mGoalPoint = minimumSpanningTree.GetGoalPoint();

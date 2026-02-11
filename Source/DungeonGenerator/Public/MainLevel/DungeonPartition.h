@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "MainLevel/DungeonComponentActivatorComponent.h"
@@ -15,23 +15,23 @@ All Rights Reserved.
 class ADungeonMainLevelScriptActor;
 
 /**
-This class represents the area delimited by the dungeon.
-ActivateDuneComponentActivatorComponent if it is a partition around a player.
-If the partition is away from the player, deactivate it.
-
-ダンジョンを区切った領域を表すクラスです。
-プレイヤー周辺のパーティションならDungeonComponentActivatorComponentをアクティブ化します。
-プレイヤーから離れているパーティションなら非アクティブ化します。
-*/
+ * This class represents the area delimited by the dungeon.
+ * ActivateDuneComponentActivatorComponent if it is a partition around a player.
+ * If the partition is away from the player, deactivate it.
+ *
+ * ダンジョンを区切った領域を表すクラスです。
+ * プレイヤー周辺のパーティションならDungeonComponentActivatorComponentをアクティブ化します。
+ * プレイヤーから離れているパーティションなら非アクティブ化します。
+ */
 UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOR_API UDungeonPartition : public UObject
 {
 	GENERATED_BODY()
 
 	/**
-	Time from inactivity target to deactivation.
-	非アクティブ化対象になってから実際に非アクティブ化するまでの秒数。
-	*/
+	 * Time from inactivity target to deactivation.
+	 * 非アクティブ化対象になってから実際に非アクティブ化するまでの秒数。
+	 */
 	static constexpr float InactivateRemainTimer = 3.f;
 
 public:

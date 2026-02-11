@@ -1,10 +1,10 @@
 /**
-ボクセルなどに利用するグリッド情報のヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ボクセルなどに利用するグリッド情報のヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "../Helper/Direction.h"
@@ -280,9 +280,9 @@ namespace dungeon
 		bool IsNoFloorMeshGeneration() const noexcept;
 
 		/**
-		天井のメッシュ生成禁止か取得します
-		@return		trueならメッシュ生成禁止
-		*/
+		 * 天井のメッシュ生成禁止か取得します
+		 * @return		trueならメッシュ生成禁止
+		 */
 		bool IsNoRoofMeshGeneration() const noexcept;
 
 		/**

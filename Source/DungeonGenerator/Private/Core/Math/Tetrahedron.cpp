@@ -1,11 +1,11 @@
 /**
-四面体 ソースファイル
-
-@cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 四面体 ソースファイル
+ *
+ * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Tetrahedron.h"
 #include "Math.h"
@@ -14,8 +14,8 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
-	他の四面体と共有点を持つか
-	*/
+	 * 他の四面体と共有点を持つか
+	 */
 	bool Tetrahedron::HasCommonPoints(const Tetrahedron& t) const noexcept
 	{
 		return std::any_of(mPoints.begin(), mPoints.end(), [&t](const auto& sp)

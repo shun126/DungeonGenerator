@@ -1,12 +1,12 @@
 /**
-@author		Shun Moriya
-@copyright	2024- Shun Moriya
-All Rights Reserved.
-
-ADungeonGeneratedActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
-ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配置不可能(NotPlaceable)にするため、
-継承元であるADungeonGenerateBaseをAbstract指定して共通機能をまとめています。
-*/
+ * @author		Shun Moriya
+ * @copyright	2024- Shun Moriya
+ * All Rights Reserved.
+ *
+ * ADungeonGeneratedActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
+ * ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配置不可能(NotPlaceable)にするため、
+ * 継承元であるADungeonGenerateBaseをAbstract指定して共通機能をまとめています。
+ */
 
 #include "DungeonGenerateBase.h"
 
@@ -20,6 +20,7 @@ ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配�
 #include "Core/Helper/Stopwatch.h"
 #include "Core/Math/Math.h"
 #include "Core/Math/Random.h"
+#include "Core/RoomGeneration/Room.h"
 #include "Core/Voxelization/Voxel.h"
 #include "MainLevel/DungeonComponentActivatorComponent.h"
 #include "Mission/DungeonRoomProps.h"
@@ -426,7 +427,7 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 #endif
 
 	DUNGEON_GENERATOR_LOG(TEXT("version '%s', license '%s', uuid '%s', commit '%s', HasAuthority '%s'"),
-		TEXT(DUNGENERATOR_PLUGIN_VERSION_NAME),
+		TEXT(DUNGEON_GENERATOR_PLUGIN_VERSION_NAME),
 		TEXT(JENKINS_LICENSE),
 		TEXT(JENKINS_UUID),
 		TEXT(JENKINS_GIT_COMMIT),
@@ -477,11 +478,33 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 		generateParameter.SetAisleComplexity(mParameter->GetAisleComplexity());
 		generateParameter.SetGenerateSlopeInRoom(mParameter->GenerateSlopeInRoom);
 		generateParameter.SetGenerateStructuralColumn(mParameter->GenerateStructuralColumn);
+		EDungeonStartLocationPolicy startLocationPolicy = mParameter->StartLocationPolicy;
+		if (mParameter->IsUseMissionGraph() == false &&
+			(startLocationPolicy == EDungeonStartLocationPolicy::UseCentralPoint || startLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart))
+		{
+			DUNGEON_GENERATOR_WARNING(TEXT("StartLocationPolicy requires UseMissionGraph disabled. Falling back to UseSouthernMost."));
+			startLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
+		}
+		generateParameter.SetStartLocationPolicy(static_cast<dungeon::StartLocationPolicy>(startLocationPolicy));
+		uint8 startRoomCount = 1;
+		if (startLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart)
+		{
+			TArray<APlayerStart*> startPoints;
+			CollectPlayerStartExceptPlayerStartPIE(startPoints);
+			if (startPoints.IsEmpty())
+			{
+				DUNGEON_GENERATOR_WARNING(TEXT("UseMultiStart requires at least one PlayerStart. Falling back to a single start room."));
+			}
+			startRoomCount = static_cast<uint8>(FMath::Clamp(startPoints.Num(), 1, 255));
+		}
+		generateParameter.SetStartRoomCount(startRoomCount);
+
 
 		if (mParameter->MergeRooms)
 		{
 			generateParameter.SetHorizontalRoomMargin(0);
 			generateParameter.SetVerticalRoomMargin(0);
+			generateParameter.SetExpansionPolicy(dungeon::ExpansionPolicy::ExpandHorizontally);
 			generateParameter.SetNumberOfCandidateFloors(0);
 			generateParameter.SetMissionGraph(false);
 			generateParameter.SetAisleComplexity(0);
@@ -489,18 +512,19 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 		else
 		{
 			generateParameter.SetHorizontalRoomMargin(mParameter->RoomMargin);
-			if (mParameter->Flat)
+			if (mParameter->ExpansionPolicy == EDungeonExpansionPolicy::Flat)
 			{
 				generateParameter.SetVerticalRoomMargin(0);
+				generateParameter.SetExpansionPolicy(dungeon::ExpansionPolicy::Flat);
 				generateParameter.SetNumberOfCandidateFloors(0);
 			}
 			else
 			{
 				generateParameter.SetVerticalRoomMargin(mParameter->VerticalRoomMargin);
+				generateParameter.SetExpansionPolicy(static_cast<dungeon::ExpansionPolicy>(mParameter->ExpansionPolicy));
 				generateParameter.SetNumberOfCandidateFloors(mParameter->NumberOfCandidateFloors);
 			}
 		}
-
 
 		check(generateParameter.GetMinRoomWidth() <= generateParameter.GetMaxRoomWidth());
 		check(generateParameter.GetMinRoomDepth() <= generateParameter.GetMaxRoomDepth());
@@ -1614,6 +1638,9 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	if (IsValid(mParameter) == false)
 		return;
 
+	if (mParameter->StartLocationPolicy == EDungeonStartLocationPolicy::NoAdjustment)
+		return;
+
 	// PlayerStartをスタート位置へ移動しないならここで終了します
 	if (mParameter->IsMovePlayerStartToStartingPoint() == false)
 		return;
@@ -1621,13 +1648,48 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	// Calculate the position to shift APlayerStart
 	const double halfHorizontalSize = mParameter->GetGridSize().HorizontalSize / 2;
 	const double halfVerticalSize = mParameter->GetGridSize().VerticalSize / 2;
-	const auto& startRoomBoundingBox = GetStartBoundingBox();
-	const auto& startRoomCenterLocation = startRoomBoundingBox.GetCenter();
-
-	for (int32 index = 0; index < startPoints.Num(); ++index)
+	TArray<FBox> startRoomBoundingBoxes;
+	if (mParameter->StartLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart)
 	{
+		if (mGenerator)
+		{
+			mGenerator->ForEach([this, &startRoomBoundingBoxes](const std::shared_ptr<const dungeon::Room>& room)
+				{
+					if (room->GetParts() != dungeon::Room::Parts::Start)
+						return;
+
+					FBox boundingBox(
+						room->GetMin() * mParameter->GetGridSize().To3D(),
+						room->GetMax() * mParameter->GetGridSize().To3D()
+					);
+					startRoomBoundingBoxes.Add(boundingBox.ShiftBy(GetActorLocation()));
+				}
+			);
+		}
+
+		if (startRoomBoundingBoxes.IsEmpty())
+		{
+			startRoomBoundingBoxes.Add(GetStartBoundingBox());
+		}
+	}
+	else
+	{
+		startRoomBoundingBoxes.Add(GetStartBoundingBox());
+	}
+
+	if (mParameter->StartLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart &&
+		startRoomBoundingBoxes.Num() != startPoints.Num())
+	{
+		DUNGEON_GENERATOR_WARNING(TEXT("Start room count (%d) does not match PlayerStart count (%d)."),
+			startRoomBoundingBoxes.Num(),
+			startPoints.Num());
+	}
+
+	auto movePlayerStartToRoom = [&](APlayerStart* playerStart, const FBox& roomBoundingBox)
+	{
+		const auto& startRoomCenterLocation = roomBoundingBox.GetCenter();
+
 		// APlayerStart cannot use GetSimpleCollisionCylinder because collision is disabled.
-		APlayerStart* playerStart = startPoints[index];
 		if (USceneComponent* rootComponent = playerStart->GetRootComponent())
 		{
 			// Create a small margin to avoid grounding.
@@ -1643,9 +1705,9 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 			FHitResult hitResult;
 			do {
 				const FVector location(
-					FMath::RandRange(startRoomBoundingBox.Min.X + halfHorizontalSize, startRoomBoundingBox.Max.X - halfHorizontalSize),
-					FMath::RandRange(startRoomBoundingBox.Min.Y + halfHorizontalSize, startRoomBoundingBox.Max.Y - halfHorizontalSize),
-					startRoomBoundingBox.Min.Z
+					FMath::RandRange(roomBoundingBox.Min.X + halfHorizontalSize, roomBoundingBox.Max.X - halfHorizontalSize),
+					FMath::RandRange(roomBoundingBox.Min.Y + halfHorizontalSize, roomBoundingBox.Max.Y - halfHorizontalSize),
+					roomBoundingBox.Min.Z
 				);
 
 				const FVector startLocation = location + FVector(0, 0, halfVerticalSize);
@@ -1675,6 +1737,15 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 		{
 			DUNGEON_GENERATOR_ERROR(TEXT("PlayerStart's RootComponent was not set and could not be moved (%s)"), *playerStart->GetName());
 		}
+	};
+
+	for (int32 index = 0; index < startPoints.Num(); ++index)
+	{
+		APlayerStart* playerStart = startPoints[index];
+		const int32 boundingBoxIndex = startRoomBoundingBoxes.Num() == 0
+			? 0
+			: (index % startRoomBoundingBoxes.Num());
+		movePlayerStartToRoom(playerStart, startRoomBoundingBoxes[boundingBoxIndex]);
 	}
 }
 

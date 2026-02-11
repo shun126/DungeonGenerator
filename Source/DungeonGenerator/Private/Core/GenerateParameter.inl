@@ -1,10 +1,10 @@
 /**
-ダンジョン生成パラメータに関するヘッダーファイル
-
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * ダンジョン生成パラメータに関するヘッダーファイル
+ *
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "Math/Random.h"
@@ -16,6 +16,36 @@ namespace dungeon
 	inline GenerateParameter::GenerateParameter()
 		: mRandom(std::make_shared<Random>())
 	{
+	}
+
+	inline ExpansionPolicy GenerateParameter::GetExpansionPolicy() const noexcept
+	{
+		return mDungeonExpansionPolicy;
+	}
+
+	inline void GenerateParameter::SetExpansionPolicy(const ExpansionPolicy policy) noexcept
+	{
+		mDungeonExpansionPolicy = policy;
+	}
+
+	inline StartLocationPolicy GenerateParameter::GetStartLocationPolicy() const noexcept
+	{
+		return mStartLocationPolicy;
+	}
+
+	inline void GenerateParameter::SetStartLocationPolicy(const StartLocationPolicy startLocationPolicy) noexcept
+	{
+		mStartLocationPolicy = startLocationPolicy;
+	}
+
+	inline uint8_t GenerateParameter::GetStartRoomCount() const noexcept
+	{
+		return mStartRoomCount;
+	}
+
+	inline void GenerateParameter::SetStartRoomCount(const uint8_t count) noexcept
+	{
+		mStartRoomCount = std::max<uint8_t>(count, 1);
 	}
 
 	inline uint8_t GenerateParameter::GetNumberOfCandidateFloors() const noexcept

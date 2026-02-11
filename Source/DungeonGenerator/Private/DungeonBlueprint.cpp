@@ -1,8 +1,8 @@
 /**
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "DungeonBlueprint.h"
 #include "PluginInformation.h"
@@ -14,19 +14,19 @@ All Rights Reserved.
 
 const FString& UDungeonBlueprint::GetPluginVersion() noexcept
 {
-	static const FString text(TEXT(DUNGENERATOR_PLUGIN_VERSION_NAME));
+	static const FString text(TEXT(DUNGEON_GENERATOR_PLUGIN_VERSION_NAME));
 	return text;
 }
 
 const FString& UDungeonBlueprint::GetDocumentURL() noexcept
 {
-	static const FString text(TEXT(DUNGENERATOR_PLUGIN_DOCS_URL));
+	static const FString text(TEXT(DUNGEON_GENERATOR_PLUGIN_DOCS_URL));
 	return text;
 }
 
 const FString& UDungeonBlueprint::GetSupportURL() noexcept
 {
-	static const FString text(TEXT(DUNGENERATOR_PLUGIN_SUPPORT_URL));
+	static const FString text(TEXT(DUNGEON_GENERATOR_PLUGIN_SUPPORT_URL));
 	return text;
 }
 

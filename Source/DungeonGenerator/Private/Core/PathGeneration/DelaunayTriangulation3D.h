@@ -1,11 +1,11 @@
 /**
-三次元ドロネー三角形分割に関するヘッダーファイル
-
-@cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * 三次元ドロネー三角形分割に関するヘッダーファイル
+ *
+ * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
+ * @author		Shun Moriya
+ * @copyright	2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #pragma once
 #include "../Math/Tetrahedron.h"
@@ -16,10 +16,10 @@ All Rights Reserved.
 namespace dungeon
 {
 	/**
-	三次元ドロネー三角形分割クラス
-
-	コンストラクタに与えられた座標を元に三角形を生成します
-	*/
+	 * 三次元ドロネー三角形分割クラス
+	 *
+	 * コンストラクタに与えられた座標を元に三角形を生成します
+	 */
 	class DelaunayTriangulation3D
 	{
 		using TeraType = std::pair<Tetrahedron, bool>;
@@ -28,19 +28,19 @@ namespace dungeon
 
 	public:
 		/**
-		コンストラクタ
-		与えられた点のリストをもとにDelaunay分割を行う
-		*/
+		 * コンストラクタ
+		 * 与えられた点のリストをもとにDelaunay分割を行う
+		 */
 		explicit DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept;
 
 		/**
-		デストラクタ
-		*/
+		 * デストラクタ
+		 */
 		virtual ~DelaunayTriangulation3D() = default;
 
 		/**
-		三角形を更新します
-		*/
+		 * 三角形を更新します
+		 */
 		template<typename Function>
 		void ForEach(Function&& function) noexcept
 		{
@@ -51,8 +51,8 @@ namespace dungeon
 		}
 
 		/**
-		三角形を更新します
-		*/
+		 * 三角形を更新します
+		 */
 		template<typename Function>
 		void ForEach(Function&& function) const noexcept
 		{
@@ -63,9 +63,9 @@ namespace dungeon
 		}
 
 		/**
-		有効な分割か調べます
-		@return		有効ならばtrue
-		*/
+		 * 有効な分割か調べます
+		 * @return		有効ならばtrue
+		 */
 		bool IsValid() const noexcept
 		{
 			return mTriangles.empty() == false;
