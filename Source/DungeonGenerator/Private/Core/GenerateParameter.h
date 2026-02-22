@@ -30,6 +30,17 @@ namespace dungeon
 	};
 
 	/**
+	 * 通路の天井高ポリシー
+	 * EDungeonAisleCeilingHeightPolicyと同じ意味にして下さい
+	 */
+	enum class AisleCeilingHeightPolicy : uint8_t
+	{
+		TwoGrids,
+		OneGrid,
+		Random,
+	};
+
+	/**
 	 * デフォルトダンジョン生成パラメータクラス
 	 */
 	struct GenerateParameter final
@@ -200,6 +211,9 @@ namespace dungeon
 		void SetAisleComplexity(const uint8_t complexity) noexcept;
 		bool IsAisleComplexity() const noexcept;
 
+		AisleCeilingHeightPolicy GetAisleCeilingHeightPolicy() const noexcept;
+		void SetAisleCeilingHeightPolicy(const AisleCeilingHeightPolicy policy) noexcept;
+
 		/**
 		 * 部屋の中にスロープを生成する
 		 */
@@ -211,6 +225,8 @@ namespace dungeon
 		 */
 		bool IsGenerateStructuralColumn() const noexcept;
 		void SetGenerateStructuralColumn(const bool generateStructuralColumn) noexcept;
+		uint8_t GetSkylightChancePercent() const noexcept;
+		void SetSkylightChancePercent(const uint8_t skylightChancePercent) noexcept;
 
 		/*
 		スタート部屋のサイズ
@@ -282,6 +298,8 @@ namespace dungeon
 		 */
 		uint8_t mAisleComplexity = 0;
 
+		AisleCeilingHeightPolicy mAisleCeilingHeightPolicy = AisleCeilingHeightPolicy::Random;
+
 		/**
 		 * 部屋の中にスロープを生成する
 		 */
@@ -291,6 +309,7 @@ namespace dungeon
 		 * 部屋の中に構造柱を生成する
 		 */
 		bool mGenerateStructuralColumn = true;
+		uint8_t mSkylightChancePercent = 8;
 
 		/**
 		 * 部屋の最小の幅

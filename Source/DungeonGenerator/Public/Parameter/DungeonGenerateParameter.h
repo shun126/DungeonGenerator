@@ -17,6 +17,8 @@
 class UDungeonAisleGridMap;
 class UDungeonRandom;
 class UDungeonRoomSensorDatabase;
+class UDungeonPartsSelector;
+struct FPropertyChangedEvent;
 
 /**
  * Dungeon expansion policy
@@ -25,10 +27,10 @@ class UDungeonRoomSensorDatabase;
 UENUM()
 enum class EDungeonExpansionPolicy : uint8
 {
-	Flat,
-	ExpandHorizontally,
-	ExpandVertically,
-	ExpandAnyDirection,
+	Flat UMETA(DisplayName = "Flat", ToolTip = "Keep generation on a flat layout."),
+	ExpandHorizontally UMETA(DisplayName = "Expand Horizontally", ToolTip = "Prefer expanding rooms and aisles horizontally."),
+	ExpandVertically UMETA(DisplayName = "Expand Vertically", ToolTip = "Prefer expanding rooms and aisles vertically."),
+	ExpandAnyDirection UMETA(DisplayName = "Expand Any Direction", ToolTip = "Allow expansion in both horizontal and vertical directions."),
 };
 
 /**
@@ -39,12 +41,12 @@ enum class EDungeonExpansionPolicy : uint8
 UENUM()
 enum class EDungeonStartLocationPolicy : uint8
 {
-	NoAdjustment,
-	UseSouthernMost,
-	UseHighestPoint,
-	UseLowestPoint,
-	UseCentralPoint,
-	UseMultiStart,
+	NoAdjustment UMETA(DisplayName = "No Adjustment", ToolTip = "Do not adjust the generated start location."),
+	UseSouthernMost UMETA(DisplayName = "Use Southernmost", ToolTip = "Use the southernmost candidate as the start location."),
+	UseHighestPoint UMETA(DisplayName = "Use Highest Point", ToolTip = "Use the highest candidate as the start location."),
+	UseLowestPoint UMETA(DisplayName = "Use Lowest Point", ToolTip = "Use the lowest candidate as the start location."),
+	UseCentralPoint UMETA(DisplayName = "Use Central Point", ToolTip = "Use the central candidate as the start location."),
+	UseMultiStart UMETA(DisplayName = "Use Multi Start", ToolTip = "Use multiple start locations."),
 };
 
 /**
@@ -54,12 +56,26 @@ enum class EDungeonStartLocationPolicy : uint8
 UENUM()
 enum class EFrequencyOfGeneration : uint8
 {
-	Normally,
-	Sometime,
-	Occasionally,
-	Rarely,
-	AlmostNever,
-	Never,
+	Normally UMETA(DisplayName = "Normally", ToolTip = "Generate with normal frequency."),
+	Sometime UMETA(DisplayName = "Sometimes", ToolTip = "Generate occasionally but less than normal."),
+	Occasionally UMETA(DisplayName = "Occasionally", ToolTip = "Generate with a moderate low frequency."),
+	Rarely UMETA(DisplayName = "Rarely", ToolTip = "Generate infrequently."),
+	AlmostNever UMETA(DisplayName = "Almost Never", ToolTip = "Generate only in exceptional cases."),
+	Never UMETA(DisplayName = "Never", ToolTip = "Never generate."),
+};
+
+/**
+ * Aisle ceiling height policy
+ *
+ * 通路の天井高ポリシー
+ */
+UENUM()
+enum class EDungeonAisleCeilingHeightPolicy : uint8
+{
+	TwoGrids UMETA(DisplayName = "2 Grids", ToolTip = "Always use a two-grid ceiling height for aisles."),
+	OneGrid UMETA(DisplayName = "Always 1 Grid", ToolTip = "Always use a one-grid ceiling height for aisles."),
+	Random UMETA(DisplayName = "Random", ToolTip = "Randomly choose one-grid or two-grid ceiling height for aisles."),
+	SIZE UMETA(Hidden, ToolTip = "Internal sentinel value.")
 };
 
 /**
@@ -153,6 +169,11 @@ public:
 	bool IsAisleComplexity() const noexcept;
 
 	/**
+	 * 通路の天井高ポリシーを取得します
+	 */
+	EDungeonAisleCeilingHeightPolicy GetAisleCeilingHeightPolicy() const noexcept;
+
+	/**
 	 * 燭台アクターの生成頻度を取得します
 	 */
 	EFrequencyOfGeneration GetFrequencyOfTorchlightGeneration() const noexcept;
@@ -188,6 +209,7 @@ public:
 	 * グリッド座標系からワールド座標系への変換
 	 */
 	FIntVector ToGrid(const FVector& location) const;
+
 
 	/**
 	 * ランダムなダンジョンのパラメータを生成します
@@ -230,19 +252,21 @@ private:
 	FString GetJsonDefaultDirectory() const;
 #endif
 
-	static const FDungeonMeshSet* SelectParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
+	const FDungeonMeshSet* SelectMeshSet(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
 
 	const UDungeonMeshSetDatabase* GetDungeonRoomMeshPartsDatabase() const noexcept;
 	const UDungeonMeshSetDatabase* GetDungeonAisleMeshPartsDatabase() const noexcept;
-	static const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
-	static const FDungeonMeshParts* SelectCatwalkParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
-	static const FDungeonMeshParts* SelectWallPartsByGrid(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
+	static FMeshSetQuery MakeMeshSetQuery(const size_t gridIndex, const dungeon::Grid& grid);
+	const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectCatwalkParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectWallPartsByGrid(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 	static const FDungeonMeshParts* SelectWallPartsByFace(const FDungeonMeshSet* dungeonMeshSet, const FIntVector& gridLocation, const dungeon::Direction& direction);
-	static const FDungeonMeshPartsWithDirection* SelectRoofParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
-	static const FDungeonMeshParts* SelectSlopeParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random);
+	const FDungeonMeshPartsWithDirection* SelectRoofParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectSlopeParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
 	const FDungeonMeshParts* SelectPillarParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
 	const FDungeonRandomActorParts* SelectTorchParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
+	const FDungeonRandomActorParts* SelectChandelierParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 	const FDungeonDoorActorParts* SelectDoorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
 
 	void EachFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
@@ -280,6 +304,9 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool IsSupportedForNetworking() const override;
 	virtual void PostLoad() override;
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 protected:
 	/**
@@ -437,6 +464,14 @@ protected:
 	uint8 AisleComplexity = 5;
 
 	/**
+	 * Aisle ceiling height policy
+	 *
+	 * 通路の天井高ポリシー
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
+	EDungeonAisleCeilingHeightPolicy AisleCeilingHeightPolicy = EDungeonAisleCeilingHeightPolicy::Random;
+
+	/**
 	 * Generate slopes in the room.
 	 * May be enabled by future forcing.
 	 *
@@ -455,6 +490,14 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
 	bool GenerateStructuralColumn = false;
+
+	/**
+	 * Probability of generating a skylight voxel in a room (percent)
+	 *
+	 * 部屋内でスカイライトボクセルが生成される確率（パーセント）
+	 */
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "100"))
+	uint8 SkylightChancePercent = 8;
 
 	/**
 	 * Horizontal voxel size
@@ -493,7 +536,10 @@ protected:
 	 *
 	 * 柱のパーツを生成する方法
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Pillar")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Pillar")
+	EDungeonSelectionPolicy PillarPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
+
+	UPROPERTY()
 	EDungeonPartsSelectionMethod PillarPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
@@ -501,7 +547,7 @@ protected:
 	 *
 	 * 柱のメッシュパーツデータベース
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Pillar")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Pillar")
 	TArray<FDungeonMeshParts> PillarParts;
 
 	/**
@@ -509,7 +555,10 @@ protected:
 	 *
 	 * 燭台のパーツを生成する方法
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Torch")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Torch")
+	EDungeonSelectionPolicy TorchPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
+
+	UPROPERTY()
 	EDungeonPartsSelectionMethod TorchPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
@@ -517,7 +566,7 @@ protected:
 	 *
 	 * 燭台の生成頻度
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Torch")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Torch")
 	EFrequencyOfGeneration FrequencyOfTorchlightGeneration = EFrequencyOfGeneration::Rarely;
 
 	/**
@@ -525,23 +574,30 @@ protected:
 	 *
 	 * 燭台のメッシュパーツデータベース
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Torch")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Torch")
 	TArray<FDungeonRandomActorParts> TorchParts;
+
 
 	/**
 	 * How to generate door parts
 	 *
 	 * ドアのパーツを生成する方法
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Door")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Door")
+	EDungeonSelectionPolicy DoorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
+
+	UPROPERTY()
 	EDungeonPartsSelectionMethod DoorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	UPROPERTY()
+	bool bFixtureSelectionPoliciesMigrated = false;
 
 	/**
 	 * Door Parts
 	 *
 	 * ドアのメッシュパーツデータベース
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Door")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Door")
 	TArray<FDungeonDoorActorParts> DoorParts;
 
 
@@ -577,6 +633,7 @@ protected:
 
 	friend class ADungeonGenerateBase;
 	friend class ADungeonGenerateActor;
+	friend class FDungeonParameterValidator;
 };
 
 inline int32 UDungeonGenerateParameter::GetRandomSeed() const
@@ -647,6 +704,11 @@ inline uint8 UDungeonGenerateParameter::GetAisleComplexity() const noexcept
 inline bool UDungeonGenerateParameter::IsAisleComplexity() const noexcept
 {
 	return GetAisleComplexity() > 0;
+}
+
+inline EDungeonAisleCeilingHeightPolicy UDungeonGenerateParameter::GetAisleCeilingHeightPolicy() const noexcept
+{
+	return AisleCeilingHeightPolicy;
 }
 
 inline EFrequencyOfGeneration UDungeonGenerateParameter::GetFrequencyOfTorchlightGeneration() const noexcept

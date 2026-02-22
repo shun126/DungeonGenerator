@@ -9,6 +9,8 @@
 #include <Modules/ModuleManager.h>
 #include <Widgets/Docking/SDockTab.h>
 #include <Widgets/Input/SEditableTextBox.h>
+#include <Widgets/Views/SListView.h>
+#include "Validation/DungeonValidationIssue.h"
 
 // Forward declaration
 class ADungeonGeneratedActor;
@@ -42,6 +44,14 @@ private:
 
 	FString GetObjectPath() const;
 	void SetAssetData(const FAssetData& assetData);
+	void UpdateGenerateButtonEnabled() const;
+	void RunValidation(const bool bDeepCheck);
+	bool HasValidationErrors() const;
+	FReply OnClickedVerifyButton();
+	FReply OnClickedCopyDiagnosticsButton() const;
+	TSharedRef<ITableRow> OnGenerateValidationRow(TSharedPtr<FDungeonValidationIssue> item, const TSharedRef<STableViewBase>& ownerTable);
+	static FString FormatSeverity(const EDungeonValidationSeverity severity);
+	FString FormatIssuesForClipboard() const;
 
 	FReply OnClickedGenerateButton();
 	FReply OnClickedClearButton();
@@ -57,4 +67,8 @@ private:
 	TSharedPtr<FUICommandList> PluginCommands;
 	TSharedPtr<SEditableTextBox> mRandomSeedValue;
 	TSharedPtr<SButton> mGenerateDungeonButton;
+	TSharedPtr<SButton> mVerifyButton;
+	TSharedPtr<SButton> mCopyDiagnosticsButton;
+	TSharedPtr<SListView<TSharedPtr<FDungeonValidationIssue>>> mValidationListView;
+	TArray<TSharedPtr<FDungeonValidationIssue>> mValidationIssueItems;
 };

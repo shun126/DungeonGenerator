@@ -27,9 +27,9 @@ namespace dungeon
 UENUM()
 enum class EDungeonMeshGenerationMethod : uint8
 {
-	StaticMesh,
-	InstancedStaticMesh,
-	HierarchicalInstancedStaticMesh
+	StaticMesh UMETA(DisplayName = "Static Mesh", ToolTip = "Spawn individual static mesh components."),
+	InstancedStaticMesh UMETA(DisplayName = "Instanced Static Mesh", ToolTip = "Use instanced static mesh components."),
+	HierarchicalInstancedStaticMesh UMETA(DisplayName = "Hierarchical Instanced Static Mesh", ToolTip = "Use hierarchical instanced static mesh components.")
 };
 
 /**

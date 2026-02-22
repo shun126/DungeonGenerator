@@ -6,8 +6,10 @@
 
 #include "Parameter/DungeonMeshSet.h"
 #include "Parameter/DungeonActorParts.h"
-#include "Parameter/DungeonPartsSelectionMethod.h"
+#include "Parameter/DungeonPartsSelector.h"
 #include "Parameter/DungeonRandomActorParts.h"
+#include "Parameter/DungeonSelectionPolicyUtility.h"
+#include "Core/Debug/Debug.h"
 #include "Core/Helper/Direction.h"
 #include "Core/Math/Random.h"
 #include "Core/Voxelization/Grid.h"
@@ -17,34 +19,80 @@
 #endif
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-int32 FDungeonMeshSet::SelectDungeonMeshPartsIndexByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonPartsSelectionMethod partsSelectionMethod)
+const FDungeonMeshPartsWithDirection* FDungeonMeshSet::SelectFloorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const
 {
-	switch (partsSelectionMethod)
+	return SelectPartsByGrid(gridIndex, grid, random, FloorParts, FloorPartsSelectionPolicy);
+}
+
+const FDungeonMeshParts* FDungeonMeshSet::SelectWallPartsByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const
+{
+	return SelectPartsByGrid(gridIndex, grid, random, WallParts, WallPartsSelectionPolicy);
+}
+
+const FDungeonMeshPartsWithDirection* FDungeonMeshSet::SelectRoofParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const
+{
+	return SelectPartsByGrid(gridIndex, grid, random, RoofParts, RoofPartsSelectionPolicy);
+}
+
+const FDungeonMeshParts* FDungeonMeshSet::SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const
+{
+	return SelectPartsByGrid(gridIndex, grid, random, SlopeParts, SlopePartsSelectionPolicy);
+}
+
+const FDungeonMeshParts* FDungeonMeshSet::SelectCatwalkParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const
+{
+	return SelectPartsByGrid(gridIndex, grid, random, CatwalkParts, CatwalkPartsSelectionPolicy);
+}
+
+const FDungeonRandomActorParts* FDungeonMeshSet::SelectChandelierParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const
+{
+	return SelectRandomActorParts(gridIndex, grid, random, ChandelierParts, ChandelierPartsSelectionPolicy);
+}
+
+void FDungeonMeshSet::MigrateSelectionPolicies()
+{
+	if (!bSelectionPoliciesMigrated)
 	{
-	case EDungeonPartsSelectionMethod::Direction:
+		FloorPartsSelectionPolicy = dungeon::selection::ToPolicy(FloorPartsSelectionMethod);
+		WallPartsSelectionPolicy = dungeon::selection::ToPolicy(WallPartsSelectionMethod);
+		RoofPartsSelectionPolicy = dungeon::selection::ToPolicy(RoofPartsSelectionMethod);
+		SlopePartsSelectionPolicy = dungeon::selection::ToPolicy(SloopPartsSelectionMethod);
+		ChandelierPartsSelectionPolicy = dungeon::selection::ToPolicy(ChandelierPartsSelectionMethod);
+		CatwalkPartsSelectionPolicy = dungeon::selection::ToPolicy(CatwalkPartsSelectionMethod);
+	}
+
+	FloorPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(FloorPartsSelectionPolicy);
+	FloorPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(FloorPartsSelectionPolicy);
+
+	WallPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(WallPartsSelectionPolicy);
+	WallPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(WallPartsSelectionPolicy);
+
+	RoofPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(RoofPartsSelectionPolicy);
+	RoofPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(RoofPartsSelectionPolicy);
+
+	SlopePartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(SlopePartsSelectionPolicy);
+	SloopPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(SlopePartsSelectionPolicy);
+
+	ChandelierPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(ChandelierPartsSelectionPolicy);
+	ChandelierPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(ChandelierPartsSelectionPolicy);
+
+	CatwalkPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(CatwalkPartsSelectionPolicy);
+	CatwalkPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(CatwalkPartsSelectionPolicy);
+
+	bSelectionPoliciesMigrated = true;
+}
+
+int32 FDungeonMeshSet::SelectDungeonMeshPartsIndexByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonSelectionPolicy selectionPolicy)
+{
+	switch (dungeon::selection::SanitizePartsPolicy(selectionPolicy))
+	{
+	case EDungeonSelectionPolicy::Direction:
 		return grid.GetDirection().Get() % size;
 
-	case EDungeonPartsSelectionMethod::Random:
-		return random->Get<uint32_t>(size);
+	case EDungeonSelectionPolicy::Random:
+		return (random != nullptr) ? static_cast<int32>(random->Get<uint32_t>(size)) : static_cast<int32>(gridIndex % size);
 
-	case EDungeonPartsSelectionMethod::GridIndex:
+	case EDungeonSelectionPolicy::GridIndex:
 	default:
 		return gridIndex % size;
 	}
@@ -58,33 +106,34 @@ int32 FDungeonMeshSet::SelectDungeonMeshPartsIndexByFace(const FIntVector& gridL
 	return (gridLocation.Y + offset) % size;
 }
 
-// aka: SelectParts, SelectRandomActorParts
-FDungeonActorParts* FDungeonMeshSet::SelectActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonActorParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod)
+FDungeonActorParts* FDungeonMeshSet::SelectActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonActorParts>& parts, const EDungeonSelectionPolicy selectionPolicy)
 {
 	const int32 size = parts.Num();
 	if (size <= 0)
 		return nullptr;
 
-	const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, partsSelectionMethod);
+	const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, selectionPolicy);
 	FDungeonActorParts* actorParts = const_cast<FDungeonActorParts*>(&parts[index]);
 	return IsValid(actorParts->ActorClass) ? actorParts : nullptr;
 }
 
-// aka: SelectParts, SelectActorParts
-FDungeonRandomActorParts* FDungeonMeshSet::SelectRandomActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonRandomActorParts>& parts, const EDungeonPartsSelectionMethod partsSelectionMethod)
+FDungeonRandomActorParts* FDungeonMeshSet::SelectRandomActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonRandomActorParts>& parts, const EDungeonSelectionPolicy selectionPolicy)
 {
 	const int32 size = parts.Num();
 	if (size <= 0)
 		return nullptr;
 
-	const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, partsSelectionMethod);
+	const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, selectionPolicy);
 	FDungeonRandomActorParts* actorParts = const_cast<FDungeonRandomActorParts*>(&parts[index]);
 	if (!IsValid(actorParts->ActorClass))
 		return nullptr;
 
-	const float value = random->Get<float>();
-	if (value > actorParts->Frequency)
-		return nullptr;
+	if (random != nullptr)
+	{
+		const float value = random->Get<float>();
+		if (value > actorParts->Frequency)
+			return nullptr;
+	}
 
 	return actorParts;
 }
@@ -137,7 +186,7 @@ FString FDungeonMeshSet::DumpToJson(const uint32 indent) const
 	}
 	json += TEXT("\n");
 	json += dungeon::Indent(indent + 1) + TEXT("]\n");
-	json += dungeon::Indent(indent) + TEXT("}");
+	json += dungeon::Indent(indent) + TEXT("},\n");
 
 	json += dungeon::Indent(indent) + TEXT("\"SlopeParts\":{\n");
 	json += dungeon::Indent(indent + 1) + TEXT("\"SloopPartsSelectionMethod\":\"") + UEnum::GetValueAsString(SloopPartsSelectionMethod) + TEXT("\",\n");
@@ -152,6 +201,28 @@ FString FDungeonMeshSet::DumpToJson(const uint32 indent) const
 	}
 	json += TEXT("\n");
 	json += dungeon::Indent(indent + 1) + TEXT("]\n");
+	json += dungeon::Indent(indent) + TEXT("}");
+	json += TEXT("\n");
+	json += dungeon::Indent(indent) + TEXT("},\n");
+
+	json += dungeon::Indent(indent) + TEXT("\"ChandelierParts\":{\n");
+	json += dungeon::Indent(indent + 1) + TEXT("\"ChandelierPartsSelectionMethod\":\"") + UEnum::GetValueAsString(ChandelierPartsSelectionMethod) + TEXT("\",\n");
+	json += dungeon::Indent(indent + 1) + TEXT("\"Parts\":[\n");
+	for (int32 i = 0; i < ChandelierParts.Num(); ++i)
+	{
+		if (i != 0)
+			json += TEXT(",\n");
+		json += dungeon::Indent(indent + 2) + TEXT("{\n");
+		json += ChandelierParts[i].DumpToJson(indent + 3) + TEXT("\n");
+		json += dungeon::Indent(indent + 2) + TEXT("}");
+	}
+	json += TEXT("\n");
+	json += dungeon::Indent(indent + 1) + TEXT("],\n");
+	json += dungeon::Indent(indent + 1) + TEXT("\"MinSpacing\":") + FString::SanitizeFloat(ChandelierMinSpacing) + TEXT(",\n");
+	json += dungeon::Indent(indent + 1) + TEXT("\"MinCeilingHeight\":") + FString::SanitizeFloat(ChandelierMinCeilingHeight) + TEXT(",\n");
+	json += dungeon::Indent(indent + 1) + TEXT("\"Radius\":") + FString::SanitizeFloat(ChandelierRadius) + TEXT(",\n");
+	json += dungeon::Indent(indent + 1) + TEXT("\"WallWeight\":") + FString::SanitizeFloat(ChandelierWallWeight) + TEXT(",\n");
+	json += dungeon::Indent(indent + 1) + TEXT("\"CombatWeight\":") + FString::SanitizeFloat(ChandelierCombatWeight) + TEXT("\n");
 	json += dungeon::Indent(indent) + TEXT("}");
 
 	return json;

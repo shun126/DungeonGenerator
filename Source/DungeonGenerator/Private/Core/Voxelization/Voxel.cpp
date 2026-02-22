@@ -808,6 +808,25 @@ namespace dungeon
 		return grid.Is(Grid::Type::Deck);
 	}
 
+
+	void Voxel::SetFloor(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetFloor(enable);
+		}
+	}
+
+	void Voxel::SetCeiling(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetCeiling(enable);
+		}
+	}
+
 	void Voxel::SetNorthWall(const FIntVector& position, const bool enable) const noexcept
 	{
 		if (Contain(position))
@@ -842,6 +861,17 @@ namespace dungeon
 			const auto index = Index(position);
 			GetRef(index).SetWestWall(enable);
 		}
+	}
+
+
+	bool Voxel::HasFloor(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasFloor();
+	}
+
+	bool Voxel::HasCeiling(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasCeiling();
 	}
 
 	bool Voxel::HasNorthWall(const FIntVector& position) const noexcept

@@ -12,6 +12,8 @@
 #include "../PathGeneration/PathGoalCondition.h"
 #include "../PathGeneration/PathFinder.h"
 #include <atomic>
+#include <Math/Box.h>
+#include <Math/UnrealMathUtility.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -269,6 +271,42 @@ namespace dungeon
 		}
 
 		/**
+		 * 指定範囲内のグリッドを走査します
+		 * @param[in]	range	走査範囲（グリッド座標系）
+		 * @param[in]	function	グリッドを処理して反復する関数
+		 */
+		template<typename Function>
+		void Each(const FBox& range, Function&& function) const noexcept
+		{
+			if (mWidth == 0 || mDepth == 0 || mHeight == 0)
+				return;
+
+			const int32_t minX = FMath::Clamp(FMath::FloorToInt(range.Min.X), 0, static_cast<int32_t>(mWidth));
+			const int32_t minY = FMath::Clamp(FMath::FloorToInt(range.Min.Y), 0, static_cast<int32_t>(mDepth));
+			const int32_t minZ = FMath::Clamp(FMath::FloorToInt(range.Min.Z), 0, static_cast<int32_t>(mHeight));
+			const int32_t maxX = FMath::Clamp(FMath::CeilToInt(range.Max.X), 0, static_cast<int32_t>(mWidth));
+			const int32_t maxY = FMath::Clamp(FMath::CeilToInt(range.Max.Y), 0, static_cast<int32_t>(mDepth));
+			const int32_t maxZ = FMath::Clamp(FMath::CeilToInt(range.Max.Z), 0, static_cast<int32_t>(mHeight));
+
+			if (maxX <= minX || maxY <= minY || maxZ <= minZ)
+				return;
+
+			for (int32_t z = minZ; z < maxZ; ++z)
+			{
+				for (int32_t y = minY; y < maxY; ++y)
+				{
+					for (int32_t x = minX; x < maxX; ++x)
+					{
+						const size_t index = Index(static_cast<uint32_t>(x), static_cast<uint32_t>(y), static_cast<uint32_t>(z));
+						Grid& grid = mGrids.get()[index];
+						if (std::forward<Function>(function)(FIntVector(x, y, z), grid) == false)
+							return;
+					}
+				}
+			}
+		}
+
+		/**
 		 * グリッド内のグリッドを取得します
 		 * @param[in]	index	配列番号
 		 * @return		グリッド
@@ -348,6 +386,16 @@ namespace dungeon
 
 	public:
 		/**
+		 * 床があるか設定します
+		 */
+		void SetFloor(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 天井があるか設定します
+		 */
+		void SetCeiling(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
 		 * 北側に壁があるか設定します
 		 */
 		void SetNorthWall(const FIntVector& position, const bool enable) const noexcept;
@@ -366,6 +414,16 @@ namespace dungeon
 		 * 西側に壁があるか設定します
 		 */
 		void SetWestWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 床があるか取得します
+		 */
+		bool HasFloor(const FIntVector& position) const noexcept;
+
+		/**
+		 * 天井があるか取得します
+		 */
+		bool HasCeiling(const FIntVector& position) const noexcept;
 
 		/**
 		 * 北側に壁があるか取得します

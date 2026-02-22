@@ -15,6 +15,7 @@
 #include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
 #include "Parameter/DungeonGenerateParameter.h"
+#include "Validation/DungeonParameterValidator.h"
 
 
 #include <PropertyCustomizationHelpers.h>
@@ -30,6 +31,16 @@
 #include <Misc/MessageDialog.h>
 #include <UObject/UObjectGlobals.h>
 #include <Widgets/Input/SNumericEntryBox.h>
+#include <HAL/PlatformApplicationMisc.h>
+#include <GenericPlatform/GenericPlatformProperties.h>
+#include <Misc/App.h>
+#include <Misc/EngineVersion.h>
+#include <Misc/Paths.h>
+#include <Serialization/JsonReader.h>
+#include <Serialization/JsonSerializer.h>
+#include <Widgets/Views/SHeaderRow.h>
+
+#include "Misc/FileHelper.h"
 
 static const FName DungeonGeneratorTabName("DungeonGenerator");
 
@@ -162,6 +173,43 @@ TSharedRef<SDockTab> FDungeonGenerateEditorModule::OnSpawnPluginTab(const FSpawn
 			.FillHeight(1.f)
 			.Padding(2.f)
 			[
+				SAssignNew(mVerifyButton, SButton)
+					.Text(LOCTEXT("VerifyDungeonButton", "Verify"))
+					.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedVerifyButton)
+			];
+
+		dungeonBox->AddSlot()
+			.VAlign(VAlign_Center)
+			.FillHeight(1.f)
+			.Padding(2.f)
+			[
+				SAssignNew(mCopyDiagnosticsButton, SButton)
+					.Text(LOCTEXT("CopyDiagnosticsButton", "Copy diagnostics"))
+					.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedCopyDiagnosticsButton)
+			];
+
+		dungeonBox->AddSlot()
+			.VAlign(VAlign_Fill)
+			.FillHeight(4.f)
+			.Padding(2.f)
+			[
+				SAssignNew(mValidationListView, SListView<TSharedPtr<FDungeonValidationIssue>>)
+					//.ItemHeight(24.f)
+					.ListItemsSource(&mValidationIssueItems)
+					.OnGenerateRow_Raw(this, &FDungeonGenerateEditorModule::OnGenerateValidationRow)
+					.HeaderRow(
+						SNew(SHeaderRow)
+						+ SHeaderRow::Column("Severity").DefaultLabel(LOCTEXT("ValidationSeverity", "Severity")).FillWidth(0.15f)
+						+ SHeaderRow::Column("Code").DefaultLabel(LOCTEXT("ValidationCode", "Code")).FillWidth(0.2f)
+						+ SHeaderRow::Column("Message").DefaultLabel(LOCTEXT("ValidationMessage", "Message")).FillWidth(0.65f)
+					)
+			];
+
+		dungeonBox->AddSlot()
+			.VAlign(VAlign_Center)
+			.FillHeight(1.f)
+			.Padding(2.f)
+			[
 				SNew(SButton)
 					.Text(LOCTEXT("ClearDungeonButton", "Clear dungeon"))
 					.OnClicked_Raw(this, &FDungeonGenerateEditorModule::OnClickedClearButton)
@@ -243,8 +291,151 @@ void FDungeonGenerateEditorModule::SetAssetData(const FAssetData& assetData)
 
 	// Enable buttons the parameters are set.
 	const bool enabled = dungeonGenerateParameter != nullptr;
-	mGenerateDungeonButton->SetEnabled(enabled);
+	mVerifyButton->SetEnabled(enabled);
+	mCopyDiagnosticsButton->SetEnabled(enabled);
+	if (enabled)
+	{
+		RunValidation(true);
+	}
+	else
+	{
+		mValidationIssueItems.Reset();
+		if (mValidationListView.IsValid())
+		{
+			mValidationListView->RequestListRefresh();
+		}
+	}
+	UpdateGenerateButtonEnabled();
 
+}
+
+
+void FDungeonGenerateEditorModule::UpdateGenerateButtonEnabled() const
+{
+	const bool enabled = mDungeonGenerateParameter.IsValid() && !HasValidationErrors();
+	mGenerateDungeonButton->SetEnabled(enabled);
+}
+
+void FDungeonGenerateEditorModule::RunValidation(const bool bDeepCheck)
+{
+	mValidationIssueItems.Reset();
+	TArray<FDungeonValidationIssue> issues;
+	FDungeonParameterValidator::Validate(mDungeonGenerateParameter.Get(), issues, bDeepCheck);
+	for (const FDungeonValidationIssue& issue : issues)
+	{
+		mValidationIssueItems.Emplace(MakeShared<FDungeonValidationIssue>(issue));
+	}
+	if (mValidationListView.IsValid())
+	{
+		mValidationListView->RequestListRefresh();
+	}
+	UpdateGenerateButtonEnabled();
+}
+
+bool FDungeonGenerateEditorModule::HasValidationErrors() const
+{
+	return mValidationIssueItems.ContainsByPredicate([](const TSharedPtr<FDungeonValidationIssue>& issue)
+		{
+			return issue.IsValid() && issue->Severity == EDungeonValidationSeverity::Error;
+		});
+}
+
+FReply FDungeonGenerateEditorModule::OnClickedVerifyButton()
+{
+	RunValidation(true);
+	return FReply::Handled();
+}
+
+FReply FDungeonGenerateEditorModule::OnClickedCopyDiagnosticsButton() const
+{
+	FPlatformApplicationMisc::ClipboardCopy(*FormatIssuesForClipboard());
+	return FReply::Handled();
+}
+
+TSharedRef<ITableRow> FDungeonGenerateEditorModule::OnGenerateValidationRow(TSharedPtr<FDungeonValidationIssue> item, const TSharedRef<STableViewBase>& ownerTable)
+{
+	if (!item.IsValid())
+	{
+		return SNew(STableRow<TSharedPtr<FDungeonValidationIssue>>, ownerTable)
+		[
+			SNew(STextBlock).Text(LOCTEXT("InvalidValidationRow", "Invalid item"))
+		];
+	}
+
+	return SNew(STableRow<TSharedPtr<FDungeonValidationIssue>>, ownerTable)
+	[
+		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot().FillWidth(0.15f).Padding(2.f)
+		[
+			SNew(STextBlock).Text(FText::FromString(FormatSeverity(item->Severity)))
+		]
+		+ SHorizontalBox::Slot().FillWidth(0.2f).Padding(2.f)
+		[
+			SNew(STextBlock).Text(FText::FromName(item->Code))
+		]
+		+ SHorizontalBox::Slot().FillWidth(0.65f).Padding(2.f)
+		[
+			SNew(STextBlock).Text(item->Message)
+		]
+	];
+}
+
+FString FDungeonGenerateEditorModule::FormatSeverity(const EDungeonValidationSeverity severity)
+{
+	switch (severity)
+	{
+	case EDungeonValidationSeverity::Error:
+		return TEXT("Error");
+	case EDungeonValidationSeverity::Warning:
+		return TEXT("Warning");
+	default:
+		return TEXT("Info");
+	}
+}
+
+FString FDungeonGenerateEditorModule::FormatIssuesForClipboard() const
+{
+	FString pluginVersion = TEXT("Unknown");
+	FString pluginVersionName = TEXT("Unknown");
+	FString pluginFile = FPaths::ProjectPluginsDir() / TEXT("DungeonGenerator/DungeonGenerator.uplugin");
+	if (!FPaths::FileExists(pluginFile))
+	{
+		pluginFile = FPaths::Combine(FPaths::EnginePluginsDir(), TEXT("Marketplace/DungeonGenerator/DungeonGenerator.uplugin"));
+	}
+	FString jsonText;
+	if (FFileHelper::LoadFileToString(jsonText, *pluginFile))
+	{
+		TSharedPtr<FJsonObject> root;
+		TSharedRef<TJsonReader<>> reader = TJsonReaderFactory<>::Create(jsonText);
+		if (FJsonSerializer::Deserialize(reader, root) && root.IsValid())
+		{
+			pluginVersion = FString::FromInt(root->GetIntegerField(TEXT("Version")));
+			pluginVersionName = root->GetStringField(TEXT("VersionName"));
+		}
+	}
+
+	FString report;
+	report += TEXT("[DungeonGenerator Diagnostics]\n");
+	report += FString::Printf(TEXT("PluginVersion: %s (%s)\n"), *pluginVersionName, *pluginVersion);
+	report += FString::Printf(TEXT("UEVersion: %s\n"), *FEngineVersion::Current().ToString());
+	report += FString::Printf(TEXT("OS: %s\n"), ANSI_TO_TCHAR(FPlatformProperties::IniPlatformName()));
+
+	if (const UDungeonGenerateParameter* params = mDungeonGenerateParameter.Get())
+	{
+		const FDungeonGridSize gridSize = params->GetGridSize();
+		report += FString::Printf(TEXT("Summary: RoomCount=%d GridSize=%.2f VerticalGridSize=%.2f Seed=%d\n"), params->GetNumberOfCandidateRooms(), gridSize.HorizontalSize, gridSize.VerticalSize, params->GetRandomSeed());
+	}
+
+	report += TEXT("Issues:\n");
+	for (const TSharedPtr<FDungeonValidationIssue>& item : mValidationIssueItems)
+	{
+		if (!item.IsValid())
+		{
+			continue;
+		}
+		report += FString::Printf(TEXT("- [%s] [%s] %s | Hint: %s\n"), *FormatSeverity(item->Severity), *item->Code.ToString(), *item->Message.ToString(), *item->FixHint.ToString());
+	}
+	return report;
 }
 
 FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
@@ -258,6 +449,12 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 	}
 
 	DisposeDungeon(world, true);
+	RunValidation(false);
+	if (HasValidationErrors())
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ValidationFailed", "Generation aborted. Resolve validation errors first."));
+		return FReply::Unhandled();
+	}
 
 	// Get dungeon generation parameters
 	const UDungeonGenerateParameter* dungeonGenerateParameter = mDungeonGenerateParameter.Get();

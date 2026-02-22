@@ -389,6 +389,16 @@ namespace dungeon
 		bool IsSubLevel() const noexcept;
 
 		/**
+		 * 床があるか設定します
+		 */
+		void SetFloor(const bool enable) noexcept;
+
+		/**
+		 * 天井があるか設定します
+		 */
+		void SetCeiling(const bool enable) noexcept;
+
+		/**
 		 * 北側に壁があるか設定します
 		 */
 		void SetNorthWall(const bool enable) noexcept;
@@ -407,6 +417,16 @@ namespace dungeon
 		 * 西側に壁があるか設定します
 		 */
 		void SetWestWall(const bool enable) noexcept;
+
+		/**
+		 * 床があるか取得します
+		 */
+		bool HasFloor() const noexcept;
+
+		/**
+		 * 天井があるか取得します
+		 */
+		bool HasCeiling() const noexcept;
 
 		/**
 		 * 北側に壁があるか取得します
@@ -481,8 +501,10 @@ namespace dungeon
 			EastWallMesh,				//!< 東方向に壁がある
 			SouthWallMesh,				//!< 南方向に壁がある
 			WestWallMesh,				//!< 西方向に壁がある
+			FloorMesh,					//!< 床がある
+			CeilingMesh,				//!< 天井がある
 		};
-		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::WestWallMesh) + 1;
+		static constexpr size_t AttributeSize = static_cast<size_t>(Attribute::CeilingMesh) + 1;
 
 		// Directionクラスの方向数
 		static constexpr size_t DirectionSize = 4;

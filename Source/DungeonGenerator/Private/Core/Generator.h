@@ -258,6 +258,16 @@ namespace dungeon
 		// Attribute
 	public:
 		/**
+		 * 床があるか設定します
+		 */
+		void SetFloor(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 天井があるか設定します
+		 */
+		void SetCeiling(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
 		 * 北側に壁があるか設定します
 		 */
 		void SetNorthWall(const FIntVector& position, const bool enable) const noexcept;
@@ -276,6 +286,16 @@ namespace dungeon
 		 * 西側に壁があるか設定します
 		 */
 		void SetWestWall(const FIntVector& position, const bool enable) const noexcept;
+
+		/**
+		 * 床があるか取得します
+		 */
+		bool HasFloor(const FIntVector& position) const noexcept;
+
+		/**
+		 * 天井があるか取得します
+		 */
+		bool HasCeiling(const FIntVector& position) const noexcept;
 
 		/**
 		 * 北側に壁があるか取得します
@@ -325,7 +345,10 @@ namespace dungeon
 		void InvokeRoomCallbacks() const noexcept;
 		bool DetectFloorHeightAndDepthFromStart() noexcept;
 		bool GenerateVoxel() noexcept;
+		void UpdateMeshAttributes() const noexcept;
 		bool GenerateAisleVoxel(const size_t aisleIndex, const Aisle& aisle, const std::shared_ptr<const Point>& startPoint, const std::shared_ptr<const Point>& goalPoint, const uint8_t depthRatioFromStart, const bool generateIndoorSlope) noexcept;
+		void ExpandAisleHeightVoxel(const Aisle& aisle) const noexcept;
+		void GenerateRoomSkylightVoxel(const std::shared_ptr<Room>& room, const uint8_t depthRatioFromStart) noexcept;
 		void GenerateStructuralColumnVoxel(const std::shared_ptr<Room>& room) const;
 		bool CanFillStructuralColumnVoxel(const int32 x, const int32 y, const int32 minZ, const int32 maxZ) const;
 		void FillStructuralColumnVoxel(const int32 x, const int32 y, const int32 minZ, const int32 maxZ) const;

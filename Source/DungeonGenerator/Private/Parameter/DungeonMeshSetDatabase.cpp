@@ -5,8 +5,13 @@
  */
 
 #include "Parameter/DungeonMeshSetDatabase.h"
+#include "Parameter/DungeonPartsSelector.h"
+#include "Parameter/DungeonSelectionPolicyUtility.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
+#if WITH_EDITOR
+#include <UObject/UnrealType.h>
+#endif
 #include <cmath>
 
 #if WITH_EDITOR
@@ -18,27 +23,66 @@ UDungeonMeshSetDatabase::UDungeonMeshSetDatabase(const FObjectInitializer& objec
 {
 }
 
+void UDungeonMeshSetDatabase::PostLoad()
+{
+	Super::PostLoad();
+	MigrateSelectionPolicies();
+}
+
+#if WITH_EDITOR
+void UDungeonMeshSetDatabase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	bSelectionPolicyMigrated = true;
+	for (FDungeonMeshSet& meshSet : Parts)
+	{
+		meshSet.MarkSelectionPoliciesMigrated();
+	}
+	MigrateSelectionPolicies();
+}
+#endif
+
+void UDungeonMeshSetDatabase::MigrateSelectionPolicies()
+{
+	if (!bSelectionPolicyMigrated)
+	{
+		SelectionPolicy = dungeon::selection::ToPolicy(SelectionMethod);
+	}
+
+	SelectionPolicy = dungeon::selection::SanitizeMeshSetPolicy(SelectionPolicy);
+	SelectionMethod = dungeon::selection::ToLegacyMeshSetMethod(SelectionPolicy);
+	bSelectionPolicyMigrated = true;
+
+	for (FDungeonMeshSet& meshSet : Parts)
+	{
+		meshSet.MigrateSelectionPolicies();
+	}
+}
+
 const FDungeonMeshSet* UDungeonMeshSetDatabase::AtImplement(const size_t index) const
 {
 	const int32 size = Parts.Num();
 	return (size > 0) ? &Parts[index % size] : nullptr;
 }
 
-const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random) const
+const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random, const FMeshSetQuery& query) const
 {
 	const int32 size = Parts.Num();
 	if (size <= 0)
 		return nullptr;
 
-	switch (SelectionMethod)
+	switch (dungeon::selection::SanitizeMeshSetPolicy(SelectionPolicy))
 	{
-	case EDungeonMeshSetSelectionMethod::Random:
-		return &Parts[random->Get<uint32_t>(size)];
 
-	case EDungeonMeshSetSelectionMethod::Identifier:
+	case EDungeonSelectionPolicy::Random:
+		if (random != nullptr)
+			return &Parts[random->Get<uint32_t>(size)];
+		return &Parts[0];
+
+	case EDungeonSelectionPolicy::Identifier:
 		return &Parts[identifier % size];
 
-	case EDungeonMeshSetSelectionMethod::DepthFromStart:
+	case EDungeonSelectionPolicy::DepthFromStart:
 	{
 		const float ratio = static_cast<float>(depthRatioFromStart) / 255.f;
 		const float index = static_cast<float>(size - 1) * ratio;
@@ -46,7 +90,7 @@ const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t i
 	}
 
 	default:
-		DUNGEON_GENERATOR_ERROR(TEXT("Set the correct SelectionMethod"));
+		DUNGEON_GENERATOR_ERROR(TEXT("Set the correct SelectionPolicy"));
 		return nullptr;
 	}
 }

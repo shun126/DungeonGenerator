@@ -19,10 +19,10 @@ Even numbers represent north-south and odd numbers represent east-west.
 UENUM(BlueprintType)
 enum class EDungeonDirection : uint8
 {
-	North,
-	East,
-	South,
-	West,
+	North UMETA(DisplayName = "North", ToolTip = "Faces north."),
+	East UMETA(DisplayName = "East", ToolTip = "Faces east."),
+	South UMETA(DisplayName = "South", ToolTip = "Faces south."),
+	West UMETA(DisplayName = "West", ToolTip = "Faces west."),
 };
 
 namespace dungeon

@@ -26,14 +26,14 @@ struct FDungeonAisleGrid
 	 * 通路グリッドの方向
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
-	EDungeonDirection Direction;
+	EDungeonDirection Direction = EDungeonDirection::North;
 
 	/**
 	 * Center position of aisle grid (height is floor position)
 	 * 通路グリッドの中心位置（高さは床の位置）
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
-	FVector Location;
+	FVector Location = FVector::ZeroVector;
 };
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FDungeonAisleGridMapLoopSignature, const TArray<FDungeonAisleGrid>&, AisleGridArray);

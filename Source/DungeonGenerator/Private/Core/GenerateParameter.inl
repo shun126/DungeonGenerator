@@ -233,6 +233,16 @@ namespace dungeon
 		return GetAisleComplexity() > 0;
 	}
 
+	inline AisleCeilingHeightPolicy GenerateParameter::GetAisleCeilingHeightPolicy() const noexcept
+	{
+		return mAisleCeilingHeightPolicy;
+	}
+
+	inline void GenerateParameter::SetAisleCeilingHeightPolicy(const AisleCeilingHeightPolicy policy) noexcept
+	{
+		mAisleCeilingHeightPolicy = policy;
+	}
+
 	inline bool GenerateParameter::IsGenerateSlopeInRoom() const noexcept
 	{
 		return mGenerateSlopeInRoom;
@@ -251,6 +261,16 @@ namespace dungeon
 	inline void GenerateParameter::SetGenerateStructuralColumn(const bool generateStructuralColumn) noexcept
 	{
 		mGenerateStructuralColumn = generateStructuralColumn;
+	}
+
+	inline uint8_t GenerateParameter::GetSkylightChancePercent() const noexcept
+	{
+		return mSkylightChancePercent;
+	}
+
+	inline void GenerateParameter::SetSkylightChancePercent(const uint8_t skylightChancePercent) noexcept
+	{
+		mSkylightChancePercent = std::min<uint8_t>(100, skylightChancePercent);
 	}
 
 	inline const FIntVector& GenerateParameter::GetStartRoomSize() const noexcept

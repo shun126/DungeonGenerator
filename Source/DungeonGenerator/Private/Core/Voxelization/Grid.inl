@@ -294,6 +294,17 @@ namespace dungeon
 		return mPack.IsAttributeEnabled(Attribute::SubLevel);
 	}
 
+
+	inline void Grid::SetFloor(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::FloorMesh, enable);
+	}
+
+	inline void Grid::SetCeiling(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::CeilingMesh, enable);
+	}
+
 	inline void Grid::SetNorthWall(const bool enable) noexcept
 	{
 		mPack.SetAttribute(Attribute::NorthWallMesh, enable);
@@ -312,6 +323,17 @@ namespace dungeon
 	inline void Grid::SetWestWall(const bool enable) noexcept
 	{
 		mPack.SetAttribute(Attribute::WestWallMesh, enable);
+	}
+
+
+	inline bool Grid::HasFloor() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::FloorMesh);
+	}
+
+	inline bool Grid::HasCeiling() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::CeilingMesh);
 	}
 
 	inline bool Grid::HasNorthWall() const noexcept

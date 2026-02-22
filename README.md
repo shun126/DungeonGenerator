@@ -49,6 +49,7 @@ The foundational generation algorithm you shared was a major source of inspirati
   * A mini-map of the dungeon can be generated.
   * Interior decoration. [beta version]
   * Foliage decoration. [beta version]
+  * Mesh Set and Custom Mesh Selection
 * Supported Development Platforms: Windows,Android,Linux
 * Supported Target Build Platforms: Windows,Android,Linux (should be possible to target all platforms)
 
@@ -85,6 +86,7 @@ The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhance
 * A mini-map of the dungeon can be generated.
 * Interior decoration. [beta version]
 * Foriage decoration. [beta version]
+* Mesh Set and Custom Mesh Selection
 
 ## 🎮 Demo
 [DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a sample project for first-person exploration.
@@ -94,8 +96,7 @@ This is an easy to use. Simply drop the DungeonGenerateActor into your level, se
 Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/index.html)
 
 # 😀 Authors
-* Nonbiri ([X.com](https://x.com/happy_game_dev) / [YouTube](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q))
 * Shun Moriya ([X.com](https://x.com/monjiro1972))
+* Nonbiri ([X.com](https://x.com/happy_game_dev) / [YouTube](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q))
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M413XDXB)
-

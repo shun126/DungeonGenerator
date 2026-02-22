@@ -20,9 +20,9 @@ class UPointLightComponent;
 UENUM(Blueprintable)
 enum class EDungeonComponentActivateReason : uint8
 {
-	Partition,
-	Demo,
-	Custom
+	Partition UMETA(DisplayName = "Partition", ToolTip = "Activation state changed by partition distance logic."),
+	Demo UMETA(DisplayName = "Demo", ToolTip = "Activation state changed for demo or preview behavior."),
+	Custom UMETA(DisplayName = "Custom", ToolTip = "Activation state changed by custom game logic.")
 };
 constexpr uint8_t DungeonComponentActivateReasonSize = 3;
 
