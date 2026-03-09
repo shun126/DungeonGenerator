@@ -1,12 +1,13 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## 20260228-1.9.0 (64)
+## 20260309-1.9.0 (64)
 ### Changes
 - Made corridor ceiling height configurable.
 - Improved customization for selecting parts and meshes.
 - Added chandelier to DungeonMeshSetDatabase.
 - Added support for creating atrium (open vertical space) sections in rooms.
 - Fixed an issue where vegetation would never spawn when the probability was extremely low.
+- Experimental support for generating levels with the loaded level as the starting room.
 - Fixed several other bugs.
 ### 変更点
 - 通路の天井の高さを変更可能に。
@@ -14,6 +15,7 @@
 - シャンデリアを DungeonMeshSetDatabase に追加。
 - 部屋に吹き抜け部分を追加。
 - 植生の抽選確率が低すぎる時に抽選されなくなる問題を修正。
+- ロード済みレベルをスタート部屋とする生成に試験的な対応。
 - いくつかの不具合を修正。
 
 ## 20251225-1.8.0 (63)

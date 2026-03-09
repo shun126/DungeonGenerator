@@ -81,6 +81,11 @@ protected:
 	UPROPERTY()
 	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::Random;
 
+	/**
+	 * Migration flag indicating old database-level selection policy has been converted.
+	 *
+	 * 旧データベース選択ポリシーが移行済みであることを示すフラグです。
+	 */
 	UPROPERTY()
 	bool bSelectionPolicyMigrated = false;
 
@@ -92,3 +97,5 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (DisplayName = "Mesh Set"))
 	TArray<FDungeonMeshSet> Parts;
 };
+
+

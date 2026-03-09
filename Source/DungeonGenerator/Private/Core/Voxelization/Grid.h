@@ -306,6 +306,11 @@ namespace dungeon
 		void NoWestWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
 		/**
+		 * ドアが生成禁止か設定します
+		 */
+		void NoDoorGeneration(const bool noDoorGeneration) noexcept;
+
+		/**
 		 * いずれかの方向で壁がメッシュ生成禁止か取得します
 		 * @return		trueならメッシュ生成禁止
 		 */
@@ -346,6 +351,12 @@ namespace dungeon
 		 * @return		trueならメッシュ生成禁止
 		 */
 		bool IsNoWestWallMeshGeneration() const noexcept;
+
+		/**
+		 * ドアを生成禁止か取得します
+		 * @return		trueならドア生成禁止
+		 */
+		bool IsNoDoorGeneration() const noexcept;
 
 		/**
 		 * 通路のマージ許可を設定します
@@ -491,6 +502,7 @@ namespace dungeon
 			NoEastWallMeshGeneration,
 			NoSouthWallMeshGeneration,
 			NoWestWallMeshGeneration,
+			NoDoorGeneration,
 			NoFloorMeshGeneration,
 			NoRoofMeshGeneration,
 			MergeAisle,
@@ -523,9 +535,6 @@ namespace dungeon
 
 			Direction GetCatwalkDirection() const noexcept;
 			void SetCatwalkDirection(const Direction direction) noexcept;
-
-			Type GetType() const noexcept;
-			void SetType(const Type type) noexcept;
 
 			Props GetProps() const noexcept;
 			void SetProps(const Props props) noexcept;
@@ -601,7 +610,7 @@ namespace dungeon
 		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
 		uint16_t mIdentifier = InvalidIdentifier;
 		uint8_t mDepthRatioFromStart = 0;
-		uint8_t mPadding = 0;
+		Type mType = Type::Empty;
 	};
 	static_assert(sizeof(Grid) == 8);
 }

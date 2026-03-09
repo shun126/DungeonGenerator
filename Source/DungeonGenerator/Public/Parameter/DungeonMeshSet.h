@@ -331,9 +331,19 @@ public:
 
 protected:
 
+	/**
+	 * Policy for selecting floor part candidates in this mesh set.
+	 *
+	 * このメッシュセットで床パーツ候補を選ぶためのポリシーです。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
 	EDungeonSelectionPolicy FloorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to pick floor parts from the selected floor candidates.
+	 *
+	 * 選ばれた床候補から最終的な床パーツを決定する選択方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod FloorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -351,6 +361,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
 	EDungeonSelectionPolicy WallPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to pick wall parts from wall candidates.
+	 *
+	 * 壁候補から最終的な壁パーツを決定する選択方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod WallPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -368,6 +383,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
 	EDungeonSelectionPolicy RoofPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to pick roof parts from roof candidates.
+	 *
+	 * 屋根候補から最終的な屋根パーツを決定する選択方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod RoofPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -385,6 +405,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
 	EDungeonSelectionPolicy SlopePartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to pick slope parts from slope candidates.
+	 *
+	 * スロープ候補から最終的なスロープパーツを決定する選択方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod SloopPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -402,6 +427,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite)
 	EDungeonSelectionPolicy CatwalkPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to pick catwalk parts from catwalk candidates.
+	 *
+	 * キャットウォーク候補から最終的なパーツを決定する選択方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod CatwalkPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -419,6 +449,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Chandelier", BlueprintReadWrite)
 	EDungeonSelectionPolicy ChandelierPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to pick chandelier actor parts from chandelier candidates.
+	 *
+	 * シャンデリア候補からシャンデリア用アクターパーツを決定する選択方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod ChandelierPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -464,6 +499,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Chandelier", BlueprintReadWrite)
 	float ChandelierCombatWeight = 0.6f;
 
+	/**
+	 * Migration flag indicating legacy mesh-set selection policies were already converted.
+	 *
+	 * 旧メッシュセット選択ポリシーが移行済みであることを示すフラグです。
+	 */
 	UPROPERTY()
 	bool bSelectionPoliciesMigrated = false;
 
@@ -482,3 +522,5 @@ private:
 
 	friend class UDungeonMeshSetDatabase;
 };
+
+

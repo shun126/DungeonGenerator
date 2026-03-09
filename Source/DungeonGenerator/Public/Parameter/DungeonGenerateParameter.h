@@ -539,6 +539,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Pillar")
 	EDungeonSelectionPolicy PillarPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to choose pillar parts from the pillar candidates.
+	 *
+	 * 柱候補から柱パーツを選択する際の選択方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod PillarPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -558,6 +563,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Torch")
 	EDungeonSelectionPolicy TorchPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to choose torch actor parts from torch candidates.
+	 *
+	 * たいまつ候補からたいまつアクターパーツを選択する方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod TorchPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
@@ -586,9 +596,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Door")
 	EDungeonSelectionPolicy DoorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
+	/**
+	 * Selection method used to choose door actor parts from door candidates.
+	 *
+	 * ドア候補からドアアクターパーツを選択する方式です。
+	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod DoorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
+	/**
+	 * Migration flag that prevents re-running legacy fixture selection-policy conversion.
+	 *
+	 * 旧フィクスチャ選択ポリシーの移行処理を再実行しないための移行済みフラグです。
+	 */
 	UPROPERTY()
 	bool bFixtureSelectionPoliciesMigrated = false;
 
@@ -765,3 +785,5 @@ inline void UDungeonGenerateParameter::EachCatwalkParts(const std::function<void
 	EachRoomCatwalkParts(function);
 	EachAisleCatwalkParts(function);
 }
+
+

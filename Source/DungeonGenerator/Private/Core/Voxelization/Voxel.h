@@ -166,10 +166,17 @@ namespace dungeon
 		void NoWestWallMeshGeneration(const FIntVector& location, const bool noWallMeshGeneration) const noexcept;
 
 		/**
+		 * ドアが生成禁止か設定します
+		 * @param[in]	location				グリッドの位置
+		 * @param[in]	noDoorGeneration		ドアの生成禁止
+		 */
+		void NoDoorGeneration(const FIntVector& location, const bool noDoorGeneration) const noexcept;
+
+		/**
 		 * サブレベル適用グリッドを設定します
 		 * @param[in]	location			グリッドの位置
 		 */
-		void UseSubLevel(const FIntVector& location) noexcept;
+		void UseSubLevel(const FIntVector& location) const noexcept;
 
 		/**
 		 * 候補位置
@@ -261,10 +268,14 @@ namespace dungeon
 				{
 					for (uint32_t x = 0; x < mWidth; ++x)
 					{
+						const auto original = mWidth;
+
 						const size_t index = Index(x, y, z);
 						Grid& grid = mGrids.get()[index];
 						if (std::forward<Function>(function)(FIntVector(x, y, z), grid) == false)
 							return;
+
+						check(original == mWidth);
 					}
 				}
 			}

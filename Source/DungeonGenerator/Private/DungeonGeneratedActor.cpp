@@ -9,6 +9,7 @@
  */
 
 #include "DungeonGeneratedActor.h"
+#include "Core/Debug/Debug.h"
 
 ADungeonGeneratedActor::ADungeonGeneratedActor(const FObjectInitializer& initializer)
 	: Super(initializer)
@@ -17,6 +18,14 @@ ADungeonGeneratedActor::ADungeonGeneratedActor(const FObjectInitializer& initial
 
 bool ADungeonGeneratedActor::Generate(const UDungeonGenerateParameter* parameter)
 {
+	if (mIsGeneratingDungeon)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("Generate ignored because dungeon generation is already in progress."));
+		return false;
+	}
+
+	TGuardValue<bool> generatingGuard(mIsGeneratingDungeon, true);
+
 	const bool generated = BeginDungeonGeneration(parameter, true);
 	if (generated)
 	{
@@ -37,7 +46,7 @@ ADungeonGeneratedActor* ADungeonGeneratedActor::SpawnDungeonActor(UWorld* world,
 	const FTransform transform(location);
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.ObjectFlags |= RF_Transient;
-	AActor* actor = SpawnActorImpl(
+	AActor* actor = SpawnActorWithFolderPath(
 		world,
 		ADungeonGeneratedActor::StaticClass(),
 		TEXT("Actors"),

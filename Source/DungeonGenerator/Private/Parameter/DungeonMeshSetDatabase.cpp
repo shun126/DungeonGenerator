@@ -73,10 +73,11 @@ const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t i
 
 	switch (dungeon::selection::SanitizeMeshSetPolicy(SelectionPolicy))
 	{
-
 	case EDungeonSelectionPolicy::Random:
 		if (random != nullptr)
 			return &Parts[random->Get<uint32_t>(size)];
+	case EDungeonSelectionPolicy::GridIndex:
+	case EDungeonSelectionPolicy::Direction:
 		return &Parts[0];
 
 	case EDungeonSelectionPolicy::Identifier:
@@ -88,6 +89,7 @@ const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t i
 		const float index = static_cast<float>(size - 1) * ratio;
 		return &Parts[static_cast<size_t>(std::round(index))];
 	}
+
 
 	default:
 		DUNGEON_GENERATOR_ERROR(TEXT("Set the correct SelectionPolicy"));

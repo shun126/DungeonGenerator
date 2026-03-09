@@ -9,6 +9,7 @@
 #include "DungeonGeneratorCommands.h"
 #include "BuildInformation.h"
 #include "DungeonGeneratedActor.h"
+#include "Actor/DungeonGenerateActorDetails.h"
 #include "Helper/DungeonFinalizer.h"
 #include "Debug/Debug.h"
 #include "SubActor/DungeonRoomSensorDatabaseTypeActions.h"
@@ -19,6 +20,7 @@
 
 
 #include <PropertyCustomizationHelpers.h>
+#include <PropertyEditorModule.h>
 #include <AssetToolsModule.h>
 #include <FileHelpers.h>
 #include <IAssetTools.h>
@@ -65,6 +67,7 @@ void FDungeonGenerateEditorModule::StartupModule()
 		.SetDisplayName(LOCTEXT("FDungeonGeneratorTabTitle", "DungeonGenerator"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 
+
 	// Get AssetTools module
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
 
@@ -96,6 +99,13 @@ void FDungeonGenerateEditorModule::StartupModule()
 
 void FDungeonGenerateEditorModule::ShutdownModule()
 {
+	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+	{
+		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+		PropertyEditorModule.UnregisterCustomClassLayout(TEXT("DungeonGenerateActor"));
+		PropertyEditorModule.NotifyCustomizationModuleChanged();
+	}
+
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 	FDungeonGeneratorStyle::Shutdown();

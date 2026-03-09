@@ -63,9 +63,19 @@ private:
 	}
 
 protected:
+	/**
+	 * Runtime list of activator components currently associated with this partition.
+	 *
+	 * このパーティションに現在紐づいているアクティベータコンポーネントの実行時リストです。
+	 */
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> ActivatorComponents;
 
+	/**
+	 * Components registered under this partition for activation management.
+	 *
+	 * アクティブ制御のためにこのパーティションへ登録されたコンポーネント一覧です。
+	 */
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> RegisteredComponents;
 
@@ -112,3 +122,5 @@ inline bool UDungeonPartition::IsMarked() const noexcept
 {
 	return mMarked;
 }
+
+

@@ -90,6 +90,8 @@ namespace selection
 		case EDungeonSelectionPolicy::Random:
 		case EDungeonSelectionPolicy::GridIndex:
 		case EDungeonSelectionPolicy::Direction:
+		case EDungeonSelectionPolicy::Identifier:
+		case EDungeonSelectionPolicy::DepthFromStart:
 			return true;
 		default:
 			return false;

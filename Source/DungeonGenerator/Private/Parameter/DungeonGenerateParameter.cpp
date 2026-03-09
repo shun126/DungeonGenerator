@@ -178,8 +178,10 @@ void UDungeonGenerateParameter::PostEditChangeProperty(FPropertyChangedEvent& Pr
 
 	PillarPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(PillarPartsSelectionPolicy);
 	PillarPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(PillarPartsSelectionPolicy);
+
 	TorchPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(TorchPartsSelectionPolicy);
 	TorchPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(TorchPartsSelectionPolicy);
+
 	DoorPartsSelectionPolicy = dungeon::selection::SanitizePartsPolicy(DoorPartsSelectionPolicy);
 	DoorPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(DoorPartsSelectionPolicy);
 }

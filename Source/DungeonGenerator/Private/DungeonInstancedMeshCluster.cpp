@@ -6,6 +6,8 @@
 
 #include "DungeonInstancedMeshCluster.h"
 #include "DungeonGenerateBase.h"
+#include "Core/Debug/Debug.h"
+#include "Core/Helper/Stopwatch.h"
 #include <Components/HierarchicalInstancedStaticMeshComponent.h>
 
 UInstancedStaticMeshComponent* FDungeonInstancedMeshCluster::FindOrCreateInstance(AActor* actor, UStaticMesh* staticMesh)
@@ -23,7 +25,9 @@ UInstancedStaticMeshComponent* FDungeonInstancedMeshCluster::FindOrCreateInstanc
 	auto* component = NewObject<UInstancedStaticMeshComponent>(actor);
 	actor->AddInstanceComponent(component);
 	component->RegisterComponent();
+	component->SetMobility(EComponentMobility::Movable);
 	component->SetStaticMesh(staticMesh);
+	component->ComponentTags.Add(ADungeonGenerateBase::GetDungeonGeneratorTerrainTag());
 	mComponents.Add(component);
 	return component;
 }
@@ -43,6 +47,7 @@ UHierarchicalInstancedStaticMeshComponent* FDungeonInstancedMeshCluster::FindOrC
 	auto* component = NewObject<UHierarchicalInstancedStaticMeshComponent>(actor);
 	actor->AddInstanceComponent(component);
 	component->RegisterComponent();
+	component->SetMobility(EComponentMobility::Movable);
 	component->SetStaticMesh(staticMesh);
 	component->bAutoRebuildTreeOnInstanceChanges = false;
 	component->ComponentTags.Add(ADungeonGenerateBase::GetDungeonGeneratorTerrainTag());
@@ -63,6 +68,11 @@ void FDungeonInstancedMeshCluster::BeginTransaction()
 
 void FDungeonInstancedMeshCluster::EndTransaction()
 {
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+	dungeon::Stopwatch stopwatch;
+	int32 buildTreeCount = 0;
+#endif
+
 	mComponents.Shrink();
 
 	for (auto& component : mComponents)
@@ -71,8 +81,15 @@ void FDungeonInstancedMeshCluster::EndTransaction()
 		{
 			hierarchicalInstancedStaticMeshComponent->bAutoRebuildTreeOnInstanceChanges = true;
 			hierarchicalInstancedStaticMeshComponent->BuildTreeIfOutdated(true, false);
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+			++buildTreeCount;
+#endif
 		}
 	}
+
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+	DUNGEON_GENERATOR_LOG(TEXT("FDungeonInstancedMeshCluster::EndTransaction Time: %lf seconds, BuildTreeCount=%d"), stopwatch.Lap(), buildTreeCount);
+#endif
 }
 
 void FDungeonInstancedMeshCluster::DestroyAll()

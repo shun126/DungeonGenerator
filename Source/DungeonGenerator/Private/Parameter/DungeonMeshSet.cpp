@@ -84,18 +84,38 @@ void FDungeonMeshSet::MigrateSelectionPolicies()
 
 int32 FDungeonMeshSet::SelectDungeonMeshPartsIndexByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonSelectionPolicy selectionPolicy)
 {
+	int32 partsIndex = gridIndex % size;
 	switch (dungeon::selection::SanitizePartsPolicy(selectionPolicy))
 	{
-	case EDungeonSelectionPolicy::Direction:
-		return grid.GetDirection().Get() % size;
-
 	case EDungeonSelectionPolicy::Random:
-		return (random != nullptr) ? static_cast<int32>(random->Get<uint32_t>(size)) : static_cast<int32>(gridIndex % size);
+		if (random != nullptr)
+			partsIndex = random->Get<int32_t>(size);
+		break;
+
+	case EDungeonSelectionPolicy::Direction:
+		partsIndex = grid.GetDirection().Get() % size;
+		break;
+
+	case EDungeonSelectionPolicy::Identifier:
+		partsIndex = grid.GetIdentifier() % size;
+		break;
+
+	case EDungeonSelectionPolicy::DepthFromStart:
+	{
+		const float ratio = static_cast<float>(grid.GetDepthRatioFromStart()) / 255.f;
+		const float index = static_cast<float>(size - 1) * ratio;
+		partsIndex = FMath::RoundToInt(index);
+		break;
+	}
 
 	case EDungeonSelectionPolicy::GridIndex:
 	default:
-		return gridIndex % size;
+		break;
 	}
+
+	check(partsIndex >= 0);
+
+	return partsIndex;
 }
 
 int32 FDungeonMeshSet::SelectDungeonMeshPartsIndexByFace(const FIntVector& gridLocation, const dungeon::Direction& direction, const int32 size)

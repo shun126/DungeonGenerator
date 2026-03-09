@@ -17,6 +17,11 @@ class ADungeonMainLevelScriptActor;
 class UDungeonPartition;
 class UPointLightComponent;
 
+/**
+ * Enum definition for EDungeonComponentActivateReason.
+ *
+ * EDungeonComponentActivateReason の列挙型定義です。
+ */
 UENUM(Blueprintable)
 enum class EDungeonComponentActivateReason : uint8
 {
@@ -288,3 +293,4 @@ void UDungeonComponentActivatorComponent::EachComponent(const std::function<void
 	}
 }
 #endif
+

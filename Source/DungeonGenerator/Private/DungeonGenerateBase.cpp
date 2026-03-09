@@ -14,8 +14,8 @@
 #include "Core/Generator.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Debug/Config.h"
+#include "Core/Debug/MeasureTime.h"
 #include "Core/Helper/Direction.h"
-#include "Core/Helper/Finalizer.h"
 #include "Core/Helper/Identifier.h"
 #include "Core/Helper/Stopwatch.h"
 #include "Core/Math/Math.h"
@@ -34,11 +34,14 @@
 #include "PluginInformation.h"
 
 #include "Helper/DungeonAisleGridMap.h"
+#include "Helper/DungeonDirection.h"
 
 #include <Model.h>
 #include <FoliageInstancedStaticMeshComponent.h>
 #include <TextureResource.h>
 #include <Components/BrushComponent.h>
+#include <Components/HierarchicalInstancedStaticMeshComponent.h>
+#include <Components/InstancedStaticMeshComponent.h>
 #include <Components/PointLightComponent.h>
 #include <Components/StaticMeshComponent.h>
 #include <GameFramework/PlayerStart.h>
@@ -68,14 +71,6 @@
 #include <EditorActorFolders.h>
 #include <EditorLevelUtils.h>
 #include <Builders/CubeBuilder.h>
-#endif
-
-#if WITH_EDITOR & JENKINS_FOR_DEVELOP
-#define BEGIN_STOPWATCH()	dungeon::Stopwatch stopwatch
-#define END_STOPWATCH(VAR)	VAR += stopwatch.Lap()
-#else
-#define BEGIN_STOPWATCH()	((void)0)
-#define END_STOPWATCH(VAR)	((void)0)
 #endif
 
 namespace
@@ -120,6 +115,27 @@ namespace
 		return mask;
 	}
 
+#if WITH_EDITOR
+	FString NormalizeEditorPackageNameForComparison(const FString& packageName)
+	{
+		FString normalized = packageName;
+		int32 slashIndex = INDEX_NONE;
+		if (!normalized.FindLastChar(TEXT('/'), slashIndex) || slashIndex + 1 >= normalized.Len())
+			return normalized;
+
+		FString leafName = normalized.Mid(slashIndex + 1);
+		if (!leafName.StartsWith(TEXT("UEDPIE_")))
+			return normalized;
+
+		const int32 piePrefixEnd = leafName.Find(TEXT("_"), ESearchCase::CaseSensitive, ESearchDir::FromStart, FCString::Strlen(TEXT("UEDPIE_")));
+		if (piePrefixEnd == INDEX_NONE || piePrefixEnd + 1 >= leafName.Len())
+			return normalized;
+
+		leafName = leafName.Mid(piePrefixEnd + 1);
+		normalized = normalized.Left(slashIndex + 1) + leafName;
+		return normalized;
+	}
+#endif
 }
 
 ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer)
@@ -128,6 +144,9 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 	// Create root scene component
 	RootComponent = initializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("Scene"), true);
 	check(RootComponent);
+
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	const AddStaticMeshEvent addFloorStaticMeshEvent = [this](UStaticMesh* staticMesh, const FTransform& transform)
 		{
@@ -230,17 +249,26 @@ void ADungeonGenerateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+void ADungeonGenerateBase::Tick(float DeltaSeconds)
+{
+	// Calling the parent class
+	Super::Tick(DeltaSeconds);
+
+	// 予約されたスポーンを実行
+	mDungeonDeferredSpawnManager.Update();
+}
+
 /*
-同期用の乱数を取得します。必ずサーバーとクライアントが同じ回数呼び出すようにして下さい。
-*/
+ * 同期用の乱数を取得します。必ずサーバーとクライアントが同じ回数呼び出すようにして下さい。
+ */
 std::shared_ptr<dungeon::Random> ADungeonGenerateBase::GetSynchronizedRandom() const noexcept
 {
 	return mGenerator->GetGenerateParameter().GetRandom();
 }
 
 /*
-ローカル用の乱数を取得します。レプリケーションで同期する事を想定しています。
-*/
+ * ローカル用の乱数を取得します。レプリケーションで同期する事を想定しています。
+ */
 const std::shared_ptr<dungeon::Random>& ADungeonGenerateBase::GetRandom() const noexcept
 {
 	return mLocalRandom;
@@ -262,7 +290,30 @@ UDungeonComponentActivatorComponent* ADungeonGenerateBase::FindOrAddComponentAct
 	return component;
 }
 
-AActor* ADungeonGenerateBase::SpawnActorImpl(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters)
+void ADungeonGenerateBase::DeferredSpawnActorWithFolderPath(UClass* actorClass, const FString& folderPath,
+	const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters,
+	const TFunction<void(AActor*)>& onSpawned)
+{
+	DeferredSpawnActorWithFolderPath(GetWorld(), actorClass, folderPath, transform, actorSpawnParameters, onSpawned);
+}
+
+void ADungeonGenerateBase::DeferredSpawnActorWithFolderPath(UWorld* world, UClass* actorClass,
+	const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters,
+	const TFunction<void(AActor*)>& onSpawned)
+{
+	mDungeonDeferredSpawnManager.RequestSpawn(
+		world,
+		actorClass,
+		folderPath,
+		transform,
+		actorSpawnParameters,
+		onSpawned
+	);
+
+	SetActorTickEnabled(true);
+}
+
+AActor* ADungeonGenerateBase::SpawnActorWithFolderPath(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters)
 {
 	if (!IsValid(world))
 		return nullptr;
@@ -282,32 +333,32 @@ AActor* ADungeonGenerateBase::SpawnActorImpl(UWorld* world, UClass* actorClass, 
 }
 
 /*
-アクターをスポーンします。
-DungeonGeneratorというタグを追加します。
-スポーンしたアクターはDestroySpawnedActorsで破棄されます。
-*/
-AActor* ADungeonGenerateBase::SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters) const
+ * アクターをスポーンします。
+ * DungeonGeneratorというタグを追加します。
+ * スポーンしたアクターはDestroySpawnedActorsで破棄されます。
+ */
+AActor* ADungeonGenerateBase::SpawnActorWithFolderPath(UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters) const
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world) == false)
 		return nullptr;
 
-	return SpawnActorImpl(world, actorClass, folderPath, transform, actorSpawnParameters);
+	return SpawnActorWithFolderPath(world, actorClass, folderPath, transform, actorSpawnParameters);
 }
 
 /*
-スポーンしたアクターを全て破棄します
-DungeonGeneratorというタグが付いたアクターが対象です。
-*/
+ * スポーンしたアクターを全て破棄します
+ * DungeonGeneratorというタグが付いたアクターが対象です。
+ */
 void ADungeonGenerateBase::DestroySpawnedActors() const
 {
 	DestroySpawnedActors(GetWorld());
 }
 
 /*
-スポーンしたアクターを全て破棄します
-DungeonGeneratorというタグが付いたアクターが対象です。
-*/
+ * スポーンしたアクターを全て破棄します
+ * DungeonGeneratorというタグが付いたアクターが対象です。
+ */
 void ADungeonGenerateBase::DestroySpawnedActors(UWorld* world)
 {
 	if (!IsValid(world))
@@ -402,6 +453,8 @@ bool ADungeonGenerateBase::IsGenerated() const noexcept
 
 void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 {
+	mDungeonDeferredSpawnManager.CancelAll(/*bNotifyCallbacks=*/false);
+
 	// 生成済みなら破棄する
 	if (mGenerated == true)
 	{
@@ -421,28 +474,41 @@ void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 }
 
 /*
-hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
-例えばリプリケートするアクターはサーバー側でのみ実行されるため乱数の同期ずれが発生します。
-*/
+ * hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
+ * 例えばリプリケートするアクターはサーバー側でのみ実行されるため乱数の同期ずれが発生します。
+ */
+
 bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
 {
-	check(mGenerated == false);
+	MEASURE_TIME_START(stopwatch);
+	dungeon::GenerateParameter generateParameter;
+	if (!BeginDungeonGenerationPhase_Prepare(parameter, hasAuthority, generateParameter))
+	{
+		return false;
+	}
+	MEASURE_TIME_LAP(stopwatch, TEXT(" BeginDungeonGenerationPhase_Prepare"));
 
-	// 生成結果を通知
-	dungeon::Finalizer NotificationGenerationResults([this]()
-		{
-			if (mGenerated)
-			{
-				// 成功を通知
-				OnGenerationSuccess.Broadcast();
-			}
-			else
-			{
-				// 失敗を通知
-				OnGenerationFailure.Broadcast();
-			}
-		}
-	);
+	if (!BeginDungeonGenerationPhase_InitializeCore(generateParameter))
+	{
+		return false;
+	}
+	MEASURE_TIME_LAP(stopwatch, TEXT(" BeginDungeonGenerationPhase_InitializeCore"));
+
+	if (!BeginDungeonGenerationPhase_RunGenerator(generateParameter, hasAuthority))
+	{
+		return false;
+	}
+	MEASURE_TIME_LAP(stopwatch, TEXT(" BeginDungeonGenerationPhase_RunGenerator"));
+
+	BeginDungeonGenerationPhase_BuildWorld(generateParameter, hasAuthority);
+	MEASURE_TIME_LAP(stopwatch, TEXT(" BeginDungeonGenerationPhase_BuildWorld"));
+
+	return true;
+}
+
+bool ADungeonGenerateBase::BeginDungeonGenerationPhase_Prepare(const UDungeonGenerateParameter* parameter, const bool hasAuthority, dungeon::GenerateParameter& generateParameter)
+{
+	check(mGenerated == false);
 
 #if WITH_EDITOR
 	dungeon::CreateDebugDirectory();
@@ -465,6 +531,9 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 		DUNGEON_GENERATOR_ERROR(TEXT("Set the dungeon generation parameters"));
 		return false;
 	}
+
+	mDungeonDeferredSpawnManager.CancelAll(/*bNotifyCallbacks=*/false);
+
 
 	TArray<FDungeonValidationIssue> validationIssues;
 	FDungeonParameterValidator::Validate(parameter, validationIssues, false);
@@ -494,7 +563,6 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 
 
 	// ダンジョン生成パラメータを生成
-	dungeon::GenerateParameter generateParameter;
 	{
 		int32 randomSeed;
 		if (hasAuthority)
@@ -578,6 +646,11 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 		check(generateParameter.GetMinRoomHeight() <= generateParameter.GetMaxRoomHeight());
 	}
 
+	return true;
+}
+
+bool ADungeonGenerateBase::BeginDungeonGenerationPhase_InitializeCore(const dungeon::GenerateParameter& generateParameter)
+{
 	// クライアント用乱数生成器を初期化
 	mLocalRandom = std::make_shared<dungeon::Random>(generateParameter.GetRandom()->Get<uint32_t>());
 
@@ -590,55 +663,20 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 	}
 
 	// 生成開始イベントの通知
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	dungeon::Stopwatch stopwatch;
-#endif
+	MEASURE_TIME_START(stopwatch);
 	BeginGeneration();
 	OnBeginGeneration.Broadcast();
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	DUNGEON_GENERATOR_LOG(TEXT("On start generation event: %lf seconds"), stopwatch.Lap());
-#endif
+	MEASURE_TIME_LAP(stopwatch, TEXT("  On start generation event"));
 
 	// 通路グリッド記録クラスを生成
 	mAisleGridMap = NewObject<UDungeonAisleGridMap>(this);
 
-	// 生成終了イベントの登録
-	dungeon::Finalizer finalizer([this, hasAuthority]()->void
-		{
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-			dungeon::Stopwatch stopwatch;
-#endif
 
-			// Blueprintから使用できる乱数を生成します
-			UDungeonRandom* random = NewObject<UDungeonRandom>(this);
-			random->SetOwner(GetSynchronizedRandom());
-			EndGeneration(random, mAisleGridMap);
-			OnEndGeneration.Broadcast(random, mAisleGridMap);
+	return true;
+}
 
-			mParameter->OnEndGeneration(random, mAisleGridMap, [this, hasAuthority](const FSoftObjectPath& spawnPath, const FTransform& transform)
-				{
-					if (hasAuthority)
-					{
-						const FSoftObjectPath path(spawnPath.ToString() + "_C");
-						const TSoftClassPtr<AActor> softClassPointer(path);
-						auto* actorClass = softClassPointer.LoadSynchronous();
-
-						FActorSpawnParameters actorSpawnParameters;
-						actorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-						SpawnActorImpl(actorClass, ActorsFolderPath, transform, actorSpawnParameters);
-					}
-				}
-			);
-
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-			DUNGEON_GENERATOR_LOG(TEXT("On end generation event: %lf seconds"), stopwatch.Lap());
-#endif
-
-			// 通路グリッド記録クラスを解放
-			mAisleGridMap = nullptr;
-		}
-	);
-
+bool ADungeonGenerateBase::BeginDungeonGenerationPhase_RunGenerator(dungeon::GenerateParameter& generateParameter, const bool hasAuthority)
+{
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 	// 通信同期用に現在の乱数の種を出力する
 	{
@@ -657,7 +695,7 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 	// ダンジョンを生成
 	OnPreDungeonGeneration();
 	mGenerator->Generate(generateParameter);
-	dungeon::Generator::Error generatorError = mGenerator->GetLastError();
+	const dungeon::Generator::Error generatorError = mGenerator->GetLastError();
 	OnPostDungeonGeneration(dungeon::Generator::Error::Success == generatorError);
 
 	// 生成エラーを確認する
@@ -682,6 +720,14 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 	}
 #endif
 
+	return true;
+}
+
+void ADungeonGenerateBase::BeginDungeonGenerationPhase_BuildWorld(const dungeon::GenerateParameter& generateParameter, const bool hasAuthority)
+{
+	MEASURE_TIME_START(stopwatch);
+
+
 	// メッシュの生成
 	{
 		RoomAndRoomSensorMap roomSensorCache;
@@ -700,6 +746,28 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 		CreateImplement_FinishSpawnRoomSensor(roomSensorCache);
 	}
 
+	// Blueprintから使用できる乱数を生成します
+	UDungeonRandom* random = NewObject<UDungeonRandom>(this);
+	random->SetOwner(GetSynchronizedRandom());
+	EndGeneration(random, mAisleGridMap);
+	OnEndGeneration.Broadcast(random, mAisleGridMap);
+
+	mParameter->OnEndGeneration(random, mAisleGridMap, [this, hasAuthority](const FSoftObjectPath& spawnPath, const FTransform& transform)
+		{
+			if (hasAuthority)
+			{
+				const FSoftObjectPath path(spawnPath.ToString() + "_C");
+				const TSoftClassPtr<AActor> softClassPointer(path);
+				auto* actorClass = softClassPointer.LoadSynchronous();
+
+				FActorSpawnParameters actorSpawnParameters;
+				actorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+				SpawnActorWithFolderPath(actorClass, ActorsFolderPath, transform, actorSpawnParameters);
+			}
+		}
+	);
+	MEASURE_TIME_LAP(stopwatch, TEXT("  On end generation event"));
+
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 	// 通信同期用に現在の乱数の種を出力する
 	if (mGenerator)
@@ -716,12 +784,24 @@ bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParamete
 	}
 #endif
 
+	// 通路グリッド記録クラスを解放
+	mAisleGridMap = nullptr;
 	mGenerated = true;
-	return true;
 }
 
 void ADungeonGenerateBase::EndDungeonGeneration()
 {
+	if (mGenerated)
+	{
+		// 成功を通知
+		OnGenerationSuccess.Broadcast();
+	}
+	else
+	{
+		// 失敗を通知
+		OnGenerationFailure.Broadcast();
+	}
+
 }
 
 void ADungeonGenerateBase::BeginGeneration_Implementation()
@@ -743,10 +823,7 @@ void ADungeonGenerateBase::EndGeneration_Implementation(UDungeonRandom* synchron
 void ADungeonGenerateBase::CreateImplement_QueryAisleGeneration(const bool hasAuthority)
 {
 	check(IsValid(mParameter));
-
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	dungeon::Stopwatch stopwatch;
-#endif
+	MEASURE_TIME_START(stopwatch);
 
 	// 通路生成のイベントを発生させます
 	mGenerator->GetVoxel()->Each([this](const FIntVector& location, dungeon::Grid& grid)
@@ -777,9 +854,7 @@ void ADungeonGenerateBase::CreateImplement_QueryAisleGeneration(const bool hasAu
 		}
 	);
 
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	DUNGEON_GENERATOR_LOG(TEXT("Query aisle generation: %lf seconds"), stopwatch.Lap());
-#endif
+	MEASURE_TIME_LAP(stopwatch, TEXT("  Query aisle generation"));
 }
 
 /*
@@ -850,37 +925,37 @@ void ADungeonGenerateBase::CreateImplement_AddTerrain(RoomAndRoomSensorMap& room
 
 				// Generate floor and slope meshes
 				{
-					BEGIN_STOPWATCH();
+					MEASURE_TIME_START(stopwatch);
 					CreateImplement_AddFloorAndSlope(createImplementParameter);
-					END_STOPWATCH(floorAndSlopeStopwatch);
+					MEASURE_TIME_ADD(stopwatch, floorAndSlopeStopwatch);
 				}
 
 				// Generate wall mesh
 				{
-					BEGIN_STOPWATCH();
+					MEASURE_TIME_START(stopwatch);
 					CreateImplement_ReserveWall(createImplementParameter);
-					END_STOPWATCH(wallStopwatch);
+					MEASURE_TIME_ADD(stopwatch, wallStopwatch);
 				}
 
 				// Generate mesh for pillars and torches
 				{
-					BEGIN_STOPWATCH();
+					MEASURE_TIME_START(stopwatch);
 					CreateImplement_AddPillarAndTorch(createImplementParameter, dungeonRoomSensorBase, hasAuthority);
-					END_STOPWATCH(pillarAndTorchStopwatch);
+					MEASURE_TIME_ADD(stopwatch, pillarAndTorchStopwatch);
 				}
 
 				// Generate door mesh
 				{
-					BEGIN_STOPWATCH();
+					MEASURE_TIME_START(stopwatch);
 					CreateImplement_AddDoor(createImplementParameter, dungeonRoomSensorBase, hasAuthority);
-					END_STOPWATCH(doorStopwatch);
+					MEASURE_TIME_ADD(stopwatch, doorStopwatch);
 				}
 
 				// Generate roof mesh
 				{
-					BEGIN_STOPWATCH();
+					MEASURE_TIME_START(stopwatch);
 					CreateImplement_AddRoof(createImplementParameter);
-					END_STOPWATCH(roofStopwatch);
+					MEASURE_TIME_ADD(stopwatch, roofStopwatch);
 				}
 
 				// Reserve Vegetation Generation Aisle Bounds
@@ -1146,14 +1221,16 @@ void ADungeonGenerateBase::CreateImplement_AddDoor(const CreateImplementParamete
 		if (const FDungeonDoorActorParts* parts = mParameter->SelectDoorParts(cp.mGridIndex, cp.mGrid, GetRandom()))
 		{
 			const EDungeonRoomProps props = static_cast<EDungeonRoomProps>(cp.mGrid.GetProps());
-			if (cp.mGrid.CanBuildGate(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z), dungeon::Direction::North, mParameter->IsMergeRooms()))
+			const dungeon::Grid& northGrid = mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z);
+			if (!northGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(northGrid, dungeon::Direction::North, mParameter->IsMergeRooms()))
 			{
 				// 北側の扉
 				FVector doorPosition = cp.mPosition;
 				doorPosition.X += mParameter->GetGridSize().HorizontalSize * 0.5f;
 				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), dungeonRoomSensorBase, props);
 			}
-			if (cp.mGrid.CanBuildGate(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z), dungeon::Direction::South, mParameter->IsMergeRooms()))
+			const dungeon::Grid& southGrid = mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z);
+			if (!southGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(southGrid, dungeon::Direction::South, mParameter->IsMergeRooms()))
 			{
 				// 南側の扉
 				FVector doorPosition = cp.mPosition;
@@ -1161,7 +1238,8 @@ void ADungeonGenerateBase::CreateImplement_AddDoor(const CreateImplementParamete
 				doorPosition.Y += mParameter->GetGridSize().HorizontalSize;
 				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 180.f), dungeonRoomSensorBase, props);
 			}
-			if (cp.mGrid.CanBuildGate(mGenerator->GetGrid(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::East, mParameter->IsMergeRooms()))
+			const dungeon::Grid& eastGrid = mGenerator->GetGrid(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z);
+			if (!eastGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(eastGrid, dungeon::Direction::East, mParameter->IsMergeRooms()))
 			{
 				// 東側の扉
 				FVector doorPosition = cp.mPosition;
@@ -1169,7 +1247,8 @@ void ADungeonGenerateBase::CreateImplement_AddDoor(const CreateImplementParamete
 				doorPosition.Y += mParameter->GetGridSize().HorizontalSize * 0.5f;
 				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 90.f), dungeonRoomSensorBase, props);
 			}
-			if (cp.mGrid.CanBuildGate(mGenerator->GetGrid(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::West, mParameter->IsMergeRooms()))
+			const dungeon::Grid& westGrid = mGenerator->GetGrid(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z);
+			if (!westGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(westGrid, dungeon::Direction::West, mParameter->IsMergeRooms()))
 			{
 				// 西側の扉
 				FVector doorPosition = cp.mPosition;
@@ -1187,6 +1266,9 @@ ADungeonDoorBaseはリプリケートされる前提のアクターなので
 bool ADungeonGenerateBase::CanAddDoor(const ADungeonRoomSensorBase* dungeonRoomSensorBase, const FIntVector& location, const dungeon::Grid& grid) const
 {
 	if (grid.Is(dungeon::Grid::Type::Gate) == false)
+		return false;
+
+	if (grid.IsNoDoorGeneration())
 		return false;
 
 	if (dungeonRoomSensorBase == nullptr)
@@ -1224,12 +1306,6 @@ bool ADungeonGenerateBase::CanAddDoor(const ADungeonRoomSensorBase* dungeonRoomS
 	return true;
 }
 
-/*
-柱はレプリケーションする必要が無いのでサーバーとクライアント両方でアクターをスポーンする
-
-燭台アクターはリプリケートされる前提のアクターなので
-同期乱数(GetSynchronizedRandom)を使ってはならない。
-*/
 void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const
 {
 	struct TorchChecker final
@@ -1411,6 +1487,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 						);
 					}
 				}
+
 			}
 		}
 	}
@@ -1423,10 +1500,7 @@ ADungeonRoomSensorBaseはリプリケートされない前提のアクターな�
 void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const
 {
 	check(IsValid(mParameter));
-
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	dungeon::Stopwatch stopwatch;
-#endif
+	MEASURE_TIME_START(stopwatch);
 
 	mGenerator->ForEach([this, &roomSensorCache, hasAuthority](const std::shared_ptr<const dungeon::Room>& room)
 		{
@@ -1470,9 +1544,7 @@ void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSen
 		}
 	);
 
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	DUNGEON_GENERATOR_LOG(TEXT("Prepare spawn DungeonRoomSensor actors: %lf seconds"), stopwatch.Lap());
-#endif
+	MEASURE_TIME_LAP(stopwatch, TEXT("  Prepare spawn DungeonRoomSensor actors"));
 }
 
 /*
@@ -1481,9 +1553,7 @@ ADungeonRoomSensorBaseはリプリケートされない前提のアクターな�
 */
 void ADungeonGenerateBase::CreateImplement_FinishSpawnRoomSensor(const RoomAndRoomSensorMap& roomSensorCache)
 {
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	dungeon::Stopwatch stopwatch;
-#endif
+	MEASURE_TIME_START(stopwatch);
 
 	for (const auto& roomSensorActor : roomSensorCache)
 	{
@@ -1493,14 +1563,14 @@ void ADungeonGenerateBase::CreateImplement_FinishSpawnRoomSensor(const RoomAndRo
 		}
 	}
 
-#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
-	DUNGEON_GENERATOR_LOG(TEXT("Finish spawn DungeonRoomSensor actors: %lf seconds"), stopwatch.Lap());
-#endif
+	MEASURE_TIME_LAP(stopwatch, TEXT("  Finish spawn DungeonRoomSensor actors"));
 }
 
 
 void ADungeonGenerateBase::CreateImplement_AddChandelier(const RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const
 {
+	MEASURE_TIME_START(stopwatch);
+
 	if (!hasAuthority)
 		return;
 
@@ -1820,10 +1890,14 @@ void ADungeonGenerateBase::CreateImplement_AddChandelier(const RoomAndRoomSensor
 			false
 		);
 	}
+
+	MEASURE_TIME_LAP(stopwatch, TEXT("  CreateImplement_AddChandelier Time"));
 }
 
 void ADungeonGenerateBase::CreateImplement_Navigation(const bool hasAuthority)
 {
+	MEASURE_TIME_START(stopwatch);
+
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 	// 通信同期用に現在の乱数の種を出力する
 	if (mGenerator)
@@ -1842,9 +1916,11 @@ void ADungeonGenerateBase::CreateImplement_Navigation(const bool hasAuthority)
 
 	// RecastNavMeshを調べる
 	CheckRecastNavMesh();
+	MEASURE_TIME_LAP(stopwatch, TEXT("  CheckRecastNavMesh Time"));
 
 	// NavMeshBoundsVolumeをフィットさせる
 	FitNavMeshBoundsVolume();
+	MEASURE_TIME_LAP(stopwatch, TEXT("  FitNavMeshBoundsVolume Time"));
 }
 
 /*
@@ -2130,11 +2206,8 @@ AStaticMeshActor* ADungeonGenerateBase::SpawnStaticMeshActor(UStaticMesh* static
 
 	if (auto* staticMeshComponent = GetValid(actor->GetStaticMeshComponent()))
 	{
-		if (const auto* world = actor->GetWorld())
-		{
-			if (world->HasBegunPlay() == true)
-				actor->SetMobility(EComponentMobility::Movable);
-		}
+		if (staticMeshComponent->Mobility != EComponentMobility::Movable)
+			staticMeshComponent->SetMobility(EComponentMobility::Movable);
 
 		staticMeshComponent->SetStaticMesh(staticMesh);
 		staticMeshComponent->ComponentTags.AddUnique(GetDungeonGeneratorTerrainTag());
@@ -2158,6 +2231,7 @@ DungeonDoorBaseをスポーンします。
 ADungeonDoorBase* ADungeonGenerateBase::SpawnDoorActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, EDungeonRoomProps props) const
 {
 	ADungeonDoorBase* actor = SpawnActorDeferredImpl<ADungeonDoorBase>(actorClass, DoorsFolderPath, transform, ownerActor, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
 	if (IsValid(actor))
 	{
 		actor->InvokeInitialize(GetRandom(), props);
@@ -2166,6 +2240,7 @@ ADungeonDoorBase* ADungeonGenerateBase::SpawnDoorActor(UClass* actorClass, const
 		// 負荷制御コンポーネントを追加する
 		FindOrAddComponentActivatorComponent(actor);
 
+		// ドアアクターを登録する
 		if (IsValid(ownerActor))
 			ownerActor->AddDungeonDoor(actor);
 	}
@@ -2177,46 +2252,83 @@ ADungeonDoorBase* ADungeonGenerateBase::SpawnDoorActor(UClass* actorClass, const
 */
 AActor* ADungeonGenerateBase::SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const bool castShadow) const
 {
-	FActorSpawnParameters actorSpawnParameters;
-	actorSpawnParameters.Owner = ownerActor;
-	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
-	AActor* actor = SpawnActorImpl(actorClass, TorchesFolderPath, transform, actorSpawnParameters);
-	if (IsValid(actor))
-	{
-		// 負荷制御コンポーネントを追加する
-		FindOrAddComponentActivatorComponent(actor);
+	ADungeonGenerateBase* nonConstThis = const_cast<ADungeonGenerateBase*>(this);
+	if (!IsValid(nonConstThis))
+		return nullptr;
 
-		// ポイントライトまたはスポットライトのCastShadowを制御する
-		if (castShadow == false)
+	TWeakObjectPtr<ADungeonRoomSensorBase> weakOwnerActor(ownerActor);
+	FActorSpawnParameters actorSpawnParameters;
+	actorSpawnParameters.Owner = nullptr;
+	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
+	nonConstThis->DeferredSpawnActorWithFolderPath(
+		actorClass,
+		TorchesFolderPath,
+		transform,
+		actorSpawnParameters,
+		[weakOwnerActor, castShadow](AActor* actor)
 		{
-			for (auto* component : actor->GetComponents())
+			if (IsValid(actor) == false)
+				return;
+
+			// 雋闕ｷ蛻ｶ蠕｡繧ｳ繝ｳ繝昴・繝阪Φ繝医ｒ霑ｽ蜉縺吶ｋ
+			ADungeonGenerateBase::FindOrAddComponentActivatorComponent(actor);
+
+			// 繝昴う繝ｳ繝医Λ繧､繝医∪縺溘・繧ｹ繝昴ャ繝医Λ繧､繝医・CastShadow繧貞宛蠕｡縺吶ｋ
+			if (castShadow == false)
 			{
-				if (auto* pointLightComponent = Cast<UPointLightComponent>(component))
-					pointLightComponent->SetCastShadows(false);
+				for (auto* component : actor->GetComponents())
+				{
+					if (auto* pointLightComponent = Cast<UPointLightComponent>(component))
+						pointLightComponent->SetCastShadows(false);
+				}
+			}
+
+			// 隕ｪ繧｢繧ｯ繧ｿ繝ｼ縺ｫ辯ｭ蜿ｰ繧｢繧ｯ繧ｿ繝ｼ繧堤匳骭ｲ縺吶ｋ
+			if (ADungeonRoomSensorBase* validOwnerActor = weakOwnerActor.Get())
+			{
+				if (actor->GetOwner() != validOwnerActor)
+				{
+					actor->SetOwner(validOwnerActor);
+				}
+				validOwnerActor->AddDungeonTorch(actor);
 			}
 		}
+	);
 
-		// 親アクターに燭台アクターを登録する
-		if (IsValid(ownerActor))
-			ownerActor->AddDungeonTorch(actor);
-	}
-
-	return actor;
+	return nullptr;
 }
-
 AActor* ADungeonGenerateBase::SpawnChandelierActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
+	ADungeonGenerateBase* nonConstThis = const_cast<ADungeonGenerateBase*>(this);
+	if (!IsValid(nonConstThis))
+		return nullptr;
+
+	TWeakObjectPtr<ADungeonRoomSensorBase> weakOwnerActor(ownerActor);
 	FActorSpawnParameters actorSpawnParameters;
-	actorSpawnParameters.Owner = ownerActor;
+	actorSpawnParameters.Owner = nullptr;
 	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
-	AActor* actor = SpawnActorImpl(actorClass, ChandeliersFolderPath, transform, actorSpawnParameters);
-	if (IsValid(actor))
-	{
-		FindOrAddComponentActivatorComponent(actor);
-		if (IsValid(ownerActor))
-			ownerActor->AddDungeonChandelier(actor);
-	}
-	return actor;
+	nonConstThis->DeferredSpawnActorWithFolderPath(
+		actorClass,
+		ChandeliersFolderPath,
+		transform,
+		actorSpawnParameters,
+		[weakOwnerActor](AActor* actor)
+		{
+			if (IsValid(actor) == false)
+				return;
+
+			ADungeonGenerateBase::FindOrAddComponentActivatorComponent(actor);
+			if (ADungeonRoomSensorBase* validOwnerActor = weakOwnerActor.Get())
+			{
+				if (actor->GetOwner() != validOwnerActor)
+				{
+					actor->SetOwner(validOwnerActor);
+				}
+				validOwnerActor->AddDungeonChandelier(actor);
+			}
+		}
+	);
+	return nullptr;
 }
 
 /*
@@ -2290,6 +2402,7 @@ FBox ADungeonGenerateBase::GetStartBoundingBox() const
 	}
 	return FBox();
 }
+
 
 FVector ADungeonGenerateBase::GetGoalLocation() const
 {
