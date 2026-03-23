@@ -203,6 +203,7 @@ public:
 	 * 部屋に燭台を追加します
 	 */
 	void AddDungeonTorch(AActor* actor);
+	void AddDungeonChandelier(AActor* actor);
 
 	/**
 	 * Update the torchlight in the room.
@@ -212,6 +213,15 @@ public:
 	void EachDungeonTorch(Function&& function) const noexcept
 	{
 		for (AActor* actor : DungeonTorches)
+		{
+			std::forward<Function>(function)(actor);
+		}
+	}
+
+	template<typename Function>
+	void EachDungeonChandelier(Function&& function) const noexcept
+	{
+		for (AActor* actor : DungeonChandeliers)
 		{
 			std::forward<Function>(function)(actor);
 		}
@@ -453,6 +463,12 @@ protected:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Debug")
 	TArray<TObjectPtr<AActor>> DungeonTorches;
+
+	/**
+	 * Chandelier in a room
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Debug")
+	TArray<TObjectPtr<AActor>> DungeonChandeliers;
 
 
 	/**

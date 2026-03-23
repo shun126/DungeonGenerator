@@ -43,6 +43,7 @@ public:
 
 private:
 	static ADungeonGeneratedActor* SpawnDungeonActor(UWorld* world, const FVector& location);
+	bool mIsGeneratingDungeon = false;
 
 	// friend class
 	friend class FDungeonGenerateEditorModule;

@@ -13,7 +13,7 @@
 
 namespace
 {
-	static FTransform CalculateWorldTransform_(const FTransform& toWorldTransform, const FTransform& relativeTransform)
+	FTransform CalculateWorldTransform_(const FTransform& toWorldTransform, const FTransform& relativeTransform)
 	{
 		return relativeTransform * toWorldTransform;
 	}
@@ -50,14 +50,14 @@ FTransform FDungeonPartsTransform::CalculateWorldTransform(const std::shared_ptr
 		result.SetRotation(rotator.Quaternion());
 		return CalculateWorldTransform_(result, RelativeTransform);
 	}
-	else if (placementDirection == EDungeonPartsPlacementDirection::RandomDirection)
+	if (placementDirection == EDungeonPartsPlacementDirection::RandomDirection)
 	{
 		const FRotator rotator(0., static_cast<double>(random->Get<uint8_t>(4)) * 90., 0.);
 		FTransform result(transform);
 		result.SetRotation(rotator.Quaternion());
 		return CalculateWorldTransform_(result, RelativeTransform);
 	}
-	else if (placementDirection == EDungeonPartsPlacementDirection::FollowGridDirection)
+	if (placementDirection == EDungeonPartsPlacementDirection::FollowGridDirection)
 	{
 		return CalculateWorldTransform_(transform, RelativeTransform);
 	}

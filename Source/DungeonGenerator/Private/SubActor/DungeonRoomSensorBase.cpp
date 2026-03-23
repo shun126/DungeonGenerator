@@ -167,6 +167,7 @@ void ADungeonRoomSensorBase::Tick(float DeltaSeconds)
 		output.Add(TEXT("DoorAddingProbability:") + FString::FromInt(DoorAddingProbability));
 		output.Add(TEXT("Doors:") + FString::FromInt(DungeonDoors.Num()));
 		output.Add(TEXT("Torches:") + FString::FromInt(DungeonTorches.Num()));
+		output.Add(TEXT("Chandeliers:") + FString::FromInt(DungeonChandeliers.Num()));
 
 		FString message;
 		for (const FString& line : output)
@@ -296,6 +297,11 @@ bool ADungeonRoomSensorBase::HasLockedDoor() const
 void ADungeonRoomSensorBase::AddDungeonTorch(AActor* actor)
 {
 	DungeonTorches.Add(actor);
+}
+
+void ADungeonRoomSensorBase::AddDungeonChandelier(AActor* actor)
+{
+	DungeonChandeliers.Add(actor);
 }
 
 void ADungeonRoomSensorBase::SpawnActorsInRoomImpl()

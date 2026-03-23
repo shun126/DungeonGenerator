@@ -9,13 +9,13 @@
 #include "DungeonMeshSetSelectionMethod.generated.h"
 
 /**
- * Part Selection Method
- * パーツを選択する方法
+ * MeshSet Selection Method
+ * メッシュセットを選択する方法
  */
 UENUM(BlueprintType)
 enum class EDungeonMeshSetSelectionMethod : uint8
 {
-	Identifier,
-	DepthFromStart,
-	Random,
+	Random UMETA(DisplayName = "Random", ToolTip = "Select mesh sets randomly."),
+	Identifier UMETA(DisplayName = "Identifier", ToolTip = "Select mesh sets based on grid identifier rules."),
+	DepthFromStart UMETA(DisplayName = "Depth From Start", ToolTip = "Select mesh sets based on distance from the start."),
 };

@@ -9,22 +9,24 @@
  */
 
 #include "DungeonGenerateActor.h"
-#include "PluginInformation.h"
 #include "Core/Generator.h"
 #include "Core/Debug/BuildInformation.h"
 #include "Core/Debug/Debug.h"
+#include "Core/Debug/Config.h"
+#include "Core/Helper/Stopwatch.h"
 #include "Core/Math/Vector.h"
 #include "Core/Voxelization/Grid.h"
 #include "Core/Voxelization/Voxel.h"
-#include "Helper/DungeonAisleGridMap.h"
 #include "MainLevel/DungeonMainLevelScriptActor.h"
+#include "PluginInformation.h"
 #include "Parameter/DungeonGenerateParameter.h"
 #include <GameFramework/Pawn.h>
 #include <Components/HierarchicalInstancedStaticMeshComponent.h>
 #include <Engine/LevelStreaming.h>
+#include <Engine/NetDriver.h>
 #include <Kismet/GameplayStatics.h>
 
-#include <Engine/NetDriver.h>
+#include "Core/Debug/MeasureTime.h"
 
 #if WITH_EDITOR
 #include <DrawDebugHelpers.h>
@@ -53,7 +55,15 @@ void ADungeonGenerateActor::PreInitializeComponents()
 
 	if (AutoGenerateAtStart == true)
 	{
-		PreGenerateImplementation();
+		if (!mIsGeneratingDungeon)
+		{
+			mIsGeneratingDungeon = true;
+			PreGenerateImplementation();
+		}
+		else
+		{
+			DUNGEON_GENERATOR_ERROR(TEXT("PreInitializeComponents auto generation ignored because dungeon generation is already in progress."));
+		}
 	}
 }
 
@@ -62,16 +72,20 @@ void ADungeonGenerateActor::PostInitializeComponents()
 	// Calling the parent class
 	Super::PostInitializeComponents();
 
-	if (AutoGenerateAtStart == true)
+	if (mIsGeneratingDungeon)
 	{
-		PostGenerateImplementation();
-	}
+		if (AutoGenerateAtStart == true)
+		{
+			PostGenerateImplementation();
+		}
 
-	//if (GetNetMode() != NM_Standalone)
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		SetReplicates(true);
-		SetAutonomousProxy(true);
+		if (GetLocalRole() == ROLE_Authority)
+		{
+			SetReplicates(true);
+			SetAutonomousProxy(true);
+		}
+
+		mIsGeneratingDungeon = false;
 	}
 }
 
@@ -121,6 +135,7 @@ void ADungeonGenerateActor::OnPostDungeonGeneration(const bool result)
 	}
 }
 
+
 ////////// InstancedStaticMesh //////////
 uint32 ADungeonGenerateActor::InstancedMeshHash(const FVector& position, const double quantizationSize)
 {
@@ -165,6 +180,8 @@ void ADungeonGenerateActor::AddInstance(UStaticMesh* staticMesh, const FTransfor
 
 void ADungeonGenerateActor::EndInstanceTransaction()
 {
+	MEASURE_TIME_START(stopwatch);
+
 	mInstancedMeshCluster.Shrink();
 
 	for (auto& chunk : mInstancedMeshCluster)
@@ -174,6 +191,8 @@ void ADungeonGenerateActor::EndInstanceTransaction()
 
 	if (mInstancedMeshCullDistance.Min < mInstancedMeshCullDistance.Max)
 		ApplyInstancedMeshCullDistance();
+
+	MEASURE_TIME_LAP(stopwatch, TEXT("EndInstanceTransaction Time"));
 }
 
 void ADungeonGenerateActor::DestroyAllInstance()
@@ -202,13 +221,17 @@ void ADungeonGenerateActor::ApplyInstancedMeshCullDistance()
 ////////// 生成と破棄 //////////
 void ADungeonGenerateActor::PreGenerateImplementation()
 {
+	MEASURE_TIME_START(stopwatch);
+
 	if (!IsValid(DungeonGenerateParameter))
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("DungeonGenerateParameter is not set"));
 		return;
 	}
 
+
 	Dispose(true);
+	MEASURE_TIME_LAP(stopwatch, TEXT("Dispose(true) Time"));
 
 	// インスタンスメッシュを登録
 	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
@@ -250,64 +273,82 @@ void ADungeonGenerateActor::PreGenerateImplementation()
 		);
 	}
 
+	// インスタンスメッシュの登録開始
 	BeginInstanceTransaction();
 
-	if (BeginDungeonGeneration(DungeonGenerateParameter, HasAuthority()) == false)
+	// ダンジョン生成開始
+	const bool beginDungeonGenerationResult = BeginDungeonGeneration(DungeonGenerateParameter, HasAuthority());
+	MEASURE_TIME_LAP(stopwatch, TEXT("BeginDungeonGeneration Time"));
+	if (beginDungeonGenerationResult)
+	{
+
+		// PlayerStartの移動
+		{
+			/*
+			 * List of PlayerStart, not including PlayerStartPIE.
+			 * PlayerStartの一覧。PlayerStartPIEは含まない。
+			 */
+			TArray<APlayerStart*> playerStart;
+			CollectPlayerStartExceptPlayerStartPIE(playerStart);
+
+
+			MovePlayerStart(playerStart);
+			MEASURE_TIME_LAP(stopwatch, TEXT("MovePlayerStart Time"));
+		}
+
+		// スタート部屋とゴール部屋の位置を記録
+		StartRoomLocation = GetStartLocation();
+		GoalRoomLocation = GetGoalLocation();
+
+#if WITH_EDITOR
+		// Record dungeon-generated random numbers
+		GeneratedRandomSeed = DungeonGenerateParameter->GetGeneratedRandomSeed();
+		GeneratedDungeonCRC32 = CalculateCRC32();
+
+		if (HasAuthority())
+		{
+			DungeonGenerateParameter->SetGeneratedDungeonCRC32(GeneratedDungeonCRC32);
+		}
+
+		if (GeneratedDungeonCRC32 == DungeonGenerateParameter->GetGeneratedDungeonCRC32())
+		{
+			DUNGEON_GENERATOR_LOG(TEXT("%s, Remote:(GeneratedRandomSeed=%x, CRC32=%x) Local:(GeneratedRandomSeed=%x, CRC32=%x)"),
+				HasAuthority() ? TEXT("Server") : TEXT("Client"),
+				DungeonGenerateParameter->GetGeneratedRandomSeed(),
+				DungeonGenerateParameter->GetGeneratedDungeonCRC32(),
+				GeneratedRandomSeed,
+				GeneratedDungeonCRC32
+			);
+		}
+		else
+		{
+			DUNGEON_GENERATOR_ERROR(TEXT("%s, Remote:(GeneratedRandomSeed=%x, CRC32=%x) Local:(GeneratedRandomSeed=%x, CRC32=%x)"),
+				HasAuthority() ? TEXT("Server") : TEXT("Client"),
+				DungeonGenerateParameter->GetGeneratedRandomSeed(),
+				DungeonGenerateParameter->GetGeneratedDungeonCRC32(),
+				GeneratedRandomSeed,
+				GeneratedDungeonCRC32
+			);
+		}
+#endif
+
+		// ダンジョン生成完了
+		EndDungeonGeneration();
+		MEASURE_TIME_LAP(stopwatch, TEXT("EndDungeonGeneration (success path) Time"));
+	}
+	else
 	{
 		DUNGEON_GENERATOR_ERROR(TEXT("Failed to generate dungeon. Seed(%d)"), DungeonGenerateParameter->GetRandomSeed());
 
 		EndDungeonGeneration();
+		MEASURE_TIME_LAP(stopwatch, TEXT("EndDungeonGeneration (failure path) Time"));
+
 		Dispose(false);
-		return;
+		MEASURE_TIME_LAP(stopwatch, TEXT("Dispose(false) Time"));
 	}
 
+	// インスタンスメッシュを登録完了
 	EndInstanceTransaction();
-
-	/*
-	List of PlayerStart, not including PlayerStartPIE.
-	PlayerStartの一覧。PlayerStartPIEは含まない。
-	*/
-	TArray<APlayerStart*> playerStart;
-	CollectPlayerStartExceptPlayerStartPIE(playerStart);
-	MovePlayerStart(playerStart);
-
-	// スタート部屋とゴール部屋の位置を記録
-	StartRoomLocation = GetStartLocation();
-	GoalRoomLocation = GetGoalLocation();
-
-#if WITH_EDITOR
-	// Record dungeon-generated random numbers
-	GeneratedRandomSeed = DungeonGenerateParameter->GetGeneratedRandomSeed();
-	GeneratedDungeonCRC32 = CalculateCRC32();
-
-	if (HasAuthority())
-	{
-		DungeonGenerateParameter->SetGeneratedDungeonCRC32(GeneratedDungeonCRC32);
-	}
-
-	if (GeneratedDungeonCRC32 == DungeonGenerateParameter->GetGeneratedDungeonCRC32())
-	{
-		DUNGEON_GENERATOR_LOG(TEXT("%s, Remote:(GeneratedRandomSeed=%x, CRC32=%x) Local:(GeneratedRandomSeed=%x, CRC32=%x)"),
-			HasAuthority() ? TEXT("Server") : TEXT("Client"),
-			DungeonGenerateParameter->GetGeneratedRandomSeed(),
-			DungeonGenerateParameter->GetGeneratedDungeonCRC32(),
-			GeneratedRandomSeed,
-			GeneratedDungeonCRC32
-		);
-	}
-	else
-	{
-		DUNGEON_GENERATOR_ERROR(TEXT("%s, Remote:(GeneratedRandomSeed=%x, CRC32=%x) Local:(GeneratedRandomSeed=%x, CRC32=%x)"),
-			HasAuthority() ? TEXT("Server") : TEXT("Client"),
-			DungeonGenerateParameter->GetGeneratedRandomSeed(),
-			DungeonGenerateParameter->GetGeneratedDungeonCRC32(),
-			GeneratedRandomSeed,
-			GeneratedDungeonCRC32
-		);
-	}
-#endif
-
-	EndDungeonGeneration();
 }
 
 void ADungeonGenerateActor::PostGenerateImplementation() const
@@ -335,10 +376,16 @@ void ADungeonGenerateActor::Dispose(const bool flushStreamLevels)
 
 void ADungeonGenerateActor::FitNavMeshBoundsVolume()
 {
+	MEASURE_TIME_START(stopwatch);
+
 	Super::FitNavMeshBoundsVolume();
+	MEASURE_TIME_LAP(stopwatch, TEXT("Super::FitNavMeshBoundsVolume Time"));
 
 	if (DungeonMeshGenerationMethod != EDungeonMeshGenerationMethod::StaticMesh)
+	{
 		ReregisterAllComponents();
+		MEASURE_TIME_LAP(stopwatch, TEXT("ReregisterAllComponents Time"));
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -346,26 +393,55 @@ void ADungeonGenerateActor::FitNavMeshBoundsVolume()
 // サーバープロセスで実行する
 void ADungeonGenerateActor::GenerateDungeon_Implementation()
 {
+	if (mIsGeneratingDungeon)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("GenerateDungeon ignored because dungeon generation is already in progress."));
+		return;
+	}
+
 #if JENKINS_FOR_DEVELOP
 	DUNGEON_GENERATOR_LOG(TEXT("ServerOnGenerateDungeon: %s"), HasAuthority() ? TEXT("Server") : TEXT("Client"));
 #endif
+
+	MulticastOnGenerateDungeon();
+}
+
+// サーバープロセスで実行する
+void ADungeonGenerateActor::GenerateDungeonWithParameter_Implementation(UDungeonGenerateParameter* dungeonGenerateParameter)
+{
+	if (mIsGeneratingDungeon)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("GenerateDungeonWithParameter ignored because dungeon generation is already in progress."));
+		return;
+	}
+
+#if JENKINS_FOR_DEVELOP
+	DUNGEON_GENERATOR_LOG(TEXT("ServerOnGenerateDungeonWithParameter: %s"), HasAuthority() ? TEXT("Server") : TEXT("Client"));
+#endif
+
+	DungeonGenerateParameter = dungeonGenerateParameter;
 	MulticastOnGenerateDungeon();
 }
 
 // 全てのクライアントプロセスで実行する
 void ADungeonGenerateActor::MulticastOnGenerateDungeon_Implementation()
 {
+	MEASURE_TIME_START(stopwatch);
+
+	if (mIsGeneratingDungeon)
+	{
+		DUNGEON_GENERATOR_ERROR(TEXT("MulticastOnGenerateDungeon ignored because dungeon generation is already in progress."));
+		return;
+	}
+
 #if JENKINS_FOR_DEVELOP
 	DUNGEON_GENERATOR_LOG(TEXT("MulticastOnGenerateDungeon: %s"), HasAuthority() ? TEXT("Server") : TEXT("Client"));
 #endif
+	TGuardValue<bool> generatingGuard(mIsGeneratingDungeon, true);
 	PreGenerateImplementation();
 	PostGenerateImplementation();
-}
 
-void ADungeonGenerateActor::GenerateDungeonWithParameter(UDungeonGenerateParameter* dungeonGenerateParameter)
-{
-	DungeonGenerateParameter = dungeonGenerateParameter;
-	GenerateDungeon();
+	MEASURE_TIME_LAP(stopwatch, TEXT("Total Dungeon Generation Time"));
 }
 
 void ADungeonGenerateActor::DestroyDungeon()
