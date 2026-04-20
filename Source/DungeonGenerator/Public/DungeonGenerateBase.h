@@ -28,6 +28,7 @@
 class UDungeonAisleGridMap;
 // Forward declaration
 class ADungeonDoorBase;
+class ADungeonMainLevelScriptActor;
 class ADungeonRoomSensorBase;
 class ADungeonSubLevelScriptActor;
 class ADungeonGenerateBase;
@@ -348,7 +349,15 @@ protected:
 	void MovePlayerStart(const TArray<APlayerStart*>& startPoints);
 
 private:
-	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+	enum class EStaticMeshPartitionRegistrationFace : uint8
+	{
+		None,
+		PositiveY,
+		PositiveZ,
+		NegativeZ,
+	};
+
+	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const EStaticMeshPartitionRegistrationFace registrationFace = EStaticMeshPartitionRegistrationFace::None) const;
 	ADungeonDoorBase* SpawnDoorActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const EDungeonRoomProps props) const;
 	AActor* SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const bool castShadow) const;
 	AActor* SpawnChandelierActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
@@ -447,6 +456,7 @@ private:
 	bool mGenerated = false;
 
 	// friend class
+	friend class ADungeonMainLevelScriptActor;
 };
 
 inline const FName& ADungeonGenerateBase::GetDungeonGeneratorTag()
@@ -493,19 +503,19 @@ inline void ADungeonGenerateBase::OnAddCatwalk(const AddStaticMeshEvent& functio
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	return SpawnActorImpl<T>(T::StaticClass(), folderPath, transform, ownerActor, spawnActorCollisionHandlingMethod);
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorDeferredImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorDeferredImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	return SpawnActorDeferredImpl<T>(T::StaticClass(), folderPath, transform, ownerActor, spawnActorCollisionHandlingMethod);
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.Owner = ownerActor;
@@ -514,7 +524,7 @@ inline T* ADungeonGenerateBase::SpawnActorImpl(UClass* actorClass, const FString
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorDeferredImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorDeferredImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.Owner = ownerActor;
@@ -524,7 +534,7 @@ inline T* ADungeonGenerateBase::SpawnActorDeferredImpl(UClass* actorClass, const
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::FindActor()
+T* ADungeonGenerateBase::FindActor()
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))
@@ -537,7 +547,7 @@ inline T* ADungeonGenerateBase::FindActor()
 }
 
 template<typename T>
-inline const T* ADungeonGenerateBase::FindActor() const
+const T* ADungeonGenerateBase::FindActor() const
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))
@@ -550,7 +560,7 @@ inline const T* ADungeonGenerateBase::FindActor() const
 }
 
 template<typename T>
-inline void ADungeonGenerateBase::EachActors(const std::function<bool(T*)>& function)
+void ADungeonGenerateBase::EachActors(const std::function<bool(T*)>& function)
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))
@@ -564,7 +574,7 @@ inline void ADungeonGenerateBase::EachActors(const std::function<bool(T*)>& func
 }
 
 template<typename T>
-inline void ADungeonGenerateBase::EachActors(const std::function<bool(const T*)>& function) const
+void ADungeonGenerateBase::EachActors(const std::function<bool(const T*)>& function) const
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))

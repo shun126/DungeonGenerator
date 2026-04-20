@@ -4,29 +4,32 @@
  * All Rights Reserved.
  */
 
+#include "Actor/DungeonGenerateActorDetails.h"
+#include "BuildInformation.h"
+#include "Debug/Debug.h"
+#include "DungeonGeneratedActor.h"
+#include "DungeonGeneratorCommands.h"
 #include "DungeonGeneratorEditorModule.h"
 #include "DungeonGeneratorStyle.h"
-#include "DungeonGeneratorCommands.h"
-#include "BuildInformation.h"
-#include "DungeonGeneratedActor.h"
-#include "Actor/DungeonGenerateActorDetails.h"
 #include "Helper/DungeonFinalizer.h"
-#include "Debug/Debug.h"
-#include "SubActor/DungeonRoomSensorDatabaseTypeActions.h"
-#include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
-#include "Parameter/DungeonGenerateParameterTypeActions.h"
 #include "Parameter/DungeonGenerateParameter.h"
+#include "Parameter/DungeonGenerateParameterTypeActions.h"
+#include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
+#include "StaticMeshFit/DungeonStaticMeshFitTool.h"
+#include "SubActor/DungeonRoomSensorDatabaseTypeActions.h"
 #include "Validation/DungeonParameterValidator.h"
 
 
 #include <PropertyCustomizationHelpers.h>
 #include <PropertyEditorModule.h>
 #include <AssetToolsModule.h>
+#include <ContentBrowserMenuContexts.h>
 #include <FileHelpers.h>
 #include <IAssetTools.h>
 #include <PackageTools.h>
 #include <ToolMenus.h>
 #include <AssetRegistry/AssetRegistryModule.h>
+#include <Engine/StaticMesh.h>
 #include <Engine/Texture2D.h>
 #include <GameFramework/PlayerStart.h>
 #include <Misc/EngineVersionComparison.h>
@@ -41,8 +44,7 @@
 #include <Serialization/JsonReader.h>
 #include <Serialization/JsonSerializer.h>
 #include <Widgets/Views/SHeaderRow.h>
-
-#include "Misc/FileHelper.h"
+#include <Misc/FileHelper.h>
 
 static const FName DungeonGeneratorTabName("DungeonGenerator");
 
@@ -286,6 +288,7 @@ void FDungeonGenerateEditorModule::RegisterMenus()
 		FToolMenuEntry& entry = section.AddEntry(FToolMenuEntry::InitToolBarButton(FDungeonGeneratorCommands::Get().OpenPluginWindow));
 		entry.SetCommandList(PluginCommands);
 	}
+
 }
 
 FString FDungeonGenerateEditorModule::GetObjectPath() const
