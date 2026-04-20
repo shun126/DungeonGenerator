@@ -1,5 +1,13 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 202604201.9.1 (65)
+### Changes
+- Added a tool to fit StaticMeshes to DungeonGenerateParameters.
+- Fixed several other bugs.
+### 変更点
+- StaticMesh を DungeonGenerateParameter にあわせてフィットさせるツールを追加。
+- いくつかの不具合を修正。
+
 ## 20260309-1.9.0 (64)
 ### Changes
 - Made corridor ceiling height configurable.

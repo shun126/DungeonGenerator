@@ -1,7 +1,4 @@
-<div align="center">
-<img src="Document/DungeonGenerator-Logo.png" />
-<h1>Dungeon generator plugin for Unreal Engine 5</h1>
-</div>
+# Dungeon Generator for Unreal Engine 5
 
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
 [![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.7-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
@@ -10,93 +7,100 @@
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
 [![youtube](https://img.shields.io/youtube/views/1igd4pls5x8?style=social)](https://youtu.be/1igd4pls5x8)
 
-Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/index.html)
+Build grid-based 3D dungeons for roguelike, action RPG, and exploration games in Unreal Engine 5.
+
+Dungeon Generator creates playable dungeon layouts from a small set of parameters and mesh parts. You can preview dungeons in the editor, generate them at runtime, and integrate the system from Blueprint or C++. The open-source version is designed for developers who want to prototype procedural levels, study the generation pipeline, or build a custom dungeon system on top of a practical Unreal Engine plugin.
 
 ![Screenshot](Document/Screenshot.gif)
 
-# 🚩 Table of Contents
-- [Endless Adventures, Instantly Generated](#-endless-adventures-instantly-generated)
-- [Features](#-features)
-- [Requirements](#-requirements)
-- [License](#-license)
-- [Demo](#-demo)
-- [See also](#-see-also)
-- [Author](#-authors)
+## Why Use It?
 
-# 👾 Endless Adventures, Instantly Generated
-Bring your roguelike and hack-and-slash games to life with next-level dungeon generation.
-Whether you’re aiming for fast-paced, loot-filled battles or deep exploration with infinite replayability,
-this Unreal Engine plugin gives you the power to craft unique dungeons every time.
+- Generate tiled 3D dungeons in the editor or during gameplay
+- Start with your own floor, wall, roof, stair, and door meshes
+- Control room count, grid size, start position, and generation rules
+- Add doors, keys, and route progression with MissionGraph
+- Use Blueprint or C++ depending on your project workflow
+- Test multiplayer-oriented projects with dungeon replication support
 
-With just a few parameters—such as grid scale, number of rooms, and your own generation rules—you can instantly produce fully playable layouts. The system works seamlessly both in-editor and at runtime, and is available in both C++ and Blueprint, giving you the flexibility to integrate it into any workflow.
+Dungeon Generator is useful when you want a working dungeon structure quickly, but still need enough control to adapt it to your game's art style and rules.
 
-## Visualization of dungeon generation status
-The dungeon generator was based on Vazgriz's algorithm. You can read more about [Vazgriz's algorithm here](https://vazgriz.com/119/procedurally-generated-dungeons/).
+## Open-Source Version
 
-To vazgriz,
-The foundational generation algorithm you shared was a major source of inspiration and became the starting point for my development of the DungeonGenerator plugin. Without your ideas, I don't think I would have arrived at its current form. I'm truly grateful for the knowledge you made available and the impact it had on my work.
+This repository provides the open-source version of Dungeon Generator under the GPL license.
 
-![DungeonGeneratorStatus](Document/DungeonGenerator01.gif)
+It is a good fit if you want to:
 
-# 🎨 Features
-* DungeonGenerator is a plug-in for UnrealEngine5.
-* Tiled Dungeon Generation both In-Editor & Runtime.
-* Users can easily generate dungeons by preparing meshes for floors, walls, ceilings, and stairs.
-* Supports dungeon replication
-* Generates actors for doors and keys by MissionGraph.
-* The following features are supported only in the [Fab](https://fab.com/s/f5587c55bad0) version
-  * Sub-levels can be applied as dungeon rooms
-  * A mini-map of the dungeon can be generated.
-  * Interior decoration. [beta version]
-  * Foliage decoration. [beta version]
-  * Mesh Set and Custom Mesh Selection
-* Supported Development Platforms: Windows,Android,Linux
-* Supported Target Build Platforms: Windows,Android,Linux (should be possible to target all platforms)
+- Try procedural dungeon generation in Unreal Engine 5
+- Learn how a grid-based 3D dungeon generator is built
+- Prototype roguelike, hack-and-slash, dungeon crawler, or exploration mechanics
+- Customize the plugin source for your own project
 
-# 🔧 Requirements
-* [Unreal Engine 5.1 ~ Unreal Engine 5.7](https://www.unrealengine.com/)
-* [Visual Studio 2022](https://visualstudio.microsoft.com/)
+For the fastest path, start with the tutorial index:
 
-# 💾 How to install
-* Open Unreal Engine Editor and create a project using the First Person template or Third Person template.
-* Install the Dungeon Generator plugin via Epic Games Launcher, or copy it to the `Plugins` directory of your project.
-* Enable the plugin content.
-* Open `Plugins/Dungeon Generator/Contents/Maps/Demonstration`.
+[Dungeon Generator Tutorial](Document/tutorial/README.en.md)
 
-![](Document/ContentBrowser.gif)
+## Quick Start
 
-* Run the project.
+1. Install the plugin in your Unreal Engine project.
+2. Enable the plugin content.
+3. Open the demonstration map from the plugin content.
+4. Run the project or preview generation from the editor.
+5. Create a `DungeonGenerateParameter` asset and adjust the grid size, room count, and mesh databases.
 
-# 📜 License
-you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
+For a beginner-friendly walkthrough, read:
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied arranty of MERCHANTABILITY or FITNESS FOR A ARTICULAR PURPOSE. See the GNU General Public License for more details.
+[QuickStart.en.md](Document/tutorial/QuickStart.en.md)
 
-Or, [Fab](https://fab.com/s/f5587c55bad0) is releasing it under Epic license. If you need a license other than the GPL, please consider it. Proceeds will be used to fund the development of our game.
+## Main Features
 
-# 👀 See also
-* [Issues](https://github.com/shun126/UE5-DungeonGeneratorDemo/issues)
-* [Discussions](https://github.com/shun126/UE5-DungeonGeneratorDemo/discussions)
-* [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki)
-* [DeepWiki](https://deepwiki.com/shun126/DungeonGenerator)
-* [Doxygen](https://happy-game-dev.undo.jp/_doxygen/dungeon_generator/index.html)
+- Procedural 3D dungeon generation for Unreal Engine 5
+- Editor generation and runtime generation
+- Blueprint and C++ access
+- Custom mesh parts for floors, walls, roofs, slopes, pillars, doors, and actors
+- MissionGraph support for doors, keys, and progression routes
+- Dungeon replication support
+- Demo content and tutorial documentation
 
-The [Fab](https://fab.com/s/f5587c55bad0) version includes the following enhancements.
-* Sub-levels can be applied as dungeon rooms
-* A mini-map of the dungeon can be generated.
-* Interior decoration. [beta version]
-* Foriage decoration. [beta version]
-* Mesh Set and Custom Mesh Selection
+## Using Your Own Meshes
 
-## 🎮 Demo
-[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo) is a sample project for first-person exploration.
+Dungeon Generator is built around reusable mesh parts. You prepare meshes for floors, walls, roofs, slopes, and other dungeon pieces, then register them in mesh databases.
 
-This is an easy to use. Simply drop the DungeonGenerateActor into your level, set the grid scale and number of rooms and start generating out your structures. Please read the [Wiki](https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki) for more information.
+Start here if you want to replace the sample visuals with your own assets:
+
+[PrepareMeshParts.en.md](Document/tutorial/PrepareMeshParts.en.md)
+
+## Epic/Fab Version
+
+The [Epic/Fab version](https://fab.com/s/f5587c55bad0) includes additional production-focused features for teams that need more advanced level-building workflows.
+
+Additional features include:
+
+- Sub-levels as dungeon rooms
+- Mini-map generation
+- Interior decoration
+- Foliage decoration
+- Mesh Set and Custom Mesh Selection
+- StaticMesh Fit Tool
+
+Important: The StaticMesh Fit Tool is supported only in the Epic/Fab version. [![](Document/Fab_Epic_Games.gif)](https://fab.com/s/f5587c55bad0)
+
+If you need these features or a license other than GPL, please consider the [Epic/Fab version](https://fab.com/s/f5587c55bad0).
 
 Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/index.html)
 
-# 😀 Authors
-* Shun Moriya ([X.com](https://x.com/monjiro1972))
-* Nonbiri ([X.com](https://x.com/happy_game_dev) / [YouTube](https://www.youtube.com/channel/UCkLXe57GpUyaOoj2ycREU1Q))
+## Requirements
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M413XDXB)
+- Unreal Engine 5.1 to 5.7
+- Visual Studio 2022
+
+## Demo Project
+
+The demo project shows a first-person exploration setup using Dungeon Generator:
+
+[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo)
+
+## License
+
+The open-source version is distributed under the GNU General Public License v3.0 or later.
+
+The Epic/Fab version is released under the Epic license. If GPL does not fit your project, use the Epic/Fab version instead.

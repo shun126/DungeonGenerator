@@ -53,7 +53,6 @@
 #include <Misc/EngineVersionComparison.h>
 #include <NavMesh/NavMeshBoundsVolume.h>
 #include <NavMesh/RecastNavMesh.h>
-
 #include <Engine/Polys.h>
 #include <UObject/Package.h>
 
@@ -150,7 +149,7 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 
 	const AddStaticMeshEvent addFloorStaticMeshEvent = [this](UStaticMesh* staticMesh, const FTransform& transform)
 		{
-			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Floor"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Floor"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn, EStaticMeshPartitionRegistrationFace::PositiveZ);
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 			{
 				// 通信同期用のデバッグ情報を出力
@@ -164,7 +163,7 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 		};
 	const AddStaticMeshEvent addSlopeStaticMeshEvent = [this](UStaticMesh* staticMesh, const FTransform& transform)
 		{
-			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Slope"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Slope"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn, EStaticMeshPartitionRegistrationFace::PositiveZ);
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 			{
 				// 通信同期用のデバッグ情報を出力
@@ -178,7 +177,7 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 		};
 	const AddStaticMeshEvent addWallStaticMeshEvent = [this](UStaticMesh* staticMesh, const FTransform& transform)
 		{
-			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Wall"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Wall"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn, EStaticMeshPartitionRegistrationFace::PositiveY);
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 			{
 				// 通信同期用のデバッグ情報を出力
@@ -192,7 +191,7 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 		};
 	const AddStaticMeshEvent addRoofStaticMeshEvent = [this](UStaticMesh* staticMesh, const FTransform& transform)
 		{
-			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Roof"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			AStaticMeshActor* actor = SpawnStaticMeshActor(staticMesh, TEXT("Meshes/Roof"), transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn, EStaticMeshPartitionRegistrationFace::NegativeZ);
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
 			{
 				// 通信同期用のデバッグ情報を出力
@@ -594,11 +593,13 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_Prepare(const UDungeonGen
 		generateParameter.SetGenerateStructuralColumn(mParameter->GenerateStructuralColumn);
 		generateParameter.SetSkylightChancePercent(mParameter->SkylightChancePercent);
 		EDungeonStartLocationPolicy startLocationPolicy = mParameter->StartLocationPolicy;
-		if (mParameter->IsUseMissionGraph() == false &&
-			(startLocationPolicy == EDungeonStartLocationPolicy::UseCentralPoint || startLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart))
+		if (mParameter->IsUseMissionGraph())
 		{
-			DUNGEON_GENERATOR_WARNING(TEXT("StartLocationPolicy requires UseMissionGraph disabled. Falling back to UseSouthernMost."));
-			startLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
+			if (startLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart)
+			{
+				DUNGEON_GENERATOR_WARNING(TEXT("StartLocationPolicy requires UseMissionGraph disabled. Falling back to UseSouthernMost."));
+				startLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
+			}
 		}
 		generateParameter.SetStartLocationPolicy(static_cast<dungeon::StartLocationPolicy>(startLocationPolicy));
 		uint8 startRoomCount = 1;
@@ -613,7 +614,6 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_Prepare(const UDungeonGen
 			startRoomCount = static_cast<uint8>(FMath::Clamp(startPoints.Num(), 1, 255));
 		}
 		generateParameter.SetStartRoomCount(startRoomCount);
-
 
 		if (mParameter->MergeRooms)
 		{
@@ -1942,7 +1942,7 @@ void ADungeonGenerateBase::FitNavMeshBoundsVolume()
 	if (ANavMeshBoundsVolume* navMeshBoundsVolume = FindActor<ANavMeshBoundsVolume>())
 	{
 		const FBox& bounding = CalculateBoundingBox();
-		const FVector& boundingCenter = bounding.GetCenter() + GetActorLocation();
+		const FVector& boundingCenter = bounding.GetCenter();
 		const FVector& boundingExtent = bounding.GetExtent();
 
 		if (USceneComponent* rootComponent = navMeshBoundsVolume->GetRootComponent())
@@ -2198,13 +2198,46 @@ StaticMeshActorを使って地形をスポーンします。
 生成したアクターにDungeonComponentActivatorComponentを追加して処理負荷制御を行います。
 CRC32の計算を行うのでサーバーとクライアントの同期ずれを検出する事ができます。
 */
-AStaticMeshActor* ADungeonGenerateBase::SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+AStaticMeshActor* ADungeonGenerateBase::SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const EStaticMeshPartitionRegistrationFace registrationFace) const
 {
 	AStaticMeshActor* actor = SpawnActorDeferredImpl<AStaticMeshActor>(folderPath, transform, nullptr, spawnActorCollisionHandlingMethod);
 	if (IsValid(actor) == false)
 		return nullptr;
 
-	if (auto* staticMeshComponent = GetValid(actor->GetStaticMeshComponent()))
+	UStaticMeshComponent* staticMeshComponent = GetValid(actor->GetStaticMeshComponent());
+	const auto updateFixedPartitionRegistrationLocation = [registrationFace, staticMeshComponent](UDungeonComponentActivatorComponent* dungeonComponentActivatorComponent)
+	{
+		if (!IsValid(dungeonComponentActivatorComponent))
+			return;
+		if (registrationFace == EStaticMeshPartitionRegistrationFace::None || staticMeshComponent == nullptr)
+			return;
+
+		FVector localBoundsMin = FVector::ZeroVector;
+		FVector localBoundsMax = FVector::ZeroVector;
+		staticMeshComponent->GetLocalBounds(localBoundsMin, localBoundsMax);
+
+		constexpr float PartitionRegistrationInsetCm = 5.0f;
+		FVector localRegistrationLocation = (localBoundsMin + localBoundsMax) * 0.5f;
+		switch (registrationFace)
+		{
+		case EStaticMeshPartitionRegistrationFace::PositiveY:
+			localRegistrationLocation.Y = FMath::Clamp(localBoundsMax.Y - PartitionRegistrationInsetCm, localBoundsMin.Y, localBoundsMax.Y);
+			break;
+		case EStaticMeshPartitionRegistrationFace::PositiveZ:
+			localRegistrationLocation.Z = FMath::Clamp(localBoundsMax.Z - PartitionRegistrationInsetCm, localBoundsMin.Z, localBoundsMax.Z);
+			break;
+		case EStaticMeshPartitionRegistrationFace::NegativeZ:
+			localRegistrationLocation.Z = FMath::Clamp(localBoundsMin.Z + PartitionRegistrationInsetCm, localBoundsMin.Z, localBoundsMax.Z);
+			break;
+		case EStaticMeshPartitionRegistrationFace::None:
+		default:
+			break;
+		}
+
+		const FVector registrationWorldLocation = staticMeshComponent->GetComponentTransform().TransformPosition(localRegistrationLocation);
+		dungeonComponentActivatorComponent->SetFixedPartitionRegistrationWorldLocation(registrationWorldLocation);
+	};
+	if (staticMeshComponent != nullptr)
 	{
 		if (staticMeshComponent->Mobility != EComponentMobility::Movable)
 			staticMeshComponent->SetMobility(EComponentMobility::Movable);
@@ -2215,9 +2248,15 @@ AStaticMeshActor* ADungeonGenerateBase::SpawnStaticMeshActor(UStaticMesh* static
 
 	// 負荷制御コンポーネントを追加する
 	if (auto* dungeonComponentActivatorComponent = FindOrAddComponentActivatorComponent(actor))
+	{
 		dungeonComponentActivatorComponent->SetEnableCollisionEnableControl(false);
+		updateFixedPartitionRegistrationLocation(dungeonComponentActivatorComponent);
+	}
 
 	actor->FinishSpawning(transform, true);
+
+	if (auto* dungeonComponentActivatorComponent = actor->FindComponentByClass<UDungeonComponentActivatorComponent>())
+		updateFixedPartitionRegistrationLocation(dungeonComponentActivatorComponent);
 
 	// CRC32を記録（必ずサーバーとクライアント両方で計算しないとCRC32が一致しなくなる）
 	mCrc32AtCreation = ADungeonVerifiableActor::GenerateCrc32(transform, mCrc32AtCreation);
@@ -2431,6 +2470,7 @@ FBox ADungeonGenerateBase::CalculateBoundingBox() const
 				boundingBox += FBox(min, max);
 			}
 		);
+		boundingBox += GetActorLocation();
 		boundingBox.Min.Z -= mParameter->GetGridSize().VerticalSize;
 		boundingBox.Max.Z += mParameter->GetGridSize().VerticalSize;
 		return boundingBox;
@@ -2601,29 +2641,5 @@ void ADungeonGenerateBase::DrawVoxelGridType() const
 	);
 }
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Vegetation

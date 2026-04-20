@@ -27,12 +27,28 @@ UDungeonComponentActivatorComponent::UDungeonComponentActivatorComponent(const F
 	PrimaryComponentTick.bRunOnAnyThread = true;
 }
 
+FVector UDungeonComponentActivatorComponent::GetPartitionRegistrationWorldLocation(const AActor* ownerActor) const noexcept
+{
+	if (bHasFixedPartitionRegistrationWorldLocation)
+		return mFixedPartitionRegistrationWorldLocation;
+	if (IsValid(ownerActor))
+		return ownerActor->GetActorLocation();
+	return FVector::ZeroVector;
+}
+
+bool UDungeonComponentActivatorComponent::HasFixedPartitionRegistrationWorldLocation() const noexcept
+{
+	return bHasFixedPartitionRegistrationWorldLocation;
+}
+
 void UDungeonComponentActivatorComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	if (const auto* ownerActor = GetOwner())
 	{
+		const FVector registrationLocation = GetPartitionRegistrationWorldLocation(ownerActor);
+
 		/*
 		 * サブレベル上のアクターがUDungeonComponentActivatorComponentを所有している事があるので
 		 * パーシスタントレベルから直接ADungeonMainLevelScriptActorを取得するようにしている
@@ -47,16 +63,22 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 
 					// 動かないならTick不要
 					const auto* rootSceneComponent = ownerActor->GetRootComponent();
-					if (rootSceneComponent && rootSceneComponent->Mobility != EComponentMobility::Movable)
+					const bool bHasFixedRegistrationLocation = HasFixedPartitionRegistrationWorldLocation();
+					if (bHasFixedRegistrationLocation || (rootSceneComponent && rootSceneComponent->Mobility != EComponentMobility::Movable))
 					{
-						DUNGEON_GENERATOR_VERBOSE(TEXT("The tick is stopped because the Mobility of actor ‘%s’ is Static."), *ownerActor->GetName());
+						if (!bHasFixedRegistrationLocation)
+						{
+							DUNGEON_GENERATOR_VERBOSE(TEXT("The tick is stopped because the Mobility of actor ‘%s’ is Static."), *ownerActor->GetName());
+						}
+						if (bHasFixedRegistrationLocation)
+						{
+							DUNGEON_GENERATOR_VERBOSE(TEXT("The tick is stopped because actor '%s' uses a fixed partition registration location."), *ownerActor->GetName());
+						}
 						SetComponentTickEnabled(false);
 					}
 
 					// 初回起動のため少しずらした座標を記録
-					mLastLocation = ownerActor->GetActorLocation() + FVector(0, DisplacementOfInitialLocation, 0);
-
-
+					mLastLocation = registrationLocation + FVector(0, DisplacementOfInitialLocation, 0);
 
 					// 制御対象のポイントライト派生クラスを回収
 					for (auto* component : ownerActor->GetComponents())
@@ -75,9 +97,6 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 						}
 					}
 					mPointLightComponents.shrink_to_fit();
-
-
-
 				}
 			}
 		}
@@ -89,7 +108,7 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 			SetComponentTickEnabled(false);
 		}
 
-		TickImplement(ownerActor->GetActorLocation());
+		TickImplement(registrationLocation);
 	}
 }
 
@@ -107,51 +126,40 @@ void UDungeonComponentActivatorComponent::EndPlay(const EEndPlayReason::Type end
 #endif
 }
 
-/*
- * GameThread以外から呼び出されるのでスレッドセーフに注意して下さい
- */
 void UDungeonComponentActivatorComponent::TickComponent(float deltaTime, enum ELevelTick tickType, FActorComponentTickFunction* thisTickFunction)
 {
 	Super::TickComponent(deltaTime, tickType, thisTickFunction);
 
-	if (const auto* ownerActor = GetOwner())
+	if (const auto* ownerActor = GetValid(GetOwner()))
 	{
 		// 移動した？
-		const auto& currentLocation = ownerActor->GetActorLocation();
+		const FVector currentLocation = GetPartitionRegistrationWorldLocation(ownerActor);
 		if (FVector::DistSquared(mLastLocation, currentLocation) >= MovementDetectionDistance * MovementDetectionDistance)
 		{
 			TickImplement(currentLocation);
 			mLastLocation = currentLocation;
 		}
 	}
-
-#if JENKINS_FOR_DEVELOP & UE_BUILD_DEBUG & 0
-	for (const auto& weakPointLightComponent : mPointLightComponents)
-	{
-		const auto pointLightComponent = weakPointLightComponent.Get();
-		if (IsValid(pointLightComponent))
-		{
-			if (pointLightComponent->CastShadows)
-			{
-				DrawDebugString(
-					pointLightComponent->GetWorld(),
-					pointLightComponent->GetComponentLocation(),
-					TEXT("ON"),
-					nullptr,
-					FColor::White,
-					0,
-					true,
-					1.f
-				);
-			}
-		}
-	}
-#endif
 }
 
-/*
- * GameThread以外から呼び出されるのでスレッドセーフに注意して下さい
- */
+void UDungeonComponentActivatorComponent::RefreshPartitionRegistration(ADungeonMainLevelScriptActor* dungeonMainLevelScriptActor)
+{
+	if (UDungeonPartition* lastDungeonPartition = mLastDungeonPartition.Get())
+	{
+		lastDungeonPartition->UnregisterActivatorComponent(this);
+	}
+	mLastDungeonPartition.Reset();
+
+	mDungeonLevelScriptActor = dungeonMainLevelScriptActor;
+
+	if (const auto* ownerActor = GetOwner())
+	{
+		const FVector currentLocation = GetPartitionRegistrationWorldLocation(ownerActor);
+		TickImplement(currentLocation);
+		mLastLocation = currentLocation;
+	}
+}
+
 void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 {
 	// ADungeonMainLevelScriptActorではないならTick不要
