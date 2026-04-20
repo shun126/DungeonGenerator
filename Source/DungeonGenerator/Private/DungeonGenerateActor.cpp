@@ -441,6 +441,16 @@ void ADungeonGenerateActor::MulticastOnGenerateDungeon_Implementation()
 	PreGenerateImplementation();
 	PostGenerateImplementation();
 
+	// 所属するADungeonMainLevelScriptActorに再生成された事を通知
+	if (const auto* world = GetWorld())
+	{
+		if (IsValid(world->PersistentLevel))
+		{
+			if (auto* levelScript = Cast<ADungeonMainLevelScriptActor>(world->PersistentLevel->GetLevelScriptActor()))
+				levelScript->RebuildSparsePartitionGraphAndRefresh();
+		}
+	}
+
 	MEASURE_TIME_LAP(stopwatch, TEXT("Total Dungeon Generation Time"));
 }
 
@@ -474,7 +484,9 @@ int32 ADungeonGenerateActor::GetGeneratedDungeonCRC32() const noexcept
 
 float ADungeonGenerateActor::GetGridSize() const
 {
-	return DungeonGenerateParameter && DungeonGenerateParameter->GridSize;
+	if (DungeonGenerateParameter)
+		return DungeonGenerateParameter->GridSize;
+	return 1.f;
 }
 
 FVector ADungeonGenerateActor::GetRoomMaxSizeWithMargin(const int32_t margin) const

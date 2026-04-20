@@ -17,16 +17,19 @@
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
 #include "Parameter/DungeonGenerateParameter.h"
 #include "Validation/DungeonParameterValidator.h"
+#include "StaticMeshFit/DungeonStaticMeshFitTool.h"
 
 
 #include <PropertyCustomizationHelpers.h>
 #include <PropertyEditorModule.h>
 #include <AssetToolsModule.h>
+#include <ContentBrowserMenuContexts.h>
 #include <FileHelpers.h>
 #include <IAssetTools.h>
 #include <PackageTools.h>
 #include <ToolMenus.h>
 #include <AssetRegistry/AssetRegistryModule.h>
+#include <Engine/StaticMesh.h>
 #include <Engine/Texture2D.h>
 #include <GameFramework/PlayerStart.h>
 #include <Misc/EngineVersionComparison.h>
@@ -286,6 +289,7 @@ void FDungeonGenerateEditorModule::RegisterMenus()
 		FToolMenuEntry& entry = section.AddEntry(FToolMenuEntry::InitToolBarButton(FDungeonGeneratorCommands::Get().OpenPluginWindow));
 		entry.SetCommandList(PluginCommands);
 	}
+
 }
 
 FString FDungeonGenerateEditorModule::GetObjectPath() const

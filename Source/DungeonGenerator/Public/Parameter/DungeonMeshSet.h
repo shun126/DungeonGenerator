@@ -522,5 +522,3 @@ private:
 
 	friend class UDungeonMeshSetDatabase;
 };
-
-
