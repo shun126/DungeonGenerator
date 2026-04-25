@@ -104,3 +104,15 @@ The demo project shows a first-person exploration setup using Dungeon Generator:
 The open-source version is distributed under the GNU General Public License v3.0 or later.
 
 The Epic/Fab version is released under the Epic license. If GPL does not fit your project, use the Epic/Fab version instead.
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=shun126%2FDungeonGenerator&type=timeline&legend=bottom-right">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=shun126/DungeonGenerator&type=timeline&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=shun126/DungeonGenerator&type=timeline&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=shun126/DungeonGenerator&type=timeline&legend=top-left" />
+ </picture>
+</a>
+
+If this project helps your Unreal Engine development, please consider giving it a star⭐.
