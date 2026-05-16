@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-04-26T00:00:00Z",
+  "messages": [
+    {
+      "id": "ca8cb465-1e65-5b20-10d2-c6012feb86b9",
+      "severity": "critical",
+      "title": "The parameters for DungeonGenerateParameter will be changed in the next version.",
+      "body": "Added dungeon expansion policy and starting position specification. Please refer to the migration guide.",
+      "url": "https://happy-game-dev.undo.jp/plugins/DungeonGenerator/notices/20251221.html",
+      "min_plugin_version": "1.0.0",
+      "max_plugin_version": "",
+      "min_engine_version": "5.1.0",
+      "max_engine_version": "",
+      "since_utc": "2025-12-21T00:00:00Z",
+      "until_utc": ""
+    },
+    {
+      "id": "c8416a14-1d13-4acf-ae0a-b86539b864ed",
+      "severity": "info",
+      "title": "DungeonGenerator 1.9.1 is coming soon, and version 2.0 is in development.",
+      "body": "Version 2.0 is planned to include breaking changes and new level design concepts. Bug fixes for the 1.9 series will continue as needed.",
+      "url": "https://happy-game-dev.undo.jp/plugins/DungeonGenerator/notices/20260427.html",
+      "min_plugin_version": "1.0.0",
+      "max_plugin_version": "",
+      "min_engine_version": "5.1.0",
+      "max_engine_version": "",
+      "since_utc": "2026-04-27T00:00:00Z",
+      "until_utc": ""
+    }
+  ]
+}
