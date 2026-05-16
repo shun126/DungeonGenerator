@@ -30,9 +30,19 @@ struct FDungeonSpawnActorParameter
 {
 	GENERATED_BODY()
 
+	/**
+	 * Actor class that can be spawned by this rule.
+	 *
+	 * このルールでスポーン対象にするアクタークラスです。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.Actor"))
 	TObjectPtr<UClass> ActorClass = nullptr;
 
+	/**
+	 * Spawn weight used for random selection among candidate actor classes.
+	 *
+	 * 候補アクタークラス間のランダム選択に使う出現ウェイトです。
+	 */
 	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = "1"))
 	uint8 Probability = 10;
 };
@@ -111,3 +121,5 @@ private:
 	std::vector<TWeakObjectPtr<AActor>> mActors;
 	float mElapsedTime = 0.f;
 };
+
+

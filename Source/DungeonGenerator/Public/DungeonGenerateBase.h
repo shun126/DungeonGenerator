@@ -22,18 +22,22 @@
 #include <unordered_map>
 #include <vector>
 
+#include "DungeonDeferredSpawnManager.h"
 #include "DungeonGenerateBase.generated.h"
 
 class UDungeonAisleGridMap;
 // Forward declaration
 class ADungeonDoorBase;
+class ADungeonMainLevelScriptActor;
 class ADungeonRoomSensorBase;
+class ADungeonSubLevelScriptActor;
 class ADungeonGenerateBase;
 class UDungeonGenerateParameter;
 class UDungeonComponentActivatorComponent;
 class ANavMeshBoundsVolume;
 class APlayerStart;
 class AStaticMeshActor;
+class ULevel;
 class ULevelStreamingDynamic;
 class UStaticMesh;
 
@@ -45,6 +49,7 @@ namespace dungeon
 	class Random;
 	class Room;
 	class Voxel;
+	struct GenerateParameter;
 }
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDungeonGeneratorActorNotifyGenerationSuccessSignature);
@@ -104,6 +109,10 @@ protected:
 	 * @return		If false, generation fails
 	 */
 	bool BeginDungeonGeneration(const UDungeonGenerateParameter* parameter, const bool hasAuthority);
+	bool BeginDungeonGenerationPhase_Prepare(const UDungeonGenerateParameter* parameter, bool hasAuthority, dungeon::GenerateParameter& generateParameter);
+	bool BeginDungeonGenerationPhase_InitializeCore(const dungeon::GenerateParameter& generateParameter);
+	bool BeginDungeonGenerationPhase_RunGenerator(dungeon::GenerateParameter& generateParameter, bool hasAuthority);
+	void BeginDungeonGenerationPhase_BuildWorld(const dungeon::GenerateParameter& generateParameter, bool hasAuthority);
 
 	/**
 	 * End Generate dungeon
@@ -163,7 +172,10 @@ public:
 	 * DungeonGeneratorというタグを追加します。
 	 * スポーンしたアクターはDestroySpawnedActorsで破棄されます。
 	 */
-	static AActor* SpawnActorImpl(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters);
+	static AActor* SpawnActorWithFolderPath(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters);
+
+	void DeferredSpawnActorWithFolderPath(UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters, const TFunction<void(AActor*)>& onSpawned);
+	void DeferredSpawnActorWithFolderPath(UWorld* world, UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters, const TFunction<void(AActor*)>& onSpawned);
 
 	/**
 	 * アクターの負荷制御コンポーネントを追加します
@@ -171,7 +183,7 @@ public:
 	static UDungeonComponentActivatorComponent* FindOrAddComponentActivatorComponent(AActor* actor);
 
 private:
-	AActor* SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters) const;
+	AActor* SpawnActorWithFolderPath(UClass* actorClass, const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters) const;
 	template<typename T = AActor> T* SpawnActorImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
 	template<typename T = AActor> T* SpawnActorDeferredImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
 	template<typename T = AActor> T* SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
@@ -260,6 +272,7 @@ protected:
 	FDungeonGenerateBaseOnEndGenerateSignature OnEndGeneration;
 
 	////////////////////////////////////////////////////////////////////////////
+protected:
 	// dungeon::Generator::Generate前イベント
 	virtual void OnPreDungeonGeneration();
 	// dungeon::Generator::Generate後イベント
@@ -267,6 +280,7 @@ protected:
 
 	////////////////////////////////////////////////////////////////////////////
 	// Terrain
+public:
 	// event
 	using AddStaticMeshEvent = std::function<void(UStaticMesh*, const FTransform&)>;
 	using AddPillarStaticMeshEvent = std::function<void(UStaticMesh*, const FTransform&)>;
@@ -311,6 +325,7 @@ private:
 	void CreateImplement_AddDoor(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const;
 	bool CanAddDoor(const ADungeonRoomSensorBase* dungeonRoomSensorBase, const FIntVector& location, const dungeon::Grid& grid) const;
 	void CreateImplement_AddPillarAndTorch(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const;
+	void CreateImplement_AddChandelier(const RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const;
 
 	// Room sensor
 	void CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const;
@@ -334,9 +349,18 @@ protected:
 	void MovePlayerStart(const TArray<APlayerStart*>& startPoints);
 
 private:
-	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
+	enum class EStaticMeshPartitionRegistrationFace : uint8
+	{
+		None,
+		PositiveY,
+		PositiveZ,
+		NegativeZ,
+	};
+
+	AStaticMeshActor* SpawnStaticMeshActor(UStaticMesh* staticMesh, const FString& folderPath, const FTransform& transform, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const EStaticMeshPartitionRegistrationFace registrationFace = EStaticMeshPartitionRegistrationFace::None) const;
 	ADungeonDoorBase* SpawnDoorActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, const EDungeonRoomProps props) const;
 	AActor* SpawnTorchActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod, const bool castShadow) const;
+	AActor* SpawnChandelierActor(UClass* actorClass, const FTransform& transform, ADungeonRoomSensorBase* ownerActor, ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const;
 	ADungeonRoomSensorBase* SpawnRoomSensorActorDeferred(
 		UClass* actorClass,
 		const dungeon::Identifier& identifier,
@@ -386,15 +410,26 @@ private:
 	////////////////////////////////////////////////////////////////////////////
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	////////////////////////////////////////////////////////////////////////////
 	// member variables
 	// Vegetation
 protected:
 
+	/**
+	 * Generation parameter asset currently used by the generator.
+	 *
+	 * ジェネレーターが現在使用する生成パラメータアセットです。
+	 */
 	UPROPERTY(Transient)
 	const UDungeonGenerateParameter* mParameter;
 
+	/**
+	 * Cached aisle occupancy map used during generation and verification.
+	 *
+	 * 生成・検証で利用する通路占有マップのキャッシュです。
+	 */
 	UPROPERTY(Transient)
 	UDungeonAisleGridMap* mAisleGridMap;
 
@@ -410,7 +445,9 @@ private:
 	AddStaticMeshEvent mOnAddCatwalk;
 
 	std::vector<ReservedWallInfo> mReservedWallInfo;
-	
+
+	FDungeonDeferredSpawnManager mDungeonDeferredSpawnManager;
+
 
 	// 生成時のCRC32
 	mutable uint32_t mCrc32AtCreation = ~0;
@@ -419,6 +456,7 @@ private:
 	bool mGenerated = false;
 
 	// friend class
+	friend class ADungeonMainLevelScriptActor;
 };
 
 inline const FName& ADungeonGenerateBase::GetDungeonGeneratorTag()
@@ -432,6 +470,7 @@ inline const FName& ADungeonGenerateBase::GetDungeonGeneratorTerrainTag()
 	static const FName DungeonGeneratorTerrainTag(TEXT("DungeonGeneratorTerrain"));
 	return DungeonGeneratorTerrainTag;
 }
+
 
 inline void ADungeonGenerateBase::OnAddFloor(const AddStaticMeshEvent& function)
 {
@@ -464,38 +503,38 @@ inline void ADungeonGenerateBase::OnAddCatwalk(const AddStaticMeshEvent& functio
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	return SpawnActorImpl<T>(T::StaticClass(), folderPath, transform, ownerActor, spawnActorCollisionHandlingMethod);
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorDeferredImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorDeferredImpl(const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	return SpawnActorDeferredImpl<T>(T::StaticClass(), folderPath, transform, ownerActor, spawnActorCollisionHandlingMethod);
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.Owner = ownerActor;
 	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
-	return Cast<T>(SpawnActorImpl(actorClass, folderPath, transform, actorSpawnParameters));
+	return Cast<T>(SpawnActorWithFolderPath(actorClass, folderPath, transform, actorSpawnParameters));
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::SpawnActorDeferredImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
+T* ADungeonGenerateBase::SpawnActorDeferredImpl(UClass* actorClass, const FString& folderPath, const FTransform& transform, AActor* ownerActor, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod) const
 {
 	FActorSpawnParameters actorSpawnParameters;
 	actorSpawnParameters.Owner = ownerActor;
 	actorSpawnParameters.SpawnCollisionHandlingOverride = spawnActorCollisionHandlingMethod;
 	actorSpawnParameters.bDeferConstruction = true;
-	return Cast<T>(SpawnActorImpl(actorClass, folderPath, transform, actorSpawnParameters));
+	return Cast<T>(SpawnActorWithFolderPath(actorClass, folderPath, transform, actorSpawnParameters));
 }
 
 template<typename T>
-inline T* ADungeonGenerateBase::FindActor()
+T* ADungeonGenerateBase::FindActor()
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))
@@ -508,7 +547,7 @@ inline T* ADungeonGenerateBase::FindActor()
 }
 
 template<typename T>
-inline const T* ADungeonGenerateBase::FindActor() const
+const T* ADungeonGenerateBase::FindActor() const
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))
@@ -521,7 +560,7 @@ inline const T* ADungeonGenerateBase::FindActor() const
 }
 
 template<typename T>
-inline void ADungeonGenerateBase::EachActors(const std::function<bool(T*)>& function)
+void ADungeonGenerateBase::EachActors(const std::function<bool(T*)>& function)
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))
@@ -535,7 +574,7 @@ inline void ADungeonGenerateBase::EachActors(const std::function<bool(T*)>& func
 }
 
 template<typename T>
-inline void ADungeonGenerateBase::EachActors(const std::function<bool(const T*)>& function) const
+void ADungeonGenerateBase::EachActors(const std::function<bool(const T*)>& function) const
 {
 	UWorld* world = GetWorld();
 	if (IsValid(world))
@@ -547,3 +586,5 @@ inline void ADungeonGenerateBase::EachActors(const std::function<bool(const T*)>
 		}
 	}
 }
+
+

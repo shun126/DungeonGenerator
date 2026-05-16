@@ -14,7 +14,7 @@
 UENUM(BlueprintType)
 enum class EDungeonPartsSelectionMethod : uint8
 {
-	Random,
-	GridIndex,
-	Direction,
+	Random UMETA(DisplayName = "Random", ToolTip = "Select parts randomly."),
+	GridIndex UMETA(DisplayName = "Grid Index", ToolTip = "Select parts deterministically from the grid index."),
+	Direction UMETA(DisplayName = "Direction", ToolTip = "Select parts deterministically from the grid direction."),
 };

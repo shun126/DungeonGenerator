@@ -18,11 +18,11 @@
 UENUM(BlueprintType)
 enum class EDungeonRoomParts : uint8
 {
-	Any,			//!< Unspecified (equivalent to dungeon::Room::Parts::Unidentified)
-	Hall,			//!< A hall (several corridors are connected)
-	Hanare,			//!< separate room (with only one passageway connected to it)
-	Start,			//!< starting point
-	Goal,			//!< goal point
+	Any UMETA(DisplayName = "Any", ToolTip = "Unspecified room part."),
+	Hall UMETA(DisplayName = "Hall", ToolTip = "A hall where several corridors are connected."),
+	Hanare UMETA(DisplayName = "Hanare", ToolTip = "A detached room connected by only one passageway."),
+	Start UMETA(DisplayName = "Start", ToolTip = "The dungeon start point room."),
+	Goal UMETA(DisplayName = "Goal", ToolTip = "The dungeon goal point room."),
 };
 
 /**
@@ -35,9 +35,9 @@ enum class EDungeonRoomParts : uint8
 UENUM(BlueprintType)
 enum class EDungeonRoomLocatorParts : uint8
 {
-	Any,			//!< Unspecified (equivalent to dungeon::Room::Parts::Unidentified)
-	Hall,			//!< A hall (several corridors are connected)
-	Hanare,			//!< separate room (with only one passageway connected to it)
+	Any UMETA(DisplayName = "Any", ToolTip = "Unspecified room part."),
+	Hall UMETA(DisplayName = "Hall", ToolTip = "A hall where several corridors are connected."),
+	Hanare UMETA(DisplayName = "Hanare", ToolTip = "A detached room connected by only one passageway."),
 };
 
 /**

@@ -18,9 +18,9 @@
 UENUM(BlueprintType)
 enum class EDungeonRoomItem : uint8
 {
-	Empty,
-	Key,
-	UniqueKey,
+	Empty UMETA(DisplayName = "Empty", ToolTip = "No item is placed in the room."),
+	Key UMETA(DisplayName = "Key", ToolTip = "A standard key is placed in the room."),
+	UniqueKey UMETA(DisplayName = "Unique Key", ToolTip = "A unique key is placed in the room."),
 };
 
 /**

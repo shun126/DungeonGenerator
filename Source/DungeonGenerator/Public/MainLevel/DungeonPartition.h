@@ -8,6 +8,7 @@
 #include "MainLevel/DungeonComponentActivatorComponent.h"
 #include <CoreMinimal.h>
 #include <Containers/Set.h>
+#include <Math/Box.h>
 #include <Misc/SpinLock.h>
 #include <functional>
 #include "DungeonPartition.generated.h"
@@ -45,6 +46,9 @@ private:
 
 	bool UpdatePartitionInactivateRemainTimer(const float deltaSeconds);
 	bool IsValidPartitionInactivateRemainTimer() const noexcept;
+	void ResetPartitionInactivateRemainTimer() noexcept;
+	bool IsPartitionActivate() const noexcept;
+	void FlushRegisteredComponents();
 
 	void Mark() noexcept;
 	void Unmark() noexcept;
@@ -53,27 +57,40 @@ private:
 	void CallPartitionInactivate();
 
 	bool IsEmpty() const;
-	void EachDungeonComponentActivatorComponent(const std::function<void(UDungeonComponentActivatorComponent*)>& function) const
-	{
-		for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
-		{
-			if (IsValid(component))
-				function(component);
-		}
-	}
+	void ResetGraphData();
+	void SetCellCoordinate(const FIntVector& cellCoordinate) noexcept;
+	const FIntVector& GetCellCoordinate() const noexcept;
+	void SetBounds(const FBox& bounds) noexcept;
+	const FBox& GetBounds() const noexcept;
+	void AddNeighborIndex(const int32 neighborIndex);
+	const TArray<int32>& GetNeighborIndices() const noexcept;
+	void EachDungeonComponentActivatorComponent(const std::function<void(UDungeonComponentActivatorComponent*)>& function) const;
 
 protected:
+	/**
+	 * Runtime list of activator components currently associated with this partition.
+	 *
+	 * このパーティションに現在紐づいているアクティベータコンポーネントの実行時リストです。
+	 */
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> ActivatorComponents;
 
+	/**
+	 * Components registered under this partition for activation management.
+	 *
+	 * アクティブ制御のためにこのパーティションへ登録されたコンポーネント一覧です。
+	 */
 	UPROPERTY(Transient)
 	TSet<TObjectPtr<UDungeonComponentActivatorComponent>> RegisteredComponents;
 
 private:
+	UE::FSpinLock mActivatorAndRegisteredComponentsMutex;
+	FIntVector mCellCoordinate = FIntVector::ZeroValue;
+	FBox mBounds;
+	TArray<int32> mNeighborIndices;
 	float mPartitionInactivateRemainTimer = 0.f;
 	bool mPartitionActivate = true;
 	bool mMarked = false;
-	UE::FSpinLock mActivatorAndRegisteredComponentsMutex;
 
 	friend class ADungeonMainLevelScriptActor;
 	friend class UDungeonComponentActivatorComponent;
@@ -98,6 +115,16 @@ inline bool UDungeonPartition::IsValidPartitionInactivateRemainTimer() const noe
 	return mPartitionInactivateRemainTimer > 0.f;
 }
 
+inline void UDungeonPartition::ResetPartitionInactivateRemainTimer() noexcept
+{
+	mPartitionInactivateRemainTimer = InactivateRemainTimer;
+}
+
+inline bool UDungeonPartition::IsPartitionActivate() const noexcept
+{
+	return mPartitionActivate;
+}
+
 inline void UDungeonPartition::Mark() noexcept
 {
 	mMarked = true;
@@ -112,3 +139,5 @@ inline bool UDungeonPartition::IsMarked() const noexcept
 {
 	return mMarked;
 }
+
+

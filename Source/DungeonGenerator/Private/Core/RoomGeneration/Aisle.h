@@ -9,6 +9,7 @@
 #pragma once
 #include "../Helper/Identifier.h"
 #include <array>
+#include <cstdint>
 #include <memory>
 
 namespace dungeon
@@ -103,6 +104,16 @@ namespace dungeon
 		bool IsAnyLocked() const noexcept;
 
 		/**
+		 * 通路の高さを取得します
+		 */
+		uint8_t GetHeight() const noexcept;
+
+		/**
+		 * 通路の高さを設定します
+		 */
+		void SetHeight(const uint8_t height) noexcept;
+
+		/**
 		 * コピー代入
 		 * @param[in]  other	Aisle
 		 */
@@ -136,6 +147,7 @@ namespace dungeon
 		double mLength;
 		Identifier mIdentifier;
 		bool mMain = false;
+		uint8_t mHeight = 1;
 		bool mLocked = false;
 		bool mUniqueLocked = false;
 	};

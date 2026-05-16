@@ -52,21 +52,53 @@ public:
 
 	virtual FName GetCategoryName() const override;
 
+	/**
+	 * Enables downloading and showing plugin notices from the configured URL.
+	 *
+	 * 設定したURLからプラグイン通知を取得して表示するかを切り替えます。
+	 */
 	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
 	bool bEnableOnlineNotices;
 
+	/**
+	 * Endpoint URL used to fetch online notice data.
+	 *
+	 * オンライン通知データを取得するエンドポイントURLです。
+	 */
 	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
 	FString NoticesUrl;
 
+	/**
+	 * Polling interval, in hours, for refreshing online notices.
+	 *
+	 * オンライン通知を再取得する間隔（時間）です。
+	 */
 	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ClampMin="1", UIMin="1"))
 	int32 FetchIntervalHours;
 
+	/**
+	 * HTTP request timeout in seconds when fetching notices.
+	 *
+	 * 通知取得時のHTTPタイムアウト秒数です。
+	 */
 	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ClampMin="1", UIMin="1"))
 	int32 HttpTimeoutSeconds;
 
+	/**
+	 * Stores read/dismiss state per user instead of sharing globally.
+	 *
+	 * 既読・非表示状態を全体共有ではなくユーザー単位で保持します。
+	 */
 	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
 	bool bPerUserState;
 
+	/**
+	 * Allows opening notice links only when they match the notices URL domain.
+	 *
+	 * 通知URLと同一ドメインのリンクのみ開けるよう制限します。
+	 */
 	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
 	bool bRestrictLinksToSameDomain;
 };
+
+

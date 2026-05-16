@@ -9,6 +9,11 @@
 #include <Factories/Factory.h>
 #include "DungeonRoomSensorDatabaseFactory.generated.h"
 
+/**
+ * Class definition for UDungeonRoomSensorDatabaseFactory.
+ *
+ * UDungeonRoomSensorDatabaseFactory のクラス定義です。
+ */
 UCLASS(ClassGroup = "DungeonGenerator")
 class DUNGEONGENERATOREDITOR_API UDungeonRoomSensorDatabaseFactory : public UFactory
 {
@@ -21,3 +26,4 @@ public:
 	// UFactory overrides
 	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;
 };
+

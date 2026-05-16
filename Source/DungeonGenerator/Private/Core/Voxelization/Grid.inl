@@ -62,12 +62,12 @@ namespace dungeon
 
 	inline Grid::Type Grid::GetType() const noexcept
 	{
-		return mPack.GetType();
+		return mType;
 	}
 
 	inline void Grid::SetType(const Type type) noexcept
 	{
-		mPack.SetType(type);
+		mType = type;
 	}
 
 	inline bool Grid::Is(const Grid::Type type) const noexcept
@@ -218,6 +218,11 @@ namespace dungeon
 		mPack.SetAttribute(Attribute::NoWestWallMeshGeneration, noWallMeshGeneration);
 	}
 
+	inline void Grid::NoDoorGeneration(const bool noDoorGeneration) noexcept
+	{
+		mPack.SetAttribute(Attribute::NoDoorGeneration, noDoorGeneration);
+	}
+
 	inline bool Grid::IsNoWallMeshGeneration() const noexcept
 	{
 		return IsNoNorthWallMeshGeneration() || IsNoSouthWallMeshGeneration() || IsNoEastWallMeshGeneration() || IsNoWestWallMeshGeneration();
@@ -252,6 +257,11 @@ namespace dungeon
 	inline bool Grid::IsNoWestWallMeshGeneration() const noexcept
 	{
 		return mPack.IsAttributeEnabled(Attribute::NoWestWallMeshGeneration);
+	}
+
+	inline bool Grid::IsNoDoorGeneration() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::NoDoorGeneration);
 	}
 
 	inline void Grid::MergeAisle(const bool enable) noexcept
@@ -294,6 +304,17 @@ namespace dungeon
 		return mPack.IsAttributeEnabled(Attribute::SubLevel);
 	}
 
+
+	inline void Grid::SetFloor(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::FloorMesh, enable);
+	}
+
+	inline void Grid::SetCeiling(const bool enable) noexcept
+	{
+		mPack.SetAttribute(Attribute::CeilingMesh, enable);
+	}
+
 	inline void Grid::SetNorthWall(const bool enable) noexcept
 	{
 		mPack.SetAttribute(Attribute::NorthWallMesh, enable);
@@ -312,6 +333,17 @@ namespace dungeon
 	inline void Grid::SetWestWall(const bool enable) noexcept
 	{
 		mPack.SetAttribute(Attribute::WestWallMesh, enable);
+	}
+
+
+	inline bool Grid::HasFloor() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::FloorMesh);
+	}
+
+	inline bool Grid::HasCeiling() const noexcept
+	{
+		return mPack.IsAttributeEnabled(Attribute::CeilingMesh);
 	}
 
 	inline bool Grid::HasNorthWall() const noexcept
@@ -340,7 +372,7 @@ namespace dungeon
 
 	inline Grid::Pack::Pack()
 	{
-		constexpr size_t DataBitSize = BitCount(DirectionSize) + TypeSize + PropsSize + AttributeSize;
+		constexpr size_t DataBitSize = BitCount(DirectionSize) * 2 + BitCount(PropsSize) + AttributeSize;
 		constexpr size_t PackBitSize = sizeof(ValueType) * 8;
 		static_assert(DataBitSize <= PackBitSize);
 	}
@@ -375,31 +407,16 @@ namespace dungeon
 		SetValue<int16_t>(shift, mask, static_cast<ValueType>(direction.Get()));
 	}
 
-	inline Grid::Type Grid::Pack::GetType() const noexcept
-	{
-		constexpr ValueType shift = BitCount(DirectionSize) * 2;
-		constexpr ValueType count = BitCount(TypeSize);
-		constexpr ValueType mask = Mask(count, shift);
-		return GetValue<Type>(shift, mask);
-	}
-	inline void Grid::Pack::SetType(const Type type) noexcept
-	{
-		constexpr ValueType shift = BitCount(DirectionSize) * 2;
-		constexpr ValueType count = BitCount(TypeSize);
-		constexpr ValueType mask = ~Mask(count, shift);
-		SetValue<Type>(shift, mask, type);
-	}
-
 	inline Grid::Props Grid::Pack::GetProps() const noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2;
 		constexpr ValueType count = BitCount(PropsSize);
 		constexpr ValueType mask = Mask(count, shift);
 		return GetValue<Props>(shift, mask);
 	}
 	inline void Grid::Pack::SetProps(const Props props) noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2;
 		constexpr ValueType count = BitCount(PropsSize);
 		constexpr ValueType mask = ~Mask(count, shift);
 		SetValue<Props>(shift, mask, props);
@@ -407,12 +424,12 @@ namespace dungeon
 
 	inline bool Grid::Pack::IsAttributeEnabled(const Attribute attribute) const noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize) + BitCount(PropsSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(PropsSize);
 		return Test(shift + static_cast<ValueType>(attribute));
 	}
 	inline void Grid::Pack::SetAttribute(const Attribute attribute, const bool enable) noexcept
 	{
-		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(TypeSize) + BitCount(PropsSize);
+		constexpr ValueType shift = BitCount(DirectionSize) * 2 + BitCount(PropsSize);
 		Set(shift + static_cast<ValueType>(attribute), enable);
 	}
 }

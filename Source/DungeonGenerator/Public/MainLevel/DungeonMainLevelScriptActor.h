@@ -8,13 +8,13 @@
 #include "DungeonPartition.h"
 #include <CoreMinimal.h>
 #include <Containers/Array.h>
+#include <Containers/Map.h>
 #include <Engine/LevelScriptActor.h>
 #include <Math/Box.h>
 #include "DungeonMainLevelScriptActor.generated.h"
 
 class ADungeonGenerateActor;
-class APlayerController;
-class FSceneView;
+class ULevel;
 
 /**
  * This class manages the DungeonComponentActivatorComponent validity
@@ -36,25 +36,25 @@ class DUNGEONGENERATOR_API ADungeonMainLevelScriptActor : public ALevelScriptAct
 	 * Minimum distance from horizontal player to activate partition
 	 * パーティションをアクティブにする水平方向のプレイヤーからの最小距離
 	 */
-	static constexpr double PartitionHorizontalMinSize = 10.0 * 100.0;
+	static constexpr int32 AutoPartitionHorizontalMinGridCount = 2;
 
 	/**
 	 * Maximum distance from horizontal player to activate partition
 	 * パーティションをアクティブにする水平方向のプレイヤーからの最大距離
 	 */
-	static constexpr double PartitionHorizontalMaxSize = 100.0 * 100.0;
+	static constexpr int32 AutoPartitionHorizontalMaxGridCount = 8;
 
 	/**
 	 * Distance from vertical player to activate partition
 	 * パーティションをアクティブにする垂直方向のプレイヤーからの最小距離
 	 */
-	static constexpr double PartitionVerticalMinSize = 5.0 * 100.0;
+	static constexpr int32 AutoPartitionVerticalMinGridCount = 1;
 
 	/**
 	 * Maximum distance from vertical player to activate partition
 	 * パーティションをアクティブにする垂直方向のプレイヤーからの最大距離
 	 */
-	static constexpr double PartitionVerticalMaxSize = 50.0 * 100.0;
+	static constexpr int32 AutoPartitionVerticalMaxGridCount = 2;
 
 public:
 	/**
@@ -105,26 +105,182 @@ public:
 	 */
 	void EnableLoadControl(const bool enable) noexcept;
 
+	/**
+	 * Rebuilds the sparse partition graph and refreshes activator registrations.
+	 * Call this after dungeon generation changes the traversable layout.
+	 *
+	 * sparse partition graph を再構築し、activator の登録を更新します。
+	 * ダンジョン生成で通行可能レイアウトが変化した後に呼び出してください。
+	 */
+	void RebuildSparsePartitionGraphAndRefresh();
+
 	// override
 	virtual void PreInitializeComponents() override;
 	virtual void EndPlay(const EEndPlayReason::Type endPlayReason) override;
 	virtual void Tick(float deltaSeconds) override;
 
 private:
-	size_t ToIndex(const size_t x, const size_t y, const size_t z) const noexcept;
-	size_t ToIndex(const FIntVector& vector) const noexcept;
-	size_t ToIndex(const FVector& vector) const noexcept;
-	FIntVector ToIntVector(const size_t index) const noexcept;
-	FVector ToVector(const size_t index) const noexcept;
+	struct FPartitionVisibilitySample
+	{
+		const ADungeonGenerateActor* DungeonGenerateActor = nullptr;
+		FIntVector GridLocation = FIntVector::ZeroValue;
+		FVector WorldLocation = FVector::ZeroVector;
+	};
 
-	UDungeonPartition* Index(const size_t x, const size_t y, const size_t z) const noexcept;
-	UDungeonPartition* Index(const FIntVector& vector) const noexcept;
-	const FSceneView* GetSceneView(const APlayerController* playerController) const;
+	/*
+	 * Identifies why the partition build pipeline is running.
+	 * パーティション構築パイプラインの実行理由を表します。
+	 */
+	enum class EPartitionBuildReason : uint8
+	{
+		InitialLoad,
+		RuntimeRebuild,
+	};
+
+	/*
+	 * Stores the policy differences for each build trigger.
+	 * 構築トリガーごとの差分ポリシーを保持します。
+	 */
+	struct FPartitionBuildOptions
+	{
+		EPartitionBuildReason Reason = EPartitionBuildReason::InitialLoad;
+
+		bool RequiresGeneratedDungeon() const noexcept
+		{
+			return Reason == EPartitionBuildReason::RuntimeRebuild;
+		}
+
+		bool ShouldSyncRuntimeState() const noexcept
+		{
+			return Reason == EPartitionBuildReason::RuntimeRebuild;
+		}
+
+		bool ShouldUpdateTickState() const noexcept
+		{
+			return Reason == EPartitionBuildReason::RuntimeRebuild;
+		}
+	};
+
+	/*
+	 * Collects temporary values for partition building before they are committed.
+	 * member に確定反映する前のパーティション構築用一時値を集約します。
+	 */
+	struct FPartitionBuildContext
+	{
+		ULevel* Level = nullptr;
+		TArray<ADungeonGenerateActor*> DungeonGenerateActors;
+		FBox Bounding = FBox(EForceInit::ForceInit);
+		FVector2D DungeonMaxLongestStraightPath = FVector2D::ZeroVector;
+		FVector DungeonRoomMaxSize = FVector::ZeroVector;
+		float MaxGridSize = 1.f;
+		int32 MinimumRoomWidthInGrid = TNumericLimits<int32>::Max();
+		int32 MinimumRoomDepthInGrid = TNumericLimits<int32>::Max();
+		int32 MinimumRoomHeightInGrid = TNumericLimits<int32>::Max();
+		int32 CommonHorizontalGridSize = 0;
+		int32 CommonVerticalGridSize = 0;
+		float TheoreticalMaxVisibilityDistance = 0.f;
+		FIntVector PartitionGridCount = FIntVector::ZeroValue;
+		FVector PartitionWorldSize = FVector::OneVector;
+	};
+
+	/*
+	 * Executes the shared partition build pipeline.
+	 * 共通のパーティション構築パイプラインを実行します。
+	 */
+	bool ExecutePartitionBuild(const FPartitionBuildOptions& options);
+
+	/*
+	 * Validates the level and prepares the initial build context.
+	 * レベルの妥当性を確認して初期構築コンテキストを準備します。
+	 */
+	bool TryPreparePartitionBuildContext(const FPartitionBuildOptions& options, FPartitionBuildContext& context) const;
+
+	/*
+	 * Collects dungeon actors used by the current build policy.
+	 * 現在の構築ポリシーで使用するダンジョン actor を収集します。
+	 */
+	static void CollectPartitionBuildActors(const FPartitionBuildOptions& options, FPartitionBuildContext& context);
+
+	/*
+	 * Accumulates the metrics contributed by one dungeon actor.
+	 * 1 つのダンジョン actor が持つ集計値を加算します。
+	 */
+	static void AccumulatePartitionBuildActor(const ADungeonGenerateActor* dungeonGenerateActor, FPartitionBuildContext& context);
+
+	/*
+	 * Validates actor collection results before metric computation.
+	 * メトリクス計算前に actor 収集結果を検証します。
+	 */
+	static bool ValidateCollectedPartitionBuildActors(const FPartitionBuildOptions& options, const FPartitionBuildContext& context);
+
+	/*
+	 * Computes derived partition metrics from the collected actor data.
+	 * 収集済み actor データから派生するパーティション指標を計算します。
+	 */
+	void ComputePartitionBuildMetrics(FPartitionBuildContext& context) const;
+
+	/*
+	 * Validates the computed build context before committing it.
+	 * member へ確定反映する前に計算済みコンテキストを検証します。
+	 */
+	static bool ValidatePartitionBuildContext(const FPartitionBuildContext& context);
+
+	/*
+	 * Resets the current partition build state before rebuilding it.
+	 * 再構築前に現在のパーティション構築状態をリセットします。
+	 */
+	void ResetPartitionBuildState();
+
+	/*
+	 * Commits the computed build context into runtime members.
+	 * 計算済みコンテキストを runtime member へ確定反映します。
+	 */
+	void CommitPartitionBuildContext(const FPartitionBuildContext& context);
+
+	/*
+	 * Rebuilds graph and visibility data from the committed context.
+	 * 確定反映済みコンテキストから graph と visibility を再構築します。
+	 */
+	void BuildPartitionRuntimeData(const FPartitionBuildContext& context);
+
+	/*
+	 * Applies updated culling distances back to dungeon actors.
+	 * 更新後のカリング距離をダンジョン actor へ反映します。
+	 */
+	void ApplyDungeonActorCullDistances(const FPartitionBuildContext& context) const;
+
+	/*
+	 * Applies the post-build runtime synchronization for the selected policy.
+	 * 選択されたポリシーに応じた構築後の runtime 同期を適用します。
+	 */
+	void FinalizePartitionBuild(const FPartitionBuildOptions& options, bool buildSucceeded);
+	int32 FindPartitionIndex(const FVector& worldLocation) const noexcept;
+	FIntVector ToPartitionCell(const FVector& worldLocation) const noexcept;
+	FBox MakePartitionBounds(const FIntVector& partitionCell) const noexcept;
+	int32 FindNearestPartitionIndex(const FIntVector& partitionCell, const FVector& worldLocation) const noexcept;
+	int32 FindOrAddPartition(const FIntVector& partitionCell);
+	void LinkPartitions(const int32 partitionIndex0, const int32 partitionIndex1);
+	void BuildSparsePartitionGraph(const TArray<ADungeonGenerateActor*>& dungeonGenerateActors);
+	void ResetPrecomputedPartitionVisibility();
+	void BuildPartitionVisibilitySamples(const TArray<ADungeonGenerateActor*>& dungeonGenerateActors);
+	void BuildPartitionConnectedComponents();
+	void BuildPrecomputedPartitionVisibility();
+	bool HasPrecomputedPartitionVisibility() const noexcept;
+	bool IsPartitionLoadControlAvailable() const noexcept;
+	void MarkPrecomputedPartitionVisibility(int32 sourcePartitionIndex) const;
+	bool IsPrecomputedPartitionVisible(int32 sourcePartitionIndex, int32 targetPartitionIndex) const noexcept;
+	bool IsPartitionPairPotentiallyVisible(int32 sourcePartitionIndex, int32 targetPartitionIndex) const;
+	static bool TracePartitionVisibility(const FPartitionVisibilitySample& sourceSample, const FPartitionVisibilitySample& targetSample);
+	void RefreshActivatorComponentRegistrations();
+	void ApplyCurrentPartitionActivationState();
+	void ResetPartitionTransitionQueue();
+	void EnqueuePartitionTransition(int32 partitionIndex);
+	void ProcessPartitionTransitionQueue();
+	FInt32Interval ComputeTerrainCullingDistanceRange() const noexcept;
 
 	void Begin() const;
 	void Mark(const FVector& playerLocation) const;
-	void Mark(const FSceneView* sceneView) const;
-	void End(const float deltaSeconds) const;
+	void End(const float deltaSeconds);
 
 	/**
 	 * ポイントライトおよびスポットライトの影を落とすか制御します
@@ -146,10 +302,6 @@ private:
 	 */
 	static bool TestSegmentAABB(const FVector& segmentStart, const FVector& segmentEnd, const FVector& aabbCenter, const FVector& aabbExtent);
 
-	static void DrawFrustumLines(const UWorld* world, const FVector& viewLocation, const FRotator& viewRotation,
-		float FovY, float aspect, float nearDistance, float farDistance,
-		const FColor& color, float lifeTime = 0.f, float thickness = 0.f);
-
 	void DrawDebugInformation() const;
 #endif
 
@@ -157,7 +309,7 @@ protected:
 	/**
 	 * レベル内のダンジョンパーティエーション
 	 */
-	UPROPERTY(Transient)
+	UPROPERTY(Transient, meta = (ToolTip = "Runtime partitions currently built for this level."))
 	TArray<TObjectPtr<UDungeonPartition>> DungeonPartitions;
 
 	/**
@@ -171,6 +323,56 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ClampMin = "1"))
 	float ActivationRangeScale = 1.0f;
+
+	/**
+	 * Override grid counts used to build sparse partitions.
+	 * A component value of 0 uses auto sizing for that axis.
+	 *
+	 * sparse partition の構築に使うグリッド個数の上書き値です。
+	 * 各軸の値に 0 を指定すると、その軸は自動で決定されます。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	FIntVector PartitionGridCountOverride = FIntVector::ZeroValue;
+
+	/**
+	 * Uses precomputed potential visibility sets built after dungeon generation
+	 * to control runtime partition activation.
+	 *
+	 * ダンジョン生成後に構築した PVS を使用して、
+	 * 実行時の partition アクティブ制御を行います。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	bool bUsePrecomputedPartitionVisibility = true;
+
+	/**
+	 * Expands precomputed visible partitions by neighbor graph hops.
+	 * Set to 0 to disable dilation.
+	 *
+	 * 事前計算した可視パーティエーションを隣接グラフの hop 数だけ拡張します。
+	 * 0 を指定すると拡張を無効にします。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ClampMin = "0"))
+	int32 PrecomputedVisibilityDilationHopCount = 1;
+
+	/**
+	 * Maximum number of partition activations processed in a single frame.
+	 * Set to 0 to remove the per-frame activation limit.
+	 *
+	 * 1 フレーム内で処理する partition アクティブ化の最大数です。
+	 * 0 を指定するとフレームごとのアクティブ化上限を無効化します。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ClampMin = "0"))
+	int32 MaxPartitionActivationsPerFrame = 8;
+
+	/**
+	 * Maximum number of partition inactivations processed in a single frame.
+	 * Set to 0 to remove the per-frame inactivation limit.
+	 *
+	 * 1 フレーム内で処理する partition 非アクティブ化の最大数です。
+	 * 0 を指定するとフレームごとの非アクティブ化上限を無効化します。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ClampMin = "0"))
+	int32 MaxPartitionInactivationsPerFrame = 16;
 
 	/**
 	 * Maximum number of point lights or spotlights casting shadows
@@ -196,23 +398,20 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
 	bool ShowDebugInformation = false;
-
-	/**
-	 * Debug display of the view frustum
-	 * 視錐台をデバッグ表示します
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Transient, Category = "DungeonGenerator|Debug")
-	bool ShowFrustumInformation = false;
 #endif
 
 private:
 	FBox mBounding;
-	double mBoundingSize = PartitionHorizontalMinSize;
-	double mPartitionSize = PartitionHorizontalMinSize;
-	uint16_t mPartitionWidth = 0;
-	uint16_t mPartitionDepth = 0;
-	uint16_t mPartitionHeight = 0;
-	float mActiveViewRange = 0.f;
+	FVector mPartitionWorldSize = FVector::OneVector;
+	FIntVector mPartitionGridCount = FIntVector(AutoPartitionHorizontalMinGridCount, AutoPartitionHorizontalMinGridCount, AutoPartitionVerticalMinGridCount);
+	float mTheoreticalMaxVisibilityDistance = 0.f;
 	bool mLastEnableLoadControl;
-	FVector mActiveRegionExtent;
+	TMap<FIntVector, int32> mPartitionIndexByCell;
+	TArray<TArray<FPartitionVisibilitySample>> mPartitionVisibilitySamples;
+	TArray<TArray<uint64>> mPartitionPotentialVisibilityMasks;
+	TArray<int32> mPartitionConnectedComponents;
+	TArray<int32> mPendingPartitionTransitions;
+	TArray<uint8> mDesiredPartitionActivation;
+	TArray<uint8> mQueuedPartitionTransitions;
+	int32 mPendingPartitionTransitionReadIndex = 0;
 };

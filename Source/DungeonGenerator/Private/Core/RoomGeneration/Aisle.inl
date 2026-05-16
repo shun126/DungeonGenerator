@@ -26,6 +26,7 @@ namespace dungeon
 		, mLength(other.mLength)
 		, mIdentifier(other.mIdentifier)
 		, mMain(other.mMain)
+		, mHeight(other.mHeight)
 		, mLocked(other.mLocked)
 		, mUniqueLocked(other.mUniqueLocked)
 	{
@@ -36,6 +37,7 @@ namespace dungeon
 		, mLength(std::move(other.mLength))
 		, mIdentifier(std::move(other.mIdentifier))
 		, mMain(std::move(other.mMain))
+		, mHeight(std::move(other.mHeight))
 		, mLocked(std::move(other.mLocked))
 		, mUniqueLocked(std::move(other.mUniqueLocked))
 	{
@@ -47,6 +49,7 @@ namespace dungeon
 		mLength = other.mLength;
 		mIdentifier = other.mIdentifier;
 		mMain = other.mMain;
+		mHeight = other.mHeight;
 		mLocked = other.mLocked;
 		mUniqueLocked = other.mUniqueLocked;
 		return *this;
@@ -58,6 +61,7 @@ namespace dungeon
 		mLength = std::move(other.mLength);
 		mIdentifier = std::move(other.mIdentifier);
 		mMain = std::move(other.mMain);
+		mHeight = std::move(other.mHeight);
 		mLocked = std::move(other.mLocked);
 		mUniqueLocked = std::move(other.mUniqueLocked);
 		return *this;
@@ -114,6 +118,18 @@ namespace dungeon
 	inline bool Aisle::IsAnyLocked() const noexcept
 	{
 		return IsLocked() || IsUniqueLocked();
+	}
+
+
+	inline uint8_t Aisle::GetHeight() const noexcept
+	{
+		return mHeight;
+	}
+
+	inline void Aisle::SetHeight(const uint8_t height) noexcept
+	{
+		check(1 <= height && height <= 2);
+		mHeight = height;
 	}
 
 	inline bool Aisle::operator==(const Aisle& other) const noexcept

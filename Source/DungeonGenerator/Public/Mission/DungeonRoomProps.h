@@ -17,9 +17,9 @@
 UENUM(BlueprintType)
 enum class EDungeonRoomProps : uint8
 {
-	None,
-	Lock,
-	UniqueLock,
+	None UMETA(DisplayName = "None", ToolTip = "No room prop is assigned."),
+	Lock UMETA(DisplayName = "Lock", ToolTip = "A standard lock is assigned to the room."),
+	UniqueLock UMETA(DisplayName = "Unique Lock", ToolTip = "A unique lock is assigned to the room."),
 };
 
 /**

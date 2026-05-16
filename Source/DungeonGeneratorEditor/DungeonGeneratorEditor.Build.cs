@@ -27,22 +27,28 @@ public class DungeonGeneratorEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Projects",
-				"DeveloperSettings",
-                "EditorSubsystem",
-                "InputCore",
-				"ToolMenus",
+				"ApplicationCore",
+				"AssetRegistry",
+				"AssetTools",
+				"ContentBrowser",
 				"CoreUObject",
+				"DeveloperSettings",
+				"DesktopWidgets",
+				"EditorSubsystem",
 				"Engine",
+				"Foliage",
+				"HTTP",
+				"InputCore",
+				"Json",
+				"MeshDescription",
+				"Projects",
+				"PropertyEditor",
 				"Slate",
 				"SlateCore",
-				"DesktopWidgets",
-				"PropertyEditor",
-				"Foliage",
+				"StaticMeshDescription",
+				"ToolMenus",
 				"DungeonGenerator",
-				"HTTP",
-				"Json",
-            }
+			}
 		);
 
 		if (Target.bBuildEditor)
@@ -60,5 +66,5 @@ public class DungeonGeneratorEditor : ModuleRules
 		}
 
 		CppStandard = CppStandardVersion.Latest;
-    }
+	}
 }

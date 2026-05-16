@@ -100,6 +100,10 @@ namespace dungeon
 				mLastError = static_cast<Error>(errorIndex);
 			}
 		}
+		else
+		{
+			UpdateMeshAttributes();
+		}
 
 		return mLastError == Error::Success;
 	}
@@ -608,10 +612,10 @@ namespace dungeon
 		);
 #endif
 
-		int32_t minX, minY, minZ;
-		int32_t maxX, maxY, maxZ;
-		minX = minY = minZ = std::numeric_limits<int32_t>::max();
-		maxX = maxY = maxZ = std::numeric_limits<int32_t>::lowest();
+		int32_t minY, minZ;
+		int32_t maxY, maxZ;
+		int32_t minX = minY = minZ = std::numeric_limits<int32_t>::max();
+		int32_t maxX = maxY = maxZ = std::numeric_limits<int32_t>::lowest();
 
 		// 空間の必要な大きさを求める
 		for (const std::shared_ptr<Room>& room : mRooms)
@@ -1307,6 +1311,9 @@ namespace dungeon
 				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart)
 				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart)
 			);
+
+			// 部屋に吹き抜けを生成する
+			GenerateRoomSkylightVoxel(room, depthRatioFromStart);
 		}
 
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
@@ -1356,6 +1363,26 @@ namespace dungeon
 
 		// Generate pathways
 		// 通路の生成
+		for (Aisle& aisle : mAisles)
+		{
+			// 通路の天井の高さを決定
+			uint8_t aisleHeight;
+			switch (mGenerateParameter.GetAisleCeilingHeightPolicy())
+			{
+			case AisleCeilingHeightPolicy::TwoGrids:
+				aisleHeight = 2;
+				break;
+			case AisleCeilingHeightPolicy::OneGrid:
+				aisleHeight = 1;
+				break;
+			case AisleCeilingHeightPolicy::Random:
+			default:
+				aisleHeight = mGenerateParameter.GetRandom()->Get<uint8_t>(2) + 1;
+				break;
+			}
+			aisle.SetHeight(aisleHeight);
+		}
+
 		for (size_t i = 0; i < mAisles.size(); ++i)
 		{
 			const Aisle& aisle = mAisles[i];
@@ -1402,7 +1429,13 @@ namespace dungeon
 				DUNGEON_GENERATOR_LOG(TEXT("GenerateVoxel: aisle generated: RandomSeed x=%08x, y=%08x, z=%08x, w=%08x, CRC32=%x"), x, y, z, w, crc32);
 			}
 #endif
+
+			if (aisle.GetHeight() > 1)
+			{
+				ExpandAisleHeightVoxel(aisle);
+			}
 		}
+
 
 		if (mGenerateParameter.IsGenerateStructuralColumn())
 		{
@@ -1432,6 +1465,93 @@ namespace dungeon
 #endif
 
 		return true;
+	}
+
+	void Generator::UpdateMeshAttributes() const noexcept
+	{
+		if (!mVoxel)
+			return;
+
+		const bool mergeRooms = mGenerateParameter.IsMergeRooms();
+		mVoxel->Each([this, mergeRooms](const FIntVector& location, Grid& grid)
+			{
+				const Grid& northGrid = mVoxel->Get(location.X, location.Y - 1, location.Z);
+				const Grid& southGrid = mVoxel->Get(location.X, location.Y + 1, location.Z);
+				const Grid& eastGrid = mVoxel->Get(location.X + 1, location.Y, location.Z);
+				const Grid& westGrid = mVoxel->Get(location.X - 1, location.Y, location.Z);
+				const Grid& upperGrid = mVoxel->Get(location.X, location.Y, location.Z + 1);
+
+				grid.SetNorthWall(grid.CanBuildWall(northGrid, Direction::North, mergeRooms));
+				grid.SetSouthWall(grid.CanBuildWall(southGrid, Direction::South, mergeRooms));
+				grid.SetEastWall(grid.CanBuildWall(eastGrid, Direction::East, mergeRooms));
+				grid.SetWestWall(grid.CanBuildWall(westGrid, Direction::West, mergeRooms));
+				grid.SetFloor(grid.CanBuildSlope() || grid.CanBuildFloor(true));
+				grid.SetCeiling(grid.CanBuildRoof(upperGrid, true));
+				return true;
+			}
+		);
+	}
+
+	void Generator::ExpandAisleHeightVoxel(const Aisle& aisle) const noexcept
+	{
+		if (!mVoxel)
+			return;
+
+		std::vector<std::pair<FIntVector, Grid>> upSpaceGrids;
+		mVoxel->Each([this, &aisle, &upSpaceGrids](const FIntVector& location, const Grid& grid)
+			{
+				if ((!grid.IsKindOfAisleType() && !grid.IsKindOfGateType()) || grid.GetIdentifier() != aisle.GetIdentifier())
+					return true;
+
+				const FIntVector upperLocation = location + FIntVector(0, 0, 1);
+				if (!mVoxel->Contain(upperLocation))
+					return true;
+
+				const Grid& upperGrid = mVoxel->Get(upperLocation);
+				if (!upperGrid.Is(Grid::Type::Empty))
+					return true;
+
+				Grid upSpace = grid;
+				upSpace.SetType(Grid::Type::UpSpace);
+				upSpace.MergeAisle(grid.CanMergeAisle());
+				upSpace.SetProps(Grid::Props::None);
+				upSpaceGrids.emplace_back(upperLocation, upSpace);
+				return true;
+			}
+		);
+
+		for (const auto& upSpaceGrid : upSpaceGrids)
+		{
+			mVoxel->Set(upSpaceGrid.first, upSpaceGrid.second);
+		}
+	}
+
+	void Generator::GenerateRoomSkylightVoxel(const std::shared_ptr<Room>& room, const uint8_t depthRatioFromStart) noexcept
+	{
+		if (!mVoxel || !room)
+			return;
+
+		if (room->GetWidth() < 3 || room->GetDepth() < 3)
+			return;
+
+		if (mGenerateParameter.GetRandom()->Get<uint8_t>(0, 99) >= mGenerateParameter.GetSkylightChancePercent())
+			return;
+
+		const int32 x = mGenerateParameter.GetRandom()->Get<int32>(room->GetLeft() + 1, room->GetRight() - 1);
+		const int32 y = mGenerateParameter.GetRandom()->Get<int32>(room->GetTop() + 1, room->GetBottom() - 1);
+		const int32 z = room->GetForeground();
+		const FIntVector skylightLocation(x, y, z);
+		if (!mVoxel->Contain(skylightLocation))
+			return;
+
+		if (!mVoxel->Get(skylightLocation).Is(Grid::Type::Empty))
+			return;
+
+		Grid upSpace(Grid::Type::UpSpace);
+		upSpace.SetIdentifier(room->GetIdentifier());
+		upSpace.SetDepthRatioFromStart(depthRatioFromStart);
+		upSpace.SetProps(Grid::Props::None);
+		mVoxel->Set(skylightLocation, upSpace);
 	}
 
 	bool Generator::GenerateAisleVoxel(const size_t aisleIndex, const Aisle& aisle, const std::shared_ptr<const Point>& startPoint, const std::shared_ptr<const Point>& goalPoint, const uint8_t depthRatioFromStart, const bool generateIndoorSlope) noexcept
@@ -1841,6 +1961,17 @@ namespace dungeon
 			(room->GetParts() == Room::Parts::Hall || room->GetParts() == Room::Parts::Hanare);
 	}
 
+
+	void Generator::SetFloor(const FIntVector& position, const bool enable) const noexcept
+	{
+		mVoxel->SetFloor(position, enable);
+	}
+
+	void Generator::SetCeiling(const FIntVector& position, const bool enable) const noexcept
+	{
+		mVoxel->SetCeiling(position, enable);
+	}
+
 	void Generator::SetNorthWall(const FIntVector& position, const bool enable) const noexcept
 	{
 		mVoxel->SetNorthWall(position, enable);
@@ -1859,6 +1990,17 @@ namespace dungeon
 	void Generator::SetWestWall(const FIntVector& position, const bool enable) const noexcept
 	{
 		mVoxel->SetWestWall(position, enable);
+	}
+
+
+	bool Generator::HasFloor(const FIntVector& position) const noexcept
+	{
+		return mVoxel->HasFloor(position);
+	}
+
+	bool Generator::HasCeiling(const FIntVector& position) const noexcept
+	{
+		return mVoxel->HasCeiling(position);
 	}
 
 	bool Generator::HasNorthWall(const FIntVector& position) const noexcept
@@ -2001,10 +2143,10 @@ namespace dungeon
 	void Generator::GenerateRoomImageForDebug(const std::string& filename) const
 	{
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
-		int32_t minX, minY, minZ;
-		int32_t maxX, maxY, maxZ;
-		minX = minY = minZ = 0;
-		maxX = maxY = maxZ = std::numeric_limits<int32_t>::lowest();
+		int32_t minY, minZ;
+		int32_t maxY, maxZ;
+		int32_t minX = minY = minZ = 0;
+		int32_t maxX = maxY = maxZ = std::numeric_limits<int32_t>::lowest();
 
 		// 空間の必要な大きさを求める
 		for (const auto& room : mRooms)

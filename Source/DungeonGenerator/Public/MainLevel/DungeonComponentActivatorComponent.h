@@ -14,15 +14,21 @@
 #include "DungeonComponentActivatorComponent.generated.h"
 
 class ADungeonMainLevelScriptActor;
+class ADungeonGenerateBase;
 class UDungeonPartition;
 class UPointLightComponent;
 
+/**
+ * Enum definition for EDungeonComponentActivateReason.
+ *
+ * EDungeonComponentActivateReason の列挙型定義です。
+ */
 UENUM(Blueprintable)
 enum class EDungeonComponentActivateReason : uint8
 {
-	Partition,
-	Demo,
-	Custom
+	Partition UMETA(DisplayName = "Partition", ToolTip = "Activation state changed by partition distance logic."),
+	Demo UMETA(DisplayName = "Demo", ToolTip = "Activation state changed for demo or preview behavior."),
+	Custom UMETA(DisplayName = "Custom", ToolTip = "Activation state changed by custom game logic.")
 };
 constexpr uint8_t DungeonComponentActivateReasonSize = 3;
 
@@ -62,6 +68,13 @@ public:
 	void SetEnableComponentVisibilityControl(const bool enable = true) noexcept;
 	void SetEnableLightCastShadowControl(const bool enable = true) noexcept;
 	void SetEnableCollisionEnableControl(const bool enable = true) noexcept;
+
+	/**
+	 * Sets a fixed world location used for partition registration.
+	 *
+	 * パーティエーション登録に使用する固定ワールド座標を設定します。
+	 */
+	void SetFixedPartitionRegistrationWorldLocation(const FVector& worldLocation) noexcept;
 
 	// Actor
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
@@ -118,7 +131,16 @@ protected:
 	void OnPartitionInactivate();
 
 private:
+	/**
+	 * Shifts the fixed world location used for partition registration by the specified world offset.
+	 * パーティション登録に使用する固定ワールド座標を、指定したワールドオフセット分だけ移動します。
+	 */
+	void ShiftFixedPartitionRegistrationWorldLocation(const FVector& worldOffset) noexcept;
+
+	void RefreshPartitionRegistration(ADungeonMainLevelScriptActor* dungeonMainLevelScriptActor);
 	void TickImplement(const FVector& location);
+	FVector GetPartitionRegistrationWorldLocation(const AActor* ownerActor) const noexcept;
+	bool HasFixedPartitionRegistrationWorldLocation() const noexcept;
 	void CallPartitionActivate();
 	void CallPartitionInactivate();
 
@@ -195,10 +217,14 @@ private:
 
 	TWeakObjectPtr<ADungeonMainLevelScriptActor> mDungeonLevelScriptActor;
 	TWeakObjectPtr<UDungeonPartition> mLastDungeonPartition;
+	FVector mFixedPartitionRegistrationWorldLocation = FVector::ZeroVector;
 	FVector mLastLocation = FVector::ZeroVector;
 
+	bool bHasFixedPartitionRegistrationWorldLocation = false;
 	bool mTickSaver = false;
 
+	friend class ADungeonMainLevelScriptActor;
+	friend class ADungeonGenerateBase;
 	friend class UDungeonPartition;
 };
 
@@ -262,6 +288,18 @@ inline void UDungeonComponentActivatorComponent::SetEnableCollisionEnableControl
 	EnableCollisionEnableControl = enable;
 }
 
+inline void UDungeonComponentActivatorComponent::SetFixedPartitionRegistrationWorldLocation(const FVector& worldLocation) noexcept
+{
+	bHasFixedPartitionRegistrationWorldLocation = true;
+	mFixedPartitionRegistrationWorldLocation = worldLocation;
+}
+
+inline void UDungeonComponentActivatorComponent::ShiftFixedPartitionRegistrationWorldLocation(const FVector& worldOffset) noexcept
+{
+	if (bHasFixedPartitionRegistrationWorldLocation)
+		mFixedPartitionRegistrationWorldLocation += worldOffset;
+}
+
 inline void UDungeonComponentActivatorComponent::EachControlledLightCastShadow(const std::function<void(UPointLightComponent*)>& function) const
 {
 	for (const auto& pointLightComponent : mPointLightComponents)
@@ -288,3 +326,4 @@ void UDungeonComponentActivatorComponent::EachComponent(const std::function<void
 	}
 }
 #endif
+

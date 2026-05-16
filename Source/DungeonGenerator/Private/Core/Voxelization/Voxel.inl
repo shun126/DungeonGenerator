@@ -64,7 +64,16 @@ namespace dungeon
 		}
 	}
 
-	inline void Voxel::UseSubLevel(const FIntVector& location) noexcept
+	inline void Voxel::NoDoorGeneration(const FIntVector& location, const bool noDoorGeneration) const noexcept
+	{
+		if (Contain(location))
+		{
+			const size_t index = Index(location);
+			mGrids.get()[index].NoDoorGeneration(noDoorGeneration);
+		}
+	}
+
+	inline void Voxel::UseSubLevel(const FIntVector& location) const noexcept
 	{
 		if (Contain(location))
 		{
@@ -88,6 +97,9 @@ namespace dungeon
 
 	inline size_t Voxel::Index(const uint32_t x, const uint32_t y, const uint32_t z) const noexcept
 	{
+		check(x < mWidth);
+		check(y < mDepth);
+		check(z < mHeight);
 		const size_t index
 			= static_cast<size_t>(z) * mWidth * mDepth
 			+ static_cast<size_t>(y) * mWidth
@@ -97,6 +109,9 @@ namespace dungeon
 
 	inline size_t Voxel::Index(const FIntVector& location) const noexcept
 	{
+		check(0 <= location.X && static_cast<int64>(location.X) < static_cast<int64>(mWidth));
+		check(0 <= location.Y && static_cast<int64>(location.Y) < static_cast<int64>(mDepth));
+		check(0 <= location.Z && static_cast<int64>(location.Z) < static_cast<int64>(mHeight));
 		const size_t index
 			= static_cast<size_t>(location.Z) * mWidth * mDepth
 			+ static_cast<size_t>(location.Y) * mWidth

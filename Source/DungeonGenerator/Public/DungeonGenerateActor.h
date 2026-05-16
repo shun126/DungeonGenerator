@@ -12,6 +12,7 @@
 class CDungeonGeneratorCore;
 class UDungeonGenerateParameter;
 class UDungeonMiniMapTextureLayer;
+class ADungeonSubLevelScriptActor;
 class UInstancedStaticMeshComponent;
 class UHierarchicalInstancedStaticMeshComponent;
 
@@ -27,9 +28,9 @@ namespace dungeon
 UENUM()
 enum class EDungeonMeshGenerationMethod : uint8
 {
-	StaticMesh,
-	InstancedStaticMesh,
-	HierarchicalInstancedStaticMesh
+	StaticMesh UMETA(DisplayName = "Static Mesh", ToolTip = "Spawn individual static mesh components."),
+	InstancedStaticMesh UMETA(DisplayName = "Instanced Static Mesh", ToolTip = "Use instanced static mesh components."),
+	HierarchicalInstancedStaticMesh UMETA(DisplayName = "Hierarchical Instanced Static Mesh", ToolTip = "Use hierarchical instanced static mesh components.")
 };
 
 /**
@@ -61,6 +62,13 @@ public:
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "DungeonGenerator")
 	void GenerateDungeon();
 
+	/**
+	 * Generate new dungeon
+	 * ダンジョンを生成します
+	 */
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "DungeonGenerator")
+	void GenerateDungeonWithParameter(UDungeonGenerateParameter* dungeonGenerateParameter);
+
 protected:
 	/**
 	 * Multicast dungeon generation to all clients
@@ -70,13 +78,6 @@ protected:
 	void MulticastOnGenerateDungeon();
 
 public:
-	/**
-	 * Generate new dungeon
-	 * ダンジョンを生成します
-	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-	void GenerateDungeonWithParameter(UDungeonGenerateParameter* DungeonGenerateParameter);
-
 	/**
 	 * Destroy dungeon
 	 * ダンジョンを破棄します
@@ -172,14 +173,14 @@ protected:
 	 * Generated random number seeds
 	 * 生成時の乱数の種
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
 	int32 GeneratedRandomSeed = 0;
 
 	/**
 	 * Generated dungeon hash
 	 * 生成時のCRC32
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "DungeonGenerator|Debug")
 	int32 GeneratedDungeonCRC32 = 0;
 #endif
 
@@ -268,4 +269,5 @@ protected:
 
 private:
 	FInt32Interval mInstancedMeshCullDistance = { 0, 0};
+	bool mIsGeneratingDungeon = false;
 };

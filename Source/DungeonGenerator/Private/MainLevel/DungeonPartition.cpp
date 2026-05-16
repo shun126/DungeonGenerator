@@ -8,7 +8,8 @@
 #include "MainLevel/DungeonComponentActivatorComponent.h"
 
 /*
- * スレッドセーフにして下さい
+ * UDungeonComponentActivatorComponentのTickComponentは
+ * GameThread以外からも実行されるのでスレッドセーフにして下さい
  */
 void UDungeonPartition::RegisterActivatorComponent(UDungeonComponentActivatorComponent* component)
 {
@@ -21,7 +22,8 @@ void UDungeonPartition::RegisterActivatorComponent(UDungeonComponentActivatorCom
 }
 
 /*
- * スレッドセーフにして下さい
+ * UDungeonComponentActivatorComponentのTickComponentは
+ * GameThread以外からも実行されるのでスレッドセーフにして下さい
  */
 void UDungeonPartition::UnregisterActivatorComponent(UDungeonComponentActivatorComponent* component)
 {
@@ -45,6 +47,11 @@ void UDungeonPartition::UpdateRegisteredComponent()
 			component->CallPartitionInactivate();
 	}
 	RegisteredComponents.Reset();
+}
+
+void UDungeonPartition::FlushRegisteredComponents()
+{
+	UpdateRegisteredComponent();
 }
 
 void UDungeonPartition::CallPartitionActivate(const bool resetPartitionInactivateRemainTimer)
@@ -89,4 +96,51 @@ void UDungeonPartition::CallPartitionInactivate()
 bool UDungeonPartition::IsEmpty() const
 {
 	return ActivatorComponents.Num() == 0;
+}
+
+void UDungeonPartition::ResetGraphData()
+{
+	mCellCoordinate = FIntVector::ZeroValue;
+	mBounds.Init();
+	mNeighborIndices.Reset();
+}
+
+void UDungeonPartition::SetCellCoordinate(const FIntVector& cellCoordinate) noexcept
+{
+	mCellCoordinate = cellCoordinate;
+}
+
+const FIntVector& UDungeonPartition::GetCellCoordinate() const noexcept
+{
+	return mCellCoordinate;
+}
+
+void UDungeonPartition::SetBounds(const FBox& bounds) noexcept
+{
+	mBounds = bounds;
+}
+
+const FBox& UDungeonPartition::GetBounds() const noexcept
+{
+	return mBounds;
+}
+
+void UDungeonPartition::AddNeighborIndex(const int32 neighborIndex)
+{
+	if (neighborIndex >= 0)
+		mNeighborIndices.AddUnique(neighborIndex);
+}
+
+const TArray<int32>& UDungeonPartition::GetNeighborIndices() const noexcept
+{
+	return mNeighborIndices;
+}
+
+void UDungeonPartition::EachDungeonComponentActivatorComponent(const std::function<void(UDungeonComponentActivatorComponent*)>& function) const
+{
+	for (UDungeonComponentActivatorComponent* component : ActivatorComponents)
+	{
+		if (IsValid(component))
+			function(component);
+	}
 }

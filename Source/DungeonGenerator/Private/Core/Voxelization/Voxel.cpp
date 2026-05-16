@@ -279,7 +279,7 @@ namespace dungeon
 			return false;
 
 		const std::shared_ptr<PathFinder::Result>& pathResult = pathResults.begin()->second;
-		
+
 #if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG)
 		const size_t index = pathResults.begin()->first & 0xFF;
 		const FIntVector& startLocation = pathResult->GetStartLocation();
@@ -504,7 +504,7 @@ namespace dungeon
 		}
 #endif
 
-#if WITH_EDITOR & JENKINS_FOR_DEVELOP
+#if WITH_EDITOR & JENKINS_FOR_DEVELOP & 0
 		DUNGEON_GENERATOR_LOG(TEXT(" - Voxel: Task %d: Completed route search. (%d,%d,%d)-(%d,%d,%d) %d/%d nodes, %lf seconds"), index
 			, route.mStart.X, route.mStart.Y, route.mStart.Z, route.mIdealGoal.X, route.mIdealGoal.Y, route.mIdealGoal.Z
 			, openNodeSize, closeNodeSize
@@ -801,11 +801,32 @@ namespace dungeon
 		const Grid& grid = Get(location);
 
 		// 進入先から現在位置への壁が生成禁止なら進入できない
-		if (grid.IsNoWallMeshGeneration(enteringDirection.Inverse()) == true)
+		if (grid.IsNoWallMeshGeneration(enteringDirection.Inverse().Get()) == true)
+		{
 			return false;
+		}
 
 		// 部屋の一階部分の属性なら進入許可
 		return grid.Is(Grid::Type::Deck);
+	}
+
+
+	void Voxel::SetFloor(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetFloor(enable);
+		}
+	}
+
+	void Voxel::SetCeiling(const FIntVector& position, const bool enable) const noexcept
+	{
+		if (Contain(position))
+		{
+			const auto index = Index(position);
+			GetRef(index).SetCeiling(enable);
+		}
 	}
 
 	void Voxel::SetNorthWall(const FIntVector& position, const bool enable) const noexcept
@@ -842,6 +863,17 @@ namespace dungeon
 			const auto index = Index(position);
 			GetRef(index).SetWestWall(enable);
 		}
+	}
+
+
+	bool Voxel::HasFloor(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasFloor();
+	}
+
+	bool Voxel::HasCeiling(const FIntVector& position) const noexcept
+	{
+		return Get(position).HasCeiling();
 	}
 
 	bool Voxel::HasNorthWall(const FIntVector& position) const noexcept
