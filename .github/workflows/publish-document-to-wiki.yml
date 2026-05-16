@@ -49,11 +49,13 @@ jobs:
 
           REPO="${{ github.repository }}"
           WIKI_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.wiki.git"
+          BUILD_DIR="$(mktemp -d)"
 
           git clone "${WIKI_URL}" wiki
+          python3 scripts/build_tutorial_wiki.py Document/tutorial "${BUILD_DIR}"
 
           find wiki -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          cp -a Document/. wiki/
+          cp -a "${BUILD_DIR}/." wiki/
 
           cd wiki
           git config user.name "github-actions[bot]"
