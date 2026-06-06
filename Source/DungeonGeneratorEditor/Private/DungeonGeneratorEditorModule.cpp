@@ -4,12 +4,12 @@
  * All Rights Reserved.
  */
 
+#include "DungeonGeneratorEditorModule.h"
 #include "Actor/DungeonGenerateActorDetails.h"
 #include "BuildInformation.h"
 #include "Debug/Debug.h"
 #include "DungeonGeneratedActor.h"
 #include "DungeonGeneratorCommands.h"
-#include "DungeonGeneratorEditorModule.h"
 #include "DungeonGeneratorStyle.h"
 #include "Helper/DungeonFinalizer.h"
 #include "Parameter/DungeonGenerateParameter.h"

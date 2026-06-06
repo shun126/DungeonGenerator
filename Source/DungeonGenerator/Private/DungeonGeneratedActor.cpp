@@ -45,7 +45,6 @@ ADungeonGeneratedActor* ADungeonGeneratedActor::SpawnDungeonActor(UWorld* world,
 
 	const FTransform transform(location);
 	FActorSpawnParameters actorSpawnParameters;
-	actorSpawnParameters.ObjectFlags |= RF_Transient;
 	AActor* actor = SpawnActorWithFolderPath(
 		world,
 		ADungeonGeneratedActor::StaticClass(),

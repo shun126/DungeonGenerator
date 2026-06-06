@@ -1,6 +1,16 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
-## 202604201.9.1 (65)
+## 20260606-1.9.2 (66)
+### Changes
+- Fixed an issue with the plant spawn range
+- Fixed an issue where actors would disappear when spawned from the editor
+- Fixed several other bugs.
+### 変更点
+- 植物の生成範囲の間違いを修正
+- エディタからの生成でアクターが消えてしまう問題を修正
+- いくつかの不具合を修正。
+
+## 20260420-1.9.1 (65)
 ### Changes
 - Added a tool to fit StaticMeshes to DungeonGenerateParameters.
 - Fixed several other bugs.
