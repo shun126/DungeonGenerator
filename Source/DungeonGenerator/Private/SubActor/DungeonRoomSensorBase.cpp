@@ -335,8 +335,7 @@ void ADungeonRoomSensorBase::SpawnActorInRoomImpl(const FSoftObjectPath& spawnAc
 		{
 			const FSoftObjectPath path(spawnActorPath.ToString() + "_C");
 			const TSoftClassPtr<AActor> softClassPointer(path);
-			auto* actorClass = softClassPointer.LoadSynchronous();
-			SpawnActorFromClass(actorClass, transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding, nullptr, true);
+			SpawnActorFromClass(softClassPointer.LoadSynchronous(), transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding, nullptr);
 			break;
 		}
 	} while (force);
@@ -481,7 +480,7 @@ float ADungeonRoomSensorBase::GetDepthRatioFromStart() const
 	return (DeepestDepthFromStart == 0) ? 0.f : static_cast<float>(DepthFromStart) / static_cast<float>(DeepestDepthFromStart);
 }
 
-AActor* ADungeonRoomSensorBase::SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride, APawn* instigator, const bool transient)
+AActor* ADungeonRoomSensorBase::SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride, APawn* instigator)
 {
 	AActor* actor = nullptr;
 
@@ -493,11 +492,13 @@ AActor* ADungeonRoomSensorBase::SpawnActorFromClass(TSubclassOf<class AActor> ac
 		actorSpawnParameters.Instigator = instigator;
 		actorSpawnParameters.SpawnCollisionHandlingOverride = spawnCollisionHandlingOverride;
 		//actorSpawnParameters.TransformScaleMethod = transformScaleMethod;
-		if (transient)
-			actorSpawnParameters.ObjectFlags |= RF_Transient;
 		actor = world->SpawnActor(actorClass, &transform, actorSpawnParameters);
 		if (IsValid(actor))
 		{
+#if WITH_EDITOR
+			actor->SetFolderPath(FName(dungeon::GetBaseDirectoryName() + TEXT("/Actors")));
+#endif
+
 			actor->Tags.Reserve(1);
 			actor->Tags.Emplace(GetDungeonGeneratorTag());
 

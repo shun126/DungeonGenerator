@@ -151,7 +151,7 @@ public:
 	 * スポーンされたアクターの自身をオーナーアクターにして、タグにダンジョンジェネレータを追加します。
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
-	AActor* SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined, APawn* instigator_ = nullptr, const bool transient = false);
+	AActor* SpawnActorFromClass(TSubclassOf<class AActor> actorClass, const FTransform transform, const ESpawnActorCollisionHandlingMethod spawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::Undefined, APawn* instigator_ = nullptr);
 
 	/**
 	 * Calculate the depth ratio from the start
