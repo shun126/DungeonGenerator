@@ -18,6 +18,7 @@ class FMenuBuilder;
 class FUICommandList;
 class FSpawnTabArgs;
 class FToolBarBuilder;
+class FDungeonAssetMigrationService;
 class SButton;
 class UDungeonGenerateParameter;
 class UStaticMesh;
@@ -71,4 +72,5 @@ private:
 	TSharedPtr<SButton> mCopyDiagnosticsButton;
 	TSharedPtr<SListView<TSharedPtr<FDungeonValidationIssue>>> mValidationListView;
 	TArray<TSharedPtr<FDungeonValidationIssue>> mValidationIssueItems;
+	TUniquePtr<FDungeonAssetMigrationService> MigrationService;
 };

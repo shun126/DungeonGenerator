@@ -12,6 +12,22 @@
 この Database に登録するレベルは、`ADungeonSubLevelScriptActor` を親クラスにしたサブレベルとして作成します。  
 また、`Build` 実行時にそのレベルからサイズとグリッド情報を読み取るため、**編集後は `Build` が必須**です。
 
+```mermaid
+graph TD;
+    SubLevel["手作りサブレベル"] --> ScriptActor["ADungeonSubLevelScriptActor<br/>グリッドサイズ、幅、奥行、高さ"]
+    ScriptActor --> Build["UDungeonSubLevelDatabase で Build を実行"]
+    Build --> Database["UDungeonSubLevelDatabase"]
+    Database --> Start["StartRoom"]
+    Database --> Goal["GoalRoom"]
+    Database --> Preferred["Preferred Sublevel"]
+    Database --> Random["Random Sublevel"]
+    Parameter["UDungeonGenerateParameter.Gameplay"] --> Database
+    Start --> Dungeon["生成されるダンジョン"]
+    Goal --> Dungeon
+    Preferred --> Dungeon
+    Random --> Dungeon
+```
+
 ## 主な項目
 - `GridSize` / `VerticalGridSize`  
   表示専用です。実際の値は各サブレベル内の `ADungeonSubLevelScriptActor` からコピーされます。
@@ -36,21 +52,25 @@
 
 - 幅 / 奥行 / 高さの条件
 - どの種類の部屋に置けるか
+- どの構造役割に置けるか (`AllowedStructuralRoles`)
+- どのゲームプレイ役割に置けるか (`AllowedGameplayRoles`)
 - どの種類のアイテム部屋に置けるか
 - `AddingProbability`
+
+`AllowedStructuralRoles` と `AllowedGameplayRoles` は `Random Sublevel` だけで使われます。空のままなら、その役割軸では絞り込みません。スタート、ゴール、予約番号で指定される優先サブレベルは従来どおり優先され、この条件では絞り込まれません。
 
 ## 使い方の流れ
 1. 特殊部屋用レベルを作り、親クラスを `ADungeonSubLevelScriptActor` にします。
 2. サブレベル側で `GridSize` / `VerticalGridSize` / `Width` / `Depth` / `Height` を設定します。
 3. そのレベルを `StartRoom`、`GoalRoom`、`Preferred Sublevel`、`Random Sublevel` のいずれかに登録します。
 4. `Build` を実行します。
-5. `UDungeonGenerateParameter` の `DungeonSubLevelDatabase` にこのアセットを指定します。
+5. `UDungeonGenerateParameter` の `Gameplay.DungeonSubLevelDatabase` にこのアセットを指定します。
 
 ## 編集のヒント
 - 本体の `UDungeonGenerateParameter` とサブレベル側のグリッドサイズは必ず一致させてください。
 - サブレベルを編集したあとに `Build` を忘れると、サイズや接続情報が古いまま残ります。
 - `Build` はレベルを一時ロードして解析するため、**現在編集中のそのレベル自身**は対象にしない方が安全です。
-- すでにロード済みのロビーをそのままスタート部屋にしたい場合は、この Database ではなく `ADungeonGenerateActor` の `StartRoomSubLevelScriptActor` を使います。
+- すでにロード済みのロビーをそのままスタート部屋にしたい場合は、この Database ではなく `ADungeonGenerateActor` の `StartRoomSubLevelScriptActor` を使います。この Actor 側設定が有効な間、この Database の `StartRoom` は開始部屋には使われません。
 
 ## 次に読む
 - [ADungeonSubLevelScriptActor.ja.md](./ADungeonSubLevelScriptActor.ja.md)  
@@ -63,4 +83,3 @@
 - [LobbyConnection.ja.md](./LobbyConnection.ja.md)
 - [ADungeonGenerateActor.ja.md](./ADungeonGenerateActor.ja.md)
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
-

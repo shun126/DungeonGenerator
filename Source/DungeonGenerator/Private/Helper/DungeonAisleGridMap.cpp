@@ -2,11 +2,9 @@
  * @author		Shun Moriya
  * @copyright	2025- Shun Moriya
  * All Rights Reserved.
+ * 
+ * 通路グリッドをまとめたマップクラス
  */
-
-/*
-通路グリッドをまとめたマップクラス
-*/
 
 #include "Helper/DungeonAisleGridMap.h"
 
@@ -15,10 +13,13 @@ UDungeonAisleGridMap::UDungeonAisleGridMap(const FObjectInitializer& initializer
 {
 }
 
-void UDungeonAisleGridMap::Register(const int32 identifier, const EDungeonDirection direction, const FVector& location)
+void UDungeonAisleGridMap::Register(const int32 identifier, const EDungeonDirection direction, const FVector& location, const uint8 depthRatioFromStart, const int32 zoneIndex)
 {
 	FDungeonAisleGrid aisleGrid;
+	aisleGrid.Identifier = identifier;
 	aisleGrid.Direction = direction;
+	aisleGrid.DepthRatioFromStart = depthRatioFromStart;
+	aisleGrid.ZoneIndex = zoneIndex;
 	aisleGrid.Location = location;
 
 	auto it = mAisleGridMap.find(identifier);

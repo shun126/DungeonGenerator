@@ -12,9 +12,10 @@
 
 namespace dungeon
 {
-	inline Aisle::Aisle(const bool main, const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1) noexcept
+	inline Aisle::Aisle(const bool main, const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1, const EDungeonAislePurpose purpose) noexcept
 		: mIdentifier(Identifier::Type::Aisle)
 		, mMain(main)
+		, mPurpose(purpose)
 	{
 		mPoints[0] = p0;
 		mPoints[1] = p1;
@@ -26,6 +27,7 @@ namespace dungeon
 		, mLength(other.mLength)
 		, mIdentifier(other.mIdentifier)
 		, mMain(other.mMain)
+		, mPurpose(other.mPurpose)
 		, mHeight(other.mHeight)
 		, mLocked(other.mLocked)
 		, mUniqueLocked(other.mUniqueLocked)
@@ -37,6 +39,7 @@ namespace dungeon
 		, mLength(std::move(other.mLength))
 		, mIdentifier(std::move(other.mIdentifier))
 		, mMain(std::move(other.mMain))
+		, mPurpose(std::move(other.mPurpose))
 		, mHeight(std::move(other.mHeight))
 		, mLocked(std::move(other.mLocked))
 		, mUniqueLocked(std::move(other.mUniqueLocked))
@@ -49,6 +52,7 @@ namespace dungeon
 		mLength = other.mLength;
 		mIdentifier = other.mIdentifier;
 		mMain = other.mMain;
+		mPurpose = other.mPurpose;
 		mHeight = other.mHeight;
 		mLocked = other.mLocked;
 		mUniqueLocked = other.mUniqueLocked;
@@ -61,6 +65,7 @@ namespace dungeon
 		mLength = std::move(other.mLength);
 		mIdentifier = std::move(other.mIdentifier);
 		mMain = std::move(other.mMain);
+		mPurpose = std::move(other.mPurpose);
 		mHeight = std::move(other.mHeight);
 		mLocked = std::move(other.mLocked);
 		mUniqueLocked = std::move(other.mUniqueLocked);
@@ -90,6 +95,11 @@ namespace dungeon
 	inline bool Aisle::IsMain() const noexcept
 	{
 		return mMain;
+	}
+
+	inline EDungeonAislePurpose Aisle::GetPurpose() const noexcept
+	{
+		return mPurpose;
 	}
 
 	inline bool Aisle::IsLocked() const noexcept

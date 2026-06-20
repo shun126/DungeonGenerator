@@ -11,6 +11,5 @@
   The static mesh spawned during generation. If this is unset, nothing is placed, so always assign it. The mesh pivot becomes the placement reference, so adjusting the pivot on the mesh asset itself makes positioning easier.
 
 ## Editing and placement tips
-- You can adjust offset and rotation in the base-class transform settings. Values that match `GridSize` and `VerticalGridSize` in [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md) make snapping more consistent.
+- You can adjust offset and rotation in the base-class transform settings. Values that match `Theme.HorizontalGridSize` and `Theme.VerticalGridSize` in [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md) make snapping more consistent.
 - Registering multiple meshes for the same role makes it easy to add variation through database-side selection rules.
-

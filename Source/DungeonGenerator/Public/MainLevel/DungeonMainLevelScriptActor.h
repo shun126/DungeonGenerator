@@ -91,6 +91,18 @@ public:
 	 */
 	UDungeonPartition* Find(const FVector& worldLocation) const noexcept;
 
+	/*
+	 * Finds the runtime partition index by world location.
+	 * ワールド座標から実行時パーティションのインデックスを検索します。
+	 */
+	int32 FindPartitionIndex(const FVector& worldLocation) const noexcept;
+
+	/*
+	 * Returns whether the specified runtime partition is currently active.
+	 * 指定された実行時パーティションが現在アクティブかどうかを返します。
+	 */
+	bool IsPartitionActive(int32 partitionIndex) const noexcept;
+
 	/**
 	 * Is load control effective?
 	 *
@@ -254,7 +266,6 @@ private:
 	 * 選択されたポリシーに応じた構築後の runtime 同期を適用します。
 	 */
 	void FinalizePartitionBuild(const FPartitionBuildOptions& options, bool buildSucceeded);
-	int32 FindPartitionIndex(const FVector& worldLocation) const noexcept;
 	FIntVector ToPartitionCell(const FVector& worldLocation) const noexcept;
 	FBox MakePartitionBounds(const FIntVector& partitionCell) const noexcept;
 	int32 FindNearestPartitionIndex(const FIntVector& partitionCell, const FVector& worldLocation) const noexcept;

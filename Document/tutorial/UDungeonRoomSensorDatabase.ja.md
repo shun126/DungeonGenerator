@@ -1,45 +1,26 @@
-# UDungeonRoomSensorDatabase ガイド
+# UDungeonRoomSensorDatabase 移行メモ
 
-`UDungeonRoomSensorDatabase` は、**どの部屋にどの `ADungeonRoomSensorBase` 派生クラスを使うかを決めるデータベース**です。  
-部屋侵入イベント、BGM 切り替え、敵スポーン、トラップ発動などを部屋ごとに変えたいときに使います。
+`UDungeonRoomSensorDatabase` は v2.0.0 で deprecated になりました。古いアセットをロードして移行するためだけに残されています。
 
-## 使い方の流れ
-1. `ADungeonRoomSensorBase` を親クラスにした Blueprint を作ります。
-2. その Blueprint を `DungeonRoomSensorClass` に登録します。
-3. `SelectionMethod` で、どのルールでセンサーを選ぶかを決めます。
-4. 必要に応じて `SpawnActorInAisle` に通路演出用 Blueprint を登録します。
-5. `UDungeonGenerateParameter` の `DungeonRoomSensorDatabase` にこの Database を指定します。
+v2.0.0 は、v1 の Room Sensor Database 参照を移行するためのリリースです。v1 アセットをまだ使っているプロジェクトでは、v2.1 以降へ更新する前に v2.0.0 でプロジェクトを開き、移行後の設定を確認して、対象アセットを保存してください。v1 から v2 への移行サポートとこの旧 Database は、v2.1 以降で削除される可能性があります。
 
-## 主な項目
-- `SelectionMethod`
-  - `Random`  
-    毎回ランダムに選びます。
-  - `Identifier`  
-    部屋識別子に応じて決定的に選びます。
-  - `Depth From Start`  
-    スタートからの進行度に応じて選びます。
-- `DungeonRoomSensorClass`  
-  配置候補となる `ADungeonRoomSensorBase` 派生クラスの一覧です。
-- `SpawnActorInAisle`  
-  生成完了後に通路へ追加配置する Blueprint 群です。
+新しい設定では、Room Sensor 関連の Gameplay 設定を `UDungeonGenerateParameter` に直接設定します。
 
-## `SpawnActorInAisle` について
-これは**部屋の中**に置くアクターではなく、**通路側へ追加演出を置く設定**です。  
-部屋の中の敵や宝箱は、`ADungeonRoomSensorBase` 派生 Blueprint 側で扱う方が分かりやすいです。
+- `Gameplay.DungeonRoomSensorClass` は、生成部屋で使うデフォルトの `ADungeonRoomSensorBase` Blueprint です。
+- `Gameplay.SpawnActorInAisle` は、生成通路内にスポーンするデフォルトの Actor Blueprint 候補です。
+- `Zones[].GameplayOverride` では、Zone ごとの Room Sensor と通路 Actor 候補を上書きできます。
+- `Gameplay.RoomRoles.Roles[].GameplayOverride` では、Gameplay Role ごとの Room Sensor を上書きできます。
 
-## 編集のヒント
-- 深い階層ほど危険な部屋にしたい場合は、`Depth From Start` が使いやすいです。
-- センサー選択は「どのクラスを置くか」を決めるだけなので、部屋に入ったあと何をするかは各センサー Blueprint に実装します。
-- `Custom` 相当の高度な選択は、この Database 単体では主導線ではありません。まずは `Random` / `Identifier` / `Depth From Start` で構成するのがおすすめです。
+古い parameter が `UDungeonRoomSensorDatabase` を参照している場合、旧 `DungeonRoomSensorClass` 配列の最初の有効なクラスを `Gameplay.DungeonRoomSensorClass` へコピーします。旧 `SpawnActorInAisle` は、新しい `Gameplay.SpawnActorInAisle` が空の場合にコピーされます。
 
-## 次に読む
-- [ADungeonRoomSensorBase.ja.md](./ADungeonRoomSensorBase.ja.md)  
-  センサー Blueprint 側で実装するイベントとプロパティを確認できます。
-- [UDungeonInteriorDatabase.ja.md](./UDungeonInteriorDatabase.ja.md)  
-  センサーから参照する内装タグや問い合わせ先を整理できます。
+推奨する移行手順:
+
+1. v1 プロジェクトを Dungeon Generator v2.0.0 で開きます。
+2. 対象の `UDungeonGenerateParameter` アセットを開く、またはロードします。
+3. Room Sensor 設定が `Gameplay.DungeonRoomSensorClass` と `Gameplay.SpawnActorInAisle` にコピーされていることを確認します。
+4. 移行後のアセットを保存します。
+5. v2.0.0 で保存が完了してから、v2.1 以降へ更新します。
 
 ## 関連ページ
-- [ADungeonRoomSensorBase.ja.md](./ADungeonRoomSensorBase.ja.md)
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
-- [UDungeonInteriorDatabase.ja.md](./UDungeonInteriorDatabase.ja.md)
-
+- [ADungeonRoomSensorBase.ja.md](./ADungeonRoomSensorBase.ja.md)

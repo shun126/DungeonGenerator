@@ -50,7 +50,7 @@
  * 「影響を受ける利用者のみに通知する」設計を可能にしています。
  */
 USTRUCT()
-struct FPluginNoticeMessage
+struct FDungeonPluginNoticeMessage
 {
 	GENERATED_BODY()
 
@@ -98,7 +98,7 @@ struct FPluginNoticeMessage
  * これらはユーザー単位、またはプロジェクト単位で保存されます。
  */
 UCLASS()
-class DUNGEONGENERATOREDITOR_API UPluginNoticeSubsystem : public UEditorSubsystem
+class DUNGEONGENERATOREDITOR_API UDungeonPluginNoticeSubsystem : public UEditorSubsystem
 {
 	GENERATED_BODY()
 
@@ -130,9 +130,9 @@ private:
 	void MaybeFetchAsync();
 	void StartHttpRequest();
 	void OnHttpCompleted(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-	static bool ParseResponseMessages(const FString& ResponseString, TArray<FPluginNoticeMessage>& OutMessages);
-	bool ShouldShowMessage(const FPluginNoticeMessage& Message) const;
-	static void ShowNotice(const FPluginNoticeMessage& Message);
+	static bool ParseResponseMessages(const FString& ResponseString, TArray<FDungeonPluginNoticeMessage>& OutMessages);
+	bool ShouldShowMessage(const FDungeonPluginNoticeMessage& Message) const;
+	static void ShowNotice(const FDungeonPluginNoticeMessage& Message);
 	void MarkSeen(const FString& MessageId);
 	static bool IsSameDomain(const FString& BaseUrl, const FString& TargetUrl);
 	static bool TryParseIso8601(const FString& IsoString, FDateTime& OutDateTime);

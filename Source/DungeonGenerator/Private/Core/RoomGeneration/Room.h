@@ -9,6 +9,7 @@
 #pragma once
 #include "../Helper/Identifier.h"
 #include "../Math/Point.h"
+#include "Parameter/DungeonLayoutTypes.h"
 #include <Math/IntRect.h>
 #include <Math/IntVector.h>
 #include <string>
@@ -388,6 +389,66 @@ namespace dungeon
 		void SetReservationNumber(const uint32_t reservationNumber) noexcept;
 		void ResetReservationNumber() noexcept;
 
+		/*
+		 * Gets the gameplay archetype assigned by the intent layout.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を取得します。
+		 */
+		EDungeonRoomStructuralRole GetStructuralRole() const noexcept;
+
+		/*
+		 * Sets the gameplay archetype assigned by the intent layout.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を設定します。
+		 */
+		void SetStructuralRole(EDungeonRoomStructuralRole structuralRole) noexcept;
+
+		/*
+		 * Gets the gameplay role assigned by the intent layout.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を取得します。
+		 */
+		EDungeonRoomGameplayRole GetGameplayRole() const noexcept;
+
+		/*
+		 * Sets the gameplay role assigned by the intent layout.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を設定します。
+		 */
+		void SetGameplayRole(EDungeonRoomGameplayRole gameplayRole) noexcept;
+
+		/*
+		 * Gets the zone index assigned by progress and floor conditions.
+		 * 進行度と階層条件で割り当てられたゾーン番号を取得します。
+		 */
+		int32 GetZoneIndex() const noexcept;
+
+		/*
+		 * Sets the zone index assigned by progress and floor conditions.
+		 * 進行度と階層条件で割り当てられたゾーン番号を設定します。
+		 */
+		void SetZoneIndex(int32 zoneIndex) noexcept;
+
+		/*
+		 * Returns true when this room belongs to the main route.
+		 * この部屋が主経路に属する場合はtrueを返します。
+		 */
+		bool IsMainPathRoom() const noexcept;
+
+		/*
+		 * Sets whether this room belongs to the main route.
+		 * この部屋が主経路に属するかを設定します。
+		 */
+		void SetMainPathRoom(bool mainPathRoom) noexcept;
+
+		/*
+		 * Returns true when this room touches a locked route.
+		 * この部屋が鍵付き経路に接続している場合はtrueを返します。
+		 */
+		bool IsLockedRouteRoom() const noexcept;
+
+		/*
+		 * Sets whether this room touches a locked route.
+		 * この部屋が鍵付き経路に接続しているかを設定します。
+		 */
+		void SetLockedRouteRoom(bool lockedRouteRoom) noexcept;
+
 
 	private:
 		int32_t mX;
@@ -413,6 +474,11 @@ namespace dungeon
 		uint8_t mNumberOfGates = 0;
 		uint8_t mHorizontalRoomMargin = 0;
 		uint8_t mVerticalRoomMargin = 0;
+		EDungeonRoomStructuralRole mStructuralRole = EDungeonRoomStructuralRole::Connector;
+		EDungeonRoomGameplayRole mGameplayRole = EDungeonRoomGameplayRole::None;
+		int32 mZoneIndex = INDEX_NONE;
+		bool mMainPathRoom = false;
+		bool mLockedRouteRoom = false;
 	};
 }
 

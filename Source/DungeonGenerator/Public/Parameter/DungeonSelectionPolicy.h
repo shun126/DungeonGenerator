@@ -14,4 +14,5 @@ enum class EDungeonSelectionPolicy : uint8
 	Direction UMETA(DisplayName = "Direction", ToolTip = "Select deterministically from grid direction."),
 	Identifier UMETA(DisplayName = "Identifier", ToolTip = "Select deterministically from grid identifier."),
 	DepthFromStart UMETA(DisplayName = "Depth From Start", ToolTip = "Select based on distance from the start."),
+	CustomSelector UMETA(DisplayName = "Custom Selector", ToolTip = "Use UDungeonBlueprintPartsSelector or UDungeonBlueprintMeshSetSelector."),
 };

@@ -38,10 +38,11 @@ If you only want a quick editor preview, `Window > DungeonGenerator` is faster. 
 If you want to use a preloaded lobby as the start room, use `StartRoomSubLevelScriptActor`.  
 In that case, the following restrictions apply.
 
-- Set `MovePlayerStartToStartingPoint = false` in `UDungeonGenerateParameter`
-- Set `StartLocationPolicy = NoAdjustment` in `UDungeonGenerateParameter`
+- Set `Path.bMovePlayerStartToStartRoom = false` in `UDungeonGenerateParameter`
+- Set `Path.StartRoomPolicy = UseCentralPoint` in `UDungeonGenerateParameter`
 - `UseMultiStart` cannot be combined with it
 - The referenced sublevel must already be loaded and must contain `ADungeonSubLevelScriptActor`
+- `DungeonSubLevelDatabase.StartRoom` is ignored while this preloaded start room is set
 
 If you want a fixed start room without preloading a lobby, use [UDungeonSubLevelDatabase.en.md](./UDungeonSubLevelDatabase.en.md) instead.  
 See [LobbyConnection.en.md](./LobbyConnection.en.md) for the full comparison.

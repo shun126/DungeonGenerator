@@ -6,13 +6,23 @@
  * All Rights Reserved.
  */
 
-#pragma once 
+#pragma once
 
 namespace dungeon
 {
 	inline Generator::Error Generator::GetLastError() const noexcept
 	{
 		return mLastError;
+	}
+
+	inline const FDungeonLayoutMetrics& Generator::GetLastLayoutMetrics() const noexcept
+	{
+		return mLastLayoutMetrics;
+	}
+
+	inline const FDungeonLayoutScore& Generator::GetLastLayoutScore() const noexcept
+	{
+		return mLastLayoutScore;
 	}
 
 	inline void Generator::OnQueryParts(const std::function<void(QueryPartsType&)>& function) noexcept

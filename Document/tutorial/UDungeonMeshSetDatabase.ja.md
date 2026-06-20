@@ -9,6 +9,24 @@
 
 言い換えると、**Phase 1 は Database が「どのテーマを使うか」を決め、Phase 2 は Mesh Set が「そのテーマ内のどのパーツを使うか」を決めます。**
 
+```mermaid
+graph TD;
+    Database["UDungeonMeshSetDatabase"] --> Policy["Mesh Set Selection Policy"]
+    Policy --> MeshSet["選ばれた FDungeonMeshSet"]
+    MeshSet --> Floor["Floor Parts"]
+    MeshSet --> Wall["Wall Parts"]
+    MeshSet --> Roof["Roof Parts"]
+    MeshSet --> Slope["Slope Parts"]
+    MeshSet --> Catwalk["Catwalk Parts"]
+    MeshSet --> Chandelier["Chandelier Parts"]
+    Floor --> Result["生成される部屋または通路の見た目"]
+    Wall --> Result
+    Roof --> Result
+    Slope --> Result
+    Catwalk --> Result
+    Chandelier --> Result
+```
+
 ## 最低限の使い方
 1. `Mesh set database` アセットを作ります。
 2. `Mesh Set` を 1 つ追加します。
@@ -101,4 +119,3 @@
 - [FDungeonRandomActorParts.ja.md](./FDungeonRandomActorParts.ja.md)
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
 - [CustomSelector.ja.md](./CustomSelector.ja.md)
-

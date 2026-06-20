@@ -32,9 +32,17 @@ public:
 	virtual ~ADungeonLevelStreamingActor() override = default;
 
 protected:
+	/**
+	 * Handles the beginning of overlap with the streaming trigger volume.
+	 * ストリーミング用トリガー範囲への侵入を処理します。
+	 */
 	UFUNCTION()
 	void OverlapBegins(UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool fromSweep, const FHitResult& sweepResult);
 
+	/**
+	 * Handles the end of overlap with the streaming trigger volume.
+	 * ストリーミング用トリガー範囲からの退出を処理します。
+	 */
 	UFUNCTION()
 	void OverlapEnds(UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex);
 

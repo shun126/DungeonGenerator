@@ -19,7 +19,7 @@
 1. `Mesh Set Selection Policy = Custom Selector`
 2. `Custom Mesh Set Selector` に `UDungeonPartsSelector` 派生アセットを割り当てる
 
-このとき `SelectMeshSetIndex` が呼ばれ、`FMeshSetQuery` と候補数を受け取って採用する `Mesh Set` の index を返します。
+このとき `SelectMeshSetIndex` が呼ばれ、`FDungeonMeshSetQuery` と候補数を受け取って採用する `Mesh Set` の index を返します。
 
 ## 各パーツを独自ルールで選ぶ
 床 / 壁 / 天井 / スロープ / キャットウォーク / シャンデリアや、柱 / 燭台 / ドアなども `Custom Selector` にできます。
@@ -29,14 +29,16 @@
 - `UDungeonGenerateParameter` 側の柱 / 燭台 / ドアなど  
   各 `*SelectionPolicy` を `Custom Selector` にし、`Custom Dungeon Parts Selector` を割り当てます。
 
-このとき `SelectPartsIndex` が呼ばれ、`FPartsQuery` と候補数を受け取って最終的なパーツ index を返します。
+このとき `SelectPartsIndex` が呼ばれ、`FDungeonPartsQuery` と候補数を受け取って最終的なパーツ index を返します。
 
 ## サンプルセレクタを使う
 サンプルとして `UDungeonSamplePartsSelector` が用意されています。
 
-- `FMeshSetQuery`  
+- `FDungeonMeshSetQuery`  
+  `GridX` / `GridY` / `GridZ` はダンジョン内のローカルなグリッド座標です。Unreal のワールド座標ではありません。
   `Mesh Set` を選ぶときの問い合わせです。
-- `FPartsQuery`  
+- `FDungeonPartsQuery`  
+  `GridX` / `GridY` / `GridZ` はダンジョン内のローカルなグリッド座標です。Unreal のワールド座標ではありません。
   個別パーツを選ぶときの問い合わせです。`NeighborMask6` や `SeedKey` を使った決定的選択の例があります。
 
 まずはこのサンプルを複製して、必要な条件を少しずつ足していくと整理しやすいです。

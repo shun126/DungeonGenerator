@@ -20,14 +20,16 @@
 #include "Core/Helper/Stopwatch.h"
 #include "Core/Math/Math.h"
 #include "Core/Math/Random.h"
+#include "Core/PathGeneration/StartLocationPolicy.h"
 #include "Core/RoomGeneration/Room.h"
 #include "Core/Voxelization/Voxel.h"
 #include "MainLevel/DungeonComponentActivatorComponent.h"
+#include "MainLevel/DungeonMainLevelScriptActor.h"
 #include "Mission/DungeonRoomProps.h"
 #include "Parameter/DungeonGenerateParameter.h"
+#include "Parameter/Selector/DungeonGridIndexPartsSelector.h"
 #include "SubActor/DungeonDoorBase.h"
 #include "SubActor/DungeonRoomSensorBase.h"
-#include "SubActor/DungeonRoomSensorDatabase.h"
 #include "Validation/DungeonParameterValidator.h"
 
 
@@ -36,6 +38,7 @@
 #include "Helper/DungeonAisleGridMap.h"
 #include "Helper/DungeonDirection.h"
 
+#include <Camera/PlayerCameraManager.h>
 #include <Model.h>
 #include <FoliageInstancedStaticMeshComponent.h>
 #include <TextureResource.h>
@@ -45,12 +48,14 @@
 #include <Components/PointLightComponent.h>
 #include <Components/StaticMeshComponent.h>
 #include <GameFramework/PlayerStart.h>
+#include <Engine/Level.h>
 #include <Engine/LevelStreamingDynamic.h>
 #include <Engine/PlayerStartPIE.h>
 #include <Engine/StaticMeshActor.h>
 #include <Engine/Texture2D.h>
 #include <Kismet/GameplayStatics.h>
 #include <Misc/EngineVersionComparison.h>
+#include <Misc/PackageName.h>
 #include <NavMesh/NavMeshBoundsVolume.h>
 #include <NavMesh/RecastNavMesh.h>
 #include <Engine/Polys.h>
@@ -74,6 +79,47 @@
 
 namespace
 {
+	/*
+	 * Converts the public start-room policy to the internal generation policy.
+	 * 公開開始部屋方針を内部生成方針へ変換します。
+	 */
+	dungeon::StartLocationPolicy ToInternalStartLocationPolicy(const EDungeonStartLocationPolicy policy) noexcept
+	{
+		switch (policy)
+		{
+		case EDungeonStartLocationPolicy::UseNorthernMost:
+			return dungeon::StartLocationPolicy::UseNorthernMost;
+		case EDungeonStartLocationPolicy::UseEasternMost:
+			return dungeon::StartLocationPolicy::UseEasternMost;
+		case EDungeonStartLocationPolicy::UseWesternMost:
+			return dungeon::StartLocationPolicy::UseWesternMost;
+		case EDungeonStartLocationPolicy::UseHighestPoint:
+			return dungeon::StartLocationPolicy::UseHighestPoint;
+		case EDungeonStartLocationPolicy::UseLowestPoint:
+			return dungeon::StartLocationPolicy::UseLowestPoint;
+		case EDungeonStartLocationPolicy::UseCentralPoint:
+			return dungeon::StartLocationPolicy::UseCentralPoint;
+		case EDungeonStartLocationPolicy::UseMultiStart:
+			return dungeon::StartLocationPolicy::UseMultiStart;
+		case EDungeonStartLocationPolicy::UseSouthernMost:
+		default:
+			return dungeon::StartLocationPolicy::UseSouthernMost;
+		}
+	}
+}
+
+namespace
+{
+	ADungeonMainLevelScriptActor* FindDungeonMainLevelScriptActor(UWorld* world)
+	{
+		if (!IsValid(world) || !world->PersistentLevel)
+		{
+			return nullptr;
+		}
+
+		return Cast<ADungeonMainLevelScriptActor>(world->PersistentLevel->GetLevelScriptActor());
+	}
+
 	const FString ActorsFolderPath = TEXT("Actors");
 	const FString DoorsFolderPath = TEXT("Actors/Doors");
 	const FString TorchesFolderPath = TEXT("Actors/Torches");
@@ -133,6 +179,18 @@ namespace
 		leafName = leafName.Mid(piePrefixEnd + 1);
 		normalized = normalized.Left(slashIndex + 1) + leafName;
 		return normalized;
+	}
+
+	FSoftObjectPath MakeEditorWorldAssetPathFromLevel(const ULevel* level)
+	{
+		if (!IsValid(level) || !IsValid(level->GetOutermost()))
+			return FSoftObjectPath();
+
+		const FString packageName = NormalizeEditorPackageNameForComparison(level->GetOutermost()->GetName());
+		if (packageName.IsEmpty())
+			return FSoftObjectPath();
+
+		return FSoftObjectPath(packageName + TEXT(".") + FPackageName::GetShortName(packageName));
 	}
 #endif
 }
@@ -253,8 +311,12 @@ void ADungeonGenerateBase::Tick(float DeltaSeconds)
 	// Calling the parent class
 	Super::Tick(DeltaSeconds);
 
-	// 予約されたスポーンを実行
-	mDungeonDeferredSpawnManager.Update();
+	const ADungeonMainLevelScriptActor* mainLevelScriptActor = FindDungeonMainLevelScriptActor(GetWorld());
+	mDungeonDeferredActorSpawnManager.Update([mainLevelScriptActor](const int32 partitionIndex)
+	{
+		return IsValid(mainLevelScriptActor) && mainLevelScriptActor->IsPartitionActive(partitionIndex);
+	});
+
 }
 
 /*
@@ -300,12 +362,19 @@ void ADungeonGenerateBase::DeferredSpawnActorWithFolderPath(UWorld* world, UClas
 	const FString& folderPath, const FTransform& transform, const FActorSpawnParameters& actorSpawnParameters,
 	const TFunction<void(AActor*)>& onSpawned)
 {
-	mDungeonDeferredSpawnManager.RequestSpawn(
+	int32 partitionIndex = INDEX_NONE;
+	if (const ADungeonMainLevelScriptActor* mainLevelScriptActor = FindDungeonMainLevelScriptActor(world))
+	{
+		partitionIndex = mainLevelScriptActor->FindPartitionIndex(transform.GetLocation());
+	}
+
+	mDungeonDeferredActorSpawnManager.RequestSpawn(
 		world,
 		actorClass,
 		folderPath,
 		transform,
 		actorSpawnParameters,
+		partitionIndex,
 		onSpawned
 	);
 
@@ -452,7 +521,7 @@ bool ADungeonGenerateBase::IsGenerated() const noexcept
 
 void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 {
-	mDungeonDeferredSpawnManager.CancelAll(/*bNotifyCallbacks=*/false);
+	mDungeonDeferredActorSpawnManager.CancelAll(/*bNotifyCallbacks=*/false);
 
 	// 生成済みなら破棄する
 	if (mGenerated == true)
@@ -531,7 +600,7 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_Prepare(const UDungeonGen
 		return false;
 	}
 
-	mDungeonDeferredSpawnManager.CancelAll(/*bNotifyCallbacks=*/false);
+	mDungeonDeferredActorSpawnManager.CancelAll(/*bNotifyCallbacks=*/false);
 
 
 	TArray<FDungeonValidationIssue> validationIssues;
@@ -578,30 +647,35 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_Prepare(const UDungeonGen
 			randomSeed = mParameter->GetGeneratedRandomSeed();
 		}
 		generateParameter.GetRandom()->SetSeed(randomSeed);
-		generateParameter.SetNumberOfCandidateRooms(mParameter->NumberOfCandidateRooms);
-		generateParameter.SetMinRoomWidth(mParameter->RoomWidth.Min);
-		generateParameter.SetMaxRoomWidth(mParameter->RoomWidth.Max);
-		generateParameter.SetMinRoomDepth(mParameter->RoomDepth.Min);
-		generateParameter.SetMaxRoomDepth(mParameter->RoomDepth.Max);
-		generateParameter.SetMinRoomHeight(mParameter->RoomHeight.Min);
-		generateParameter.SetMaxRoomHeight(mParameter->RoomHeight.Max);
-		generateParameter.SetMergeRooms(mParameter->MergeRooms);
+		const auto& structure = mParameter->GetStructureSettings();
+		const auto& path = mParameter->GetPathSettings();
+		generateParameter.SetNumberOfCandidateRooms(static_cast<uint8>(FMath::Clamp(structure.RoomCountRange.Max, 3, 255)));
+		generateParameter.SetMinRoomWidth(structure.RoomWidth.Min);
+		generateParameter.SetMaxRoomWidth(structure.RoomWidth.Max);
+		generateParameter.SetMinRoomDepth(structure.RoomDepth.Min);
+		generateParameter.SetMaxRoomDepth(structure.RoomDepth.Max);
+		generateParameter.SetMinRoomHeight(structure.RoomHeight.Min);
+		generateParameter.SetMaxRoomHeight(structure.RoomHeight.Max);
 		generateParameter.SetMissionGraph(mParameter->IsUseMissionGraph());
 		generateParameter.SetAisleComplexity(mParameter->GetAisleComplexity());
 		generateParameter.SetAisleCeilingHeightPolicy(static_cast<dungeon::AisleCeilingHeightPolicy>(mParameter->GetAisleCeilingHeightPolicy()));
-		generateParameter.SetGenerateSlopeInRoom(mParameter->GenerateSlopeInRoom);
-		generateParameter.SetGenerateStructuralColumn(mParameter->GenerateStructuralColumn);
-		generateParameter.SetSkylightChancePercent(mParameter->SkylightChancePercent);
-		EDungeonStartLocationPolicy startLocationPolicy = mParameter->StartLocationPolicy;
+		generateParameter.SetGenerateSlopeInRoom(true);
+		generateParameter.SetGenerateStructuralColumn(true);
+		generateParameter.SetSkylightChancePercent(8);
+		generateParameter.SetPathSettings(path);
+		generateParameter.SetRoomRoleSettings(mParameter->GetRoomRoleSettings());
+		generateParameter.SetZoneSettings(mParameter->GetZoneSettings());
+		generateParameter.SetLayoutCandidateCount(path.LayoutCandidateCount);
+		EDungeonStartLocationPolicy startLocationPolicy = path.StartRoomPolicy;
 		if (mParameter->IsUseMissionGraph())
 		{
 			if (startLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart)
 			{
-				DUNGEON_GENERATOR_WARNING(TEXT("StartLocationPolicy requires UseMissionGraph disabled. Falling back to UseSouthernMost."));
+				DUNGEON_GENERATOR_WARNING(TEXT("Path.StartRoomPolicy=UseMultiStart requires Keys And Locks disabled. Falling back to UseSouthernMost."));
 				startLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
 			}
 		}
-		generateParameter.SetStartLocationPolicy(static_cast<dungeon::StartLocationPolicy>(startLocationPolicy));
+		generateParameter.SetStartLocationPolicy(ToInternalStartLocationPolicy(startLocationPolicy));
 		uint8 startRoomCount = 1;
 		if (startLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart)
 		{
@@ -615,29 +689,27 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_Prepare(const UDungeonGen
 		}
 		generateParameter.SetStartRoomCount(startRoomCount);
 
-		if (mParameter->MergeRooms)
+		generateParameter.SetHorizontalRoomMargin(structure.HorizontalRoomMargin);
+		if (structure.FloorMode == EDungeonFloorMode::Flat)
 		{
-			generateParameter.SetHorizontalRoomMargin(0);
 			generateParameter.SetVerticalRoomMargin(0);
-			generateParameter.SetExpansionPolicy(dungeon::ExpansionPolicy::ExpandHorizontally);
-			generateParameter.SetNumberOfCandidateFloors(0);
-			generateParameter.SetMissionGraph(false);
-			generateParameter.SetAisleComplexity(0);
+			generateParameter.SetExpansionPolicy(dungeon::ExpansionPolicy::Flat);
 		}
 		else
 		{
-			generateParameter.SetHorizontalRoomMargin(mParameter->RoomMargin);
-			if (mParameter->ExpansionPolicy == EDungeonExpansionPolicy::Flat)
+			generateParameter.SetVerticalRoomMargin(structure.VerticalRoomMargin);
+			const auto autoFloorCount = structure.FloorMode == EDungeonFloorMode::Vertical ?
+				FMath::Max(0, structure.RoomCountRange.Max - 1) :
+				3;
+			switch (structure.FloorMode)
 			{
-				generateParameter.SetVerticalRoomMargin(0);
-				generateParameter.SetExpansionPolicy(dungeon::ExpansionPolicy::Flat);
-				generateParameter.SetNumberOfCandidateFloors(0);
-			}
-			else
-			{
-				generateParameter.SetVerticalRoomMargin(mParameter->VerticalRoomMargin);
-				generateParameter.SetExpansionPolicy(static_cast<dungeon::ExpansionPolicy>(mParameter->ExpansionPolicy));
-				generateParameter.SetNumberOfCandidateFloors(mParameter->NumberOfCandidateFloors);
+			case EDungeonFloorMode::Vertical:
+				generateParameter.SetExpansionPolicy(dungeon::ExpansionPolicy::ExpandVertically);
+				break;
+			case EDungeonFloorMode::Free:
+			default:
+				generateParameter.SetExpansionPolicy(dungeon::ExpansionPolicy::ExpandAnyDirection);
+				break;
 			}
 		}
 
@@ -706,6 +778,24 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_RunGenerator(dungeon::Gen
 		//mParameter->DumpToJson();
 #endif
 		return false;
+	}
+
+	{
+		const FDungeonLayoutMetrics& metrics = mGenerator->GetLastLayoutMetrics();
+		const FDungeonLayoutScore& score = mGenerator->GetLastLayoutScore();
+		DUNGEON_GENERATOR_LOG(TEXT("Layout diagnostics: Candidate=%d Score=%f Rooms=%d Aisles=%d CriticalPath=%d Branches=%d Loops=%d SpecialDeadEndCoverage=%f VerticalTransitions=%d StartGoalDistance=%f MissionSolvable=%s"),
+			score.CandidateIndex,
+			score.TotalScore,
+			metrics.RoomCount,
+			metrics.AisleCount,
+			metrics.CriticalPathLength,
+			metrics.BranchCount,
+			metrics.LoopCount,
+			metrics.SpecialDeadEndCoverage,
+			metrics.VerticalTransitionCount,
+			metrics.StartGoalDistance,
+			metrics.bMissionSolvable ? TEXT("true") : TEXT("false")
+		);
 	}
 
 #if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
@@ -848,7 +938,7 @@ void ADungeonGenerateBase::CreateImplement_QueryAisleGeneration(const bool hasAu
 
 				// 通路グリッドを登録
 				check(mAisleGridMap);
-				mAisleGridMap->Register(grid.GetIdentifier(), direction, centerPosition);
+				mAisleGridMap->Register(grid.GetIdentifier(), direction, centerPosition, grid.GetDepthRatioFromStart(), grid.GetZoneIndex());
 			}
 			return true;
 		}
@@ -1005,15 +1095,10 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 		スロープのメッシュを生成
 		メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
 		*/
-		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-		//if (cp.mGrid.IsKindOfRoomType())
-		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
-		else
-			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase = mParameter->GetDungeonMeshPartsDatabase(cp.mGridLocation, cp.mGrid);
 		if (dungeonMeshSetDatabase)
 		{
-			if (const FDungeonMeshParts* parts = mParameter->SelectSlopeParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
+			if (const FDungeonMeshParts* parts = mParameter->SelectSlopeParts(dungeonMeshSetDatabase, cp.mGridLocation, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
 			{
 				mOnAddSlope(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
 			}
@@ -1026,24 +1111,19 @@ void ADungeonGenerateBase::CreateImplement_AddFloorAndSlope(const CreateImplemen
 		床のメッシュを生成
 		メッシュは原点からX軸とY軸方向に伸びており、面はZ軸が上面になっています。
 		*/
-		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-		//if (cp.mGrid.IsKindOfRoomType())
-		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
-		else
-			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase = mParameter->GetDungeonMeshPartsDatabase(cp.mGridLocation, cp.mGrid);
 		if (dungeonMeshSetDatabase)
 		{
 			if (cp.mGrid.IsCatwalk())
 			{
-				if (const FDungeonMeshParts* parts = mParameter->SelectCatwalkParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
+				if (const FDungeonMeshParts* parts = mParameter->SelectCatwalkParts(dungeonMeshSetDatabase, cp.mGridLocation, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
 				{
 					mOnAddCatwalk(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetCatwalkDirection()));
 				}
 			}
 			else
 			{
-				if (const FDungeonMeshParts* parts = mParameter->SelectFloorParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
+				if (const FDungeonMeshParts* parts = mParameter->SelectFloorParts(dungeonMeshSetDatabase, cp.mGridLocation, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
 				{
 					mOnAddFloor(parts->StaticMesh, parts->CalculateWorldTransform(cp.mCenterPosition, cp.mGrid.GetDirection()));
 				}
@@ -1064,32 +1144,28 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 	*/
 	const FDungeonMeshSet* meshSet = nullptr;
 	const FDungeonMeshParts* parts = nullptr;
-	EDungeonPartsSelectionMethod dungeonPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+	bool bSelectWallPartsByFace = false;
 	{
-		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
-		else
-			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase = mParameter->GetDungeonMeshPartsDatabase(cp.mGridLocation, cp.mGrid);
 		if (dungeonMeshSetDatabase)
 		{
-			meshSet = mParameter->SelectMeshSet(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
+			meshSet = mParameter->SelectMeshSet(dungeonMeshSetDatabase, cp.mGridLocation, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom());
 			if (meshSet != nullptr)
-				dungeonPartsSelectionMethod = meshSet->GetWallPartsSelectionMethod();
+				bSelectWallPartsByFace = IsValid(meshSet->GetWallPartsSelector()) && meshSet->GetWallPartsSelector()->IsA<UDungeonGridIndexPartsSelector>();
 
 			// グリッドによるパーツ選択を行う場合はここで抽選する
-			if (dungeonPartsSelectionMethod != EDungeonPartsSelectionMethod::GridIndex)
-				parts = mParameter->SelectWallPartsByGrid(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6);
+			if (!bSelectWallPartsByFace)
+				parts = mParameter->SelectWallPartsByGrid(dungeonMeshSetDatabase, cp.mGridLocation, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6);
 		}
 	}
 
-	if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex || parts != nullptr)
+	if (bSelectWallPartsByFace || parts != nullptr)
 	{
 		// 北側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z), dungeon::Direction::North, mParameter->IsMergeRooms()))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z), dungeon::Direction::North, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
-			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			if (bSelectWallPartsByFace)
 			{
 				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::North));
 			}
@@ -1102,10 +1178,10 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			}
 		}
 		// 南側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z), dungeon::Direction::South, mParameter->IsMergeRooms()))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z), dungeon::Direction::South, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
-			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			if (bSelectWallPartsByFace)
 			{
 				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::South));
 			}
@@ -1118,10 +1194,10 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			}
 		}
 		// 東側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::East, mParameter->IsMergeRooms()))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::East, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
-			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			if (bSelectWallPartsByFace)
 			{
 				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::East));
 			}
@@ -1134,10 +1210,10 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			}
 		}
 		// 西側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::West, mParameter->IsMergeRooms()))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::West, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
-			if (dungeonPartsSelectionMethod == EDungeonPartsSelectionMethod::GridIndex)
+			if (bSelectWallPartsByFace)
 			{
 				parts = mParameter->SelectWallPartsByFace(meshSet, cp.mGridLocation, dungeon::Direction(dungeon::Direction::West));
 			}
@@ -1183,12 +1259,7 @@ void ADungeonGenerateBase::CreateImplement_AddRoof(const CreateImplementParamete
 	if (cp.mGrid.CanBuildRoof(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y, cp.mGridLocation.Z + 1), true))
 	{
 		const uint8 neighborMask6 = MakeNeighborMask6(mGenerator->GetGrid(cp.mGridLocation));
-		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase;
-		//if (cp.mGrid.IsKindOfRoomType())
-		if (dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false)
-			dungeonMeshSetDatabase = mParameter->GetDungeonRoomMeshPartsDatabase();
-		else
-			dungeonMeshSetDatabase = mParameter->GetDungeonAisleMeshPartsDatabase();
+		const UDungeonMeshSetDatabase* dungeonMeshSetDatabase = mParameter->GetDungeonMeshPartsDatabase(cp.mGridLocation, cp.mGrid);
 		if (dungeonMeshSetDatabase)
 		{
 			/*
@@ -1196,7 +1267,7 @@ void ADungeonGenerateBase::CreateImplement_AddRoof(const CreateImplementParamete
 			メッシュは原点からY軸とZ軸方向に伸びており、面はX軸が正面になっています。
 			*/
 			const FTransform transform(cp.mCenterPosition);
-			if (const FDungeonMeshPartsWithDirection* parts = mParameter->SelectRoofParts(dungeonMeshSetDatabase, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
+			if (const FDungeonMeshPartsWithDirection* parts = mParameter->SelectRoofParts(dungeonMeshSetDatabase, cp.mGridLocation, cp.mGridIndex, cp.mGrid, GetSynchronizedRandom(), neighborMask6))
 			{
 				mOnAddRoof(
 					parts->StaticMesh,
@@ -1211,6 +1282,109 @@ void ADungeonGenerateBase::CreateImplement_AddRoof(const CreateImplementParamete
 ADungeonDoorBaseはリプリケートされる前提のアクターなので
 同期乱数(GetSynchronizedRandom)を使ってはならない。
 */
+/*
+ * Builds a fixture-selection candidate from a voxel location.
+ * ボクセル位置から Fixture 選択候補を作成します。
+ */
+ADungeonGenerateBase::FixtureGridCandidate ADungeonGenerateBase::MakeFixtureGridCandidate(const FIntVector& location) const
+{
+	const dungeon::Grid& grid = mGenerator->GetGrid(location);
+	return FixtureGridCandidate(location, mGenerator->GetVoxel()->Index(location), grid);
+}
+
+/*
+ * Adds a valid fixture-selection candidate, ignoring duplicates and empty space.
+ * 有効な Fixture 選択候補を追加し、重複と空間グリッドは無視します。
+ */
+void ADungeonGenerateBase::AddFixtureGridCandidate(std::vector<FixtureGridCandidate>& candidates, const FIntVector& location) const
+{
+	const FixtureGridCandidate candidate = MakeFixtureGridCandidate(location);
+	if (candidate.mGrid == nullptr)
+		return;
+
+	if (GetFixtureGridCandidatePriority(*candidate.mGrid) < 0)
+		return;
+
+	const auto i = std::find_if(candidates.begin(), candidates.end(), [&candidate](const FixtureGridCandidate& existing)
+		{
+			return existing.mGridLocation == candidate.mGridLocation;
+		}
+	);
+	if (i == candidates.end())
+	{
+		candidates.emplace_back(candidate);
+	}
+}
+
+/*
+ * Selects the strongest fixture context from adjacent candidates.
+ * 隣接候補から最も強い Fixture コンテキストを選択します。
+ */
+ADungeonGenerateBase::FixtureGridCandidate ADungeonGenerateBase::SelectFixtureGridCandidate(const std::vector<FixtureGridCandidate>& candidates, const FixtureGridCandidate& fallback) const
+{
+	FixtureGridCandidate bestCandidate = fallback;
+	int32 bestPriority = (fallback.mGrid != nullptr) ? GetFixtureGridCandidatePriority(*fallback.mGrid) : MIN_int32;
+
+	for (const FixtureGridCandidate& candidate : candidates)
+	{
+		if (candidate.mGrid == nullptr)
+			continue;
+
+		const int32 priority = GetFixtureGridCandidatePriority(*candidate.mGrid);
+		if (priority < 0)
+			continue;
+
+		if (priority > bestPriority || (priority == bestPriority && candidate.mGridIndex < bestCandidate.mGridIndex))
+		{
+			bestCandidate = candidate;
+			bestPriority = priority;
+		}
+	}
+
+	return bestCandidate;
+}
+
+/*
+ * Scores a candidate grid by fixture override strength and room/aisle ownership.
+ * Fixture override の強さと部屋/通路の所属に基づいて候補グリッドを評価します。
+ */
+int32 ADungeonGenerateBase::GetFixtureGridCandidatePriority(const dungeon::Grid& grid) const
+{
+	if (grid.IsInvalidIdentifier() || grid.IsKindOfSpatialType())
+		return -1;
+
+	const bool bRoomGrid = dungeon::Identifier(grid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false;
+	if (bRoomGrid)
+	{
+		for (const FDungeonRoomRoleProfile& profile : mParameter->Gameplay.RoomRoles.Roles)
+		{
+			if (profile.Role != grid.GetRoomGameplayRole())
+			{
+				continue;
+			}
+			if (profile.ThemeOverride.bOverrideFixtures)
+			{
+				return 400;
+			}
+			break;
+		}
+	}
+
+	if (mParameter->Zones.Zones.IsValidIndex(grid.GetZoneIndex()) &&
+		mParameter->Zones.Zones[grid.GetZoneIndex()].ThemeOverride.bOverrideFixtures)
+	{
+		return 300;
+	}
+
+	if (bRoomGrid)
+		return 200;
+
+	if (grid.IsKindOfAisleType())
+		return 100;
+
+	return 50;
+}
+
 void ADungeonGenerateBase::CreateImplement_AddDoor(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const
 {
 	if (hasAuthority == false)
@@ -1218,19 +1392,36 @@ void ADungeonGenerateBase::CreateImplement_AddDoor(const CreateImplementParamete
 
 	if (CanAddDoor(dungeonRoomSensorBase, cp.mGridLocation, cp.mGrid))
 	{
-		if (const FDungeonDoorActorParts* parts = mParameter->SelectDoorParts(cp.mGridIndex, cp.mGrid, GetRandom()))
+		const EDungeonRoomProps props = static_cast<EDungeonRoomProps>(cp.mGrid.GetProps());
+		const FixtureGridCandidate fallbackCandidate(cp.mGridLocation, cp.mGridIndex, cp.mGrid);
+		const auto selectDoorParts = [this, &cp, &fallbackCandidate, props](const FIntVector& neighborLocation) -> const FDungeonDoorActorParts*
+			{
+				std::vector<FixtureGridCandidate> candidates;
+				candidates.reserve(2);
+				AddFixtureGridCandidate(candidates, cp.mGridLocation);
+				AddFixtureGridCandidate(candidates, neighborLocation);
+
+				const FixtureGridCandidate selectedCandidate = SelectFixtureGridCandidate(candidates, fallbackCandidate);
+				return (selectedCandidate.mGrid != nullptr) ? mParameter->SelectDoorParts(selectedCandidate.mGridLocation, selectedCandidate.mGridIndex, *selectedCandidate.mGrid, props, GetRandom()) : nullptr;
+			};
+
+		const FIntVector northLocation(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z);
+		const dungeon::Grid& northGrid = mGenerator->GetGrid(northLocation);
+		if (!northGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(northGrid, dungeon::Direction::North, false))
 		{
-			const EDungeonRoomProps props = static_cast<EDungeonRoomProps>(cp.mGrid.GetProps());
-			const dungeon::Grid& northGrid = mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z);
-			if (!northGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(northGrid, dungeon::Direction::North, mParameter->IsMergeRooms()))
+			if (const FDungeonDoorActorParts* parts = selectDoorParts(northLocation))
 			{
 				// 北側の扉
 				FVector doorPosition = cp.mPosition;
 				doorPosition.X += mParameter->GetGridSize().HorizontalSize * 0.5f;
 				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 0.f), dungeonRoomSensorBase, props);
 			}
-			const dungeon::Grid& southGrid = mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z);
-			if (!southGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(southGrid, dungeon::Direction::South, mParameter->IsMergeRooms()))
+		}
+		const FIntVector southLocation(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z);
+		const dungeon::Grid& southGrid = mGenerator->GetGrid(southLocation);
+		if (!southGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(southGrid, dungeon::Direction::South, false))
+		{
+			if (const FDungeonDoorActorParts* parts = selectDoorParts(southLocation))
 			{
 				// 南側の扉
 				FVector doorPosition = cp.mPosition;
@@ -1238,8 +1429,12 @@ void ADungeonGenerateBase::CreateImplement_AddDoor(const CreateImplementParamete
 				doorPosition.Y += mParameter->GetGridSize().HorizontalSize;
 				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 180.f), dungeonRoomSensorBase, props);
 			}
-			const dungeon::Grid& eastGrid = mGenerator->GetGrid(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z);
-			if (!eastGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(eastGrid, dungeon::Direction::East, mParameter->IsMergeRooms()))
+		}
+		const FIntVector eastLocation(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z);
+		const dungeon::Grid& eastGrid = mGenerator->GetGrid(eastLocation);
+		if (!eastGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(eastGrid, dungeon::Direction::East, false))
+		{
+			if (const FDungeonDoorActorParts* parts = selectDoorParts(eastLocation))
 			{
 				// 東側の扉
 				FVector doorPosition = cp.mPosition;
@@ -1247,8 +1442,12 @@ void ADungeonGenerateBase::CreateImplement_AddDoor(const CreateImplementParamete
 				doorPosition.Y += mParameter->GetGridSize().HorizontalSize * 0.5f;
 				SpawnDoorActor(parts->ActorClass, parts->CalculateWorldTransform(doorPosition, 90.f), dungeonRoomSensorBase, props);
 			}
-			const dungeon::Grid& westGrid = mGenerator->GetGrid(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z);
-			if (!westGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(westGrid, dungeon::Direction::West, mParameter->IsMergeRooms()))
+		}
+		const FIntVector westLocation(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z);
+		const dungeon::Grid& westGrid = mGenerator->GetGrid(westLocation);
+		if (!westGrid.IsNoDoorGeneration() && cp.mGrid.CanBuildGate(westGrid, dungeon::Direction::West, false))
+		{
+			if (const FDungeonDoorActorParts* parts = selectDoorParts(westLocation))
 			{
 				// 西側の扉
 				FVector doorPosition = cp.mPosition;
@@ -1308,6 +1507,10 @@ bool ADungeonGenerateBase::CanAddDoor(const ADungeonRoomSensorBase* dungeonRoomS
 
 void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const
 {
+	const bool bRoomGrid = dungeon::Identifier(cp.mGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false;
+	const FDungeonFixtureSettings& fixtures = mParameter->ResolveFixtureSettings(cp.mGrid.GetRoomGameplayRole(), cp.mGrid.GetZoneIndex(), bRoomGrid);
+	const EDungeonFrequencyOfGeneration initialTorchlightFrequency = fixtures.FrequencyOfTorchlightGeneration;
+
 	struct TorchChecker final
 	{
 		uint16_t mIdentifier;
@@ -1345,6 +1548,10 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 
 	// 燭台の方向や設定を求める
 	std::vector<TorchChecker> torchCheckers;
+	std::vector<FixtureGridCandidate> fixtureCandidates;
+	fixtureCandidates.reserve(4);
+	const FixtureGridCandidate fallbackCandidate(cp.mGridLocation, cp.mGridIndex, cp.mGrid);
+	AddFixtureGridCandidate(fixtureCandidates, cp.mGridLocation);
 	uint8_t validGridCount = 0;
 
 	// 間引きパラメータ
@@ -1373,9 +1580,10 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 				++validCastTorchLightShadowCount;
 
 			// 柱必要か調べます
-			if (fromGrid.CanBuildWall(toGrid, wallChecker.mDirection, mParameter->IsMergeRooms()) == true)
+			if (fromGrid.CanBuildWall(toGrid, wallChecker.mDirection, false) == true)
 			{
 				++validGridCount;
+				AddFixtureGridCandidate(fixtureCandidates, checkLocation - direction);
 
 				// 燭台の生成が必要か判定します
 				bool generationPermit =
@@ -1383,7 +1591,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 					fromGrid.Is(dungeon::Grid::Type::DownSpace) == false &&
 					fromGrid.Is(dungeon::Grid::Type::Slope) == false;
 				// Occasionally以上は燭台を二階以上の場所に生成しない
-				if (generationPermit && mParameter->GetFrequencyOfTorchlightGeneration() >= EFrequencyOfGeneration::Occasionally)
+				if (generationPermit && initialTorchlightFrequency >= EDungeonFrequencyOfGeneration::Occasionally)
 				{
 					generationPermit = fromGrid.Is(dungeon::Grid::Type::Floor) == false;
 				}
@@ -1424,11 +1632,18 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 	if (1 <= validGridCount)
 	{
 		const FTransform rootTransform(cp.mPosition);
+		const FixtureGridCandidate selectedFixtureCandidate = SelectFixtureGridCandidate(fixtureCandidates, fallbackCandidate);
+		const FIntVector fixtureGridLocation = (selectedFixtureCandidate.mGrid != nullptr) ? selectedFixtureCandidate.mGridLocation : cp.mGridLocation;
+		const dungeon::Grid& fixtureGrid = (selectedFixtureCandidate.mGrid != nullptr) ? *selectedFixtureCandidate.mGrid : cp.mGrid;
+		const size_t fixtureGridIndex = (selectedFixtureCandidate.mGrid != nullptr) ? selectedFixtureCandidate.mGridIndex : cp.mGridIndex;
+		const bool bFixtureRoomGrid = dungeon::Identifier(fixtureGrid.GetIdentifier()).IsType(dungeon::Identifier::Type::Aisle) == false;
+		const FDungeonFixtureSettings& selectedFixtures = mParameter->ResolveFixtureSettings(fixtureGrid.GetRoomGameplayRole(), fixtureGrid.GetZoneIndex(), bFixtureRoomGrid);
+		const EDungeonFrequencyOfGeneration torchlightFrequency = selectedFixtures.FrequencyOfTorchlightGeneration;
 
 		// 柱を生成
 		if (mOnAddPillar)
 		{
-			if (const FDungeonMeshParts* pillarParts = mParameter->SelectPillarParts(cp.mGridIndex, cp.mGrid, GetSynchronizedRandom()))
+			if (const FDungeonMeshParts* pillarParts = mParameter->SelectPillarParts(fixtureGridLocation, fixtureGridIndex, fixtureGrid, GetSynchronizedRandom()))
 			{
 				mOnAddPillar(pillarParts->StaticMesh, pillarParts->CalculateWorldTransform(rootTransform));
 			}
@@ -1436,24 +1651,24 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 
 		// 燭台を生成（サーバーのみアクターをスポーンする）
 		bool spawnTorchActor = false;
-		switch (mParameter->GetFrequencyOfTorchlightGeneration())
+		switch (torchlightFrequency)
 		{
-		case EFrequencyOfGeneration::Normally:
+		case EDungeonFrequencyOfGeneration::Normally:
 			spawnTorchActor = true;
 			break;
-		case EFrequencyOfGeneration::Sometime:
-		case EFrequencyOfGeneration::Occasionally:
+		case EDungeonFrequencyOfGeneration::Sometime:
+		case EDungeonFrequencyOfGeneration::Occasionally:
 			spawnTorchActor = suppressGenerationThrottling;
 			break;
-		case EFrequencyOfGeneration::Rarely:
+		case EDungeonFrequencyOfGeneration::Rarely:
 			if (GetRandom()->Get<bool>())
 				spawnTorchActor = suppressGenerationThrottling;
 			break;
-		case EFrequencyOfGeneration::AlmostNever:
+		case EDungeonFrequencyOfGeneration::AlmostNever:
 			if ((GetRandom()->Get<uint32_t>() & 7) == 0)
 				spawnTorchActor = suppressGenerationThrottling;
 			break;
-		case EFrequencyOfGeneration::Never:
+		case EDungeonFrequencyOfGeneration::Never:
 		default:
 			break;
 		}
@@ -1466,7 +1681,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 				if (!torchChecker.IsValid())
 					continue;
 
-				if (const FDungeonActorParts* torchParts = mParameter->SelectTorchParts(cp.mGridIndex, cp.mGrid, GetRandom()))
+				if (const FDungeonActorParts* torchParts = mParameter->SelectTorchParts(fixtureGridLocation, fixtureGridIndex, fixtureGrid, GetRandom()))
 				{
 					/*
 					hasAuthorityによって処理を分岐する場合は、乱数の同期が確実に行われている事に注意して実装して下さい。
@@ -1504,23 +1719,33 @@ void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSen
 
 	mGenerator->ForEach([this, &roomSensorCache, hasAuthority](const std::shared_ptr<const dungeon::Room>& room)
 		{
-			// 乱数の同期のため、部屋ごとに生成するRoomSensorクラスを選択する
-			auto* roomSensorClass = mParameter->GetRoomSensorClass();
-			if (const auto* roomSensorDatabase = mParameter->GetRoomSensorDatabase())
+			const uint8 depthFromStart = room->GetDepthFromStart();
+			const uint8 deepestDepthFromStart = mGenerator->GetDeepestDepthFromStart();
+			const float depthFromStartRatio = deepestDepthFromStart > 0 ?
+				static_cast<float>(depthFromStart) / static_cast<float>(deepestDepthFromStart) :
+				0.f;
+			FDungeonGeneratedRoomInfo roomInfo;
+			roomInfo.RoomStructuralRole = room->GetStructuralRole();
+			roomInfo.RoomGameplayRole = room->GetGameplayRole();
+			roomInfo.Parts = static_cast<EDungeonRoomParts>(room->GetParts());
+			roomInfo.Item = static_cast<EDungeonRoomItem>(room->GetItem());
+			roomInfo.Identifier = room->GetIdentifier();
+			roomInfo.bSecretRoom = roomInfo.RoomGameplayRole == EDungeonRoomGameplayRole::Secret;
+			roomInfo.bDeadEndRoom = roomInfo.RoomStructuralRole == EDungeonRoomStructuralRole::DeadEnd;
+			roomInfo.bMainPathRoom = room->IsMainPathRoom();
+			roomInfo.bLockedRouteRoom = room->IsLockedRouteRoom();
+			roomInfo.ZoneIndex = room->GetZoneIndex();
+			if (mParameter->GetZoneSettings().Zones.IsValidIndex(roomInfo.ZoneIndex))
 			{
-				// TODO: ダンジョンの深さを0～255に正規化する関数を検討してください
-				auto depthFromStart = static_cast<float>(room->GetDepthFromStart());
-				depthFromStart /= static_cast<float>(mGenerator->GetDeepestDepthFromStart());
-				const auto depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
-
-				auto* roomSensorDatabaseClass = roomSensorDatabase->Select(
-					room->GetIdentifier(),
-					depthRatioFromStart,
-					GetSynchronizedRandom()
-				);
-				if (roomSensorDatabaseClass)
-					roomSensorClass = roomSensorDatabaseClass;
+				roomInfo.ZoneName = mParameter->GetZoneSettings().Zones[roomInfo.ZoneIndex].Name;
 			}
+			roomInfo.BranchId = room->GetBranchId();
+			roomInfo.DepthFromStart = depthFromStart;
+			roomInfo.DeepestDepthFromStart = deepestDepthFromStart;
+			roomInfo.DepthFromStartRatio = depthFromStartRatio;
+
+			// 乱数の同期のため、部屋ごとに生成するRoomSensorクラスを選択する
+			auto* roomSensorClass = mParameter->ResolveRoomSensorClass(roomInfo.RoomGameplayRole, roomInfo.ZoneIndex);
 
 			// サーバーならRoomSensorActorを生成
 			if (hasAuthority)
@@ -1532,11 +1757,12 @@ void ADungeonGenerateBase::CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSen
 						room->GetIdentifier(),
 						room->GetCenter() * mParameter->GetGridSize().To3D() + GetActorLocation(),
 						room->GetExtent() * mParameter->GetGridSize().To3D(),
-						static_cast<EDungeonRoomParts>(room->GetParts()),
-						static_cast<EDungeonRoomItem>(room->GetItem()),
+						roomInfo.Parts,
+						roomInfo.Item,
+						roomInfo,
 						room->GetBranchId(),
-						room->GetDepthFromStart(),
-						mGenerator->GetDeepestDepthFromStart()
+						depthFromStart,
+						deepestDepthFromStart
 					);
 					roomSensorCache[room.get()] = roomSensorActor;
 				}
@@ -1586,6 +1812,7 @@ void ADungeonGenerateBase::CreateImplement_AddChandelier(const RoomAndRoomSensor
 		float MinCeilingHeight;
 		float Radius;
 		size_t GridIndex;
+		FIntVector GridLocation;
 		dungeon::Grid Grid;
 	};
 
@@ -1629,8 +1856,8 @@ void ADungeonGenerateBase::CreateImplement_AddChandelier(const RoomAndRoomSensor
 					const float distToEntrance = distToWall;
 					const float distToCombatCenter = FMath::Max(0.f, 1.f - distToRoomCenter / 8.f);
 
-					const UDungeonMeshSetDatabase* dungeonMeshSetDatabase = grid.IsKindOfRoomType() ? mParameter->GetDungeonRoomMeshPartsDatabase() : mParameter->GetDungeonAisleMeshPartsDatabase();
-					const FDungeonMeshSet* meshSet = mParameter->SelectMeshSet(dungeonMeshSetDatabase, voxel->Index(location), grid, GetRandom());
+					const UDungeonMeshSetDatabase* dungeonMeshSetDatabase = mParameter->GetDungeonMeshPartsDatabase(location, grid);
+					const FDungeonMeshSet* meshSet = mParameter->SelectMeshSet(dungeonMeshSetDatabase, location, voxel->Index(location), grid, GetRandom());
 					if (meshSet == nullptr)
 						return true;
 
@@ -1647,6 +1874,7 @@ void ADungeonGenerateBase::CreateImplement_AddChandelier(const RoomAndRoomSensor
 						FMath::Max(1.f, meshSet->GetChandelierMinCeilingHeight()),
 						FMath::Max(1.f, meshSet->GetChandelierRadius()),
 						voxel->Index(location),
+						location,
 						grid
 					});
 					return true;
@@ -1725,7 +1953,7 @@ void ADungeonGenerateBase::CreateImplement_AddChandelier(const RoomAndRoomSensor
 				if (GetWorld()->OverlapBlockingTestByChannel(overlapCenter, FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeSphere(picked.Radius), queryParams))
 					continue;
 
-				if (const auto* parts = mParameter->SelectChandelierParts(picked.Grid.IsKindOfRoomType() ? mParameter->GetDungeonRoomMeshPartsDatabase() : mParameter->GetDungeonAisleMeshPartsDatabase(), picked.GridIndex, picked.Grid, GetRandom(), 0))
+				if (const auto* parts = mParameter->SelectChandelierParts(mParameter->GetDungeonMeshPartsDatabase(picked.GridLocation, picked.Grid), picked.GridLocation, picked.GridIndex, picked.Grid, GetRandom(), 0))
 				{
 					const FRotator yawOnlyRotation(0.f, GetRandom()->Get<float>(360.f), 0.f);
 					const FTransform rootTransform(yawOnlyRotation, ceilingHit.Location);
@@ -2081,9 +2309,6 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	if (IsValid(mParameter) == false)
 		return;
 
-	if (mParameter->StartLocationPolicy == EDungeonStartLocationPolicy::NoAdjustment)
-		return;
-
 	// PlayerStartをスタート位置へ移動しないならここで終了します
 	if (mParameter->IsMovePlayerStartToStartingPoint() == false)
 		return;
@@ -2092,7 +2317,7 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 	const double halfHorizontalSize = mParameter->GetGridSize().HorizontalSize / 2;
 	const double halfVerticalSize = mParameter->GetGridSize().VerticalSize / 2;
 	TArray<FBox> startRoomBoundingBoxes;
-	if (mParameter->StartLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart)
+	if (mParameter->GetPathSettings().StartRoomPolicy == EDungeonStartLocationPolicy::UseMultiStart)
 	{
 		if (mGenerator)
 		{
@@ -2120,7 +2345,7 @@ void ADungeonGenerateBase::MovePlayerStart(const TArray<APlayerStart*>& startPoi
 		startRoomBoundingBoxes.Add(GetStartBoundingBox());
 	}
 
-	if (mParameter->StartLocationPolicy == EDungeonStartLocationPolicy::UseMultiStart &&
+	if (mParameter->GetPathSettings().StartRoomPolicy == EDungeonStartLocationPolicy::UseMultiStart &&
 		startRoomBoundingBoxes.Num() != startPoints.Num())
 	{
 		DUNGEON_GENERATOR_WARNING(TEXT("Start room count (%d) does not match PlayerStart count (%d)."),
@@ -2376,7 +2601,7 @@ DungeonRoomSensorBaseをスポーンします
 ADungeonRoomSensorBaseはリプリケートされる前提のアクターなので
 同期乱数(GetSynchronizedRandom)を使ってはならない。
 */
-ADungeonRoomSensorBase* ADungeonGenerateBase::SpawnRoomSensorActorDeferred(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extents, EDungeonRoomParts parts, EDungeonRoomItem item, uint8 branchId, const uint8 depthFromStart, const uint8 deepestDepthFromStart) const
+ADungeonRoomSensorBase* ADungeonGenerateBase::SpawnRoomSensorActorDeferred(UClass* actorClass, const dungeon::Identifier& identifier, const FVector& center, const FVector& extents, EDungeonRoomParts parts, EDungeonRoomItem item, const FDungeonGeneratedRoomInfo& roomInfo, uint8 branchId, const uint8 depthFromStart, const uint8 deepestDepthFromStart) const
 {
 	const FTransform transform(center);
 	ADungeonRoomSensorBase* actor = SpawnActorDeferredImpl<ADungeonRoomSensorBase>(actorClass, SensorsFolderPath, transform, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
@@ -2387,9 +2612,10 @@ ADungeonRoomSensorBase* ADungeonGenerateBase::SpawnRoomSensorActorDeferred(UClas
 			identifier,
 			center,
 			extents,
-			mParameter->GridSize,
+			mParameter->GetGridSize().HorizontalSize,
 			parts,
 			item,
+			roomInfo,
 			branchId,
 			depthFromStart,
 			deepestDepthFromStart);
@@ -2443,6 +2669,110 @@ FBox ADungeonGenerateBase::GetStartBoundingBox() const
 }
 
 
+bool ADungeonGenerateBase::ShiftGeneratedDungeonWorldOffset(const FVector& delta)
+{
+	if (delta.IsNearlyZero())
+		return true;
+
+	const auto shiftFixedPartitionRegistrationLocation = [&delta](AActor* actor)
+	{
+		if (!IsValid(actor))
+			return;
+
+		TInlineComponentArray<UDungeonComponentActivatorComponent*> activatorComponents(actor);
+		actor->GetComponents<UDungeonComponentActivatorComponent>(activatorComponents);
+		for (UDungeonComponentActivatorComponent* activatorComponent : activatorComponents)
+		{
+			if (IsValid(activatorComponent))
+				activatorComponent->ShiftFixedPartitionRegistrationWorldLocation(delta);
+		}
+	};
+
+	if (auto* rootComponent = GetRootComponent())
+	{
+		if (rootComponent->Mobility != EComponentMobility::Movable)
+			rootComponent->SetMobility(EComponentMobility::Movable);
+	}
+	SetActorLocation(GetActorLocation() + delta);
+	shiftFixedPartitionRegistrationLocation(this);
+
+	// ISM/HISM are component-managed terrain and may not move with owner actor translation.
+	TInlineComponentArray<UInstancedStaticMeshComponent*> instancedMeshComponents(this);
+	GetComponents(instancedMeshComponents);
+	for (auto* instancedMeshComponent : instancedMeshComponents)
+	{
+		if (!IsValid(instancedMeshComponent))
+			continue;
+
+		if (instancedMeshComponent->GetAttachParent() != nullptr &&
+			instancedMeshComponent->GetAttachmentRootActor() == this)
+		{
+			continue;
+		}
+
+		if (instancedMeshComponent->Mobility != EComponentMobility::Movable)
+			instancedMeshComponent->SetMobility(EComponentMobility::Movable);
+
+		const int32 instanceCount = instancedMeshComponent->GetInstanceCount();
+		for (int32 index = 0; index < instanceCount; ++index)
+		{
+			FTransform instanceTransform;
+			if (!instancedMeshComponent->GetInstanceTransform(index, instanceTransform, true))
+				continue;
+
+			instanceTransform.AddToTranslation(delta);
+			const bool markRenderStateDirty = (index + 1) == instanceCount;
+			instancedMeshComponent->UpdateInstanceTransform(index, instanceTransform, true, markRenderStateDirty, true);
+		}
+
+		if (auto* hierarchicalComponent = Cast<UHierarchicalInstancedStaticMeshComponent>(instancedMeshComponent))
+		{
+			hierarchicalComponent->BuildTreeIfOutdated(true, false);
+		}
+	}
+
+	TArray<AActor*> generatedActors;
+	UGameplayStatics::GetAllActorsWithTag(this, GetDungeonGeneratorTag(), generatedActors);
+	for (AActor* actor : generatedActors)
+	{
+		if (!IsValid(actor))
+			continue;
+		if (actor == this)
+			continue;
+		if (actor->GetAttachParentActor() == this)
+			continue;
+
+		if (USceneComponent* rootComponent = actor->GetRootComponent())
+		{
+			if (rootComponent->Mobility != EComponentMobility::Movable)
+				rootComponent->SetMobility(EComponentMobility::Movable);
+		}
+		actor->SetActorLocation(actor->GetActorLocation() + delta);
+		shiftFixedPartitionRegistrationLocation(actor);
+	}
+
+	// Shift pending deferred-spawn transforms so queued actors follow world-offset alignment.
+	mDungeonDeferredActorSpawnManager.ShiftQueuedRequests(delta);
+
+
+	return true;
+}
+
+bool ADungeonGenerateBase::AlignGeneratedDungeonStartRoomBoundsMinToWorldLocation(const FVector& targetLocation, const bool alignXYOnly)
+{
+	const auto startBoundingBox = GetStartBoundingBox();
+	if (startBoundingBox.IsValid == false)
+		return false;
+
+	auto delta = targetLocation - startBoundingBox.Min;
+	if (alignXYOnly)
+	{
+		delta.Z = 0.f;
+	}
+	return ShiftGeneratedDungeonWorldOffset(delta);
+}
+
+
 FVector ADungeonGenerateBase::GetGoalLocation() const
 {
 	if (IsValid(mParameter) && mGenerator != nullptr && mGenerator->GetLastError() == dungeon::Generator::Error::Success)
@@ -2493,6 +2823,16 @@ FVector2D ADungeonGenerateBase::GetLongestStraightPath() const noexcept
 		}
 	}
 	return FVector2D(ForceInitToZero);
+}
+
+FDungeonLayoutMetrics ADungeonGenerateBase::GetLastLayoutMetrics() const noexcept
+{
+	return mGenerator ? mGenerator->GetLastLayoutMetrics() : FDungeonLayoutMetrics();
+}
+
+FDungeonLayoutScore ADungeonGenerateBase::GetLastLayoutScore() const noexcept
+{
+	return mGenerator ? mGenerator->GetLastLayoutScore() : FDungeonLayoutScore();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

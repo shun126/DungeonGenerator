@@ -31,7 +31,9 @@ Create the following assets from the `DungeonGenerator` category in the Content 
    For aisles
 
 These three assets are enough for the first test.  
-You can add `Interior database`, `Sub level database`, and `Room sensor database` later.
+You can add `Interior database`, `Sub level database`, and `Gameplay.DungeonRoomSensorClass` later.
+
+After the first visual check, the usual next step is to assign `Gameplay.DungeonRoomSensorClass` and try the `ADungeonRoomSensorBase` helper parameters. The `DungeonGenerator|Helper` settings are the quickest way to test simple enemy or key actor spawning before you move on to detailed Blueprint control.
 
 ## 2. Register the minimum room and aisle meshes
 Open both `Mesh set database` assets and add the following parts to the first `Mesh Set`.
@@ -46,19 +48,20 @@ However, generation will fail if there is no floor, wall, roof or slope mesh at 
 ## 3. Assign the databases to `Generate parameter`
 Open `Generate parameter` and at minimum set the following fields.
 
-- `DungeonRoomMeshPartsDatabase`  
+- `Theme.DungeonRoomMeshPartsDatabase`
   Room `Mesh set database`
-- `DungeonAisleMeshPartsDatabase`  
+- `Theme.DungeonAisleMeshPartsDatabase`
   Aisle `Mesh set database`
 
 The following defaults are fine for an initial check.
 
 - `RandomSeed = 0`
-- `NumberOfCandidateRooms = 10`
-- `StartLocationPolicy = UseSouthernMost`
-- `AisleComplexity = 5`
+- `Structure.RoomCountRange = 10-10`
+- `Path.StartRoomPolicy = UseSouthernMost`
+  You can choose the start room from north, south, east, west, high, low, or center.
+- `Path.ExtraCorridorComplexity = 5`
 
-For a first test without `UseMissionGraph`, keeping `AisleComplexity` at `1` or higher usually avoids confusion.
+For a first test without `Path.ProgressionPolicy = KeysAndLocks`, keeping `Path.ExtraCorridorComplexity` at `1` or higher usually avoids confusion.
 
 ## 4. Preview in the editor
 Open `Window > DungeonGenerator`.  
@@ -98,4 +101,3 @@ See [ADungeonGenerateActor.en.md](./ADungeonGenerateActor.en.md) for details.
 - [ADungeonGenerateActor.en.md](./ADungeonGenerateActor.en.md)
 - [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md)
 - [UDungeonMeshSetDatabase.en.md](./UDungeonMeshSetDatabase.en.md)
-

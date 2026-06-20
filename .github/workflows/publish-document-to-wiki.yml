@@ -52,7 +52,7 @@ jobs:
           BUILD_DIR="$(mktemp -d)"
 
           git clone "${WIKI_URL}" wiki
-          python3 scripts/build_tutorial_wiki.py Document/tutorial "${BUILD_DIR}"
+          python3 Scripts/build_wiki.py Document/tutorial "${BUILD_DIR}"
 
           find wiki -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
           cp -a "${BUILD_DIR}/." wiki/

@@ -22,16 +22,17 @@ It is easier to work with after your normal dungeon generation setup is already 
 - You are ready to add both door actors and room sensors
 
 ## What MissionGraph Does
-When MissionGraph is enabled, dungeon generation builds a progression flow like this.
+When `Path.ProgressionPolicy = KeysAndLocks`, dungeon generation builds a progression flow like this.
 
 - The player starts from a start room
-- A key is found in a room along the route
-- A locked door is opened to reach a new area
-- If needed, a `Unique key` opens the final special door
+- A common key is found in a room along the route
+- One common key is consumed when a normal locked door is opened
+- A `Unique key` opens the final special door to the goal room
 - The player eventually reaches the goal
 
 In other words, MissionGraph does more than place rooms.  
 It adds **an intended order of progression** to the dungeon.
+Generation also validates the route so the goal cannot be reached by bypassing a required locked door.
 
 ## Fastest Setup
 Start with the minimum setup and confirm that MissionGraph is actually affecting the dungeon.
@@ -39,11 +40,11 @@ Start with the minimum setup and confirm that MissionGraph is actually affecting
 ### 1. Enable MissionGraph in `Generate parameter`
 In `UDungeonGenerateParameter`, check the following.
 
-- `UseMissionGraph = true`
-- `MergeRooms = false`
-- `AisleComplexity = 0`
+- `Path.ProgressionPolicy = KeysAndLocks`
+- `Path.ExtraCorridorComplexity = 0`
 
-When you use MissionGraph, it is safer and easier to understand if you do not combine it with room merging or normal aisle-complexity routing.
+When you use MissionGraph, unsafe route complexity is ignored so locked-door progression cannot be bypassed.
+Loops may appear only when they do not break the key-and-door order.
 
 ### 2. Prepare a Door Actor
 The door actor handles the look and behavior of locked doors.  
@@ -113,15 +114,16 @@ graph TB;
 
 ## Verify the Result
 - Some areas are inaccessible before picking up a key
-- Picking up a key allows the matching door to open
+- Picking up a common key allows one normal locked door to open, then consumes that key
 - The final `Unique key` and final door work correctly
+- Common keys are used up before the goal room is opened
 - The full progression from start to goal is valid
 
 ## Common Mistakes
-- `UseMissionGraph` is enabled, but it still feels like a normal dungeon  
+- `Path.ProgressionPolicy = KeysAndLocks`, but it still feels like a normal dungeon
   First, focus only on locked doors and key placement so the MissionGraph effect is obvious
-- `MergeRooms` or `AisleComplexity` conflicts with the intended setup  
-  Use `MergeRooms = false` and `AisleComplexity = 0` as the baseline for MissionGraph
+- `Path.ExtraCorridorComplexity` conflicts with the intended setup
+  Use `Path.ExtraCorridorComplexity = 0` as the baseline for MissionGraph
 - Doors appear, but keys do not  
   Recheck the `DungeonRoomSensor` setup, especially `SpawnKeyActor` and `SpawnUniqueKeyActor`
 - Keys appear, but the door behavior or visuals do not match  

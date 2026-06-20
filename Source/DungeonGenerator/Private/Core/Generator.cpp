@@ -13,8 +13,11 @@
 #include "Helper/Finalizer.h"
 #include "Helper/Stopwatch.h"
 #include "Math/Math.h"
-#include "Math/Plane.h"
 #include "Math/Vector.h"
+#include "Layout/AislePlanner.h"
+#include "Layout/LayoutEvaluator.h"
+#include "Layout/LayoutGraphGenerator.h"
+#include "Layout/RoomPlacer.h"
 #include "PathGeneration/DelaunayTriangulation3D.h"
 #include "PathGeneration/MinimumSpanningTree.h"
 #include "PathGeneration/PathGoalCondition.h"
@@ -23,6 +26,691 @@
 
 #include "MissionGraph/MissionGraph.h"
 #include "MissionGraph/MissionGraphTester.h"
+#include <algorithm>
+#include <cmath>
+#include <iterator>
+#include <limits>
+
+namespace
+{
+	enum class ERoomSeparationAxis : uint8
+	{
+		X,
+		Y,
+		Z,
+	};
+
+	struct FRoomSeparationCandidate final
+	{
+		FIntVector Location = FIntVector::ZeroValue;
+		uint32 CollisionCount = 0;
+		uint64 CollisionDepth = 0;
+		double ConnectedDistanceCost = 0.;
+		double MaxConnectedDistanceCost = 0.;
+		double LayoutSpreadCost = 0.;
+		double FixedRoomMoveCost = 0.;
+		double DistanceSquared = 0.;
+		double DirectionScore = 0.;
+		double OuterScore = 0.;
+		double RandomScore = 0.;
+	};
+
+	struct FRoomSpacingMargins final
+	{
+		uint8 Horizontal = 0;
+		uint8 Vertical = 0;
+	};
+
+	/*
+	 * Returns the integer Y location whose room center is closest to zero.
+	 * 部屋の中心Yが0に最も近くなる整数Y座標を返します。
+	 */
+	int32_t GetNearestVerticalRoomY(const dungeon::Room& room) noexcept
+	{
+		return -room.GetDepth() / 2;
+	}
+
+	/*
+	 * Applies floor-mode-specific constraints after choosing a separation candidate.
+	 * 分離候補を選んだ後に、床モードごとの位置制約を適用します。
+	 */
+	void ApplySeparationConstraints(FIntVector& location, const dungeon::Room& room, const dungeon::GenerateParameter& parameter) noexcept
+	{
+		const auto expansionPolicy = parameter.GetExpansionPolicy();
+		if (expansionPolicy == dungeon::ExpansionPolicy::Flat)
+		{
+			location.Z = 0;
+		}
+		else if (expansionPolicy == dungeon::ExpansionPolicy::ExpandVertically)
+		{
+			location.Y = GetNearestVerticalRoomY(room);
+		}
+	}
+
+	/*
+	 * Returns the squared grid distance between a room's current location and a candidate location.
+	 * 部屋の現在位置と候補位置のグリッド距離の二乗を返します。
+	 */
+	double GetLocationDistanceSquared(const dungeon::Room& room, const FIntVector& location) noexcept
+	{
+		const auto dx = static_cast<double>(location.X - room.GetX());
+		const auto dy = static_cast<double>(location.Y - room.GetY());
+		const auto dz = static_cast<double>(location.Z - room.GetZ());
+		return dx * dx + dy * dy + dz * dz;
+	}
+
+	/*
+	 * Builds a direction used only to break ties between equally short separation candidates.
+	 * 同じ移動距離の分離候補を選ぶときだけ使う方向を作成します。
+	 */
+	FVector MakeSeparationTieBreakDirection(const dungeon::Room& fixedRoom, const dungeon::Room& movableRoom, const bool activateOuterMovement) noexcept
+	{
+		auto direction = movableRoom.GetCenter() - fixedRoom.GetCenter();
+		if (dungeon::math::IsZero(direction.SizeSquared()) == true)
+		{
+			direction = movableRoom.GetCenter();
+		}
+		if (activateOuterMovement)
+		{
+			auto outerDirection = movableRoom.GetCenter();
+			if (outerDirection.Normalize() == true)
+			{
+				direction += outerDirection;
+			}
+		}
+		direction.Normalize();
+		return direction;
+	}
+
+	/*
+	 * Scores how well a candidate follows the preferred separation direction.
+	 * 候補位置が優先したい分離方向にどれだけ沿っているかを採点します。
+	 */
+	double GetCandidateDirectionScore(const dungeon::Room& room, const FIntVector& location, const FVector& direction) noexcept
+	{
+		const FVector offset(
+			static_cast<double>(location.X - room.GetX()),
+			static_cast<double>(location.Y - room.GetY()),
+			static_cast<double>(location.Z - room.GetZ())
+		);
+		return FVector::DotProduct(offset, direction);
+	}
+
+	/*
+	 * Scores outward movement from the origin when the separation process has stalled.
+	 * 分離処理が停滞したときに、原点から外側へ向かう動きを採点します。
+	 */
+	double GetCandidateOuterScore(const dungeon::Room& room, const FIntVector& location, const bool activateOuterMovement) noexcept
+	{
+		if (activateOuterMovement == false)
+		{
+			return 0.;
+		}
+
+		const auto currentCenter = room.GetCenter();
+		const FVector nextCenter(
+			static_cast<double>(location.X) + static_cast<double>(room.GetWidth()) * 0.5,
+			static_cast<double>(location.Y) + static_cast<double>(room.GetDepth()) * 0.5,
+			static_cast<double>(location.Z) + static_cast<double>(room.GetHeight()) * 0.5
+		);
+		return nextCenter.SizeSquared() - currentCenter.SizeSquared();
+	}
+
+	/*
+	 * Returns true when the right candidate should replace the current best candidate.
+	 * 右側の候補を現在の最良候補として採用すべき場合にtrueを返します。
+	 */
+	bool IsBetterSeparationCandidate(const FRoomSeparationCandidate& current, const FRoomSeparationCandidate& next) noexcept
+	{
+		constexpr double epsilon = 1.e-6;
+		if (next.CollisionCount < current.CollisionCount)
+		{
+			return true;
+		}
+		if (next.CollisionCount > current.CollisionCount)
+		{
+			return false;
+		}
+		if (next.CollisionDepth < current.CollisionDepth)
+		{
+			return true;
+		}
+		if (next.CollisionDepth > current.CollisionDepth)
+		{
+			return false;
+		}
+		if (next.ConnectedDistanceCost < current.ConnectedDistanceCost - epsilon)
+		{
+			return true;
+		}
+		if (next.ConnectedDistanceCost > current.ConnectedDistanceCost + epsilon)
+		{
+			return false;
+		}
+		if (next.MaxConnectedDistanceCost < current.MaxConnectedDistanceCost - epsilon)
+		{
+			return true;
+		}
+		if (next.MaxConnectedDistanceCost > current.MaxConnectedDistanceCost + epsilon)
+		{
+			return false;
+		}
+		if (next.LayoutSpreadCost < current.LayoutSpreadCost - epsilon)
+		{
+			return true;
+		}
+		if (next.LayoutSpreadCost > current.LayoutSpreadCost + epsilon)
+		{
+			return false;
+		}
+		if (next.FixedRoomMoveCost < current.FixedRoomMoveCost - epsilon)
+		{
+			return true;
+		}
+		if (next.FixedRoomMoveCost > current.FixedRoomMoveCost + epsilon)
+		{
+			return false;
+		}
+		if (next.DistanceSquared < current.DistanceSquared - epsilon)
+		{
+			return true;
+		}
+		if (next.DistanceSquared > current.DistanceSquared + epsilon)
+		{
+			return false;
+		}
+		if (next.DirectionScore > current.DirectionScore + epsilon)
+		{
+			return true;
+		}
+		if (next.DirectionScore < current.DirectionScore - epsilon)
+		{
+			return false;
+		}
+		if (next.OuterScore > current.OuterScore + epsilon)
+		{
+			return true;
+		}
+		if (next.OuterScore < current.OuterScore - epsilon)
+		{
+			return false;
+		}
+		return next.RandomScore > current.RandomScore;
+	}
+
+	/*
+	 * Creates a separation candidate by placing the movable room just outside the fixed room on one axis.
+	 * 1つの軸で可動部屋を固定部屋のすぐ外側に置く分離候補を作成します。
+	 */
+	FRoomSeparationCandidate MakeSeparationCandidate(
+		const dungeon::Room& fixedRoom,
+		const dungeon::Room& movableRoom,
+		const dungeon::GenerateParameter& parameter,
+		const ERoomSeparationAxis axis,
+		const bool positiveSide,
+		const uint8 horizontalRoomMargin,
+		const uint8 verticalRoomMargin,
+		const FVector& direction,
+		const bool activateOuterMovement,
+		const double randomScore) noexcept
+	{
+		FIntVector location(movableRoom.GetX(), movableRoom.GetY(), movableRoom.GetZ());
+		ApplySeparationConstraints(location, movableRoom, parameter);
+
+		switch (axis)
+		{
+		case ERoomSeparationAxis::X:
+			location.X = positiveSide ?
+				fixedRoom.GetRight() + horizontalRoomMargin :
+				fixedRoom.GetLeft() - horizontalRoomMargin - movableRoom.GetWidth();
+			break;
+		case ERoomSeparationAxis::Y:
+			location.Y = positiveSide ?
+				fixedRoom.GetBottom() + horizontalRoomMargin :
+				fixedRoom.GetTop() - horizontalRoomMargin - movableRoom.GetDepth();
+			break;
+		case ERoomSeparationAxis::Z:
+			location.Z = positiveSide ?
+				fixedRoom.GetForeground() + verticalRoomMargin :
+				fixedRoom.GetBackground() - verticalRoomMargin - movableRoom.GetHeight();
+			break;
+		default:
+			checkNoEntry();
+			break;
+		}
+		ApplySeparationConstraints(location, movableRoom, parameter);
+
+		FRoomSeparationCandidate candidate;
+		candidate.Location = location;
+		candidate.DistanceSquared = GetLocationDistanceSquared(movableRoom, location);
+		candidate.DirectionScore = GetCandidateDirectionScore(movableRoom, location, direction);
+		candidate.OuterScore = GetCandidateOuterScore(movableRoom, location, activateOuterMovement);
+		candidate.RandomScore = randomScore;
+		return candidate;
+	}
+
+	/*
+	 * Returns the effective room margin used between two rooms.
+	 * 2つの部屋の間で使用する実効余白を返します。
+	 */
+	FRoomSpacingMargins GetEffectiveRoomSpacingMargins(const dungeon::GenerateParameter& parameter, const dungeon::Room& room0, const dungeon::Room& room1) noexcept
+	{
+		FRoomSpacingMargins margins;
+		margins.Horizontal = static_cast<uint8>(parameter.GetHorizontalRoomMargin());
+		if (margins.Horizontal < room0.GetHorizontalRoomMargin())
+			margins.Horizontal = room0.GetHorizontalRoomMargin();
+		if (margins.Horizontal < room1.GetHorizontalRoomMargin())
+			margins.Horizontal = room1.GetHorizontalRoomMargin();
+
+		margins.Vertical = parameter.GetExpansionPolicy() == dungeon::ExpansionPolicy::Flat ? 0 : static_cast<uint8>(parameter.GetVerticalRoomMargin());
+		if (parameter.GetExpansionPolicy() != dungeon::ExpansionPolicy::Flat)
+		{
+			if (margins.Vertical < room0.GetVerticalRoomMargin())
+				margins.Vertical = room0.GetVerticalRoomMargin();
+			if (margins.Vertical < room1.GetVerticalRoomMargin())
+				margins.Vertical = room1.GetVerticalRoomMargin();
+		}
+		return margins;
+	}
+
+	/*
+	 * Returns the effective room margin used by room separation.
+	 * 部屋分離で使用する実効余白を返します。
+	 */
+	FRoomSpacingMargins GetEffectiveRoomSeparationMargins(const dungeon::GenerateParameter& parameter, const dungeon::Room& room0, const dungeon::Room& room1) noexcept
+	{
+		FRoomSpacingMargins margins;
+		margins.Horizontal = static_cast<uint8>(parameter.GetHorizontalRoomMargin());
+		if (margins.Horizontal < room0.GetHorizontalRoomMargin())
+			margins.Horizontal = room0.GetHorizontalRoomMargin();
+		if (margins.Horizontal < room1.GetHorizontalRoomMargin())
+			margins.Horizontal = room1.GetHorizontalRoomMargin();
+
+		margins.Vertical = static_cast<uint8>(parameter.GetVerticalRoomMargin());
+		if (margins.Vertical < room0.GetVerticalRoomMargin())
+			margins.Vertical = room0.GetVerticalRoomMargin();
+		if (margins.Vertical < room1.GetVerticalRoomMargin())
+			margins.Vertical = room1.GetVerticalRoomMargin();
+		return margins;
+	}
+
+	/*
+	 * Returns true when two one-dimensional room intervals overlap.
+	 * 1次元の部屋範囲が重なっている場合にtrueを返します。
+	 */
+	bool RoomIntervalsOverlap(const int32_t min0, const int32_t max0, const int32_t min1, const int32_t max1) noexcept
+	{
+		return max0 > min1 && min0 < max1;
+	}
+
+	/*
+	 * Returns the overlap length between one-dimensional intervals.
+	 * 1次元範囲同士の重なり長さを返します。
+	 */
+	uint64 GetIntervalOverlapDepth(const int32_t min0, const int32_t max0, const int32_t min1, const int32_t max1) noexcept
+	{
+		const auto overlap = std::min(max0, max1) - std::max(min0, min1);
+		return overlap > 0 ? static_cast<uint64>(overlap) : 0;
+	}
+
+	/*
+	 * Returns the empty gap between two one-dimensional room ranges.
+	 * 1次元の部屋範囲同士にある空き距離を返します。
+	 */
+	int32_t CalculateIntervalGap(const int32_t min0, const int32_t max0, const int32_t min1, const int32_t max1) noexcept
+	{
+		if (max0 < min1)
+			return min1 - max0;
+		if (max1 < min0)
+			return min0 - max1;
+		return 0;
+	}
+
+	/*
+	 * Returns a purpose weight used when minimizing aisle length.
+	 * 通路距離を最小化するときに使う通路目的ごとの重みを返します。
+	 */
+	double GetAisleDistanceWeight(const dungeon::Aisle& aisle) noexcept
+	{
+		if (aisle.IsMain())
+		{
+			return 1.25;
+		}
+
+		switch (aisle.GetPurpose())
+		{
+		case EDungeonAislePurpose::Locked:
+		case EDungeonAislePurpose::VerticalTransition:
+			return 1.10;
+		case EDungeonAislePurpose::Branch:
+			return 0.85;
+		case EDungeonAislePurpose::Loop:
+		case EDungeonAislePurpose::Shortcut:
+			return 0.65;
+		case EDungeonAislePurpose::MainPath:
+		default:
+			return 1.00;
+		}
+	}
+
+	/*
+	 * Calculates aisle distance as the sum of room shell gaps on each axis.
+	 * 各軸の部屋外周間ギャップ合計として通路距離を計算します。
+	 */
+	int32_t CalculateRoomPairAisleDistance(const dungeon::Room& room0, const dungeon::Room& room1) noexcept
+	{
+		return
+			CalculateIntervalGap(room0.GetLeft(), room0.GetRight(), room1.GetLeft(), room1.GetRight()) +
+			CalculateIntervalGap(room0.GetTop(), room0.GetBottom(), room1.GetTop(), room1.GetBottom()) +
+			CalculateIntervalGap(room0.GetBackground(), room0.GetForeground(), room1.GetBackground(), room1.GetForeground());
+	}
+
+	/*
+	 * Returns true when the room must not be moved by layout optimization.
+	 * レイアウト最適化で部屋を動かしてはいけない場合にtrueを返します。
+	 */
+	bool IsFixedRoomForLayoutOptimization(const dungeon::Room& room, const dungeon::GenerateParameter& parameter) noexcept
+	{
+		return room.GetParts() == dungeon::Room::Parts::Start && parameter.IsGenerateStartRoomReserved();
+	}
+
+	/*
+	 * Returns a soft move penalty for rooms that may move but should avoid needless drift.
+	 * 移動可能だが不要なずれを避けたい部屋の緩い移動ペナルティを返します。
+	 */
+	double GetRoomMovePenalty(const dungeon::Room& room) noexcept
+	{
+		double penalty = 1.;
+		if (room.IsValidReservationNumber())
+		{
+			penalty += 0.35;
+		}
+		if (room.GetParts() == dungeon::Room::Parts::Goal)
+		{
+			penalty += 0.15;
+		}
+		if (room.IsMainPathRoom())
+		{
+			penalty += 0.10;
+		}
+		return penalty;
+	}
+
+	/*
+	 * Returns the room connected to movingRoom through an aisle.
+	 * movingRoomに通路で接続されている反対側の部屋を返します。
+	 */
+	std::shared_ptr<dungeon::Room> GetConnectedRoom(const dungeon::Aisle& aisle, const std::shared_ptr<dungeon::Room>& movingRoom) noexcept
+	{
+		if (movingRoom == nullptr || aisle.GetPoint(0) == nullptr || aisle.GetPoint(1) == nullptr)
+		{
+			return nullptr;
+		}
+
+		const auto room0 = aisle.GetPoint(0)->GetOwnerRoom();
+		const auto room1 = aisle.GetPoint(1)->GetOwnerRoom();
+		if (room0 == movingRoom)
+		{
+			return room1;
+		}
+		if (room1 == movingRoom)
+		{
+			return room0;
+		}
+		return nullptr;
+	}
+
+	/*
+	 * Calculates the weighted distance cost for all aisles in a layout.
+	 * レイアウト内の全通路に対する重み付き距離コストを計算します。
+	 */
+	double CalculateLayoutAisleDistanceCost(const std::vector<dungeon::Aisle>& aisles) noexcept
+	{
+		double cost = 0.;
+		for (const auto& aisle : aisles)
+		{
+			if (aisle.GetPoint(0) == nullptr || aisle.GetPoint(1) == nullptr)
+				continue;
+
+			const auto room0 = aisle.GetPoint(0)->GetOwnerRoom();
+			const auto room1 = aisle.GetPoint(1)->GetOwnerRoom();
+			if (room0 == nullptr || room1 == nullptr)
+				continue;
+
+			cost += static_cast<double>(CalculateRoomPairAisleDistance(*room0, *room1)) * GetAisleDistanceWeight(aisle);
+		}
+		return cost;
+	}
+
+	/*
+	 * Calculates connected aisle distance cost for one room at a candidate location.
+	 * 1つの部屋を候補位置に置いた場合の接続通路距離コストを計算します。
+	 */
+	double CalculateRoomConnectedDistanceCost(const std::vector<dungeon::Aisle>& aisles, const std::shared_ptr<dungeon::Room>& movingRoom, const FIntVector& location) noexcept
+	{
+		if (movingRoom == nullptr)
+			return 0.;
+
+		dungeon::Room candidateRoom(*movingRoom);
+		candidateRoom.SetX(location.X);
+		candidateRoom.SetY(location.Y);
+		candidateRoom.SetZ(location.Z);
+
+		double cost = 0.;
+		for (const auto& aisle : aisles)
+		{
+			const auto connectedRoom = GetConnectedRoom(aisle, movingRoom);
+			if (connectedRoom == nullptr)
+				continue;
+
+			cost += static_cast<double>(CalculateRoomPairAisleDistance(candidateRoom, *connectedRoom)) * GetAisleDistanceWeight(aisle);
+		}
+		return cost;
+	}
+
+	/*
+	 * Calculates the maximum connected aisle distance for one room at a candidate location.
+	 * 1つの部屋を候補位置に置いた場合の最大接続通路距離を計算します。
+	 */
+	double CalculateMaxConnectedDistanceCost(const std::vector<dungeon::Aisle>& aisles, const std::shared_ptr<dungeon::Room>& movingRoom, const FIntVector& location) noexcept
+	{
+		if (movingRoom == nullptr)
+			return 0.;
+
+		dungeon::Room candidateRoom(*movingRoom);
+		candidateRoom.SetX(location.X);
+		candidateRoom.SetY(location.Y);
+		candidateRoom.SetZ(location.Z);
+
+		double maxCost = 0.;
+		for (const auto& aisle : aisles)
+		{
+			const auto connectedRoom = GetConnectedRoom(aisle, movingRoom);
+			if (connectedRoom == nullptr)
+				continue;
+
+			maxCost = std::max(maxCost, static_cast<double>(CalculateRoomPairAisleDistance(candidateRoom, *connectedRoom)) * GetAisleDistanceWeight(aisle));
+		}
+		return maxCost;
+	}
+
+	/*
+	 * Returns the overlap volume between a margin-expanded candidate room and another room.
+	 * 余白で拡張した候補部屋と別の部屋の重なり体積を返します。
+	 */
+	uint64 GetRoomCollisionDepth(const dungeon::Room& candidateRoom, const dungeon::Room& otherRoom, const FRoomSpacingMargins margins) noexcept
+	{
+		const auto overlapX = GetIntervalOverlapDepth(candidateRoom.GetLeft() - margins.Horizontal, candidateRoom.GetRight() + margins.Horizontal, otherRoom.GetLeft(), otherRoom.GetRight());
+		const auto overlapY = GetIntervalOverlapDepth(candidateRoom.GetTop() - margins.Horizontal, candidateRoom.GetBottom() + margins.Horizontal, otherRoom.GetTop(), otherRoom.GetBottom());
+		const auto overlapZ = GetIntervalOverlapDepth(candidateRoom.GetBackground() - margins.Vertical, candidateRoom.GetForeground() + margins.Vertical, otherRoom.GetBackground(), otherRoom.GetForeground());
+		return overlapX * overlapY * overlapZ;
+	}
+
+	/*
+	 * Scores candidate collisions against rooms other than the fixed and moving room.
+	 * 固定部屋と移動部屋以外に対する候補位置の交差を採点します。
+	 */
+	void ScoreSeparationCandidateCollisions(
+		FRoomSeparationCandidate& candidate,
+		const dungeon::GenerateParameter& parameter,
+		const std::list<std::shared_ptr<dungeon::Room>>& rooms,
+		const std::shared_ptr<dungeon::Room>& fixedRoom,
+		const std::shared_ptr<dungeon::Room>& movableRoom) noexcept
+	{
+		dungeon::Room candidateRoom(*movableRoom);
+		candidateRoom.SetX(candidate.Location.X);
+		candidateRoom.SetY(candidate.Location.Y);
+		candidateRoom.SetZ(candidate.Location.Z);
+
+		candidate.CollisionCount = 0;
+		candidate.CollisionDepth = 0;
+		for (const auto& otherRoom : rooms)
+		{
+			if (otherRoom == nullptr || otherRoom == fixedRoom || otherRoom == movableRoom)
+				continue;
+
+			const auto margins = GetEffectiveRoomSeparationMargins(parameter, candidateRoom, *otherRoom);
+			if (candidateRoom.Intersect(*otherRoom, margins.Horizontal, margins.Vertical))
+			{
+				++candidate.CollisionCount;
+				candidate.CollisionDepth += GetRoomCollisionDepth(candidateRoom, *otherRoom, margins);
+			}
+		}
+	}
+
+	/*
+	 * Scores how much a collision-resolution candidate preserves connected room distance.
+	 * 衝突解消候補が接続部屋との距離をどれだけ維持できるかを採点します。
+	 */
+	void ScoreSeparationCandidateAisleDistance(
+		FRoomSeparationCandidate& candidate,
+		const dungeon::GenerateParameter& parameter,
+		const std::vector<dungeon::Aisle>& aisles,
+		const std::shared_ptr<dungeon::Room>& movingRoom) noexcept
+	{
+		candidate.ConnectedDistanceCost = CalculateRoomConnectedDistanceCost(aisles, movingRoom, candidate.Location);
+		candidate.MaxConnectedDistanceCost = CalculateMaxConnectedDistanceCost(aisles, movingRoom, candidate.Location);
+		candidate.LayoutSpreadCost =
+			std::abs(static_cast<double>(candidate.Location.X)) +
+			std::abs(static_cast<double>(candidate.Location.Y)) +
+			std::abs(static_cast<double>(candidate.Location.Z));
+		candidate.FixedRoomMoveCost = IsFixedRoomForLayoutOptimization(*movingRoom, parameter) ?
+			std::numeric_limits<double>::max() :
+			GetLocationDistanceSquared(*movingRoom, candidate.Location) * GetRoomMovePenalty(*movingRoom);
+	}
+
+	/*
+	 * Returns true when the rooms overlap on the axes not being compacted.
+	 * 詰める対象ではない軸で部屋同士が重なっている場合にtrueを返します。
+	 */
+	bool CanCompactAlongAxis(const dungeon::Room& room0, const dungeon::Room& room1, const ERoomSeparationAxis axis) noexcept
+	{
+		const auto overlapX = RoomIntervalsOverlap(room0.GetLeft(), room0.GetRight(), room1.GetLeft(), room1.GetRight());
+		const auto overlapY = RoomIntervalsOverlap(room0.GetTop(), room0.GetBottom(), room1.GetTop(), room1.GetBottom());
+		const auto overlapZ = RoomIntervalsOverlap(room0.GetBackground(), room0.GetForeground(), room1.GetBackground(), room1.GetForeground());
+
+		switch (axis)
+		{
+		case ERoomSeparationAxis::X:
+			return overlapY && overlapZ;
+		case ERoomSeparationAxis::Y:
+			return overlapX && overlapZ;
+		case ERoomSeparationAxis::Z:
+			return overlapX && overlapY;
+		default:
+			checkNoEntry();
+			return false;
+		}
+	}
+
+	/*
+	 * Returns the current gap between two rooms on a single axis.
+	 * 1つの軸上にある2つの部屋の現在の隙間を返します。
+	 */
+	int32_t GetRoomAxisGap(const dungeon::Room& room0, const dungeon::Room& room1, const ERoomSeparationAxis axis) noexcept
+	{
+		switch (axis)
+		{
+		case ERoomSeparationAxis::X:
+			return room0.GetRight() <= room1.GetLeft() ? room1.GetLeft() - room0.GetRight() : room0.GetLeft() - room1.GetRight();
+		case ERoomSeparationAxis::Y:
+			return room0.GetBottom() <= room1.GetTop() ? room1.GetTop() - room0.GetBottom() : room0.GetTop() - room1.GetBottom();
+		case ERoomSeparationAxis::Z:
+			return room0.GetForeground() <= room1.GetBackground() ? room1.GetBackground() - room0.GetForeground() : room0.GetBackground() - room1.GetForeground();
+		default:
+			checkNoEntry();
+			return 0;
+		}
+	}
+
+	/*
+	 * Returns the target location that places a moving room at the requested margin from an anchor room.
+	 * 移動する部屋を基準部屋から指定余白の位置へ置く目標座標を返します。
+	 */
+	bool MakeRoomCompactionLocation(const dungeon::Room& anchorRoom, const dungeon::Room& movingRoom, const dungeon::GenerateParameter& parameter, const ERoomSeparationAxis axis, const int32_t margin, FIntVector& outLocation) noexcept
+	{
+		outLocation = FIntVector(movingRoom.GetX(), movingRoom.GetY(), movingRoom.GetZ());
+		ApplySeparationConstraints(outLocation, movingRoom, parameter);
+
+		switch (axis)
+		{
+		case ERoomSeparationAxis::X:
+			if (movingRoom.GetLeft() >= anchorRoom.GetRight())
+				outLocation.X = anchorRoom.GetRight() + margin;
+			else if (movingRoom.GetRight() <= anchorRoom.GetLeft())
+				outLocation.X = anchorRoom.GetLeft() - margin - movingRoom.GetWidth();
+			else
+				return false;
+			ApplySeparationConstraints(outLocation, movingRoom, parameter);
+			return outLocation.X != movingRoom.GetX();
+
+		case ERoomSeparationAxis::Y:
+			if (movingRoom.GetTop() >= anchorRoom.GetBottom())
+				outLocation.Y = anchorRoom.GetBottom() + margin;
+			else if (movingRoom.GetBottom() <= anchorRoom.GetTop())
+				outLocation.Y = anchorRoom.GetTop() - margin - movingRoom.GetDepth();
+			else
+				return false;
+			ApplySeparationConstraints(outLocation, movingRoom, parameter);
+			return outLocation.Y != movingRoom.GetY();
+
+		case ERoomSeparationAxis::Z:
+			if (movingRoom.GetBackground() >= anchorRoom.GetForeground())
+				outLocation.Z = anchorRoom.GetForeground() + margin;
+			else if (movingRoom.GetForeground() <= anchorRoom.GetBackground())
+				outLocation.Z = anchorRoom.GetBackground() - margin - movingRoom.GetHeight();
+			else
+				return false;
+			ApplySeparationConstraints(outLocation, movingRoom, parameter);
+			return outLocation.Z != movingRoom.GetZ();
+
+		default:
+			checkNoEntry();
+			return false;
+		}
+	}
+
+	/*
+	 * Returns true when the first room should be tried as the moving room before the second one.
+	 * 1つ目の部屋を2つ目の部屋より先に移動候補として試す場合にtrueを返します。
+	 */
+	bool PreferFirstRoomForCompaction(const dungeon::Room& room0, const dungeon::Room& room1, const dungeon::GenerateParameter& parameter) noexcept
+	{
+		const auto fixed0 = IsFixedRoomForLayoutOptimization(room0, parameter);
+		const auto fixed1 = IsFixedRoomForLayoutOptimization(room1, parameter);
+		if (fixed0 != fixed1)
+			return fixed1;
+
+		const auto center0 = room0.GetCenter();
+		const auto center1 = room1.GetCenter();
+		const auto distance0 = center0.SizeSquared();
+		const auto distance1 = center1.SizeSquared();
+		if (distance0 != distance1)
+			return distance0 > distance1;
+
+		return static_cast<uint16_t>(room0.GetIdentifier()) > static_cast<uint16_t>(room1.GetIdentifier());
+	}
+}
 
 namespace dungeon
 {
@@ -40,6 +728,8 @@ namespace dungeon
 		mAisles.clear();
 		mDeepestDepthFromStart = 0;
 		mLastError = Generator::Error::Success;
+		mLastLayoutMetrics = FDungeonLayoutMetrics();
+		mLastLayoutScore = FDungeonLayoutScore();
 	}
 
 	bool Generator::Generate(const GenerateParameter& parameter) noexcept
@@ -74,8 +764,6 @@ namespace dungeon
 					, UTF8_TO_TCHAR(aisle.GetPoint(1)->GetOwnerRoom()->GetName().data())
 				);
 			}
-
-			DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_aisle.md");
 #endif
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP
 			check(mLastError == Error::Success);
@@ -110,37 +798,38 @@ namespace dungeon
 
 	bool Generator::GenerateImpl() noexcept
 	{
-		// 部屋の生成
-		if (GenerateRooms() == false)
+		// 意図グラフから距離を考慮した部屋配置を選びます
+		auto layoutCandidates = BuildIntentLayoutCandidates();
+		if (SelectDistanceAwareLayout(1, layoutCandidates) == false)
 			return false;
 
-		// 部屋の分離
-		if (SeparateRooms(2, 0) == SeparateRoomsResult::Failed)
+		// 接続距離を悪化させにくい候補を選びながら部屋の重なりを解消します
+		if (ResolveLayoutCollisions(2, 0) == ResolveLayoutCollisionsResult::Failed)
 			return false;
 
-		SeparateRoomsResult separateRoomsResult;
-		uint8_t subPhase = 0;
+		// スタート部屋とゴール部屋のサブレベルを調整します
+		if (AdjustedStartAndGoalSubLevel(3) == false)
+			return false;
+
+		// 部屋のサイズを調整します
+		AdjustRoomSize(4);
+
+		// 改めて部屋の重なりを解消します
+		ResolveLayoutCollisionsResult resolveLayoutCollisionsResult;
+		uint8_t subPhase = 1;
 		do {
-			// 通路の生成
-			if (ExtractionAisles() == false)
-				return false;
-
-			// 開始部屋と終了部屋のサブレベルを配置する隙間を調整
-			if (AdjustedStartAndGoalSubLevel() == false)
-				return false;
-
-			// 部屋の大きさを調整する
-			AdjustRoomSize();
-
-			// 部屋の分離
-			separateRoomsResult = SeparateRooms(6, subPhase);
-			if (separateRoomsResult == SeparateRoomsResult::Failed)
+			resolveLayoutCollisionsResult = ResolveLayoutCollisions(5, subPhase);
+			if (resolveLayoutCollisionsResult == ResolveLayoutCollisionsResult::Failed)
 				return false;
 			++subPhase;
-		} while (separateRoomsResult != SeparateRoomsResult::Completed);
+		} while (resolveLayoutCollisionsResult != ResolveLayoutCollisionsResult::Completed);
 
-		// 全ての部屋が収まるように空間を拡張します
-		if (ExpandSpace() == false)
+		// 通路距離を局所的に最小化します
+		if (!OptimizeAisleDistance(6))
+			return false;
+
+		// 部屋が全て収まるように空間を拡張します
+		if (ExpandSpace(7) == false)
 			return false;
 
 		// Pointの同期
@@ -172,14 +861,17 @@ namespace dungeon
 
 #if defined(DEBUG_GENERATE_MISSION_GRAPH_FILE)
 			// デバッグ情報を出力
-			DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_diagram.md");
+			DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/DungeonStructureDiagram.md");
 #endif
 
-#if WITH_EDITOR & JENKINS_FOR_DEVELOP
 			// クリアできるミッションかテストします
 			const MissionGraphTester missionGraphTester(mRooms, mAisles);
-			check(missionGraphTester.Success() == true);
-#endif
+			if (missionGraphTester.Success() == false)
+			{
+				DUNGEON_GENERATOR_ERROR(TEXT("MissionGraph validation failed. The generated key-lock route is not solvable."));
+				mLastError = Error::MissionGraphValidationFailed;
+				return false;
+			}
 		}
 		else
 		{
@@ -187,7 +879,7 @@ namespace dungeon
 
 #if defined(DEBUG_GENERATE_MISSION_GRAPH_FILE)
 			// デバッグ情報を出力
-			DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/dungeon_diagram.md");
+			DumpRoomDiagram(dungeon::GetDebugDirectoryString() + "/debug/DungeonStructureDiagram.md");
 #endif
 		}
 
@@ -195,107 +887,112 @@ namespace dungeon
 		InvokeRoomCallbacks();
 
 		// ボクセル情報を生成します
-		if (GenerateVoxel() == false)
+		if (GenerateVoxel(8) == false)
 			return false;
 
 		return true;
 	}
 
-	/*
-	 * 正規乱数
-	 * https://ja.wikipedia.org/wiki/%E3%83%9C%E3%83%83%E3%82%AF%E3%82%B9%EF%BC%9D%E3%83%9F%E3%83%A5%E3%83%A9%E3%83%BC%E6%B3%95
-	 */
-	inline void NormalRandom(float& x, float& y, const std::shared_ptr<Random>& random)
-	{
-		const auto A = random->Get<float>();
-		const auto B = random->Get<float>();
-		const auto X = std::sqrt(-2.f * std::log(A));
-		const auto Y = 2.f * 3.14159265359f * B;
-		x = X * std::cos(Y);
-		y = X * std::sin(Y);
-	}
-
 	/**
-	 * mRoomsを生成します
+	 * 部屋の初期位置を決定します
 	 */
-	bool Generator::GenerateRooms() noexcept
+	std::vector<LayoutCandidate> Generator::BuildIntentLayoutCandidates() const noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 		Stopwatch stopwatch;
 		Finalizer finalizer([&stopwatch]()
 			{
-				DUNGEON_GENERATOR_LOG(TEXT("GenerateRooms: %lf seconds"), stopwatch.Lap());
+				DUNGEON_GENERATOR_LOG(TEXT("BuildIntentLayoutCandidates: %lf seconds"), stopwatch.Lap());
 			}
 		);
 #endif
 
-#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG)
-		DUNGEON_GENERATOR_LOG(TEXT("Generate Rooms"));
-#endif
-
-		// ダンジョン全体のサイズを求める
-		float radius = std::sqrtf(mGenerateParameter.GetNumberOfCandidateRooms());
-		const float maxRoomWidth = std::min(mGenerateParameter.GetMinRoomWidth(), mGenerateParameter.GetMinRoomDepth());
-		radius *= maxRoomWidth + mGenerateParameter.GetHorizontalRoomMargin();
-		radius *= 0.5f;
-		if (radius < 1.f)
-			radius = 1.f;
-
-		const float mapOffsetX = mGenerateParameter.GetRandom()->Get<float>(dungeon::math::Pi2<float>());
-		const float mapOffsetY = mGenerateParameter.GetRandom()->Get<float>(dungeon::math::Pi2<float>());
-		const float mapScaleX = mGenerateParameter.GetRandom()->Get<float>(0.5f, 1.5f);
-		const float mapScaleY = mGenerateParameter.GetRandom()->Get<float>(0.5f, 1.5f);
-		const auto getHeight = [mapOffsetX, mapOffsetY, mapScaleX, mapScaleY](const float x, const float y) -> float
-			{
-				const float tx = mapOffsetX + x * mapScaleX * dungeon::math::Pi2();
-				const float ty = mapOffsetY + y * mapScaleY * dungeon::math::Pi2();
-				const float noise = std::sin(tx) * std::sin(ty);
-				return noise * 0.5f + 0.5f;
-			};
-
-		// Register Rooms
-		for (size_t i = 0; i < mGenerateParameter.GetNumberOfCandidateRooms(); ++i)
+		const int32 candidateCount = std::max(3, mGenerateParameter.GetLayoutCandidateCount());
+		std::vector<LayoutCandidate> candidates;
+		candidates.reserve(candidateCount);
+		for (int32 candidateIndex = 0; candidateIndex < candidateCount; ++candidateIndex)
 		{
-			float x, y;
-			NormalRandom(x, y, mGenerateParameter.GetRandom());
-			x = std::max(-1.f, std::min(x / 4.f, 1.f)) * radius;
-			y = std::max(-1.f, std::min(y / 4.f, 1.f)) * radius;
-			const float z = getHeight(x, y) * mGenerateParameter.GetNumberOfCandidateFloors();
-
-			FIntVector location(
-				static_cast<int32_t>(std::round(x)),
-				static_cast<int32_t>(std::round(y)),
-				static_cast<int32_t>(std::round(z))
-			);
-
-			if (mGenerateParameter.GetHorizontalRoomMargin() == 0)
+			LayoutCandidate candidate;
+			candidate.Graph = LayoutGraphGenerator::Generate(mGenerateParameter);
+			candidate.Rooms = RoomPlacer::Place(mGenerateParameter, candidate.Graph);
+			if (AislePlanner::Plan(candidate.Graph, candidate.Rooms, candidate.Aisles, candidate.StartPoint, candidate.GoalPoint) == false)
 			{
-				/*
-				 * RoomMarginが0の場合、部屋と部屋の間にスロープを作る隙間が無いので、
-				 * 部屋の高さを必ず同じにする。
-				 */
-				location.Z = 0;
+				continue;
 			}
 
-			std::shared_ptr<Room> room = std::make_shared<Room>(mGenerateParameter, location);
-#if defined(DEBUG_ENABLE_SHOW_DEVELOP_LOG)
-			DUNGEON_GENERATOR_LOG(TEXT("Room: %d,X=%d,Y=%d,Z=%d W=%d,D=%d,H=%d center(%f, %f, %f)")
-				, room->GetIdentifier().Get()
-				, room->GetX(), room->GetY(), room->GetZ()
-				, room->GetWidth(), room->GetDepth(), room->GetHeight()
-				, room->GetCenter().X, room->GetCenter().Y, room->GetCenter().Z
-			);
-#endif
-			mRooms.emplace_back(std::move(room));
+			LayoutEvaluator::Evaluate(mGenerateParameter, candidateIndex, candidate);
+			candidates.emplace_back(std::move(candidate));
 		}
 
-#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
-		// 通信同期用に現在の乱数の種を出力する
+		return candidates;
+	}
+
+	bool Generator::SelectDistanceAwareLayout(const size_t phase, std::vector<LayoutCandidate>& candidates) noexcept
+	{
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+		Stopwatch stopwatch;
+		Finalizer finalizer([&stopwatch]()
+			{
+				DUNGEON_GENERATOR_LOG(TEXT("SelectDistanceAwareLayout: %lf seconds"), stopwatch.Lap());
+			}
+		);
+#endif
+
+		mRooms.clear();
+		mAisles.clear();
+		mStartPoint.reset();
+		mGoalPoint.reset();
+		mStartRoom.reset();
+		mGoalRoom.reset();
+
+		if (candidates.empty())
 		{
-			uint32_t x, y, z, w;
-			GetGenerateParameter().GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("GenerateRooms: RandomSeed x=%08x, y=%08x, z=%08x, w=%08x"), x, y, z, w);
+			mLastError = Error::SeparateRoomsFailed;
+			return false;
 		}
+
+		auto bestCandidateIterator = candidates.begin();
+		for (auto candidateIterator = std::next(candidates.begin()); candidateIterator != candidates.end(); ++candidateIterator)
+		{
+			if (candidateIterator->Score.TotalScore > bestCandidateIterator->Score.TotalScore)
+			{
+				bestCandidateIterator = candidateIterator;
+			}
+		}
+
+		mRooms = std::move(bestCandidateIterator->Rooms);
+		mAisles = std::move(bestCandidateIterator->Aisles);
+		mStartPoint = bestCandidateIterator->StartPoint;
+		mGoalPoint = bestCandidateIterator->GoalPoint;
+		mStartRoom = mStartPoint ? mStartPoint->GetOwnerRoom() : nullptr;
+		mGoalRoom = mGoalPoint ? mGoalPoint->GetOwnerRoom() : nullptr;
+		mLastLayoutMetrics = bestCandidateIterator->Metrics;
+		mLastLayoutScore = bestCandidateIterator->Score;
+
+		if (mStartRoom == nullptr || mGoalRoom == nullptr)
+		{
+			mLastError = Error::SeparateRoomsFailed;
+			return false;
+		}
+
+		DUNGEON_GENERATOR_LOG(TEXT("Layout selected: Candidate=%d Score=%f Rooms=%d Aisles=%d CriticalPath=%d Branches=%d Loops=%d Vertical=%d SpecialDeadEndCoverage=%f TotalAisleDistance=%f AverageAisleDistance=%f MaxAisleDistance=%f MainPathAisleDistance=%f"),
+			mLastLayoutScore.CandidateIndex,
+			mLastLayoutScore.TotalScore,
+			mLastLayoutMetrics.RoomCount,
+			mLastLayoutMetrics.AisleCount,
+			mLastLayoutMetrics.CriticalPathLength,
+			mLastLayoutMetrics.BranchCount,
+			mLastLayoutMetrics.LoopCount,
+			mLastLayoutMetrics.VerticalTransitionCount,
+			mLastLayoutMetrics.SpecialDeadEndCoverage,
+			mLastLayoutMetrics.TotalAisleDistance,
+			mLastLayoutMetrics.AverageAisleDistance,
+			mLastLayoutMetrics.MaxAisleDistance,
+			mLastLayoutMetrics.MainPathAisleDistance
+		);
+
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+		GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_SelectDistanceAwareLayout.bmp");
 #endif
 
 		return true;
@@ -304,13 +1001,13 @@ namespace dungeon
 	/**
 	 * 部屋の重なりを解消します
 	 */
-	Generator::SeparateRoomsResult Generator::SeparateRooms(const size_t phase, const size_t subPhase) noexcept
+	Generator::ResolveLayoutCollisionsResult Generator::ResolveLayoutCollisions(const size_t phase, const size_t subPhase) noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 		Stopwatch stopwatch;
 		Finalizer finalizer([&stopwatch]()
 			{
-				DUNGEON_GENERATOR_LOG(TEXT("SeparateRooms: %lf seconds"), stopwatch.Lap());
+				DUNGEON_GENERATOR_LOG(TEXT("ResolveLayoutCollisions: %lf seconds"), stopwatch.Lap());
 			}
 		);
 #endif
@@ -320,14 +1017,24 @@ namespace dungeon
 #endif
 
 		// 部屋の交差を解消します
+		const auto expansionPolicy = mGenerateParameter.GetExpansionPolicy();
+		if (expansionPolicy == ExpansionPolicy::Flat || expansionPolicy == ExpansionPolicy::ExpandVertically)
+		{
+			for (const std::shared_ptr<Room>& room : mRooms)
+			{
+				FIntVector location(room->GetX(), room->GetY(), room->GetZ());
+				ApplySeparationConstraints(location, *room, mGenerateParameter);
+				room->SetX(location.X);
+				room->SetY(location.Y);
+				room->SetZ(location.Z);
+			}
+		}
+
 		uint8_t imageNo = 0;
 		constexpr uint8_t maxImageNo = 20;
-		SeparateRoomsResult separateRoomsResult = SeparateRoomsResult::Completed;
+		ResolveLayoutCollisionsResult resolveLayoutCollisionsResult = ResolveLayoutCollisionsResult::Completed;
 		bool retry;
 		do {
-#if defined(DEBUG_GENERATE_BITMAP_FILE)
-			GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_" + std::to_string(subPhase) + "_SeparateRooms_" + std::to_string(imageNo) + ".bmp");
-#endif
 			retry = false;
 
 			// 中心から近い順に並べ替える
@@ -366,7 +1073,7 @@ namespace dungeon
 						// 動いた先で交差している可能性があるので再チェック
 						retry = true;
 						// 一度でも部屋を動かしてしまったので結果を記録
-						separateRoomsResult = SeparateRoomsResult::Moved;
+						resolveLayoutCollisionsResult = ResolveLayoutCollisionsResult::Moved;
 					}
 				}
 
@@ -374,7 +1081,7 @@ namespace dungeon
 				{
 					// 一番原点に近い部屋を探す
 					intersectedRooms.emplace_back(room0);
-					std::sort(intersectedRooms.begin(), intersectedRooms.end(), [](const std::shared_ptr<Room>& l, const std::shared_ptr<Room>& r)
+					std::stable_sort(intersectedRooms.begin(), intersectedRooms.end(), [](const std::shared_ptr<Room>& l, const std::shared_ptr<Room>& r)
 						{
 							return l->GetCenter().SizeSquared2D() < r->GetCenter().SizeSquared2D();
 						});
@@ -383,9 +1090,16 @@ namespace dungeon
 					intersectedRooms.erase(intersectedRooms.begin());
 
 					// 交差した部屋が重ならないように移動
-					SeparateRoom(nearestRoomToOrigin, intersectedRooms, imageNo > 10);
+					ResolveRoomCollisionGroup(nearestRoomToOrigin, intersectedRooms, imageNo > 10);
 				}
 			}
+
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+			if (retry)
+			{
+				GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_" + std::to_string(subPhase) + "_ResolveLayoutCollisions_" + std::to_string(imageNo) + ".bmp");
+			}
+#endif
 
 			++imageNo;
 		} while (imageNo < maxImageNo && retry);
@@ -414,9 +1128,9 @@ namespace dungeon
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
 						GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_" + std::to_string(subPhase) + "_SeparateRooms_failure.bmp");
 #endif
-						DUNGEON_GENERATOR_ERROR(TEXT("Generator::SeparateRooms: The room crossing was not resolved."));
+						DUNGEON_GENERATOR_ERROR(TEXT("Generator::ResolveLayoutCollisions: The room crossing was not resolved."));
 						mLastError = Error::SeparateRoomsFailed;
-						return SeparateRoomsResult::Failed;
+						return ResolveLayoutCollisionsResult::Failed;
 					}
 				}
 			}
@@ -438,7 +1152,7 @@ namespace dungeon
 		{
 			uint32_t x, y, z, w;
 			GetGenerateParameter().GetRandom()->GetSeeds(x, y, z, w);
-			DUNGEON_GENERATOR_LOG(TEXT("SeparateRooms: RandomSeed x=%08x, y=%08x, z=%08x, w=%08x"), x, y, z, w);
+			DUNGEON_GENERATOR_LOG(TEXT("ResolveLayoutCollisions: RandomSeed x=%08x, y=%08x, z=%08x, w=%08x"), x, y, z, w);
 		}
 #endif
 
@@ -453,14 +1167,17 @@ namespace dungeon
 		}
 #endif
 
-		return separateRoomsResult;
+		return resolveLayoutCollisionsResult;
 	}
 
-	void Generator::SeparateRoom(const std::shared_ptr<Room>& fixedRoom, const std::vector<std::shared_ptr<Room>>& intersectedRooms, const bool activateOuterMovement) const noexcept
+	void Generator::ResolveRoomCollisionGroup(const std::shared_ptr<Room>& fixedRoom, const std::vector<std::shared_ptr<Room>>& intersectedRooms, const bool activateOuterMovement) const noexcept
 	{
 		// 交差した部屋が重ならないように移動
 		for (const std::shared_ptr<Room>& movableRoom : intersectedRooms)
 		{
+			if (IsFixedRoomForLayoutOptimization(*movableRoom, mGenerateParameter))
+				continue;
+
 			check(fixedRoom->GetCenter().SizeSquared2D() <= movableRoom->GetCenter().SizeSquared2D());
 
 			uint8 horizontalRoomMargin = mGenerateParameter.GetHorizontalRoomMargin();
@@ -476,116 +1193,58 @@ namespace dungeon
 				verticalRoomMargin = movableRoom->GetVerticalRoomMargin();
 
 			// 二つの部屋を合わせた空間の大きさ
-			const FVector contactSize(
-				fixedRoom->GetWidth() + movableRoom->GetWidth(),
-				fixedRoom->GetDepth() + movableRoom->GetDepth(),
-				fixedRoom->GetHeight() + movableRoom->GetHeight()
-			);
-
-			// 二つの部屋を合わせた空間の半分大きさ
-			FVector contactHalfSize = contactSize * 0.5;
-
-			// 余白を加算する
-			contactHalfSize.X += horizontalRoomMargin;
-			contactHalfSize.Y += horizontalRoomMargin;
-			contactHalfSize.Z += verticalRoomMargin;
-
-			// 押し出し範囲を設定
-			const std::array<Plane, 6> planes =
-			{
-				Plane(FVector(-1.,  0.,  0.), FVector(contactHalfSize.X, 0., 0.)),	// +X
-				Plane(FVector(1.,  0.,  0.), FVector(-contactHalfSize.X, 0., 0.)),	// -X
-				Plane(FVector(0., -1.,  0.), FVector(0.,  contactHalfSize.Y, 0.)),	// +Y
-				Plane(FVector(0.,  1.,  0.), FVector(0., -contactHalfSize.Y, 0.)),	// -Y
-				Plane(FVector(0.,  0., -1.), FVector(0., 0.,  contactHalfSize.Z)),	// +Z
-				Plane(FVector(0.,  0.,  1.), FVector(0., 0., -contactHalfSize.Z)),	// -Z
-			};
-
-			const FVector& fixedRoomCenter = fixedRoom->GetCenter();
-			const FVector& movableRoomCenter = movableRoom->GetCenter();
-
-			// movableRoomを押し出す方向を求める
-			FVector direction = movableRoomCenter - fixedRoomCenter;
-
-			// 中心が一致してしまったので適当な方向に押し出す
-			if (math::IsZero(direction.SizeSquared2D()) == true)
-			{
-				direction = movableRoomCenter;
-				if (direction.Normalize() == false)
+			const auto expansionPolicy = mGenerateParameter.GetExpansionPolicy();
+			const auto direction = MakeSeparationTieBreakDirection(*fixedRoom, *movableRoom, activateOuterMovement);
+			auto hasBestCandidate = false;
+			FRoomSeparationCandidate bestCandidate;
+			const auto addCandidate = [&](const ERoomSeparationAxis axis)
 				{
-					const double ratio = mGenerateParameter.GetRandom()->Get<double>();
-					const double radian = ratio * math::Pi2();
-					direction.X = std::cos(radian);
-					direction.Y = std::sin(radian);
-					direction.Z = 0;
-				}
-			}
-			else if (activateOuterMovement)
-			{
-				auto outerDirection = movableRoomCenter;
-				if (outerDirection.Normalize() == true)
-					direction += outerDirection;
-			}
-
-			// 水平方向への移動を優先
-			if (mGenerateParameter.GetNumberOfCandidateFloors() <= 0)
-			{
-				direction.Z = 0;
-			}
-			else
-			{
-				const auto limit = std::sin(math::ToRadian(11.25));
-				if (mGenerateParameter.GetExpansionPolicy() == ExpansionPolicy::ExpandHorizontally)
-				{
-					// 展開を水平方向に制限
-					direction.Z = std::max(-limit, std::min(direction.Z, limit));
-				}
-				else if (mGenerateParameter.GetExpansionPolicy() == ExpansionPolicy::ExpandVertically)
-				{
-					// 展開を垂直方向に制限
-					direction.X = std::max(-limit, std::min(direction.X, limit));
-					direction.Y = std::max(-limit, std::min(direction.Y, limit));
-					direction.Z = 1;
-				}
-			}
-			if (direction.Normalize() == false)
-			{
-				const double ratio = mGenerateParameter.GetRandom()->Get<double>();
-				const double radian = ratio * math::Pi2();
-				direction.X = std::cos(radian);
-				direction.Y = std::sin(radian);
-				direction.Z = 0;
-			}
-
-			// 押し出す
-			FVector newRoomOffset;
-			double minimumDistance = std::numeric_limits<double>::max();
-			for (const auto& plane : planes)
-			{
-				FVector roomOffset;
-				if (plane.Intersect(direction, roomOffset))
-				{
-					const double distance = roomOffset.SquaredLength();
-					if (minimumDistance > distance)
+					for (const bool positiveSide : { true, false })
 					{
-						minimumDistance = distance;
-						newRoomOffset = roomOffset;
+						auto candidate = MakeSeparationCandidate(
+							*fixedRoom,
+							*movableRoom,
+							mGenerateParameter,
+							axis,
+							positiveSide,
+							horizontalRoomMargin,
+							verticalRoomMargin,
+							direction,
+							activateOuterMovement,
+							mGenerateParameter.GetRandom()->Get<double>()
+						);
+						ScoreSeparationCandidateCollisions(candidate, mGenerateParameter, mRooms, fixedRoom, movableRoom);
+						ScoreSeparationCandidateAisleDistance(candidate, mGenerateParameter, mAisles, movableRoom);
+						if (hasBestCandidate == false || IsBetterSeparationCandidate(bestCandidate, candidate))
+						{
+							bestCandidate = candidate;
+							hasBestCandidate = true;
+						}
 					}
-				}
-			}
-			check(minimumDistance < std::numeric_limits<double>::max());
+				};
 
-			// movableRoomの中心を押し出し位置へ移動
-			const FVector movableRoomSize(
-				static_cast<double>(movableRoom->GetWidth()),
-				static_cast<double>(movableRoom->GetDepth()),
-				static_cast<double>(movableRoom->GetHeight())
-			);
-			const FVector newMovableRoomLocation = fixedRoomCenter + newRoomOffset - movableRoomSize * 0.5;
-			movableRoom->SetX(static_cast<int32_t>(std::round(newMovableRoomLocation.X)));
-			movableRoom->SetY(static_cast<int32_t>(std::round(newMovableRoomLocation.Y)));
-			if (mGenerateParameter.GetNumberOfCandidateFloors() > 0)
-				movableRoom->SetZ(static_cast<int32_t>(std::round(newMovableRoomLocation.Z)));
+			switch (expansionPolicy)
+			{
+			case ExpansionPolicy::Flat:
+				addCandidate(ERoomSeparationAxis::X);
+				addCandidate(ERoomSeparationAxis::Y);
+				break;
+			case ExpansionPolicy::ExpandVertically:
+				addCandidate(ERoomSeparationAxis::X);
+				addCandidate(ERoomSeparationAxis::Z);
+				break;
+			case ExpansionPolicy::ExpandAnyDirection:
+			default:
+				addCandidate(ERoomSeparationAxis::X);
+				addCandidate(ERoomSeparationAxis::Y);
+				addCandidate(ERoomSeparationAxis::Z);
+				break;
+			}
+			check(hasBestCandidate);
+
+			movableRoom->SetX(bestCandidate.Location.X);
+			movableRoom->SetY(bestCandidate.Location.Y);
+			movableRoom->SetZ(bestCandidate.Location.Z);
 
 #if WITH_EDITOR & JENKINS_FOR_DEVELOP
 			// 交差していないか再確認
@@ -601,7 +1260,213 @@ namespace dungeon
 		}
 	}
 
-	bool Generator::ExpandSpace(const int32_t horizontalMargin, const int32_t verticalMargin) noexcept
+	/*
+	 * Locally minimizes aisle distance after collision resolution without breaking room margins.
+	 * 衝突解消後に、部屋の余白を破らない範囲で通路距離を局所的に最小化します。
+	 */
+	bool Generator::OptimizeAisleDistance(size_t phase) const noexcept
+	{
+#if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
+		Stopwatch stopwatch;
+		Finalizer finalizer([&stopwatch]()
+			{
+				DUNGEON_GENERATOR_LOG(TEXT("OptimizeAisleDistance: %lf seconds"), stopwatch.Lap());
+			}
+		);
+#endif
+
+		if (mRooms.empty() || mAisles.empty())
+			return true;
+
+		std::vector<const Aisle*> aisles;
+		aisles.reserve(mAisles.size());
+		for (const auto& aisle : mAisles)
+		{
+			aisles.emplace_back(&aisle);
+		}
+		std::stable_sort(aisles.begin(), aisles.end(), [](const Aisle* left, const Aisle* right)
+			{
+				return static_cast<uint16_t>(left->GetIdentifier()) < static_cast<uint16_t>(right->GetIdentifier());
+			}
+		);
+
+		const auto expansionPolicy = mGenerateParameter.GetExpansionPolicy();
+		std::vector<ERoomSeparationAxis> axes;
+		switch (expansionPolicy)
+		{
+		case ExpansionPolicy::Flat:
+			axes = { ERoomSeparationAxis::X, ERoomSeparationAxis::Y };
+			break;
+		case ExpansionPolicy::ExpandVertically:
+			axes = { ERoomSeparationAxis::X, ERoomSeparationAxis::Z };
+			break;
+		case ExpansionPolicy::ExpandAnyDirection:
+		default:
+			axes = { ERoomSeparationAxis::X, ERoomSeparationAxis::Y, ERoomSeparationAxis::Z };
+			break;
+		}
+
+		const auto validateCandidate = [this](const std::shared_ptr<Room>& movingRoom, const FIntVector& location) -> bool
+			{
+				Room candidateRoom(*movingRoom);
+				candidateRoom.SetX(location.X);
+				candidateRoom.SetY(location.Y);
+				candidateRoom.SetZ(location.Z);
+
+				for (const auto& otherRoom : mRooms)
+				{
+					if (otherRoom == movingRoom)
+						continue;
+
+					const auto margins = GetEffectiveRoomSpacingMargins(mGenerateParameter, candidateRoom, *otherRoom);
+					if (candidateRoom.Intersect(*otherRoom, margins.Horizontal, margins.Vertical))
+						return false;
+				}
+				return true;
+			};
+
+		const auto tryMoveRoom = [this, &validateCandidate](const std::shared_ptr<Room>& anchorRoom, const std::shared_ptr<Room>& movingRoom, const ERoomSeparationAxis axis, const int32_t margin) -> bool
+			{
+				if (IsFixedRoomForLayoutOptimization(*movingRoom, mGenerateParameter))
+					return false;
+
+				FIntVector location;
+				if (MakeRoomCompactionLocation(*anchorRoom, *movingRoom, mGenerateParameter, axis, margin, location) == false)
+					return false;
+
+				if (validateCandidate(movingRoom, location) == false)
+					return false;
+
+				const double currentCost = CalculateLayoutAisleDistanceCost(mAisles);
+				const FIntVector currentLocation(movingRoom->GetX(), movingRoom->GetY(), movingRoom->GetZ());
+				const double movePenalty = std::sqrt(GetLocationDistanceSquared(*movingRoom, location)) * GetRoomMovePenalty(*movingRoom) * 0.05;
+
+				movingRoom->SetX(location.X);
+				movingRoom->SetY(location.Y);
+				movingRoom->SetZ(location.Z);
+				const double nextCost = CalculateLayoutAisleDistanceCost(mAisles) + movePenalty;
+				if (nextCost < currentCost)
+				{
+					return true;
+				}
+
+				movingRoom->SetX(currentLocation.X);
+				movingRoom->SetY(currentLocation.Y);
+				movingRoom->SetZ(currentLocation.Z);
+				return false;
+			};
+
+		const auto tryStepRoomTowardAnchor = [this, &validateCandidate](const std::shared_ptr<Room>& anchorRoom, const std::shared_ptr<Room>& movingRoom, const ERoomSeparationAxis axis) -> bool
+			{
+				if (IsFixedRoomForLayoutOptimization(*movingRoom, mGenerateParameter))
+					return false;
+
+				FIntVector location(movingRoom->GetX(), movingRoom->GetY(), movingRoom->GetZ());
+				switch (axis)
+				{
+				case ERoomSeparationAxis::X:
+					if (movingRoom->GetCenter().X < anchorRoom->GetCenter().X)
+						++location.X;
+					else if (movingRoom->GetCenter().X > anchorRoom->GetCenter().X)
+						--location.X;
+					else
+						return false;
+					break;
+				case ERoomSeparationAxis::Y:
+					if (movingRoom->GetCenter().Y < anchorRoom->GetCenter().Y)
+						++location.Y;
+					else if (movingRoom->GetCenter().Y > anchorRoom->GetCenter().Y)
+						--location.Y;
+					else
+						return false;
+					break;
+				case ERoomSeparationAxis::Z:
+					if (movingRoom->GetCenter().Z < anchorRoom->GetCenter().Z)
+						++location.Z;
+					else if (movingRoom->GetCenter().Z > anchorRoom->GetCenter().Z)
+						--location.Z;
+					else
+						return false;
+					break;
+				default:
+					checkNoEntry();
+					return false;
+				}
+				ApplySeparationConstraints(location, *movingRoom, mGenerateParameter);
+
+				if (validateCandidate(movingRoom, location) == false)
+					return false;
+
+				const double currentCost = CalculateLayoutAisleDistanceCost(mAisles);
+				const FIntVector currentLocation(movingRoom->GetX(), movingRoom->GetY(), movingRoom->GetZ());
+				movingRoom->SetX(location.X);
+				movingRoom->SetY(location.Y);
+				movingRoom->SetZ(location.Z);
+				if (CalculateLayoutAisleDistanceCost(mAisles) < currentCost)
+				{
+					return true;
+				}
+
+				movingRoom->SetX(currentLocation.X);
+				movingRoom->SetY(currentLocation.Y);
+				movingRoom->SetZ(currentLocation.Z);
+				return false;
+			};
+
+		const size_t maxIterationCount = std::min<size_t>(12, mRooms.size() * 2);
+		for (size_t iteration = 0; iteration < maxIterationCount; ++iteration)
+		{
+			auto moved = false;
+			for (const auto* aisle : aisles)
+			{
+				if (aisle == nullptr || aisle->GetPoint(0) == nullptr || aisle->GetPoint(1) == nullptr)
+					continue;
+
+				const auto& room0 = aisle->GetPoint(0)->GetOwnerRoom();
+				const auto& room1 = aisle->GetPoint(1)->GetOwnerRoom();
+				if (room0 == nullptr || room1 == nullptr || room0 == room1)
+					continue;
+
+				const auto margins = GetEffectiveRoomSpacingMargins(mGenerateParameter, *room0, *room1);
+				for (const auto axis : axes)
+				{
+					const int32_t margin = axis == ERoomSeparationAxis::Z ? margins.Vertical : margins.Horizontal;
+					const auto bPreferRoom0 = PreferFirstRoomForCompaction(*room0, *room1, mGenerateParameter);
+					auto movedOnAxis = false;
+					if (CanCompactAlongAxis(*room0, *room1, axis))
+					{
+						const auto gap = GetRoomAxisGap(*room0, *room1, axis);
+						if (gap > margin)
+						{
+							movedOnAxis = bPreferRoom0 ?
+								(tryMoveRoom(room1, room0, axis, margin) || tryMoveRoom(room0, room1, axis, margin)) :
+								(tryMoveRoom(room0, room1, axis, margin) || tryMoveRoom(room1, room0, axis, margin));
+						}
+					}
+
+					if (movedOnAxis == false)
+					{
+						movedOnAxis = bPreferRoom0 ?
+							(tryStepRoomTowardAnchor(room1, room0, axis) || tryStepRoomTowardAnchor(room0, room1, axis)) :
+							(tryStepRoomTowardAnchor(room0, room1, axis) || tryStepRoomTowardAnchor(room1, room0, axis));
+					}
+
+					moved = moved || movedOnAxis;
+				}
+			}
+
+			if (moved == false)
+				break;
+		}
+
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+		GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_OptimizeAisleDistance.bmp");
+#endif
+
+		return true;
+	}
+
+	bool Generator::ExpandSpace(const size_t phase, const int32_t horizontalMargin, const int32_t verticalMargin) noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 		Stopwatch stopwatch;
@@ -636,12 +1501,13 @@ namespace dungeon
 
 		// 外周に余白を作る
 		{
+			const auto effectiveVerticalMargin = mGenerateParameter.GetExpansionPolicy() == ExpansionPolicy::Flat ? 0 : verticalMargin;
 			minX -= horizontalMargin;
 			minY -= horizontalMargin;
-			minZ -= verticalMargin;
+			minZ -= effectiveVerticalMargin;
 			maxX += horizontalMargin;
 			maxY += horizontalMargin;
-			maxZ += verticalMargin;
+			maxZ += effectiveVerticalMargin;
 		}
 
 		// 空間のサイズを設定
@@ -681,7 +1547,7 @@ namespace dungeon
 #endif
 
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
-		GenerateRoomImageForDebug("/debug/7_ExpandSpace.bmp");
+		GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_ExpandSpace.bmp");
 #endif
 
 		return true;
@@ -993,7 +1859,7 @@ namespace dungeon
 	 * スタート部屋およびゴール部屋のサブレベルが指定されていた場合に
 	 * サブレベルが入る空間の範囲を空ける
 	 */
-	bool Generator::AdjustedStartAndGoalSubLevel() const noexcept
+	bool Generator::AdjustedStartAndGoalSubLevel(const size_t phase) const noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 		Stopwatch stopwatch;
@@ -1078,13 +1944,17 @@ namespace dungeon
 		}
 #endif
 
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+		GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_AdjustedStartAndGoalSubLevel.bmp");
+#endif
+
 		return true;
 	}
 
 	/**
 	 * 部屋の大きさを調整する
 	 */
-	void Generator::AdjustRoomSize() const noexcept
+	void Generator::AdjustRoomSize(const size_t phase) const noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 		Stopwatch stopwatch;
@@ -1163,6 +2033,10 @@ namespace dungeon
 				}
 			}
 		}
+
+#if defined(DEBUG_GENERATE_BITMAP_FILE)
+		GenerateRoomImageForDebug("/debug/" + std::to_string(phase) + "_AdjustRoomSize.bmp");
+#endif
 	}
 
 	bool Generator::MarkBranchIdAndDepthFromStart() noexcept
@@ -1279,7 +2153,7 @@ namespace dungeon
 		}
 	}
 
-	bool Generator::GenerateVoxel() noexcept
+	bool Generator::GenerateVoxel(const size_t phase) noexcept
 	{
 #if defined(DEBUG_ENABLE_MEASURE_GENERATION_TIME)
 		Stopwatch stopwatch;
@@ -1299,7 +2173,7 @@ namespace dungeon
 			uint8_t depthRatioFromStart = 0;
 			if (GetDeepestDepthFromStart() > 0)
 			{
-				// TODO: ダンジョンの深さを0～255に正規化する関数を検討してください
+				// TODO: 良く使われる処理なので、ダンジョンの深さを0～255に正規化する関数の実装を検討してください
 				float depthFromStart = static_cast<float>(room->GetDepthFromStart());
 				depthFromStart /= static_cast<float>(GetDeepestDepthFromStart());
 				depthRatioFromStart = static_cast<uint8_t>(depthFromStart * 255.f);
@@ -1308,8 +2182,8 @@ namespace dungeon
 			const FIntVector min(room->GetLeft(), room->GetTop(), room->GetBackground());
 			const FIntVector max(room->GetRight(), room->GetBottom(), room->GetForeground());
 			mVoxel->Rectangle(min, max
-				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart)
-				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart)
+				, Grid::CreateFloor(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart, room->GetStructuralRole(), room->GetGameplayRole(), room->GetZoneIndex())
+				, Grid::CreateDeck(mGenerateParameter.GetRandom(), room->GetIdentifier(), depthRatioFromStart, room->GetStructuralRole(), room->GetGameplayRole(), room->GetZoneIndex())
 			);
 
 			// 部屋に吹き抜けを生成する
@@ -1461,7 +2335,7 @@ namespace dungeon
 #endif
 
 #if defined(DEBUG_GENERATE_BITMAP_FILE)
-		mVoxel->GenerateImageForDebug("/debug/8_GenerateVoxel.bmp");
+		mVoxel->GenerateImageForDebug("/debug/" + std::to_string(phase) + "_GenerateVoxel.bmp");
 #endif
 
 		return true;
@@ -1472,7 +2346,7 @@ namespace dungeon
 		if (!mVoxel)
 			return;
 
-		const bool mergeRooms = mGenerateParameter.IsMergeRooms();
+		constexpr bool mergeRooms = false;
 		mVoxel->Each([this, mergeRooms](const FIntVector& location, Grid& grid)
 			{
 				const Grid& northGrid = mVoxel->Get(location.X, location.Y - 1, location.Z);
@@ -1550,6 +2424,9 @@ namespace dungeon
 		Grid upSpace(Grid::Type::UpSpace);
 		upSpace.SetIdentifier(room->GetIdentifier());
 		upSpace.SetDepthRatioFromStart(depthRatioFromStart);
+		upSpace.SetRoomStructuralRole(room->GetStructuralRole());
+		upSpace.SetRoomGameplayRole(room->GetGameplayRole());
+		upSpace.SetZoneIndex(room->GetZoneIndex());
 		upSpace.SetProps(Grid::Props::None);
 		mVoxel->Set(skylightLocation, upSpace);
 	}
@@ -1588,7 +2465,6 @@ namespace dungeon
 				Voxel::AisleParameter aisleParameter;
 				aisleParameter.mGoalCondition = pathGoalCondition;
 				aisleParameter.mIdentifier = aisle.GetIdentifier();
-				aisleParameter.mMergeRooms = mGenerateParameter.IsMergeRooms();
 				aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
 				aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
 				aisleParameter.mLocked = aisle.IsLocked();
@@ -1608,7 +2484,6 @@ namespace dungeon
 			Voxel::AisleParameter aisleParameter;
 			aisleParameter.mGoalCondition = pathGoalCondition;
 			aisleParameter.mIdentifier = aisle.GetIdentifier();
-			aisleParameter.mMergeRooms = mGenerateParameter.IsMergeRooms();
 			aisleParameter.mGenerateIntersections = /*aisle.IsAnyLocked() == false ||*/ mGenerateParameter.IsAisleComplexity();
 			aisleParameter.mUniqueLocked = aisle.IsUniqueLocked();
 			aisleParameter.mLocked = aisle.IsLocked();
@@ -1621,10 +2496,6 @@ namespace dungeon
 				complete = true;
 			}
 			// 幹線通路でも部屋を結合しているなら成功扱いにする
-			else if (mGenerateParameter.IsMergeRooms() == true)
-			{
-				complete = true;
-			}
 			// 生成失敗？
 			if (complete == false)
 			{
@@ -1643,14 +2514,14 @@ namespace dungeon
 				DumpAisleAndRoomInformation(aisleIndex);
 #endif
 				mLastError = Error::RouteSearchFailed;
+				return false;
 			}
-			return false;
+
+			return true;
 		}
 		else
 		{
 			// 部屋が結合されているなら通路が無くても問題ないはず…
-			if (mGenerateParameter.IsMergeRooms() == false)
-			{
 #if WITH_EDITOR
 				DUNGEON_GENERATOR_ERROR(TEXT("Cannot find a start gate that can be generated. %d: ID=%d (%d,%d,%d) %d Gate"), aisleIndex
 					, static_cast<uint16_t>(startPoint->GetOwnerRoom()->GetIdentifier())
@@ -1659,12 +2530,9 @@ namespace dungeon
 				DumpVoxel(startPoint);
 				DumpAisleAndRoomInformation(aisleIndex);
 #endif
-				mLastError = Error::GateSearchFailed;
-				return false;
-			}
+			mLastError = Error::GateSearchFailed;
+			return false;
 		}
-
-		return true;
 	}
 
 	void Generator::GenerateStructuralColumnVoxel(const std::shared_ptr<Room>& room) const

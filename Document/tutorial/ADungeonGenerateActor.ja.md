@@ -38,10 +38,11 @@
 ロード済みロビーをスタート部屋として使いたい場合は、`StartRoomSubLevelScriptActor` を利用します。  
 このときは次の制約があります。
 
-- `UDungeonGenerateParameter` 側で `MovePlayerStartToStartingPoint = false` を設定します
-- `UDungeonGenerateParameter` 側で `StartLocationPolicy = NoAdjustment` を設定します
+- `UDungeonGenerateParameter` 側で `Path.bMovePlayerStartToStartRoom = false` を設定します
+- `UDungeonGenerateParameter` 側で `Path.StartRoomPolicy = UseCentralPoint` を設定します
 - `UseMultiStart` は併用できません
 - 候補に指定できるのは、現在ロード済みの `ADungeonSubLevelScriptActor` を持つサブレベルです
+- このプリロード済みスタート部屋が設定されている間、`DungeonSubLevelDatabase.StartRoom` は開始部屋には使われません
 
 ロビーを事前ロードせず、通常のサブレベル差し替えで固定スタート部屋を使いたい場合は [UDungeonSubLevelDatabase.ja.md](./UDungeonSubLevelDatabase.ja.md) を使ってください。  
 使い分けは [LobbyConnection.ja.md](./LobbyConnection.ja.md) にまとめています。

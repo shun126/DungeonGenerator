@@ -76,29 +76,69 @@ public:
 	 */
 	void SetFixedPartitionRegistrationWorldLocation(const FVector& worldLocation) noexcept;
 
-	// Actor
+	/**
+	 * Saves the owner actor Tick state and disables Tick for the specified reason.
+	 * 指定した理由でオーナーアクターのTick状態を保存し、Tickを無効にします。
+	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	void SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason);
+
+	/**
+	 * Restores the owner actor Tick state saved for the specified reason.
+	 * 指定した理由で保存したオーナーアクターのTick状態を復元します。
+	 */
 	void LoadActorTickEnable(const EDungeonComponentActivateReason activateReason);
 
-	// Component
+	/**
+	 * Saves component activation states and disables components for the specified reason.
+	 * 指定した理由でコンポーネントのアクティブ状態を保存し、無効にします。
+	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	void SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason);
+
+	/**
+	 * Restores component activation states saved for the specified reason.
+	 * 指定した理由で保存したコンポーネントのアクティブ状態を復元します。
+	 */
 	void LoadComponentActivation(const EDungeonComponentActivateReason activateReason);
 
-	// Collision
+	/**
+	 * Saves collision states and disables collision for the specified reason.
+	 * 指定した理由でコリジョン状態を保存し、コリジョンを無効にします。
+	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	void SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason);
+
+	/**
+	 * Restores collision states saved for the specified reason.
+	 * 指定した理由で保存したコリジョン状態を復元します。
+	 */
 	void LoadCollisionEnable(const EDungeonComponentActivateReason activateReason);
 
-	// Visibility
+	/**
+	 * Saves visibility states and hides components for the specified reason.
+	 * 指定した理由で表示状態を保存し、コンポーネントを非表示にします。
+	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	void SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason);
+
+	/**
+	 * Restores visibility states saved for the specified reason.
+	 * 指定した理由で保存した表示状態を復元します。
+	 */
 	void LoadVisibility(const EDungeonComponentActivateReason activateReason);
 
-	// AI
+	/**
+	 * Saves AI logic state and stops AI logic for the specified reason.
+	 * 指定した理由でAIロジック状態を保存し、AIロジックを停止します。
+	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
+
+	/**
+	 * Restores AI logic state saved for the specified reason.
+	 * 指定した理由で保存したAIロジック状態を復元します。
+	 */
 	void LoadAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
 
 	// LightCastShadow

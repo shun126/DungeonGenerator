@@ -35,7 +35,7 @@ namespace
 	const TCHAR* kSeverityCritical = TEXT("critical");
 }
 
-void UPluginNoticeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UDungeonPluginNoticeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
@@ -48,13 +48,13 @@ void UPluginNoticeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	MaybeFetchAsync();
 }
 
-void UPluginNoticeSubsystem::Deinitialize()
+void UDungeonPluginNoticeSubsystem::Deinitialize()
 {
 	SaveState();
 	Super::Deinitialize();
 }
 
-UPluginNoticeSubsystem::FPluginSemVersion UPluginNoticeSubsystem::FPluginSemVersion::Parse(const FString& VersionString)
+UDungeonPluginNoticeSubsystem::FPluginSemVersion UDungeonPluginNoticeSubsystem::FPluginSemVersion::Parse(const FString& VersionString)
 {
 	FPluginSemVersion Result;
 	TArray<FString> Tokens;
@@ -79,7 +79,7 @@ UPluginNoticeSubsystem::FPluginSemVersion UPluginNoticeSubsystem::FPluginSemVers
 	return Result;
 }
 
-int32 UPluginNoticeSubsystem::FPluginSemVersion::Compare(const FPluginSemVersion& Other) const
+int32 UDungeonPluginNoticeSubsystem::FPluginSemVersion::Compare(const FPluginSemVersion& Other) const
 {
 	const int32 MaxParts = FMath::Max(Parts.Num(), Other.Parts.Num());
 	for (int32 Index = 0; Index < MaxParts; ++Index)
@@ -94,7 +94,7 @@ int32 UPluginNoticeSubsystem::FPluginSemVersion::Compare(const FPluginSemVersion
 	return 0;
 }
 
-void UPluginNoticeSubsystem::LoadState()
+void UDungeonPluginNoticeSubsystem::LoadState()
 {
 	State = FPluginNoticeState();
 
@@ -131,7 +131,7 @@ void UPluginNoticeSubsystem::LoadState()
 	GConfig->GetString(kStateSection, kLastEtagKey, State.LastEtag, ConfigFile);
 }
 
-void UPluginNoticeSubsystem::SaveState() const
+void UDungeonPluginNoticeSubsystem::SaveState() const
 {
 	const FString ConfigFile = GetStateConfigFile();
 
@@ -169,15 +169,15 @@ void UPluginNoticeSubsystem::SaveState() const
 	GConfig->Flush(false, ConfigFile);
 }
 
-FString UPluginNoticeSubsystem::GetStateConfigFile()
+FString UDungeonPluginNoticeSubsystem::GetStateConfigFile()
 {
-	const UPluginNoticeSettings* Settings = GetDefault<UPluginNoticeSettings>();
+	const UDungeonPluginNoticeSettings* Settings = GetDefault<UDungeonPluginNoticeSettings>();
 	return (Settings && Settings->bPerUserState) ? GEditorPerProjectIni : GGameIni;
 }
 
-bool UPluginNoticeSubsystem::ShouldFetchNow() const
+bool UDungeonPluginNoticeSubsystem::ShouldFetchNow() const
 {
-	const UPluginNoticeSettings* Settings = GetDefault<UPluginNoticeSettings>();
+	const UDungeonPluginNoticeSettings* Settings = GetDefault<UDungeonPluginNoticeSettings>();
 	if (!Settings || !Settings->bEnableOnlineNotices)
 	{
 		return false;
@@ -198,7 +198,7 @@ bool UPluginNoticeSubsystem::ShouldFetchNow() const
 	return (Now - State.LastFetchUtc) >= Interval;
 }
 
-void UPluginNoticeSubsystem::MaybeFetchAsync()
+void UDungeonPluginNoticeSubsystem::MaybeFetchAsync()
 {
 	if (bRequestInFlight)
 	{
@@ -213,9 +213,9 @@ void UPluginNoticeSubsystem::MaybeFetchAsync()
 	StartHttpRequest();
 }
 
-void UPluginNoticeSubsystem::StartHttpRequest()
+void UDungeonPluginNoticeSubsystem::StartHttpRequest()
 {
-	const UPluginNoticeSettings* Settings = GetDefault<UPluginNoticeSettings>();
+	const UDungeonPluginNoticeSettings* Settings = GetDefault<UDungeonPluginNoticeSettings>();
 	if (!Settings)
 	{
 		return;
@@ -232,13 +232,13 @@ void UPluginNoticeSubsystem::StartHttpRequest()
 		Request->SetHeader(TEXT("If-None-Match"), State.LastEtag);
 	}
 #endif
-	Request->OnProcessRequestComplete().BindUObject(this, &UPluginNoticeSubsystem::OnHttpCompleted);
+	Request->OnProcessRequestComplete().BindUObject(this, &UDungeonPluginNoticeSubsystem::OnHttpCompleted);
 
 	bRequestInFlight = true;
 	Request->ProcessRequest();
 }
 
-void UPluginNoticeSubsystem::OnHttpCompleted(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+void UDungeonPluginNoticeSubsystem::OnHttpCompleted(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
 	bRequestInFlight = false;
 	State.LastFetchUtc = FDateTime::UtcNow();
@@ -270,7 +270,7 @@ void UPluginNoticeSubsystem::OnHttpCompleted(FHttpRequestPtr Request, FHttpRespo
 	}
 
 	const FString ResponseString = Response->GetContentAsString();
-	TArray<FPluginNoticeMessage> Messages;
+	TArray<FDungeonPluginNoticeMessage> Messages;
 	if (!ParseResponseMessages(ResponseString, Messages))
 	{
 		DUNGEON_GENERATOR_EDITOR_LOG(TEXT("Failed to parse notices response."));
@@ -284,7 +284,7 @@ void UPluginNoticeSubsystem::OnHttpCompleted(FHttpRequestPtr Request, FHttpRespo
 		State.LastEtag = NewEtag;
 	}
 
-	for (const FPluginNoticeMessage& Message : Messages)
+	for (const FDungeonPluginNoticeMessage& Message : Messages)
 	{
 		if (ShouldShowMessage(Message))
 		{
@@ -296,7 +296,7 @@ void UPluginNoticeSubsystem::OnHttpCompleted(FHttpRequestPtr Request, FHttpRespo
 	SaveState();
 }
 
-bool UPluginNoticeSubsystem::ParseResponseMessages(const FString& ResponseString, TArray<FPluginNoticeMessage>& OutMessages)
+bool UDungeonPluginNoticeSubsystem::ParseResponseMessages(const FString& ResponseString, TArray<FDungeonPluginNoticeMessage>& OutMessages)
 {
 	TSharedPtr<FJsonObject> RootObject;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseString);
@@ -319,7 +319,7 @@ bool UPluginNoticeSubsystem::ParseResponseMessages(const FString& ResponseString
 			continue;
 		}
 
-		FPluginNoticeMessage Message;
+		FDungeonPluginNoticeMessage Message;
 		MessageObject->TryGetStringField(TEXT("id"), Message.Id);
 		MessageObject->TryGetStringField(TEXT("severity"), Message.Severity);
 		MessageObject->TryGetStringField(TEXT("title"), Message.Title);
@@ -343,7 +343,7 @@ bool UPluginNoticeSubsystem::ParseResponseMessages(const FString& ResponseString
 	return true;
 }
 
-bool UPluginNoticeSubsystem::ShouldShowMessage(const FPluginNoticeMessage& Message) const
+bool UDungeonPluginNoticeSubsystem::ShouldShowMessage(const FDungeonPluginNoticeMessage& Message) const
 {
 #if !defined(ENABLE_LOCAL_DEBUG)
 	if (State.SeenIds.Contains(Message.Id))
@@ -425,7 +425,7 @@ bool UPluginNoticeSubsystem::ShouldShowMessage(const FPluginNoticeMessage& Messa
 	return true;
 }
 
-void UPluginNoticeSubsystem::ShowNotice(const FPluginNoticeMessage& Message)
+void UDungeonPluginNoticeSubsystem::ShowNotice(const FDungeonPluginNoticeMessage& Message)
 {
 	FNotificationInfo Info(FText::FromString(Message.Title));
 	Info.SubText = FText::FromString(Message.Body);
@@ -434,7 +434,7 @@ void UPluginNoticeSubsystem::ShowNotice(const FPluginNoticeMessage& Message)
 	Info.FadeOutDuration = 0.2f;
 	Info.ExpireDuration = 0.0f;
 
-	const UPluginNoticeSettings* Settings = GetDefault<UPluginNoticeSettings>();
+	const UDungeonPluginNoticeSettings* Settings = GetDefault<UDungeonPluginNoticeSettings>();
 	const bool bHasUrl = Settings && !Message.Url.IsEmpty();
 	const bool bUrlIsHttp = bHasUrl && (Message.Url.StartsWith(TEXT("https://")) || Message.Url.StartsWith(TEXT("http://")));
 	const bool bShowUrlButton = bUrlIsHttp && (!Settings->bRestrictLinksToSameDomain || IsSameDomain(Settings->NoticesUrl, Message.Url));
@@ -472,7 +472,7 @@ void UPluginNoticeSubsystem::ShowNotice(const FPluginNoticeMessage& Message)
 	}
 }
 
-void UPluginNoticeSubsystem::MarkSeen(const FString& MessageId)
+void UDungeonPluginNoticeSubsystem::MarkSeen(const FString& MessageId)
 {
 	if (!MessageId.IsEmpty())
 	{
@@ -480,7 +480,7 @@ void UPluginNoticeSubsystem::MarkSeen(const FString& MessageId)
 	}
 }
 
-bool UPluginNoticeSubsystem::IsSameDomain(const FString& BaseUrl, const FString& TargetUrl)
+bool UDungeonPluginNoticeSubsystem::IsSameDomain(const FString& BaseUrl, const FString& TargetUrl)
 {
 	auto ExtractDomain = [](const FString& Url) -> FString
 	{
@@ -524,12 +524,12 @@ bool UPluginNoticeSubsystem::IsSameDomain(const FString& BaseUrl, const FString&
 	return BaseDomain.Equals(TargetDomain, ESearchCase::IgnoreCase);
 }
 
-bool UPluginNoticeSubsystem::TryParseIso8601(const FString& IsoString, FDateTime& OutDateTime)
+bool UDungeonPluginNoticeSubsystem::TryParseIso8601(const FString& IsoString, FDateTime& OutDateTime)
 {
 	return FDateTime::ParseIso8601(*IsoString, OutDateTime);
 }
 
-int32 UPluginNoticeSubsystem::CompareEngineVersions(const FEngineVersion& Left, const FEngineVersion& Right)
+int32 UDungeonPluginNoticeSubsystem::CompareEngineVersions(const FEngineVersion& Left, const FEngineVersion& Right)
 {
 	if (Left.GetMajor() != Right.GetMajor())
 	{

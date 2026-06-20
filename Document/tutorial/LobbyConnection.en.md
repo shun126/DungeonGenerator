@@ -18,15 +18,15 @@ Assign a level-side `ADungeonSubLevelScriptActor` to `StartRoomSubLevelScriptAct
 ### Steps
 1. Place `ADungeonSubLevelScriptActor` in the lobby level.
 2. Assign that actor to `StartRoomSubLevelScriptActor` on `ADungeonGenerateActor`.
-3. Set `MovePlayerStartToStartingPoint = false` in `UDungeonGenerateParameter`.
-4. Set `StartLocationPolicy = NoAdjustment` in `UDungeonGenerateParameter`.
+3. Set `Path.bMovePlayerStartToStartRoom = false` in `UDungeonGenerateParameter`.
+4. Set `Path.StartRoomPolicy = UseCentralPoint` in `UDungeonGenerateParameter`.
 5. Do not use `UseMultiStart`; keep a normal single start point.
 
 ### Important notes in the current implementation
 - `UseMultiStart` is not supported and causes an error
-- In the editor, it can work with temporary metadata even if `DungeonSubLevelDatabase.StartRoom` is not configured
-- In packaged builds, metadata for `DungeonSubLevelDatabase.StartRoom` is required
-- If `DungeonSubLevelDatabase.StartRoom` is configured, its grid size, room size, and level asset must match the lobby sublevel
+- Metadata is saved on `ADungeonGenerateActor` from the selected preloaded start room
+- `Gameplay.DungeonSubLevelDatabase.StartRoom` is ignored while `StartRoomSubLevelScriptActor` is set
+- If `Gameplay.DungeonSubLevelDatabase.StartRoom` points to another level, generation continues and shows a warning
 
 ## Method B: Insert a start-room sublevel from the generation side
 Use `StartRoom` in `UDungeonSubLevelDatabase` so the start room is part of the normal generation flow.
@@ -41,7 +41,7 @@ Use `StartRoom` in `UDungeonSubLevelDatabase` so the start room is part of the n
 2. Match the grid size and room size to `UDungeonGenerateParameter`.
 3. Register that sublevel in `StartRoom` of [UDungeonSubLevelDatabase.en.md](./UDungeonSubLevelDatabase.en.md).
 4. Run `Build` to update metadata.
-5. Assign that asset to `DungeonSubLevelDatabase` in `UDungeonGenerateParameter`.
+5. Assign that asset to `Gameplay.DungeonSubLevelDatabase` in `UDungeonGenerateParameter`.
 
 ## Which one to choose
 - Connect directly to an existing lobby  

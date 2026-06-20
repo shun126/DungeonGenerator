@@ -159,7 +159,7 @@ namespace dungeon
 			}
 		}
 
-		std::sort(result.begin(), result.end(), [](const CandidateLocation& l, const CandidateLocation& r)
+		std::stable_sort(result.begin(), result.end(), [](const CandidateLocation& l, const CandidateLocation& r)
 			{
 				return l.mPriority < r.mPriority;
 			}

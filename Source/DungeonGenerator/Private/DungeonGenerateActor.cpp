@@ -30,10 +30,16 @@
 
 #if WITH_EDITOR
 #include <DrawDebugHelpers.h>
+#include <Engine/Level.h>
 #include <Kismet/KismetSystemLibrary.h>
+#include <Misc/PackageName.h>
+#include <UObject/Package.h>
 #endif
 
 #define LOCTEXT_NAMESPACE "ADungeonGenerateActor"
+
+#if WITH_EDITOR
+#endif
 
 ADungeonGenerateActor::ADungeonGenerateActor(const FObjectInitializer& initializer)
 	: Super(initializer)
@@ -485,7 +491,7 @@ int32 ADungeonGenerateActor::GetGeneratedDungeonCRC32() const noexcept
 float ADungeonGenerateActor::GetGridSize() const
 {
 	if (DungeonGenerateParameter)
-		return DungeonGenerateParameter->GridSize;
+		return DungeonGenerateParameter->GetGridSize().HorizontalSize;
 	return 1.f;
 }
 
@@ -624,7 +630,7 @@ void ADungeonGenerateActor::DrawDebugInformation() const
 			output.Add(TEXT("Catwalk"));
 		if (grid.IsSubLevel())
 			output.Add(TEXT("SubLevel"));
-		
+
 		output.Add(grid.GetNoMeshGenerationName());
 		output.Add(grid.GetWallName());
 

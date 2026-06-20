@@ -1,130 +1,216 @@
 # UDungeonGenerateParameter Guide
 
-`UDungeonGenerateParameter` is the central settings asset for dungeon generation.  
-It references layout rules, start location, visuals, sublevels, sensors, and interiors.
+`UDungeonGenerateParameter` is the central settings asset for dungeon generation.
+In v2.0, it is easiest to think about it as three groups: layout, Zone-based theme switching, and generated room information passed to user gameplay logic.
 
-## Settings to configure first
-- `DungeonRoomMeshPartsDatabase`  
-  The room `Mesh set database`. Generation cannot run without it.
-- `DungeonAisleMeshPartsDatabase`  
-  The aisle `Mesh set database`. Generation cannot run without it.
-- `GridSize` / `VerticalGridSize`  
-  The base size used by meshes and sublevels.
-- `RandomSeed`  
-  `0` means fully random. A fixed value is useful for reproducible results.
+## Main data groups
+In v2.0, many settings that used to be top-level v1 fields are grouped by purpose.
 
-For a first check, those four fields are enough.
+```mermaid
+graph TD;
+    Parameter["UDungeonGenerateParameter"] --> Theme["Theme<br/>visual assets and grid size"]
+    Parameter --> Structure["Structure<br/>room count, room size, floor mode"]
+    Parameter --> Path["Path<br/>start, goal, route model, loops, corridors"]
+    Parameter --> Zones["Zones<br/>area-based visual switching"]
+    Parameter --> Gameplay["Gameplay<br/>room roles, sensors, sublevels"]
+    Theme --> MeshDb["Room and aisle Mesh Set Databases"]
+    Theme --> InteriorDb["Interior Database"]
+    Gameplay --> SensorDb["Gameplay Room Sensor"]
+    Gameplay --> SubLevelDb["SubLevel Database"]
+```
 
-## Settings that shape the layout
-- `RoomWidth` / `RoomDepth` / `RoomHeight`  
-  Minimum and maximum room size. Larger values make rooms feel more like halls; smaller values feel more maze-like.
-- `NumberOfCandidateRooms`  
-  How many room candidates are tried during generation. If this is too small, generation fails more easily.
-- `RoomMargin` / `VerticalRoomMargin`  
-  Spacing between rooms. These affect density and how tightly floors stack vertically.
-- `MergeRooms`  
-  Makes it easier to merge adjacent rooms into larger rooms. When enabled, some spacing settings stop applying.
-- `ExpansionPolicy`  
-  Decides whether the dungeon expands horizontally, vertically, or both.  
-  If you want a single-layer dungeon, use `ExpansionPolicy = Flat` instead of the legacy `Flat` setting.
-- `NumberOfCandidateFloors`  
-  Number of floor candidates used when trying multi-floor layouts. Not used when `ExpansionPolicy = Flat`.
+## Configure these first
+- `Theme.DungeonRoomMeshPartsDatabase`
+  Mesh Set Database for room floors, walls, ceilings, chandeliers, and similar visuals.
+- `Theme.DungeonAisleMeshPartsDatabase`
+  Mesh Set Database for aisle floors, walls, ceilings, and similar visuals.
+- `Theme.HorizontalGridSize` / `Theme.VerticalGridSize`
+  Base grid size used to align meshes, sublevels, and generated rooms.
+- `RandomSeed`
+  `0` means random every time. A fixed value is useful when checking the same result repeatedly.
 
-## Settings for start location and progression
-- `StartLocationPolicy`  
-  How the start room is chosen. `UseSouthernMost` or `UseCentralPoint` are usually the easiest starting options.
-- `MovePlayerStartToStartingPoint`  
-  Legacy setting. In new content, prefer `StartLocationPolicy`.
-- `UseMissionGraph`  
-  Enables key-route or mission-style progression.  
-  In practice, using it together with `MergeRooms = false` and `AisleComplexity = 0` is the safer setup.
-- `AisleComplexity`  
-  Controls how complex aisle routing becomes. For normal dungeons without MissionGraph, keep this at `1` or higher.
-- `AisleCeilingHeightPolicy`  
-  Switches aisle ceiling height between `1 Grid`, `2 Grids`, and `Random`. This affects not only the look but also how much vertical space aisle-side decoration has.
+## Layout settings
+- `Structure.RoomCountRange`
+  Target room count. Set Min and Max to the same value when you want a fixed room count.
+- `Structure.RoomWidth` / `RoomDepth` / `RoomHeight`
+  Generated room size. Larger values feel more like halls; smaller values feel more maze-like.
+- `Structure.HorizontalRoomMargin` / `VerticalRoomMargin`
+  Spacing between rooms.
+- `Structure.FloorMode`
+  `Free` allows rooms to spread horizontally and vertically, `Flat` keeps every room on one floor height, and `Vertical` favors upward and downward layouts.
 
-How to choose `AisleCeilingHeightPolicy`:
-- `OneGrid`  
-  Good when you want a lower ceiling and a more compressed feeling.
-- `TwoGrids`  
-  Good when you want a more open feeling, or when aisle-side decoration needs more height.
-- `Random`  
-  Good when you want variation between low and tall aisles.
+## Path
+`Path` contains start and goal selection, the progression model, loop routing, and corridor settings.
 
-Tune the final aisle look together with the mesh sets in `DungeonAisleMeshPartsDatabase`.  
-If you want stronger ceiling-side decoration, review [UDungeonMeshSetDatabase.en.md](./UDungeonMeshSetDatabase.en.md) at the same time.
+- `Path.StartRoomPolicy` / `Path.GoalRoomPolicy`
+  How the start and goal rooms are selected.
+- `Path.ProgressionPolicy`
+  Chooses the progression model, such as a normal route, key-and-lock route, or boss route.
 
-## Settings that change room atmosphere
-- `GenerateSlopeInRoom`  
-  Allows slopes inside rooms.
-- `GenerateStructuralColumn`  
-  Allows structural columns inside rooms.
-- `SkylightChancePercent`  
-  Probability of creating skylight voxels inside rooms.
+  | Policy | Use it when you want |
+  | --- | --- |
+  | `FreeExploration` | Open exploration with loops, shortcuts, and optional side rooms. |
+  | `StartToGoal` | A readable main route from the start room to the goal room. |
+  | `KeysAndLocks` | A guaranteed solvable route where keys unlock required doors and unsafe bypass loops are disabled. |
+  | `BossRoute` | A route that builds toward a boss or final encounter near the goal. |
+  | `HubQuest` | A hub-centered layout where the player can branch out to quest-like rooms. |
 
-## Parts and fixture settings
-- `PillarPartsSelectionPolicy` / `PillarParts`
-- `TorchPartsSelectionPolicy` / `TorchParts`
-- `DoorPartsSelectionPolicy` / `DoorParts`
+```mermaid
+graph LR;
+    subgraph FreeExploration["Free Exploration"]
+        FEStart["Start"] --> FERoomA["Room"]
+        FERoomA --> FERoomB["Room"]
+        FERoomB --> FEGoal["Goal"]
+        FERoomA --> FEBranch["Side Room"]
+        FEBranch --> FERoomB
+        FERoomB --> FELoop["Loop Room"]
+        FELoop --> FERoomA
+    end
+    subgraph StartToGoal["Start To Goal"]
+        STGStart["Start"] --> STGConnector1["Connector"]
+        STGConnector1 --> STGConnector2["Connector"]
+        STGConnector2 --> STGGoal["Goal"]
+        STGConnector1 --> STGBranch["Branch"]
+    end
+    subgraph KeysAndLocks["Keys And Locks"]
+        KLStart["Start"] --> KLKey1["Key"]
+        KLKey1 --> KLLock1["Locked Door"]
+        KLLock1 --> KLKey2["Unique Key"]
+        KLKey2 --> KLLock2["Goal Lock"]
+        KLLock2 --> KLGoal["Goal"]
+    end
+    subgraph BossRoute["Boss Route"]
+        BRStart["Start"] --> BRBuild1["Combat"]
+        BRBuild1 --> BRRest["Rest"]
+        BRRest --> BRBoss["Boss"]
+        BRBoss --> BRGoal["Goal"]
+    end
+    subgraph HubQuest["Hub Quest"]
+        HQStart["Start"] --> HQHub["Hub"]
+        HQHub --> HQCombat["Combat Branch"]
+        HQHub --> HQTreasure["Treasure Branch"]
+        HQHub --> HQPuzzle["Puzzle Branch"]
+        HQHub --> HQGoal["Goal"]
+    end
+```
 
-This is where you define candidates and selection rules for pillars, torches, and doors.  
-The current editable setting is **`SelectionPolicy`**, not `SelectionMethod`.
+  When migrating from v1 settings, `UseMissionGraph = true` maps to `Path.ProgressionPolicy = KeysAndLocks`.
+- `Path.LayoutCandidateCount`
+  Controls how many layout candidates are generated and compared before the best candidate is selected.
+  Higher values make it easier to choose a better layout, but they also increase generation cost. Start with `3`, use `4-8` for a balance of quality and cost, and use `9-16` mainly for editor previews or fixed-seed tuning.
+  Internally, `1` and `2` are still treated as at least `3` candidates. Values above `8` can become expensive for runtime generation.
+- `Path.MainRouteRatio`
+  Ratio of rooms placed on the main path from start to goal. Lower values create more branch rooms. Higher values create a longer main path with fewer branch rooms.
+- `Path.LoopRouteDensity`
+  How much loop routing and alternate routes should be created. `KeysAndLocks` progression disables unsafe loops so the player cannot bypass locked doors.
+- `Path.ExtraCorridorComplexity`
+  Adds extra corridor complexity after the minimum route network is built. `KeysAndLocks` progression ignores this value and behaves as `0` to keep the key-and-lock route solvable.
+- `Path.CorridorCeilingHeightPolicy`
+  Selects aisle ceiling height from `1 Grid`, `2 Grids`, and `Random`. This affects both the look and the vertical space available for aisle-side decoration.
 
-- `Random`  
-  Choose randomly.
-- `Grid Index` / `Direction` / `Identifier` / `Depth From Start`  
-  Choose deterministically from grid position or progression.
-- `Custom Selector`  
-  Use a custom selector asset.
+## Gameplay.RoomRoles
+`Gameplay.RoomRoles.Roles` controls which gameplay role is more likely to be assigned to generated branch rooms, and can also override room visuals, interiors, and fixtures for each gameplay role.
+Available branch gameplay roles are `None`, `Combat`, `Treasure`, `Puzzle`, `Rest`, and `Secret`.
 
-When you use `Custom Selector`, assign a `UDungeonPartsSelector`-derived object to `Custom Dungeon Parts Selector`.  
-`UDungeonSamplePartsSelector` is available as a sample implementation.
+| Role | Typical use |
+| --- | --- |
+| `None` | A normal room with no special gameplay meaning. |
+| `Combat` | Enemy encounters or combat-focused room events. |
+| `Treasure` | Rewards, loot, keys, or other pickups. Key and unique-key rooms in `KeysAndLocks` progression are treated as `Treasure`. |
+| `Puzzle` | Switches, mechanisms, riddles, or interaction challenges. |
+| `Rest` | Safe or lower-pressure rooms between stronger encounters. |
+| `Boss` | A major encounter, usually assigned by `BossRoute` near the end of the main path. |
+| `Secret` | Hidden discoveries, optional rewards, or secret events. |
 
-## Referenced databases
-- `DungeonRoomMeshPartsDatabase`  
-  Database for room floors, walls, roofs, chandeliers, and similar visuals
-- `DungeonAisleMeshPartsDatabase`  
-  Database for aisle floors, walls, roofs, and similar visuals
-- `DungeonInteriorDatabase`  
-  Database that spawns furniture and vegetation by tag
-- `DungeonSubLevelDatabase`  
-  Database that registers start, goal, and special-room sublevels
-- `DungeonRoomSensorDatabase`  
-  Database that registers room-entry sensors and aisle effects
-- `DungeonRoomSensorClass`  
-  Legacy setting. For new content, use `DungeonRoomSensorDatabase` instead.
+`Start`, `Goal`, `Hub`, `Connector`, `Branch`, and `DeadEnd` are structural roles controlled by route logic. `BossRoute` assigns the `Boss` gameplay role near the end of the main path. `HubQuest` marks an early main-path room as a structural `Hub`. A `Boss` profile can still provide role-specific room mesh overrides.
 
-## What `Verify` checks
-`Verify` in `Window > DungeonGenerator` mainly checks the following issues:
+To create more secret rooms, increase `BranchSelectionWeight` on the `Secret` profile. There is no separate setting just for secret-room probability.
 
-- Missing room or aisle database assignments
-- Room or aisle databases without floor, wall, or roof meshes
-- Too few room candidates
-- Broken referenced asset paths
+```mermaid
+graph TD;
+    Profiles["Gameplay.RoomRoles.Roles"] --> Weights["BranchSelectionWeight<br/>None, Combat, Treasure, Puzzle, Rest, Secret"]
+    Weights --> BranchRooms["Generated branch rooms"]
+    BossPolicy["Path.ProgressionPolicy = BossRoute"] --> BossRoom["Boss gameplay role<br/>near the end of the main path"]
+    KeyPolicy["Path.ProgressionPolicy = KeysAndLocks"] --> KeyRooms["Key and UniqueKey rooms<br/>Treasure gameplay role"]
+    BranchRooms --> GeneratedInfo["Generated room information<br/>RoomGameplayRole"]
+    BossRoom --> GeneratedInfo
+    KeyRooms --> GeneratedInfo
+    GeneratedInfo --> Sensor["ADungeonRoomSensorBase<br/>Blueprint branching"]
+    GeneratedInfo --> RoleTheme["Gameplay.RoomRoles<br/>Room Mesh Set, Interior, Fixture override"]
+```
 
-Running `Verify` before generation removes many of the most common beginner mistakes.
+Role theme priority for room visuals is `Gameplay.RoomRoles` -> `Zones` -> `Theme`. Role overrides apply to generated rooms. Aisle meshes, aisle interiors, and slope interiors use `Zones` -> `Theme`.
 
-## Suggested initial settings
-- `RandomSeed = 0`
-- `NumberOfCandidateRooms = 10`
-- `ExpansionPolicy = ExpandHorizontally`
-- `StartLocationPolicy = UseSouthernMost`
-- `UseMissionGraph = false`
-- `AisleComplexity = 5`
+```mermaid
+graph TD;
+    Room["Generated room"] --> RoleCheck{"Role override exists?"}
+    RoleCheck -->|"Yes"| RoleDb["Gameplay.RoomRoles<br/>Room Mesh Set, Interior, Fixture override"]
+    RoleCheck -->|"No"| ZoneCheck{"Matching Zone override exists?"}
+    ZoneCheck -->|"Yes"| ZoneRoomDb["Zones.ThemeOverride<br/>Room Mesh Set Database"]
+    ZoneCheck -->|"No"| ThemeRoomDb["Theme.DungeonRoomMeshPartsDatabase"]
+    Aisle["Generated aisle"] --> AisleZoneCheck{"Matching Zone override exists?"}
+    AisleZoneCheck -->|"Yes"| ZoneAisleDb["Zones.ThemeOverride<br/>Aisle Mesh Set Database"]
+    AisleZoneCheck -->|"No"| ThemeAisleDb["Theme.DungeonAisleMeshPartsDatabase"]
+```
 
-## Notes
-- `PluginVersion` is mainly for support and bug-report checks.
-- `Flat` is a legacy setting. In the current setup, use `ExpansionPolicy = Flat`.
+## Zones
+`Zones` switches Theme data by progress and floor range.
 
-## Read Next
-- [UDungeonMeshSetDatabase.en.md](./UDungeonMeshSetDatabase.en.md)  
-  Review how mesh sets control the final look.
-- [UDungeonSubLevelDatabase.en.md](./UDungeonSubLevelDatabase.en.md)  
-  Review how to insert special rooms and start-room sublevels.
+- `Zones[].Name`
+  Zone name. This is also passed to generated room information.
+- `Zones[].ProgressRange`
+  Progress range from the start room.
+- `Zones[].FloorRange`
+  Floor range where the Zone applies.
+- `Zones[].SelectionWeight`
+  Relative weight used when more than one Zone matches the same progress and floor. A value of `0` prevents that Zone from being selected.
+- `Zones[].ThemeOverride`
+  Optional room and aisle Mesh Set Databases, Interior Database, and Fixtures used only in that Zone. Enable the explicit override flags when you want an empty value to intentionally disable inherited interiors or fixtures.
+- `Zones[].GameplayOverride`
+  Optional Room Sensor class and aisle actor overrides used only in that Zone.
+
+If multiple Zones overlap, only Zones whose `ProgressRange` and `FloorRange` both match are included in the random draw. Non-overlapping Zones behave like direct range switches.
+
+Theme priority is simple: a matching room role override is used first for room meshes, interiors, and fixtures, then the matching Zone override, then the standard settings in `Theme`. Aisles and slopes use the Zone override or the standard settings in `Theme`.
+
+## Gameplay
+`Gameplay` only keeps references needed after generation.
+
+- `Gameplay.DungeonRoomSensorClass`
+  Default `ADungeonRoomSensorBase`-derived Blueprint used in generated rooms. `Gameplay.RoomRoles.Roles[].GameplayOverride` has first priority, then `Zones[].GameplayOverride`, then this default.
+- `Gameplay.SpawnActorInAisle`
+  Default actor Blueprint candidates spawned inside generated aisles. `Zones[].GameplayOverride.SpawnActorInAisle` replaces this list for matching aisle Zones.
+- `Gameplay.DungeonSubLevelDatabase`
+  Registers sublevels for start rooms, goal rooms, and special rooms.
+
+Enemies, rewards, traps, and other gameplay content are not placed directly by a reward category in this parameter. Implement them in `ADungeonRoomSensorBase` using generated room information such as `bSecretRoom`, `bDeadEndRoom`, `bMainPathRoom`, `bLockedRouteRoom`, `ZoneName`, and `DepthFromStartRatio`.
+
+For quick tests, assign a Room Sensor Blueprint through `Gameplay.DungeonRoomSensorClass` and start with the `ADungeonRoomSensorBase` `DungeonGenerator|Helper` parameters before adding detailed Blueprint branching.
+
+```mermaid
+graph TD;
+    GeneratedRoom["Generated room information<br/>role, zone, depth, route flags"] --> SensorClass["Gameplay.DungeonRoomSensorClass<br/>Role and Zone overrides"]
+    SensorClass --> Sensor["ADungeonRoomSensorBase-derived Blueprint"]
+    Sensor --> GameplayContent["Enemies, rewards, traps, BGM, room events"]
+    GeneratedRoom --> SubLevelDb["Gameplay.DungeonSubLevelDatabase"]
+    SubLevelDb --> SpecialRoom["Start, goal, preferred, or random special-room sublevel"]
+```
+
+## Theme
+- `Theme.DungeonInteriorDatabase`
+  Database that places furniture, decoration, vegetation, and other props by tag.
+- `Theme.Fixtures`
+  Candidates and selection rules for pillars, torches, doors, and Unique Lock doors. `UniqueDoorParts` is mainly used for goal or boss doors created by Keys And Locks progression, and falls back to `DoorParts` when left empty.
+- `Theme.Fixtures.*PartsSelector`
+  Selector objects used when choosing fixture candidates such as pillars, torches, doors, and Unique Lock doors.
+- `Theme.bDeferredVegetationSpawn`
+  Spawns vegetation over multiple frames to reduce Play start stalls. Use the related `Theme|VegetationPerformance` settings to tune per-frame spawn and tree-build budgets. For runtime actor, light, AI, collision, and Tick control, see [LoadReduction.en.md](./LoadReduction.en.md).
+
+## Recommended workflow
+First stabilize generation with `Structure`, `Path`, and `Theme`.
+Then use `Gameplay.RoomRoles` to tune branch-room roles and role-specific room visuals, interiors, fixtures, or sensors, `Zones` to switch visuals and aisle actors by area, and `Gameplay.DungeonRoomSensorClass` plus `ADungeonRoomSensorBase` to implement enemies, rewards, traps, and room-specific events.
 
 ## Related Pages
-- [QuickStart.en.md](./QuickStart.en.md)
 - [UDungeonMeshSetDatabase.en.md](./UDungeonMeshSetDatabase.en.md)
 - [UDungeonSubLevelDatabase.en.md](./UDungeonSubLevelDatabase.en.md)
-- [UDungeonRoomSensorDatabase.en.md](./UDungeonRoomSensorDatabase.en.md)
-
+- [ADungeonRoomSensorBase.en.md](./ADungeonRoomSensorBase.en.md)

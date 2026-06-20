@@ -55,6 +55,9 @@ public:
 	 */
 	virtual ~ADungeonGenerateActor() override = default;
 
+#if WITH_EDITOR
+#endif
+
 	/**
 	 * Generate new dungeon
 	 * ダンジョンを生成します

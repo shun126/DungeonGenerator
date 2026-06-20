@@ -213,7 +213,6 @@ namespace dungeon
 		{
 			PathGoalCondition mGoalCondition;	//!< 終了条件
 			Identifier mIdentifier;				//!< 通路の識別子
-			bool mMergeRooms;					//!< 部屋を結合する
 			bool mGenerateIntersections;		//!< 交差点を生成する
 			bool mUniqueLocked;					//!< ユニーク鍵のある通路
 			bool mLocked;						//!< 鍵のある通路

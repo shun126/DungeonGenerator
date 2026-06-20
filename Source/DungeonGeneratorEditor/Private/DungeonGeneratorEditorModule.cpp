@@ -12,11 +12,11 @@
 #include "DungeonGeneratorCommands.h"
 #include "DungeonGeneratorStyle.h"
 #include "Helper/DungeonFinalizer.h"
+#include "Migration/DungeonAssetMigrationService.h"
 #include "Parameter/DungeonGenerateParameter.h"
 #include "Parameter/DungeonGenerateParameterTypeActions.h"
 #include "Parameter/DungeonMeshSetDatabaseTypeActions.h"
 #include "StaticMeshFit/DungeonStaticMeshFitTool.h"
-#include "SubActor/DungeonRoomSensorDatabaseTypeActions.h"
 #include "Validation/DungeonParameterValidator.h"
 
 
@@ -92,15 +92,18 @@ void FDungeonGenerateEditorModule::StartupModule()
 	}
 
 
-	// Register FDungeonRoomSensorDatabaseTypeActions
-	{
-		TSharedPtr<IAssetTypeActions> actionType = MakeShareable(new FDungeonRoomSensorDatabaseTypeActions(gameAssetCategory));
-		AssetTools.RegisterAssetTypeActions(actionType.ToSharedRef());
-	}
+	MigrationService = MakeUnique<FDungeonAssetMigrationService>();
+	MigrationService->Startup();
 }
 
 void FDungeonGenerateEditorModule::ShutdownModule()
 {
+	if (MigrationService.IsValid())
+	{
+		MigrationService->Shutdown();
+		MigrationService.Reset();
+	}
+
 	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
@@ -436,7 +439,26 @@ FString FDungeonGenerateEditorModule::FormatIssuesForClipboard() const
 	if (const UDungeonGenerateParameter* params = mDungeonGenerateParameter.Get())
 	{
 		const FDungeonGridSize gridSize = params->GetGridSize();
-		report += FString::Printf(TEXT("Summary: RoomCount=%d GridSize=%.2f VerticalGridSize=%.2f Seed=%d\n"), params->GetNumberOfCandidateRooms(), gridSize.HorizontalSize, gridSize.VerticalSize, params->GetRandomSeed());
+		report += FString::Printf(TEXT("Summary: RoomCount=%d HorizontalGridSize=%.2f VerticalGridSize=%.2f Seed=%d\n"), params->GetNumberOfCandidateRooms(), gridSize.HorizontalSize, gridSize.VerticalSize, params->GetRandomSeed());
+	}
+
+	if (const ADungeonGeneratedActor* dungeonActor = mDungeonActor.Get())
+	{
+		const FDungeonLayoutMetrics metrics = dungeonActor->GetLastLayoutMetrics();
+		const FDungeonLayoutScore score = dungeonActor->GetLastLayoutScore();
+		report += FString::Printf(TEXT("Layout: Candidate=%d Score=%.3f Rooms=%d Aisles=%d CriticalPath=%d Branches=%d Loops=%d SpecialDeadEndCoverage=%.3f VerticalTransitions=%d StartGoalDistance=%.3f MissionSolvable=%s\n"),
+			score.CandidateIndex,
+			score.TotalScore,
+			metrics.RoomCount,
+			metrics.AisleCount,
+			metrics.CriticalPathLength,
+			metrics.BranchCount,
+			metrics.LoopCount,
+			metrics.SpecialDeadEndCoverage,
+			metrics.VerticalTransitionCount,
+			metrics.StartGoalDistance,
+			metrics.bMissionSolvable ? TEXT("true") : TEXT("false")
+		);
 	}
 
 	report += TEXT("Issues:\n");

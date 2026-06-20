@@ -18,7 +18,7 @@ Every level registered in `UDungeonSubLevelDatabase` should use this parent clas
 
 ## Important points
 - `Width`, `Depth`, and `Height` are grid counts, not centimeters.
-- `Horizontal Size` and `Vertical Size` must match `GridSize` and `VerticalGridSize` in the main settings.
+- `Horizontal Size` and `Vertical Size` must match `Theme.HorizontalGridSize` and `Theme.VerticalGridSize` in the main settings.
 - `Build` in `UDungeonSubLevelDatabase` reads the size and grid information from this class and copies it into the database.
 
 ## Editing tips
@@ -36,4 +36,3 @@ Every level registered in `UDungeonSubLevelDatabase` should use this parent clas
 - [UDungeonSubLevelDatabase.en.md](./UDungeonSubLevelDatabase.en.md)
 - [LobbyConnection.en.md](./LobbyConnection.en.md)
 - [ADungeonGenerateActor.en.md](./ADungeonGenerateActor.en.md)
-

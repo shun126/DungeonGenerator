@@ -10,6 +10,7 @@
 #include "Mission/DungeonRoomParts.h"
 #include "Mission/DungeonRoomProps.h"
 #include "Parameter/DungeonGridSize.h"
+#include "Parameter/DungeonLayoutTypes.h"
 
 #include <CoreMinimal.h>
 #include <GameFramework/Actor.h>
@@ -22,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "DungeonDeferredSpawnManager.h"
+#include "DungeonDeferredActorSpawnManager.h"
 #include "DungeonGenerateBase.generated.h"
 
 class UDungeonAisleGridMap;
@@ -40,6 +41,7 @@ class AStaticMeshActor;
 class ULevel;
 class ULevelStreamingDynamic;
 class UStaticMesh;
+struct FDungeonGeneratedRoomInfo;
 
 namespace dungeon
 {
@@ -157,6 +159,20 @@ public:
 	 * 最も長い直線の長さを取得します
 	 */
 	FVector2D GetLongestStraightPath() const noexcept;
+
+	/*
+	 * Get metrics from the selected dungeon layout candidate.
+	 * 選択されたダンジョンレイアウト候補の品質指標を取得します。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator|Layout")
+	FDungeonLayoutMetrics GetLastLayoutMetrics() const noexcept;
+
+	/*
+	 * Get score information from the selected dungeon layout candidate.
+	 * 選択されたダンジョンレイアウト候補のスコア情報を取得します。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator|Layout")
+	FDungeonLayoutScore GetLastLayoutScore() const noexcept;
 
 	////////////////////////////////////////////////////////////////////////////
 	// 乱数
@@ -304,6 +320,50 @@ private:
 		const FVector& mGridHalfSize;
 		const FVector& mCenterPosition;
 	};
+	/*
+	 * Candidate grid used to resolve fixture settings near shared edges and corners.
+	 * 共有された辺や角の近くで Fixture 設定を解決するために使う候補グリッドです。
+	 */
+	struct FixtureGridCandidate final
+	{
+		/*
+		 * Voxel location of the candidate grid.
+		 * 候補グリッドのボクセル位置です。
+		 */
+		FIntVector mGridLocation;
+
+		/*
+		 * Stable voxel index used for deterministic tie breaking and parts selection.
+		 * 安定した tie-break とパーツ選択に使うボクセルインデックスです。
+		 */
+		size_t mGridIndex;
+
+		/*
+		 * Grid data used as the fixture selection context.
+		 * Fixture 選択コンテキストとして使うグリッド情報です。
+		 */
+		const dungeon::Grid* mGrid;
+
+		/*
+		 * Creates an empty invalid candidate.
+		 * 空の無効な候補を作成します。
+		 */
+		FixtureGridCandidate() noexcept
+			: mGridLocation(FIntVector::ZeroValue)
+			, mGridIndex(0)
+			, mGrid(nullptr)
+		{}
+
+		/*
+		 * Creates a valid candidate from a voxel location and grid reference.
+		 * ボクセル位置とグリッド参照から有効な候補を作成します。
+		 */
+		FixtureGridCandidate(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid) noexcept
+			: mGridLocation(gridLocation)
+			, mGridIndex(gridIndex)
+			, mGrid(&grid)
+		{}
+	};
 	struct ReservedWallInfo final
 	{
 		UStaticMesh* mStaticMesh;
@@ -314,7 +374,7 @@ private:
 			, mTransform(transform)
 		{}
 	};
-	
+
 	void CreateImplement_QueryAisleGeneration(const bool hasAuthority);
 	void CreateImplement_AddTerrain(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority);
 	void CreateImplement_AddFloorAndSlope(const CreateImplementParameter& cp) const;
@@ -326,6 +386,10 @@ private:
 	bool CanAddDoor(const ADungeonRoomSensorBase* dungeonRoomSensorBase, const FIntVector& location, const dungeon::Grid& grid) const;
 	void CreateImplement_AddPillarAndTorch(const CreateImplementParameter& cp, ADungeonRoomSensorBase* dungeonRoomSensorBase, const bool hasAuthority) const;
 	void CreateImplement_AddChandelier(const RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const;
+	FixtureGridCandidate MakeFixtureGridCandidate(const FIntVector& location) const;
+	void AddFixtureGridCandidate(std::vector<FixtureGridCandidate>& candidates, const FIntVector& location) const;
+	FixtureGridCandidate SelectFixtureGridCandidate(const std::vector<FixtureGridCandidate>& candidates, const FixtureGridCandidate& fallback) const;
+	int32 GetFixtureGridCandidatePriority(const dungeon::Grid& grid) const;
 
 	// Room sensor
 	void CreateImplement_PrepareSpawnRoomSensor(RoomAndRoomSensorMap& roomSensorCache, const bool hasAuthority) const;
@@ -368,6 +432,7 @@ private:
 		const FVector& extents,
 		EDungeonRoomParts parts,
 		EDungeonRoomItem item,
+		const FDungeonGeneratedRoomInfo& roomInfo,
 		uint8 branchId,
 		const uint8 depthFromStart,
 		const uint8 deepestDepthFromStart) const;
@@ -375,6 +440,9 @@ private:
 
 	////////////////////////////////////////////////////////////////////////////
 	// Streaming Level
+	bool ShiftGeneratedDungeonWorldOffset(const FVector& delta);
+	bool AlignGeneratedDungeonStartRoomBoundsMinToWorldLocation(const FVector& targetLocation, const bool alignXYOnly = false);
+
 
 	////////////////////////////////////////////////////////////////////////////
 	// MiniMap
@@ -446,7 +514,11 @@ private:
 
 	std::vector<ReservedWallInfo> mReservedWallInfo;
 
-	FDungeonDeferredSpawnManager mDungeonDeferredSpawnManager;
+	/*
+	 * Deferred actor spawn manager that spreads actor creation over multiple ticks.
+	 * Actor生成を複数Tickに分散する遅延Actor生成マネージャです。
+	 */
+	FDungeonDeferredActorSpawnManager mDungeonDeferredActorSpawnManager;
 
 
 	// 生成時のCRC32

@@ -1,8 +1,8 @@
 /**
-\author		Shun Moriya
-\copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
+ * All Rights Reserved.
+ */
 
 using UnrealBuildTool;
 
@@ -41,6 +41,7 @@ public class DungeonGeneratorEditor : ModuleRules
 				"InputCore",
 				"Json",
 				"MeshDescription",
+				"MessageLog",
 				"Projects",
 				"PropertyEditor",
 				"Slate",

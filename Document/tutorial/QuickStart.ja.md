@@ -31,7 +31,9 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
    通路用
 
 最初はこの 3 つだけで十分です。  
-`Interior database`、`Sub level database`、`Room sensor database` はあとから追加できます。
+`Interior database`、`Sub level database`、`Gameplay.DungeonRoomSensorClass` はあとから追加できます。
+
+最初に見た目を確認したら、次は `Gameplay.DungeonRoomSensorClass` を追加し、`ADungeonRoomSensorBase` の Helper パラメータを試す流れがおすすめです。`DungeonGenerator|Helper` の設定を使うと、細かい Blueprint 制御に進む前に、敵や鍵アクターの簡単なスポーンをすばやく確認できます。
 
 ## 2. 部屋用 / 通路用メッシュを最低限登録する
 部屋用と通路用の `Mesh set database` を開き、最初の `Mesh Set` に次のパーツを登録します。
@@ -46,19 +48,20 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
 ## 3. `Generate parameter` にデータベースを割り当てる
 `Generate parameter` を開き、最低限次の項目を設定します。
 
-- `DungeonRoomMeshPartsDatabase`  
+- `Theme.DungeonRoomMeshPartsDatabase`
   部屋用 `Mesh set database`
-- `DungeonAisleMeshPartsDatabase`  
+- `Theme.DungeonAisleMeshPartsDatabase`
   通路用 `Mesh set database`
 
 最初は次の状態のままで問題ありません。
 
 - `RandomSeed = 0`
-- `NumberOfCandidateRooms = 10`
-- `StartLocationPolicy = UseSouthernMost`
-- `AisleComplexity = 5`
+- `Structure.RoomCountRange = 10-10`
+- `Path.StartRoomPolicy = UseSouthernMost`
+  北・南・東・西・上下・中央からスタート部屋の位置を選べます。
+- `Path.ExtraCorridorComplexity = 5`
 
-`UseMissionGraph` を使わない最初の確認では、`AisleComplexity` は 1 以上のままにしておくと混乱が少ないです。
+`Path.ProgressionPolicy = KeysAndLocks` を使わない最初の確認では、`Path.ExtraCorridorComplexity` は 1 以上のままにしておくと混乱が少ないです。
 
 ## 4. エディタでプレビューする
 `Window > DungeonGenerator` を開きます。  
@@ -98,4 +101,3 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
 - [ADungeonGenerateActor.ja.md](./ADungeonGenerateActor.ja.md)
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
 - [UDungeonMeshSetDatabase.ja.md](./UDungeonMeshSetDatabase.ja.md)
-

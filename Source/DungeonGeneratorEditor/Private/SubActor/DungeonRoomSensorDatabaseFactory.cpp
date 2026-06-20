@@ -10,8 +10,8 @@
 UDungeonRoomSensorDatabaseFactory::UDungeonRoomSensorDatabaseFactory()
 {
 	SupportedClass = UDungeonRoomSensorDatabase::StaticClass();
-	bCreateNew = true;
-	bEditAfterNew = true;
+	bCreateNew = false;
+	bEditAfterNew = false;
 }
 
 UObject* UDungeonRoomSensorDatabaseFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)

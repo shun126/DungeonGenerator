@@ -48,16 +48,6 @@ namespace dungeon
 		mStartRoomCount = std::max<uint8_t>(count, 1);
 	}
 
-	inline uint8_t GenerateParameter::GetNumberOfCandidateFloors() const noexcept
-	{
-		return mNumberOfCandidateFloors;
-	}
-
-	inline void GenerateParameter::SetNumberOfCandidateFloors(const uint8_t count) noexcept
-	{
-		mNumberOfCandidateFloors = count;
-	}
-
 	inline uint8_t GenerateParameter::GetNumberOfCandidateRooms() const noexcept
 	{
 		return mNumberOfCandidateRooms;
@@ -148,16 +138,6 @@ namespace dungeon
 		mVerticalRoomMargin = margin;
 	}
 
-	inline bool GenerateParameter::IsMergeRooms() const noexcept
-	{
-		return mMergeRooms;
-	}
-
-	inline void GenerateParameter::SetMergeRooms(const bool mergeRooms) noexcept
-	{
-		mMergeRooms = mergeRooms;
-	}
-
 	inline std::shared_ptr<Random> GenerateParameter::GetRandom() noexcept
 	{
 		return mRandom;
@@ -210,12 +190,61 @@ namespace dungeon
 
 	inline bool GenerateParameter::UseMissionGraph() const noexcept
 	{
-		return GetAisleComplexity() <= 0;
+		return mUseMissionGraph;
 	}
 
 	inline void GenerateParameter::SetMissionGraph(const bool use) noexcept
 	{
 		mUseMissionGraph = use;
+		if (use)
+		{
+			mPathSettings.ProgressionPolicy = EDungeonProgressionPolicy::KeysAndLocks;
+		}
+		else if (mPathSettings.ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks)
+		{
+			mPathSettings.ProgressionPolicy = EDungeonProgressionPolicy::StartToGoal;
+		}
+	}
+
+	inline const FDungeonPathSettings& GenerateParameter::GetPathSettings() const noexcept
+	{
+		return mPathSettings;
+	}
+
+	inline void GenerateParameter::SetPathSettings(const FDungeonPathSettings& settings) noexcept
+	{
+		mPathSettings = settings;
+		mUseMissionGraph = settings.ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks;
+	}
+
+	inline const FDungeonRoomRoleSettings& GenerateParameter::GetRoomRoleSettings() const noexcept
+	{
+		return mRoomRoleSettings;
+	}
+
+	inline void GenerateParameter::SetRoomRoleSettings(const FDungeonRoomRoleSettings& settings) noexcept
+	{
+		mRoomRoleSettings = settings;
+	}
+
+	inline const FDungeonZoneSettings& GenerateParameter::GetZoneSettings() const noexcept
+	{
+		return mZoneSettings;
+	}
+
+	inline void GenerateParameter::SetZoneSettings(const FDungeonZoneSettings& settings) noexcept
+	{
+		mZoneSettings = settings;
+	}
+
+	inline int32 GenerateParameter::GetLayoutCandidateCount() const noexcept
+	{
+		return mLayoutCandidateCount;
+	}
+
+	inline void GenerateParameter::SetLayoutCandidateCount(const int32 candidateCount) noexcept
+	{
+		mLayoutCandidateCount = std::clamp(candidateCount, 3, 16);
 	}
 
 	inline uint8_t GenerateParameter::GetAisleComplexity() const noexcept

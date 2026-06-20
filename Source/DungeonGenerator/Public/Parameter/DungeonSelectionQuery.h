@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include "Parameter/DungeonLayoutTypes.h"
 #include <CoreMinimal.h>
 #include "DungeonSelectionQuery.generated.h"
 
@@ -23,6 +24,7 @@ enum class EDungeonPartsSelectorTarget : uint8
 	Torch UMETA(DisplayName = "Torch", ToolTip = "Select torch parts."),
 	Chandelier UMETA(DisplayName = "Chandelier", ToolTip = "Select chandelier parts."),
 	Door UMETA(DisplayName = "Door", ToolTip = "Select door parts."),
+	UniqueDoor UMETA(DisplayName = "Unique Door", ToolTip = "Select unique lock door parts, usually used for goal or boss doors."),
 };
 
 /**
@@ -30,7 +32,7 @@ enum class EDungeonPartsSelectorTarget : uint8
  * Hot path friendly POD-like data only.
  */
 USTRUCT(BlueprintType)
-struct DUNGEONGENERATOR_API FPartsQuery
+struct DUNGEONGENERATOR_API FDungeonPartsQuery
 {
 	GENERATED_BODY()
 
@@ -67,12 +69,59 @@ struct DUNGEONGENERATOR_API FPartsQuery
 	uint8 NeighborMask6 = 0;
 
 	/**
+	 * Local dungeon grid X coordinate for the selection target.
+	 *
+	 * 選択対象のダンジョンローカルグリッドX座標です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Grid", meta = (ToolTip = "Local dungeon grid X coordinate for the selection target. This is a grid cell coordinate, not an Unreal world-space value."))
+	int32 GridX = 0;
+
+	/**
+	 * Local dungeon grid Y coordinate for the selection target.
+	 *
+	 * 選択対象のダンジョンローカルグリッドY座標です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Grid", meta = (ToolTip = "Local dungeon grid Y coordinate for the selection target. This is a grid cell coordinate, not an Unreal world-space value."))
+	int32 GridY = 0;
+
+	/**
+	 * Local dungeon grid Z coordinate for the selection target.
+	 *
+	 * 選択対象のダンジョンローカルグリッドZ座標です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Grid", meta = (ToolTip = "Local dungeon grid Z coordinate for the selection target. This is a grid cell coordinate, not an Unreal world-space value."))
+	int32 GridZ = 0;
+
+	/**
 	 * Room identifier used to apply room-specific selection logic.
 	 *
 	 * 部屋固有の選択ロジックに使う部屋IDです。
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	int32 RoomId = INDEX_NONE;
+
+	/**
+	 * Gameplay role assigned to the room that owns this grid.
+	 *
+	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	EDungeonRoomStructuralRole RoomStructuralRole = EDungeonRoomStructuralRole::Connector;
+
+	/**
+	 * Gameplay role assigned to the room that owns this grid.
+	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	EDungeonRoomGameplayRole RoomGameplayRole = EDungeonRoomGameplayRole::None;
+
+	/**
+	 * Zone index assigned by progress and floor conditions.
+	 *
+	 * 進行度と階層条件で割り当てられたゾーン番号です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	int32 ZoneIndex = INDEX_NONE;
 
 	/**
 	 * Graph depth from the start room used for progression-aware selection.
@@ -104,9 +153,33 @@ struct DUNGEONGENERATOR_API FPartsQuery
  * Hot path friendly POD-like data only.
  */
 USTRUCT(BlueprintType)
-struct DUNGEONGENERATOR_API FMeshSetQuery
+struct DUNGEONGENERATOR_API FDungeonMeshSetQuery
 {
 	GENERATED_BODY()
+
+	/**
+	 * Local dungeon grid X coordinate for the selection target.
+	 *
+	 * 選択対象のダンジョンローカルグリッドX座標です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Grid", meta = (ToolTip = "Local dungeon grid X coordinate for the selection target. This is a grid cell coordinate, not an Unreal world-space value."))
+	int32 GridX = 0;
+
+	/**
+	 * Local dungeon grid Y coordinate for the selection target.
+	 *
+	 * 選択対象のダンジョンローカルグリッドY座標です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Grid", meta = (ToolTip = "Local dungeon grid Y coordinate for the selection target. This is a grid cell coordinate, not an Unreal world-space value."))
+	int32 GridY = 0;
+
+	/**
+	 * Local dungeon grid Z coordinate for the selection target.
+	 *
+	 * 選択対象のダンジョンローカルグリッドZ座標です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Grid", meta = (ToolTip = "Local dungeon grid Z coordinate for the selection target. This is a grid cell coordinate, not an Unreal world-space value."))
+	int32 GridZ = 0;
 
 	/**
 	 * Room identifier used to apply room-specific selection logic.
@@ -115,6 +188,29 @@ struct DUNGEONGENERATOR_API FMeshSetQuery
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	int32 RoomId = INDEX_NONE;
+
+	/**
+	 * Gameplay role assigned to the room that owns this grid.
+	 *
+	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	EDungeonRoomStructuralRole RoomStructuralRole = EDungeonRoomStructuralRole::Connector;
+
+	/**
+	 * Gameplay role assigned to the room that owns this grid.
+	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	EDungeonRoomGameplayRole RoomGameplayRole = EDungeonRoomGameplayRole::None;
+
+	/**
+	 * Zone index assigned by progress and floor conditions.
+	 *
+	 * 進行度と階層条件で割り当てられたゾーン番号です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	int32 ZoneIndex = INDEX_NONE;
 
 	/**
 	 * Graph depth from the start room used for progression-aware selection.

@@ -43,12 +43,12 @@
  * - 通信失敗時はエディタ動作に影響を与えません
  */
 UCLASS(config=Editor, defaultconfig, meta=(DisplayName="Online Notices"))
-class DUNGEONGENERATOREDITOR_API UPluginNoticeSettings : public UDeveloperSettings
+class DUNGEONGENERATOREDITOR_API UDungeonPluginNoticeSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UPluginNoticeSettings();
+	UDungeonPluginNoticeSettings();
 
 	virtual FName GetCategoryName() const override;
 

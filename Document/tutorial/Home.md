@@ -1,5 +1,7 @@
 # Dungeon Generator
 
+Current plugin version: 2.0.0
+
 Dungeon Generator is an Unreal Engine plug-in for building room-and-aisle dungeons from configurable assets.  
 It supports editor preview, runtime generation, visual theme databases, hand-authored special rooms, room sensors, and interior placement.
 

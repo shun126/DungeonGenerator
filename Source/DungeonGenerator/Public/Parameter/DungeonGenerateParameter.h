@@ -5,9 +5,12 @@
  */
 
 #pragma once
+#include "DungeonGeneratorAssetVersion.h"
 #include "DungeonGridSize.h"
+#include "Migration/DungeonAssetMigration.h"
+#include "Mission/DungeonRoomProps.h"
+#include "DungeonLayoutTypes.h"
 #include "DungeonMeshSetDatabase.h"
-#include "Parameter/DungeonDoorActorParts.h"
 #include <CoreMinimal.h>
 #include <functional>
 #include <memory>
@@ -17,78 +20,35 @@
 class UDungeonAisleGridMap;
 class UDungeonRandom;
 class UDungeonRoomSensorDatabase;
-class UDungeonPartsSelector;
+class UDungeonPartsSelectorBase;
 struct FPropertyChangedEvent;
+struct FDungeonAisleGrid;
 
-/**
- * Dungeon expansion policy
- * ダンジョンの拡張ポリシー
+/*
+ * Legacy dungeon expansion policy serialized by 1.x UDungeonGenerateParameter assets.
+ * 1.xのUDungeonGenerateParameterアセットで保存されていた旧ダンジョン展開方針です。
  */
 UENUM()
 enum class EDungeonExpansionPolicy : uint8
 {
-	Flat UMETA(DisplayName = "Flat", ToolTip = "Keep generation on a flat layout."),
-	ExpandHorizontally UMETA(DisplayName = "Expand Horizontally", ToolTip = "Prefer expanding rooms and aisles horizontally."),
-	ExpandVertically UMETA(DisplayName = "Expand Vertically", ToolTip = "Prefer expanding rooms and aisles vertically."),
-	ExpandAnyDirection UMETA(DisplayName = "Expand Any Direction", ToolTip = "Allow expansion in both horizontal and vertical directions."),
+	Flat UMETA(DisplayName = "Flat", ToolTip = "Legacy value migrated to Structure.FloorMode = Flat."),
+	ExpandHorizontally UMETA(DisplayName = "Expand Horizontally", ToolTip = "Legacy value migrated to Structure.FloorMode = Free."),
+	ExpandVertically UMETA(DisplayName = "Expand Vertically", ToolTip = "Legacy value migrated to Structure.FloorMode = Vertical."),
+	ExpandAnyDirection UMETA(DisplayName = "Expand Any Direction", ToolTip = "Legacy value migrated to Structure.FloorMode = Free."),
 };
 
-/**
- * Dungeon start location policy
- *
- * スタート位置の種類
- */
-UENUM()
-enum class EDungeonStartLocationPolicy : uint8
-{
-	NoAdjustment UMETA(DisplayName = "No Adjustment", ToolTip = "Do not adjust the generated start location."),
-	UseSouthernMost UMETA(DisplayName = "Use Southernmost", ToolTip = "Use the southernmost candidate as the start location."),
-	UseHighestPoint UMETA(DisplayName = "Use Highest Point", ToolTip = "Use the highest candidate as the start location."),
-	UseLowestPoint UMETA(DisplayName = "Use Lowest Point", ToolTip = "Use the lowest candidate as the start location."),
-	UseCentralPoint UMETA(DisplayName = "Use Central Point", ToolTip = "Use the central candidate as the start location."),
-	UseMultiStart UMETA(DisplayName = "Use Multi Start", ToolTip = "Use multiple start locations."),
-};
-
-/**
- * Frequency of generation
- * 生成頻度
- */
-UENUM()
-enum class EFrequencyOfGeneration : uint8
-{
-	Normally UMETA(DisplayName = "Normally", ToolTip = "Generate with normal frequency."),
-	Sometime UMETA(DisplayName = "Sometimes", ToolTip = "Generate occasionally but less than normal."),
-	Occasionally UMETA(DisplayName = "Occasionally", ToolTip = "Generate with a moderate low frequency."),
-	Rarely UMETA(DisplayName = "Rarely", ToolTip = "Generate infrequently."),
-	AlmostNever UMETA(DisplayName = "Almost Never", ToolTip = "Generate only in exceptional cases."),
-	Never UMETA(DisplayName = "Never", ToolTip = "Never generate."),
-};
-
-/**
- * Aisle ceiling height policy
- *
- * 通路の天井高ポリシー
- */
-UENUM()
-enum class EDungeonAisleCeilingHeightPolicy : uint8
-{
-	TwoGrids UMETA(DisplayName = "2 Grids", ToolTip = "Always use a two-grid ceiling height for aisles."),
-	OneGrid UMETA(DisplayName = "Always 1 Grid", ToolTip = "Always use a one-grid ceiling height for aisles."),
-	Random UMETA(DisplayName = "Random", ToolTip = "Randomly choose one-grid or two-grid ceiling height for aisles."),
-	SIZE UMETA(Hidden, ToolTip = "Internal sentinel value.")
-};
-
-/**
- * Dungeon generation parameter
- * ダンジョン生成パラメータ
+/*
+ * Top-level dungeon definition asset used to configure structure, route, progression, gameplay, and theme.
+ * 構造、経路、攻略進行、ゲームプレイ、テーマを設定する最上位のダンジョン定義アセットです。
  */
 UCLASS(ClassGroup = "DungeonGenerator")
-class DUNGEONGENERATOR_API UDungeonGenerateParameter : public UObject
+class DUNGEONGENERATOR_API UDungeonGenerateParameter : public UObject, public IDungeonMigratableAsset
 {
 	GENERATED_BODY()
 
 public:
-	/**
+
+/**
 	 * コンストラクタ
 	 */
 	explicit UDungeonGenerateParameter(const FObjectInitializer& ObjectInitializer);
@@ -108,8 +68,9 @@ public:
 	 */
 	int32 GetGeneratedRandomSeed() const;
 
-	/**
-	 * 生成する部屋の候補数を取得します
+	/*
+	 * Gets the maximum target room count from Structure.RoomCountRange.
+	 * Structure.RoomCountRangeの最大値から目標部屋数を取得します。
 	 */
 	int32 GetNumberOfCandidateRooms() const;
 
@@ -143,28 +104,33 @@ public:
 	 */
 	FDungeonGridSize GetGridSize() const;
 
-	/**
-	 * 部屋と部屋を結合するか取得します
-	 */
-	bool IsMergeRooms() const noexcept;
-
-	/**
-	 * ゲーム開始時にPlayerStartアクターを移動するか？取得します
+	/*
+	 * Returns whether PlayerStart actors are moved to generated start rooms.
+	 * PlayerStartアクターを生成された開始部屋へ移動するかを返します。
 	 */
 	bool IsMovePlayerStartToStartingPoint() const noexcept;
 
-	/**
-	 * ミッショングラフを有効にするか取得します
+	/*
+	 * Returns whether Keys And Locks progression should generate MissionGraph data.
+	 * Keys And Locks進行でMissionGraphデータを生成するかを返します。
 	 */
 	bool IsUseMissionGraph() const noexcept;
 
-	/**
-	 * 通路の複雑度を取得します
+	/*
+	 * Gets the number of layout candidates evaluated before generation is committed.
+	 * 生成確定前に評価するレイアウト候補数を取得します。
+	 */
+	int32 GetLayoutCandidateCount() const noexcept;
+
+	/*
+	 * Gets additional corridor complexity, or 0 while Keys And Locks progression is active.
+	 * 追加通路の複雑度を取得します。Keys And Locks進行が有効な間は0を返します。
 	 */
 	uint8 GetAisleComplexity() const noexcept;
 
-	/**
-	 * 通路の複雑度が有効か？取得します
+	/*
+	 * Returns whether additional corridor complexity is active for the current progression policy.
+	 * 現在の進行方針で追加通路の複雑度が有効かを返します。
 	 */
 	bool IsAisleComplexity() const noexcept;
 
@@ -176,7 +142,15 @@ public:
 	/**
 	 * 燭台アクターの生成頻度を取得します
 	 */
-	EFrequencyOfGeneration GetFrequencyOfTorchlightGeneration() const noexcept;
+	EDungeonFrequencyOfGeneration GetFrequencyOfTorchlightGeneration() const noexcept;
+
+	const FDungeonStructureSettings& GetStructureSettings() const noexcept;
+	const FDungeonPathSettings& GetPathSettings() const noexcept;
+	const FDungeonRoomRoleSettings& GetRoomRoleSettings() const noexcept;
+	const FDungeonZoneSettings& GetZoneSettings() const noexcept;
+	const FDungeonGameplaySpawnSettings& GetGameplaySpawnSettings() const noexcept;
+	const FDungeonThemeSettings& GetThemeSettings() const noexcept;
+	const FDungeonFixtureSettings& ResolveFixtureSettings(EDungeonRoomGameplayRole gameplayRole, int32 zoneIndex, bool bRoomGrid) const noexcept;
 
 
 	/**
@@ -184,9 +158,17 @@ public:
 	 */
 	UClass* GetRoomSensorClass() const;
 
-	/**
-	 * DungeonRoomSensorのデータベースを取得します
+	/*
+	 * Resolves the room sensor class for a generated room.
+	 * 生成された部屋に使用する Room Sensor クラスを解決します。
 	 */
+	UClass* ResolveRoomSensorClass(EDungeonRoomGameplayRole gameplayRole, int32 zoneIndex) const;
+
+	/*
+	 * Deprecated v1 room sensor database accessor kept only for v2.0.0 migration checks.
+	 * v2.0.0 の移行確認専用に残されている旧 Room Sensor Database 取得関数です。
+	 */
+	UE_DEPRECATED(5.0, "Use GetGameplaySpawnSettings().DungeonRoomSensorClass and GetGameplaySpawnSettings().SpawnActorInAisle instead. v1 room sensor database migration support may be removed in v2.1 or later.")
 	UDungeonRoomSensorDatabase* GetRoomSensorDatabase() const;
 
 	/**
@@ -209,7 +191,6 @@ public:
 	 * グリッド座標系からワールド座標系への変換
 	 */
 	FIntVector ToGrid(const FVector& location) const;
-
 
 	/**
 	 * ランダムなダンジョンのパラメータを生成します
@@ -252,22 +233,24 @@ private:
 	FString GetJsonDefaultDirectory() const;
 #endif
 
-	const FDungeonMeshSet* SelectMeshSet(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
+	const FDungeonMeshSet* SelectMeshSet(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
 
 	const UDungeonMeshSetDatabase* GetDungeonRoomMeshPartsDatabase() const noexcept;
 	const UDungeonMeshSetDatabase* GetDungeonAisleMeshPartsDatabase() const noexcept;
-	static FMeshSetQuery MakeMeshSetQuery(const size_t gridIndex, const dungeon::Grid& grid);
-	const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
-	const FDungeonMeshParts* SelectCatwalkParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
-	const FDungeonMeshParts* SelectWallPartsByGrid(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const UDungeonMeshSetDatabase* GetDungeonMeshPartsDatabase(const FIntVector& gridLocation, const dungeon::Grid& grid) const noexcept;
+	const FDungeonZoneThemeOverride* ResolveThemeOverride(EDungeonRoomGameplayRole gameplayRole, int32 zoneIndex, bool bRoomGrid) const noexcept;
+	static FDungeonMeshSetQuery MakeMeshSetQuery(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid);
+	const FDungeonMeshPartsWithDirection* SelectFloorParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectCatwalkParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectWallPartsByGrid(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 	static const FDungeonMeshParts* SelectWallPartsByFace(const FDungeonMeshSet* dungeonMeshSet, const FIntVector& gridLocation, const dungeon::Direction& direction);
-	const FDungeonMeshPartsWithDirection* SelectRoofParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
-	const FDungeonMeshParts* SelectSlopeParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshPartsWithDirection* SelectRoofParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectSlopeParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
-	const FDungeonMeshParts* SelectPillarParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
-	const FDungeonRandomActorParts* SelectTorchParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
-	const FDungeonRandomActorParts* SelectChandelierParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
-	const FDungeonDoorActorParts* SelectDoorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
+	const FDungeonMeshParts* SelectPillarParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
+	const FDungeonRandomActorParts* SelectTorchParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random) const;
+	const FDungeonRandomActorParts* SelectChandelierParts(const UDungeonMeshSetDatabase* dungeonMeshSetDatabase, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonDoorActorParts* SelectDoorParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, EDungeonRoomProps props, const std::shared_ptr<dungeon::Random>& random) const;
 
 	void EachFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const;
 	void EachWallParts(const std::function<void(const FDungeonMeshParts&)>& function) const;
@@ -298,12 +281,23 @@ private:
 	 * @param spawnActor アクターをスポーンする関数
 	 */
 	void OnEndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap, const std::function<void(const FSoftObjectPath&, const FTransform&)>& spawnActor) const;
+	const TArray<FSoftObjectPath>& ResolveSpawnActorInAisle(const FDungeonAisleGrid& aisleGrid) const;
 
 public:
 	// overrides
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool IsSupportedForNetworking() const override;
+	/*
+	 * Serializes this asset and stamps the DungeonGenerator asset format version.
+	 * このアセットをシリアライズし、DungeonGeneratorアセット形式バージョンを記録します。
+	 */
+	virtual void Serialize(FArchive& Ar) override;
 	virtual void PostLoad() override;
+	virtual int32 GetLoadedDungeonAssetVersion() const override;
+#if WITH_EDITORONLY_DATA
+	virtual FDungeonAssetMigrationState& GetMutableDungeonAssetMigrationState() override;
+	virtual const FDungeonAssetMigrationState& GetDungeonAssetMigrationState() const override;
+#endif
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
@@ -333,316 +327,47 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Transient, Category = "DungeonGenerator")
 	int32 GeneratedDungeonCRC32 = 0;
 
-	/**
-	 * Room Width
-	 *
-	 * 部屋の幅
+	/*
+	 * Theme settings that control meshes, interiors, fixtures, and visual selection.
+	 * メッシュ、内装、設置物、見た目の選択を制御するテーマ設定です。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))
-	FInt32Interval RoomWidth = { 3, 8 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ShowOnlyInnerProperties, ToolTip = "Theme settings that control meshes, interiors, fixtures, and visual selection."))
+	FDungeonThemeSettings Theme;
 
-	/**
-	 * Room depth
-	 *
-	 * 部屋の奥行き
+	/*
+	 * Structure settings that control size, grid, floors, and room spacing.
+	 * サイズ、グリッド、階層、部屋間隔を制御する構造設定です。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))
-	FInt32Interval RoomDepth = { 3, 8 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ShowOnlyInnerProperties, ToolTip = "Structure settings that control size, grid, floors, and room spacing."))
+	FDungeonStructureSettings Structure;
 
-	/**
-	 * Room height
-	 *
-	 * 部屋の高さ
+	/*
+	 * Path settings that control route shape, start and goal rooms, and progression gates.
+	 * 経路形状、開始部屋、ゴール部屋、進行ゲートをまとめて制御する設定です。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (UIMin = 1, ClampMin = 1))
-	FInt32Interval RoomHeight = { 2, 4 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ShowOnlyInnerProperties, ToolTip = "Path settings that control route shape, start and goal rooms, and progression gates."))
+	FDungeonPathSettings Path;
 
-	/**
-	 * Horizontal room-to-room margins
-	 * MergeRooms must be unchecked to enable Room Horizontal Margin
-	 *
-	 * 水平方向の部屋と部屋の空白
-	 * Room Horizontal Marginを有効にするにはMergeRoomsのチェックを外す必要があります
+	/*
+	 * Zone settings that define biome-like areas.
+	 * バイオームのような領域を定義するゾーン設定です。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "1", EditCondition = "!MergeRooms"), DisplayName = "Horizontal Room Margin")
-	uint8 RoomMargin = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ShowOnlyInnerProperties, ToolTip = "Zone settings that define biome-like areas."))
+	FDungeonZoneSettings Zones;
 
-	/**
-	 * Vertical room-to-room margins
-	 * MergeRooms must be unchecked to enable Room Vertical Margin
-	 *
-	 * 垂直方向の部屋と部屋の空白
-	 * Room Vertical Marginを有効にするにはMergeRoomsのチェックを外す必要があります
+	/*
+	 * Gameplay settings for room roles, sensors, and reserved sublevels.
+	 * 部屋役割、センサー、予約サブレベルを制御するゲームプレイ設定です。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (ClampMin = "0", EditCondition = "!MergeRooms && ExpansionPolicy != EDungeonExpansionPolicy::Flat"), DisplayName = "Vertical Room Margin")
-	uint8 VerticalRoomMargin = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ShowOnlyInnerProperties, ToolTip = "Gameplay settings for room roles, room visuals, special-room selection, sensors, and reserved sublevels. RoomRoles does not control room shape or room count."))
+	FDungeonGameplaySpawnSettings Gameplay;
 
-	/**
-	 * Candidate number of rooms to be generated
-	 * This is the initial number of rooms to be generated, not the final number of rooms to be generated.
-	 *
-	 * 生成される部屋数の候補
-	 * これは最終的な部屋の数ではなく最初に生成される部屋の数です
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "3", ClampMax = "100"))
-	uint8 NumberOfCandidateRooms = 10;
-
-	/**
-	 * Horizontal room-to-room coupling
-	 *
-	 * 有効にすると部屋と部屋を結合します
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
-	bool MergeRooms = false;
-
-	/**
-	 * Defines the direction in which rooms expand during dungeon generation.
-	 * Each value influences room proliferation logic and is used to control the dungeon's structure (tall, wide, or mixed).
-	 *
-	 * ダンジョン生成時に部屋をどの方向へ展開するかを定義します。
-	 * 各値は部屋の増殖ロジックに影響し、ダンジョンの構造（縦長・横長・混在）を
-	 * コントロールするために使用されます。
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (EditCondition = "!MergeRooms && !Flat"))
-	EDungeonExpansionPolicy ExpansionPolicy = EDungeonExpansionPolicy::ExpandHorizontally;
-
-	/**
-	 * Candidate Number of Generated Hierarchies This is used as a reference number of hierarchies for generation,
-	 * not as the final number of hierarchies.
-	 *
-	 * 生成される階層数の候補
-	 * これは最終的な階層の数ではなく生成時の参考階層数として利用されます。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "0", ClampMax = "5", EditCondition = "ExpansionPolicy != EDungeonExpansionPolicy::Flat"))
-	uint8 NumberOfCandidateFloors = 3;
-
-	/**
-	 * Generates a flat dungeon
-	 *
-	 * 平面的なダンジョンを生成します
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (EditCondition = "!MergeRooms", DeprecatedProperty, DeprecationMessage = "Use ExpansionPolicy=Flat"))
-	bool Flat = false;
-
-	/**
-	 * PlayerStart is automatically moved to the start room at the start
-	 *
-	 * 開始時にPlayerStartを自動的にスタート部屋に移動します
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (DeprecatedProperty, DeprecationMessage = "Use StartLocationPolicy"))
-	bool MovePlayerStartToStartingPoint = true;
-
-	/**
-	 * When generating dungeons, this specifies the criteria for selecting the room where the player starts.
-	 * Each policy makes its determination based on the room's positional information (coordinates or floor level).
-	 *
-	 * ダンジョン生成時に、プレイヤーの開始位置となる部屋を
-	 * どの基準で選択するかを指定します。各ポリシーは部屋の
-	 * 位置情報（座標や階層）に基づいて判定を行います。
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite)
-	EDungeonStartLocationPolicy StartLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
-
-	/**
-	 * Enable MissionGraph to generate missions with keys.
-	 * MergeRooms must be unchecked and AisleComplexity must be 0 for UseMissionGraph to be enabled.
-	 *
-	 * MissionGraphを有効にして、鍵を使ったミッション情報を生成します
-	 * UseMissionGraphを有効にするには、MergeRoomsのチェックを外しAisleComplexityを0にする必要があります
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadWrite, meta = (EditCondition = "!MergeRooms"))
-	bool UseMissionGraph = false;
-
-	/**
-	 * Aisle complexity (0 being the minimum aisle)
-	 * MergeRooms and UseMissionGraph must be unchecked to enable AisleComplexity
-	 *
-	 * 通路の複雑さ（０が最低限の通路）
-	 * AisleComplexityを有効にするには、MergeRoomsとUseMissionGraphのチェックを外す必要があります
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "10", EditCondition = "!MergeRooms && !UseMissionGraph"))
-	uint8 AisleComplexity = 5;
-
-	/**
-	 * Aisle ceiling height policy
-	 *
-	 * 通路の天井高ポリシー
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
-	EDungeonAisleCeilingHeightPolicy AisleCeilingHeightPolicy = EDungeonAisleCeilingHeightPolicy::Random;
-
-	/**
-	 * Generate slopes in the room.
-	 * May be enabled by future forcing.
-	 *
-	 * 部屋の中にスロープを生成する
-	 * 将来的強制的に有効になる可能性があります。
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
-	bool GenerateSlopeInRoom = false;
-
-	/**
-	 * Generate structural columns in the room
-	 * May be enabled by future forcing.
-	 *
-	 * 部屋の中に構造柱を生成する
-	 * 将来的強制的に有効になる可能性があります。
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly)
-	bool GenerateStructuralColumn = false;
-
-	/**
-	 * Probability of generating a skylight voxel in a room (percent)
-	 *
-	 * 部屋内でスカイライトボクセルが生成される確率（パーセント）
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "100"))
-	uint8 SkylightChancePercent = 8;
-
-	/**
-	 * Horizontal voxel size
-	 *
-	 * 水平方向のボクセルサイズ
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|GridSize", meta = (ClampMin = 1), DisplayName = "Horizontal Size")
-	float GridSize = 400.f;
-
-	/**
-	 * Vertical voxel size
-	 *
-	 * 垂直方向のボクセルサイズ
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|GridSize", meta = (ClampMin = 1), DisplayName = "Vertical Size")
-	float VerticalGridSize = 400.f;
-
-	/**
-	 * Room mesh parts database
-	 *
-	 * 部屋のメッシュパーツデータベース
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts")
-	TObjectPtr<UDungeonMeshSetDatabase> DungeonRoomMeshPartsDatabase;
-
-	/**
-	 * Aisle mesh parts database
-	 *
-	 * 通路のメッシュパーツデータベース
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts")
-	TObjectPtr<UDungeonMeshSetDatabase> DungeonAisleMeshPartsDatabase;
-
-	/**
-	 * How to generate parts of pillar
-	 *
-	 * 柱のパーツを生成する方法
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Pillar")
-	EDungeonSelectionPolicy PillarPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
-
-	/**
-	 * Selection method used to choose pillar parts from the pillar candidates.
-	 *
-	 * 柱候補から柱パーツを選択する際の選択方式です。
-	 */
-	UPROPERTY()
-	EDungeonPartsSelectionMethod PillarPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
-
-	/**
-	 * Pillar Parts
-	 *
-	 * 柱のメッシュパーツデータベース
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Pillar")
-	TArray<FDungeonMeshParts> PillarParts;
-
-	/**
-	 * How to generate parts for torch
-	 *
-	 * 燭台のパーツを生成する方法
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Torch")
-	EDungeonSelectionPolicy TorchPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
-
-	/**
-	 * Selection method used to choose torch actor parts from torch candidates.
-	 *
-	 * たいまつ候補からたいまつアクターパーツを選択する方式です。
-	 */
-	UPROPERTY()
-	EDungeonPartsSelectionMethod TorchPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
-
-	/**
-	 * Frequency of torchlight generation
-	 *
-	 * 燭台の生成頻度
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Torch")
-	EFrequencyOfGeneration FrequencyOfTorchlightGeneration = EFrequencyOfGeneration::Rarely;
-
-	/**
-	 * Torch (pillar lighting) parts
-	 *
-	 * 燭台のメッシュパーツデータベース
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Torch")
-	TArray<FDungeonRandomActorParts> TorchParts;
-
-
-	/**
-	 * How to generate door parts
-	 *
-	 * ドアのパーツを生成する方法
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Door")
-	EDungeonSelectionPolicy DoorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
-
-	/**
-	 * Selection method used to choose door actor parts from door candidates.
-	 *
-	 * ドア候補からドアアクターパーツを選択する方式です。
-	 */
-	UPROPERTY()
-	EDungeonPartsSelectionMethod DoorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
-
-	/**
+	/*
 	 * Migration flag that prevents re-running legacy fixture selection-policy conversion.
-	 *
-	 * 旧フィクスチャ選択ポリシーの移行処理を再実行しないための移行済みフラグです。
+	 * 旧設置物選択ポリシー変換を再実行しないための移行フラグです。
 	 */
 	UPROPERTY()
 	bool bFixtureSelectionPoliciesMigrated = false;
-
-	/**
-	 * Door Parts
-	 *
-	 * ドアのメッシュパーツデータベース
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Parts|Fixtures|Door")
-	TArray<FDungeonDoorActorParts> DoorParts;
-
-
-	/**
-	 * Specify the DungeonRoomSensorBase class,
-	 * which is a box sensor that covers the room and controls doors and enemy spawn.
-	 * DungeonRoomSensorDatabase takes precedence
-	 *
-	 * DungeonRoomSensorBaseクラスを指定して下さい。
-	 * DungeonRoomSensorBaseは部屋を覆う箱センサーで、ドアや敵のスポーンを制御します。
-	 * DungeonRoomSensorDatabaseが優先されます
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", BlueprintReadWrite, meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonRoomSensorBase", DeprecatedProperty, ToolTip = "This variable is deprecated. Please use DungeonRoomSensorDatabase instead."))
-	TObjectPtr<UClass> DungeonRoomSensorClass;
-
-	/**
-	 * Specify the room sensor database
-	 * The room sensor database specifies the arrangement and direction in the room
-	 *
-	 * ルームセンサーのデータベースを指定して下さい
-	 * ルームセンサーのデータベースは部屋の中の配置や演出を指定します
-	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", BlueprintReadWrite)
-	TObjectPtr<UDungeonRoomSensorDatabase> DungeonRoomSensorDatabase;
-
 	/**
 	 * PluginVersion
 	 *
@@ -651,6 +376,297 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	uint8 PluginVersion;
 
+private:
+#if WITH_DEV_AUTOMATION_TESTS
+	friend class FDungeonLegacyFloorModeMigrationTest;
+#endif
+
+	/*
+	 * Runs version-specific migration for the serialized asset format.
+	 * 保存形式バージョンごとの移行処理を実行します。
+	 */
+	void MigrateFromAssetVersion(const int32 assetVersion);
+
+	/*
+	 * Applies compatibility fixups that must remain valid for every asset version.
+	 * 全てのアセット形式で有効に保つ必要がある互換補正を適用します。
+	 */
+	void ApplyPostLoadCompatibilityFixups();
+
+	/*
+	 * Migrates legacy fixture selection fields to the current policy fields.
+	 * 旧設置物選択フィールドを現在のポリシーフィールドへ移行します。
+	 */
+	void MigrateLegacyFixtureSelectionPolicies();
+
+	/*
+	 * Migrates legacy top-level 1.x properties into the current grouped settings.
+	 * 旧1.xのトップレベルプロパティを現在のグループ化された設定へ移行します。
+	 */
+	void MigrateLegacyTopLevelProperties();
+	void MigrateLegacyRoomSensorSettings();
+
+	/*
+	 * Returns true when legacy top-level properties contain data that should be copied into current settings.
+	 * 現在の設定へコピーすべき旧トップレベルプロパティのデータがある場合にtrueを返します。
+	 */
+	bool HasLegacyTopLevelPropertyData() const;
+
+#if WITH_EDITORONLY_DATA
+	/*
+	 * Editor-only state that reports the latest in-memory migration result for this asset.
+	 * このアセットの最新のメモリ上移行結果を報告するEditor専用状態です。
+	 */
+	UPROPERTY(Transient)
+	FDungeonAssetMigrationState MigrationState;
+#endif
+
+	/*
+	 * Serialized asset format version captured during Serialize for PostLoad migration.
+	 * PostLoad移行で使用するためにSerialize中に取得した保存形式バージョンです。
+	 */
+	int32 LoadedAssetVersion = FDungeonGeneratorAssetVersion::LatestVersion;
+
+	/*
+	 * Legacy horizontal grid size serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧水平グリッドサイズです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.HorizontalGridSize instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	float GridSize = 400.f;
+
+	/*
+	 * Legacy vertical grid size serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧垂直グリッドサイズです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.VerticalGridSize instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	float VerticalGridSize = 400.f;
+
+	/*
+	 * Legacy initial room count serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧初期部屋数です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.RoomCountRange instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	uint8 NumberOfCandidateRooms = 10;
+
+	/*
+	 * Legacy room width range serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧部屋幅範囲です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.RoomWidth instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	FInt32Interval RoomWidth = { 3, 8 };
+
+	/*
+	 * Legacy room depth range serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧部屋奥行き範囲です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.RoomDepth instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	FInt32Interval RoomDepth = { 3, 8 };
+
+	/*
+	 * Legacy room height range serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧部屋高さ範囲です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.RoomHeight instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	FInt32Interval RoomHeight = { 2, 4 };
+
+	/*
+	 * Legacy horizontal room margin serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧水平部屋間隔です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.HorizontalRoomMargin instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	uint8 RoomMargin = 2;
+
+	/*
+	 * Legacy vertical room margin serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧垂直部屋間隔です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.VerticalRoomMargin instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	uint8 VerticalRoomMargin = 0;
+
+	/*
+	 * Legacy room merge toggle serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧部屋結合フラグです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Room merging has been removed. This value is ignored. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	bool MergeRooms = false;
+
+	/*
+	 * Legacy expansion policy serialized before settings were grouped into Structure.
+	 * Structureへ設定を集約する前に保存されていた旧展開方針です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.FloorMode instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonExpansionPolicy ExpansionPolicy = EDungeonExpansionPolicy::ExpandHorizontally;
+
+	/*
+	 * Legacy flat toggle serialized before ExpansionPolicy was introduced.
+	 * ExpansionPolicy導入前に保存されていた旧平面生成フラグです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Structure.FloorMode instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	bool Flat = false;
+
+	/*
+	 * Legacy floor count serialized by 1.x assets. Current 2.0 layout derives floor count automatically from FloorMode.
+	 * 1.xアセットで保存されていた旧階層数です。現在の2.0レイアウトではFloorModeから階層数を自動決定します。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Floor count is now derived automatically from Structure.FloorMode. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	uint8 NumberOfCandidateFloors = 3;
+
+	/*
+	 * Legacy layout candidate count serialized before settings were grouped into Path.
+	 * Pathへ設定を集約する前に保存されていた旧レイアウト候補数です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Path.LayoutCandidateCount instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	uint8 LayoutCandidateCount = 0;
+
+	/*
+	 * Legacy mission graph toggle serialized before settings were grouped into Path.
+	 * Pathへ設定を集約する前に保存されていた旧MissionGraphフラグです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Path.ProgressionPolicy instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	bool UseMissionGraph = false;
+
+	/*
+	 * Legacy aisle complexity serialized before settings were grouped into Path.
+	 * Pathへ設定を集約する前に保存されていた旧通路複雑度です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Path.ExtraCorridorComplexity instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	uint8 AisleComplexity = 5;
+
+	/*
+	 * Legacy aisle ceiling policy serialized before settings were grouped into Path.
+	 * Pathへ設定を集約する前に保存されていた旧通路天井高方針です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Path.CorridorCeilingHeightPolicy instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonAisleCeilingHeightPolicy AisleCeilingHeightPolicy = EDungeonAisleCeilingHeightPolicy::Random;
+
+	/*
+	 * Legacy player-start movement flag serialized before settings were grouped into Path.
+	 * Pathへ設定を集約する前に保存されていた旧PlayerStart移動フラグです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Path.bMovePlayerStartToStartRoom instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	bool MovePlayerStartToStartingPoint = true;
+
+	/*
+	 * Legacy start-location policy serialized before settings were grouped into Path.
+	 * Pathへ設定を集約する前に保存されていた旧開始部屋選択方針です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Path.StartRoomPolicy instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonStartLocationPolicy StartLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
+
+	/*
+	 * Legacy goal-location policy serialized before settings were grouped into Path.
+	 * Pathへ設定を集約する前に保存されていた旧ゴール部屋選択方針です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Path.GoalRoomPolicy instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonStartLocationPolicy GoalLocationPolicy = EDungeonStartLocationPolicy::UseSouthernMost;
+
+	/*
+	 * Legacy room mesh database reference serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧部屋メッシュDB参照です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.DungeonRoomMeshPartsDatabase instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TObjectPtr<UDungeonMeshSetDatabase> DungeonRoomMeshPartsDatabase;
+
+	/*
+	 * Legacy aisle mesh database reference serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧通路メッシュDB参照です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.DungeonAisleMeshPartsDatabase instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TObjectPtr<UDungeonMeshSetDatabase> DungeonAisleMeshPartsDatabase;
+
+	/*
+	 * Legacy pillar selection policy serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧柱選択ポリシーです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.PillarPartsSelectionPolicy instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonSelectionPolicy PillarPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
+
+	/*
+	 * Legacy pillar selection method serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧柱選択方式です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.PillarPartsSelectionMethod instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonPartsSelectionMethod PillarPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/*
+	 * Legacy pillar parts serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧柱パーツです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.PillarParts instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TArray<FDungeonMeshParts> PillarParts;
+
+	/*
+	 * Legacy torch selection policy serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧たいまつ選択ポリシーです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.TorchPartsSelectionPolicy instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonSelectionPolicy TorchPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
+
+	/*
+	 * Legacy torch selection method serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧たいまつ選択方式です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.TorchPartsSelectionMethod instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonPartsSelectionMethod TorchPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/*
+	 * Legacy torch generation frequency serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧たいまつ生成頻度です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.FrequencyOfTorchlightGeneration instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonFrequencyOfGeneration FrequencyOfTorchlightGeneration = EDungeonFrequencyOfGeneration::Rarely;
+
+	/*
+	 * Legacy torch parts serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧たいまつパーツです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.TorchParts instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TArray<FDungeonRandomActorParts> TorchParts;
+
+	/*
+	 * Legacy door selection policy serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧ドア選択ポリシーです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.DoorPartsSelectionPolicy instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonSelectionPolicy DoorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
+
+	/*
+	 * Legacy door selection method serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧ドア選択方式です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.DoorPartsSelectionMethod instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	EDungeonPartsSelectionMethod DoorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
+
+	/*
+	 * Legacy door parts serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧ドアパーツです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.DoorParts instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TArray<FDungeonDoorActorParts> DoorParts;
+
+	/*
+	 * Legacy custom parts selector serialized before settings were grouped into Theme.
+	 * Themeへ設定を集約する前に保存されていた旧カスタムパーツセレクターです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Theme.Fixtures.DungeonPartsSelector instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TObjectPtr<UDungeonPartsSelectorBase> DungeonPartsSelector;
+
+
+	/*
+	 * Legacy room sensor class serialized before room sensor databases were introduced.
+	 * RoomSensorDatabase導入前に保存されていた旧ルームセンサークラスです。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Gameplay.DungeonRoomSensorClass instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TObjectPtr<UClass> DungeonRoomSensorClass;
+
+	/*
+	 * Legacy room sensor database reference serialized before settings were grouped into Gameplay.
+	 * Gameplayへ設定を集約する前に保存されていた旧ルームセンサーDB参照です。
+	 */
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use Gameplay.DungeonRoomSensorClass and Gameplay.SpawnActorInAisle instead. This legacy v1 migration field may be removed in v2.1 or later; open and save v1 assets in v2.0.0 before upgrading."))
+	TObjectPtr<UDungeonRoomSensorDatabase> DungeonRoomSensorDatabase;
+
+protected:
 	friend class ADungeonGenerateBase;
 	friend class ADungeonGenerateActor;
 	friend class FDungeonParameterValidator;
@@ -668,57 +684,57 @@ inline int32 UDungeonGenerateParameter::GetGeneratedRandomSeed() const
 
 inline int32 UDungeonGenerateParameter::GetNumberOfCandidateRooms() const
 {
-	return NumberOfCandidateRooms;
+	return Structure.RoomCountRange.Max;
 }
 
 inline const FInt32Interval& UDungeonGenerateParameter::GetRoomWidth() const noexcept
 {
-	return RoomWidth;
+	return Structure.RoomWidth;
 }
 
 inline const FInt32Interval& UDungeonGenerateParameter::GetRoomDepth() const noexcept
 {
-	return RoomDepth;
+	return Structure.RoomDepth;
 }
 
 inline const FInt32Interval& UDungeonGenerateParameter::GetRoomHeight() const noexcept
 {
-	return RoomHeight;
+	return Structure.RoomHeight;
 }
 
 inline int32 UDungeonGenerateParameter::GetHorizontalRoomMargin() const noexcept
 {
-	return RoomMargin;
+	return Structure.HorizontalRoomMargin;
 }
 
 inline int32 UDungeonGenerateParameter::GetVerticalRoomMargin() const noexcept
 {
-	return VerticalRoomMargin;
+	return Structure.FloorMode == EDungeonFloorMode::Flat ? 0 : Structure.VerticalRoomMargin;
 }
 
 inline FDungeonGridSize UDungeonGenerateParameter::GetGridSize() const
 {
-	return FDungeonGridSize(GridSize, VerticalGridSize);
-}
-
-inline bool UDungeonGenerateParameter::IsMergeRooms() const noexcept
-{
-	return MergeRooms;
+	return FDungeonGridSize(Theme.HorizontalGridSize, Theme.VerticalGridSize);
 }
 
 inline bool UDungeonGenerateParameter::IsMovePlayerStartToStartingPoint() const noexcept
 {
-	return MovePlayerStartToStartingPoint && StartLocationPolicy != EDungeonStartLocationPolicy::NoAdjustment;
+	return Path.bMovePlayerStartToStartRoom;
 }
 
 inline bool UDungeonGenerateParameter::IsUseMissionGraph() const noexcept
 {
-	return GetAisleComplexity() <= 0;
+	return Path.ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks;
+}
+
+inline int32 UDungeonGenerateParameter::GetLayoutCandidateCount() const noexcept
+{
+	return Path.LayoutCandidateCount;
 }
 
 inline uint8 UDungeonGenerateParameter::GetAisleComplexity() const noexcept
 {
-	return UseMissionGraph == false ? AisleComplexity : 0;
+	return IsUseMissionGraph() == false ? Path.ExtraCorridorComplexity : 0;
 }
 
 inline bool UDungeonGenerateParameter::IsAisleComplexity() const noexcept
@@ -728,32 +744,79 @@ inline bool UDungeonGenerateParameter::IsAisleComplexity() const noexcept
 
 inline EDungeonAisleCeilingHeightPolicy UDungeonGenerateParameter::GetAisleCeilingHeightPolicy() const noexcept
 {
-	return AisleCeilingHeightPolicy;
+	return Path.CorridorCeilingHeightPolicy;
 }
 
-inline EFrequencyOfGeneration UDungeonGenerateParameter::GetFrequencyOfTorchlightGeneration() const noexcept
+inline EDungeonFrequencyOfGeneration UDungeonGenerateParameter::GetFrequencyOfTorchlightGeneration() const noexcept
 {
-	return FrequencyOfTorchlightGeneration;
+	return Theme.Fixtures.FrequencyOfTorchlightGeneration;
 }
+
+inline const FDungeonStructureSettings& UDungeonGenerateParameter::GetStructureSettings() const noexcept
+{
+	return Structure;
+}
+
+inline const FDungeonPathSettings& UDungeonGenerateParameter::GetPathSettings() const noexcept
+{
+	return Path;
+}
+
+inline const FDungeonRoomRoleSettings& UDungeonGenerateParameter::GetRoomRoleSettings() const noexcept
+{
+	return Gameplay.RoomRoles;
+}
+
+inline const FDungeonZoneSettings& UDungeonGenerateParameter::GetZoneSettings() const noexcept
+{
+	return Zones;
+}
+
+inline const FDungeonGameplaySpawnSettings& UDungeonGenerateParameter::GetGameplaySpawnSettings() const noexcept
+{
+	return Gameplay;
+}
+
+inline const FDungeonThemeSettings& UDungeonGenerateParameter::GetThemeSettings() const noexcept
+{
+	return Theme;
+}
+
+inline int32 UDungeonGenerateParameter::GetLoadedDungeonAssetVersion() const
+{
+	return LoadedAssetVersion;
+}
+
+#if WITH_EDITORONLY_DATA
+inline FDungeonAssetMigrationState& UDungeonGenerateParameter::GetMutableDungeonAssetMigrationState()
+{
+	return MigrationState;
+}
+
+inline const FDungeonAssetMigrationState& UDungeonGenerateParameter::GetDungeonAssetMigrationState() const
+{
+	return MigrationState;
+}
+#endif
 
 inline const UDungeonMeshSetDatabase* UDungeonGenerateParameter::GetDungeonRoomMeshPartsDatabase() const noexcept
 {
-	return DungeonRoomMeshPartsDatabase;
+	return Theme.DungeonRoomMeshPartsDatabase;
 }
 
 inline const UDungeonMeshSetDatabase* UDungeonGenerateParameter::GetDungeonAisleMeshPartsDatabase() const noexcept
 {
-	return DungeonAisleMeshPartsDatabase;
+	return Theme.DungeonAisleMeshPartsDatabase;
 }
 
 inline UClass* UDungeonGenerateParameter::GetRoomSensorClass() const
 {
-	return DungeonRoomSensorClass;
+	return Gameplay.DungeonRoomSensorClass;
 }
 
 inline UDungeonRoomSensorDatabase* UDungeonGenerateParameter::GetRoomSensorDatabase() const
 {
-	return DungeonRoomSensorDatabase;
+	return nullptr;
 }
 
 inline void UDungeonGenerateParameter::EachFloorParts(const std::function<void(const FDungeonMeshPartsWithDirection&)>& function) const

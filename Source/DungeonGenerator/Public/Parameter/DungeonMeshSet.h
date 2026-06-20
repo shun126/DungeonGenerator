@@ -8,6 +8,7 @@
 #include "Parameter/DungeonMeshParts.h"
 #include "Parameter/DungeonMeshPartsWithDirection.h"
 #include "Parameter/DungeonRandomActorParts.h"
+#include "Parameter/Selector/DungeonPartsSelectorBase.h"
 #include "Parameter/DungeonPartsSelectionMethod.h"
 #include "Parameter/DungeonSelectionPolicy.h"
 #include <CoreMinimal.h>
@@ -17,7 +18,6 @@
 // forward declaration
 class UClass;
 class UStaticMesh;
-class UDungeonPartsSelector;
 
 namespace dungeon
 {
@@ -41,7 +41,7 @@ public:
 	/**
 	 * 床パーツを選択します
 	 */
-	const FDungeonMeshPartsWithDirection* SelectFloorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshPartsWithDirection* SelectFloorParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
 	EDungeonPartsSelectionMethod GetFloorPartsSelectionMethod() const noexcept
 	{
@@ -51,6 +51,11 @@ public:
 	EDungeonSelectionPolicy GetFloorPartsSelectionPolicy() const noexcept
 	{
 		return FloorPartsSelectionPolicy;
+	}
+
+	const UDungeonPartsSelectorBase* GetFloorPartsSelector() const noexcept
+	{
+		return FloorPartsSelector;
 	}
 
 	int32 GetFloorPartsCount() const noexcept
@@ -75,7 +80,7 @@ public:
 	/**
 	 * グリッドに基づいて壁パーツを選択します
 	 */
-	const FDungeonMeshParts* SelectWallPartsByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectWallPartsByGrid(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
 	int32 GetWallPartsCount() const noexcept
 	{
@@ -107,7 +112,7 @@ public:
 	/**
 	 * 天井パーツを選択します
 	 */
-	const FDungeonMeshPartsWithDirection* SelectRoofParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshPartsWithDirection* SelectRoofParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
 	EDungeonPartsSelectionMethod GetRoofPartsSelectionMethod() const noexcept
 	{
@@ -117,6 +122,11 @@ public:
 	EDungeonSelectionPolicy GetRoofPartsSelectionPolicy() const noexcept
 	{
 		return RoofPartsSelectionPolicy;
+	}
+
+	const UDungeonPartsSelectorBase* GetRoofPartsSelector() const noexcept
+	{
+		return RoofPartsSelector;
 	}
 
 	int32 GetRoofPartsCount() const noexcept
@@ -141,7 +151,7 @@ public:
 	/**
 	 * スロープパーツを選択します
 	 */
-	const FDungeonMeshParts* SelectSlopeParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectSlopeParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
 	EDungeonPartsSelectionMethod GetSlopePartsSelectionMethod() const noexcept
 	{
@@ -151,6 +161,11 @@ public:
 	EDungeonSelectionPolicy GetSlopePartsSelectionPolicy() const noexcept
 	{
 		return SlopePartsSelectionPolicy;
+	}
+
+	const UDungeonPartsSelectorBase* GetSlopePartsSelector() const noexcept
+	{
+		return SlopePartsSelector;
 	}
 
 	int32 GetSlopePartsCount() const noexcept
@@ -175,7 +190,7 @@ public:
 	/**
 	 * 中二階通路パーツを選択します
 	 */
-	const FDungeonMeshParts* SelectCatwalkParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonMeshParts* SelectCatwalkParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
 	EDungeonPartsSelectionMethod GetCatwalkPartsSelectionMethod() const noexcept
 	{
@@ -185,6 +200,11 @@ public:
 	EDungeonSelectionPolicy GetCatwalkPartsSelectionPolicy() const noexcept
 	{
 		return CatwalkPartsSelectionPolicy;
+	}
+
+	const UDungeonPartsSelectorBase* GetCatwalkPartsSelector() const noexcept
+	{
+		return CatwalkPartsSelector;
 	}
 
 	int32 GetCatwalkPartsCount() const noexcept
@@ -209,7 +229,7 @@ public:
 	/**
 	 * シャンデリアパーツを選択します
 	 */
-	const FDungeonRandomActorParts* SelectChandelierParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
+	const FDungeonRandomActorParts* SelectChandelierParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const uint8 neighborMask6) const;
 
 	EDungeonPartsSelectionMethod GetChandelierPartsSelectionMethod() const noexcept
 	{
@@ -219,6 +239,11 @@ public:
 	EDungeonSelectionPolicy GetChandelierPartsSelectionPolicy() const noexcept
 	{
 		return ChandelierPartsSelectionPolicy;
+	}
+
+	const UDungeonPartsSelectorBase* GetChandelierPartsSelector() const noexcept
+	{
+		return ChandelierPartsSelector;
 	}
 
 	int32 GetChandelierPartsCount() const noexcept
@@ -259,20 +284,20 @@ public:
 	/**
 	 * 入力したFDungeonRandomActorPartsからアクターベースのパーツを選択します
 	 */
-	static FDungeonRandomActorParts* SelectRandomActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonRandomActorParts>& parts, const EDungeonSelectionPolicy selectionPolicy);
+	static FDungeonRandomActorParts* SelectRandomActorParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonRandomActorParts>& parts, const UDungeonPartsSelectorBase* selector, EDungeonPartsSelectorTarget target, uint8 neighborMask6 = 0);
 
 	/**
 	 * 入力したparts配列からグリッドに基づいて壁パーツを選択します
 	 */
 	// aka: SelectActorParts, SelectRandomActorParts
 	template<typename T = FDungeonMeshParts>
-	static T* SelectPartsByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<T>& parts, const EDungeonSelectionPolicy selectionPolicy)
+	static T* SelectPartsByGrid(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<T>& parts, const UDungeonPartsSelectorBase* selector, const EDungeonPartsSelectorTarget target, const uint8 neighborMask6 = 0)
 	{
 		const int32 size = parts.Num();
 		if (size <= 0)
 			return nullptr;
 
-		const int32 index = SelectDungeonMeshPartsIndexByGrid(gridIndex, grid, random, size, selectionPolicy);
+		const int32 index = SelectDungeonMeshPartsIndexBySelector(gridLocation, gridIndex, grid, random, size, selector, target, neighborMask6);
 		return const_cast<T*>(&parts[index]);
 	}
 
@@ -316,8 +341,17 @@ public:
 		return WallPartsSelectionPolicy;
 	}
 
+	const UDungeonPartsSelectorBase* GetWallPartsSelector() const noexcept
+	{
+		return WallPartsSelector;
+	}
 
-	void MigrateSelectionPolicies();
+	const UDungeonPartsSelectorBase* GetDungeonPartsSelector() const noexcept
+	{
+		return DungeonPartsSelector;
+	}
+
+	void MigrateSelectionPolicies(UObject* Outer = nullptr);
 	void MarkSelectionPoliciesMigrated() noexcept
 	{
 		bSelectionPoliciesMigrated = true;
@@ -330,13 +364,22 @@ public:
 #endif
 
 protected:
+	/**
+	 * How to select floor parts
+	 * 床のパーツを選択する方法
+	 */
+	UPROPERTY()
+	TObjectPtr<UDungeonPartsSelectorBase> DungeonPartsSelector;
 
 	/**
 	 * Policy for selecting floor part candidates in this mesh set.
 	 *
 	 * このメッシュセットで床パーツ候補を選ぶためのポリシーです。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Floor", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Instanced, Category = "DungeonGenerator|Floor", BlueprintReadWrite, meta = (DisplayName = "Floor Parts Selector", ToolTip = "Selects one floor part from the candidates. Uniform Random is assigned automatically when empty."))
+	TObjectPtr<UDungeonPartsSelectorBase> FloorPartsSelector;
+
+	UPROPERTY()
 	EDungeonSelectionPolicy FloorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
 	/**
@@ -358,7 +401,10 @@ protected:
 	 * How to select wall parts
 	 * 壁のパーツを選択する方法
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Wall", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Instanced, Category = "DungeonGenerator|Wall", BlueprintReadWrite, meta = (DisplayName = "Wall Parts Selector", ToolTip = "Selects one wall part from the candidates. Grid Index preserves per-face wall selection behavior."))
+	TObjectPtr<UDungeonPartsSelectorBase> WallPartsSelector;
+
+	UPROPERTY()
 	EDungeonSelectionPolicy WallPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
 	/**
@@ -380,7 +426,10 @@ protected:
 	 * How to select roof parts
 	 * 天井のパーツを選択する方法
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Roof", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Instanced, Category = "DungeonGenerator|Roof", BlueprintReadWrite, meta = (DisplayName = "Roof Parts Selector", ToolTip = "Selects one roof part from the candidates. Uniform Random is assigned automatically when empty."))
+	TObjectPtr<UDungeonPartsSelectorBase> RoofPartsSelector;
+
+	UPROPERTY()
 	EDungeonSelectionPolicy RoofPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
 	/**
@@ -402,7 +451,10 @@ protected:
 	 * How to generate parts for stairs and ramps
 	 * 階段やスロープの部品を生成する方法
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Sloop", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Instanced, Category = "DungeonGenerator|Sloop", BlueprintReadWrite, meta = (DisplayName = "Slope Parts Selector", ToolTip = "Selects one slope or stair part from the candidates. Uniform Random is assigned automatically when empty."))
+	TObjectPtr<UDungeonPartsSelectorBase> SlopePartsSelector;
+
+	UPROPERTY()
 	EDungeonSelectionPolicy SlopePartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
 	/**
@@ -424,7 +476,10 @@ protected:
 	 * How to select catwalk parts
 	 * 中二階通路のパーツを選択する方法
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Instanced, Category = "DungeonGenerator|Catwalk", BlueprintReadWrite, meta = (DisplayName = "Catwalk Parts Selector", ToolTip = "Selects one catwalk part from the candidates. Uniform Random is assigned automatically when empty."))
+	TObjectPtr<UDungeonPartsSelectorBase> CatwalkPartsSelector;
+
+	UPROPERTY()
 	EDungeonSelectionPolicy CatwalkPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
 	/**
@@ -446,7 +501,10 @@ protected:
 	 * How to select chandelier parts
 	 * シャンデリアのパーツを選択する方法
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Chandelier", BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, Instanced, Category = "DungeonGenerator|Chandelier", BlueprintReadWrite, meta = (DisplayName = "Chandelier Parts Selector", ToolTip = "Selects one chandelier actor part from the candidates. Uniform Random is assigned automatically when empty."))
+	TObjectPtr<UDungeonPartsSelectorBase> ChandelierPartsSelector;
+
+	UPROPERTY()
 	EDungeonSelectionPolicy ChandelierPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
 	/**
@@ -516,9 +574,9 @@ private:
 		return nullptr;
 	}
 
-	static int32 SelectDungeonMeshPartsIndexByGrid(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const EDungeonSelectionPolicy selectionPolicy);
+	static int32 SelectDungeonMeshPartsIndexBySelector(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const int32 size, const UDungeonPartsSelectorBase* selector, EDungeonPartsSelectorTarget target, uint8 neighborMask6);
 	static int32 SelectDungeonMeshPartsIndexByFace(const FIntVector& gridLocation, const dungeon::Direction& direction, const int32 size);
-	static FDungeonActorParts* SelectActorParts(const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonActorParts>& parts, const EDungeonSelectionPolicy selectionPolicy);
+	static FDungeonActorParts* SelectActorParts(const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random, const TArray<FDungeonActorParts>& parts, const UDungeonPartsSelectorBase* selector, EDungeonPartsSelectorTarget target, uint8 neighborMask6);
 
 	friend class UDungeonMeshSetDatabase;
 };

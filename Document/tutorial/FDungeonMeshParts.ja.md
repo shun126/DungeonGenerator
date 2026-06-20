@@ -11,6 +11,5 @@ FDungeonMeshParts は、**柱や壁など 1 枚のスタティックメッシュ
   生成時にスポーンするスタティックメッシュを指定します。未設定だと何も置かれないので、必ず設定してください。メッシュの原点が配置基準になるため、メッシュ側でピボット調整を済ませておくと位置決めが楽になります。
 
 ## 編集と配置のヒント
-- オフセットや回転はベースクラスの Transform で調整できます。グリッドサイズ（[UDungeonGenerateParameter](./UDungeonGenerateParameter.ja.md) の GridSize/VerticalGridSize）に合わせた値にするとスナップが揃います。
+- オフセットや回転はベースクラスの Transform で調整できます。グリッドサイズ（[UDungeonGenerateParameter](./UDungeonGenerateParameter.ja.md) の Theme.HorizontalGridSize/Theme.VerticalGridSize）に合わせた値にするとスナップが揃います。
 - 同じ役割のメッシュを複数登録しておくと、DB 側の選択ルールでバリエーションを出せます。
-

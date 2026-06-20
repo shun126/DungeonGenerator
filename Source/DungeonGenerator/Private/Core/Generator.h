@@ -6,8 +6,9 @@
  * All Rights Reserved.
  */
 
-#pragma once 
+#pragma once
 #include "GenerateParameter.h"
+#include "Layout/LayoutGraph.h"
 #include "Math/PerlinNoise.h"
 #include "RoomGeneration/Aisle.h"
 #include "RoomGeneration/Room.h"
@@ -39,6 +40,7 @@ namespace dungeon
 			TriangulationFailed,
 			GateSearchFailed,
 			RouteSearchFailed,
+			MissionGraphValidationFailed,
 
 			// from Voxel class
 			___StartVoxelError,
@@ -74,6 +76,16 @@ namespace dungeon
 		 * 生成パラメータを取得します
 		 */
 		const GenerateParameter& GetGenerateParameter() const noexcept;
+
+		/**
+		 * Gets metrics from the selected layout candidate.
+		 */
+		const FDungeonLayoutMetrics& GetLastLayoutMetrics() const noexcept;
+
+		/**
+		 * Gets score information from the selected layout candidate.
+		 */
+		const FDungeonLayoutScore& GetLastLayoutScore() const noexcept;
 
 		/**
 		 * グリッド化された情報を取得
@@ -326,25 +338,31 @@ namespace dungeon
 
 	private:
 		bool GenerateImpl() noexcept;
-		bool GenerateRooms() noexcept;
-		enum class SeparateRoomsResult : uint8_t
+		std::vector<LayoutCandidate> BuildIntentLayoutCandidates() const noexcept;
+		bool SelectDistanceAwareLayout(size_t phase, std::vector<LayoutCandidate>& candidates) noexcept;
+		enum class ResolveLayoutCollisionsResult : uint8_t
 		{
 			Failed,
 			Completed,
 			Moved
 		};
-		SeparateRoomsResult SeparateRooms(const size_t phase, const size_t subPhase) noexcept;
-		void SeparateRoom(const std::shared_ptr<Room>& fixedRoom, const std::vector<std::shared_ptr<Room>>& intersectedRooms, const bool activateOuterMovement) const noexcept;
+		ResolveLayoutCollisionsResult ResolveLayoutCollisions(size_t phase, const size_t subPhase) noexcept;
+		void ResolveRoomCollisionGroup(const std::shared_ptr<Room>& fixedRoom, const std::vector<std::shared_ptr<Room>>& intersectedRooms, const bool activateOuterMovement) const noexcept;
 		bool ExtractionAisles() noexcept;
 		bool GenerateAisle(const MinimumSpanningTree& minimumSpanningTree) noexcept;
 		void SetRoomParts() noexcept;
-		bool AdjustedStartAndGoalSubLevel() const noexcept;
-		void AdjustRoomSize() const noexcept;
-		bool ExpandSpace(const int32_t horizontalMargin = 3, const int32_t verticalMargin = 1) noexcept;
+		bool AdjustedStartAndGoalSubLevel(size_t phase) const noexcept;
+		void AdjustRoomSize(size_t phase) const noexcept;
+		/*
+		 * Minimizes aisle distance while preserving collision-free room margins.
+		 * 部屋の余白と非交差を維持しながら、通路距離を最小化します。
+		 */
+		bool OptimizeAisleDistance(size_t phase) const noexcept;
+		bool ExpandSpace(size_t phase, int32_t horizontalMargin = 3, int32_t verticalMargin = 1) noexcept;
 		void AdjustPoints() noexcept;
 		void InvokeRoomCallbacks() const noexcept;
 		bool DetectFloorHeightAndDepthFromStart() noexcept;
-		bool GenerateVoxel() noexcept;
+		bool GenerateVoxel(size_t phase) noexcept;
 		void UpdateMeshAttributes() const noexcept;
 		bool GenerateAisleVoxel(const size_t aisleIndex, const Aisle& aisle, const std::shared_ptr<const Point>& startPoint, const std::shared_ptr<const Point>& goalPoint, const uint8_t depthRatioFromStart, const bool generateIndoorSlope) noexcept;
 		void ExpandAisleHeightVoxel(const Aisle& aisle) const noexcept;
@@ -430,6 +448,8 @@ namespace dungeon
 		uint8_t mDeepestDepthFromStart = 0;
 
 		Error mLastError = Error::Success;
+		FDungeonLayoutMetrics mLastLayoutMetrics;
+		FDungeonLayoutScore mLastLayoutScore;
 	};
 }
 

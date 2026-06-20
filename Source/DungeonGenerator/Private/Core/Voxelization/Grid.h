@@ -9,6 +9,7 @@
 #pragma once
 #include "../Helper/Direction.h"
 #include "../Helper/Identifier.h"
+#include "Parameter/DungeonLayoutTypes.h"
 #include <Containers/UnrealString.h>
 #include <Math/Color.h>
 
@@ -84,6 +85,7 @@ namespace dungeon
 		 * @param[in]	depthRatioFromStart	スタート部屋からゴール部屋の部屋数からこの部屋の深さの割合（256段階）
 		 */
 		Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
+		Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart, EDungeonRoomStructuralRole roomStructuralRole, EDungeonRoomGameplayRole roomGameplayRole, int32 zoneIndex) noexcept;
 
 		/**
 		 * デストラクタ
@@ -153,6 +155,42 @@ namespace dungeon
 		void SetDepthRatioFromStart(const uint8_t depthRatioFromStart) noexcept;
 
 		/**
+		 * Gets the gameplay role assigned to the room that owns this grid.
+		 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割を取得します。
+		 */
+		EDungeonRoomStructuralRole GetRoomStructuralRole() const noexcept;
+
+		/**
+		 * Sets the gameplay role assigned to the room that owns this grid.
+		 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割を設定します。
+		 */
+		void SetRoomStructuralRole(EDungeonRoomStructuralRole roomStructuralRole) noexcept;
+
+		/**
+		 * Gets the gameplay role assigned to the room that owns this grid.
+		 * このグリッドを所有する部屋に割り当てられたゲームプレイ役割を取得します。
+		 */
+		EDungeonRoomGameplayRole GetRoomGameplayRole() const noexcept;
+
+		/**
+		 * Sets the gameplay role assigned to the room that owns this grid.
+		 * このグリッドを所有する部屋に割り当てられたゲームプレイ役割を設定します。
+		 */
+		void SetRoomGameplayRole(EDungeonRoomGameplayRole roomGameplayRole) noexcept;
+
+		/**
+		 * Gets the zone index assigned by progress and floor conditions.
+		 * 進行度と階層条件で割り当てられたゾーン番号を取得します。
+		 */
+		int32 GetZoneIndex() const noexcept;
+
+		/**
+		 * Sets the zone index assigned by progress and floor conditions.
+		 * 進行度と階層条件で割り当てられたゾーン番号を設定します。
+		 */
+		void SetZoneIndex(int32 zoneIndex) noexcept;
+
+		/**
 		 * グリッドの種類を取得します
 		 */
 		Type GetType() const noexcept;
@@ -214,12 +252,12 @@ namespace dungeon
 		/**
 		 * 床（部屋）グリッドを生成します
 		 */
-		static Grid CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
+		static Grid CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, EDungeonRoomStructuralRole roomStructuralRole, EDungeonRoomGameplayRole roomGameplayRole, int32 zoneIndex) noexcept;
 
 		/**
 		 * デッキ（部屋の周辺）グリッドを生成します
 		 */
-		static Grid CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept;
+		static Grid CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, EDungeonRoomStructuralRole roomStructuralRole, EDungeonRoomGameplayRole roomGameplayRole, int32 zoneIndex) noexcept;
 
 		// 判定補助関数
 		/**
@@ -610,9 +648,11 @@ namespace dungeon
 		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
 		uint16_t mIdentifier = InvalidIdentifier;
 		uint8_t mDepthRatioFromStart = 0;
+		EDungeonRoomStructuralRole mRoomStructuralRole = EDungeonRoomStructuralRole::Connector;
+		EDungeonRoomGameplayRole mRoomGameplayRole = EDungeonRoomGameplayRole::None;
+		int32 mZoneIndex = INDEX_NONE;
 		Type mType = Type::Empty;
 	};
-	static_assert(sizeof(Grid) == 8);
 }
 
 #include "Grid.inl"

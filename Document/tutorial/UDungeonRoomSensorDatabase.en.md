@@ -1,45 +1,26 @@
-# UDungeonRoomSensorDatabase Guide
+# UDungeonRoomSensorDatabase Migration Note
 
-`UDungeonRoomSensorDatabase` is the database that decides which `ADungeonRoomSensorBase`-derived class is used in which room.  
-Use it when you want room-entry events, BGM switching, enemy spawns, or trap behavior to vary by room.
+`UDungeonRoomSensorDatabase` is deprecated in v2.0.0 and is kept only so older assets can be loaded and migrated.
 
-## Typical flow
-1. Create a Blueprint whose parent class is `ADungeonRoomSensorBase`.
-2. Register that Blueprint in `DungeonRoomSensorClass`.
-3. Use `SelectionMethod` to decide how the sensor class is chosen.
-4. Optionally register aisle-effect Blueprints in `SpawnActorInAisle`.
-5. Assign this database to `DungeonRoomSensorDatabase` in `UDungeonGenerateParameter`.
+v2.0.0 is the migration release for v1 Room Sensor Database references. If your project still uses v1 assets, open the project in v2.0.0, review the migrated settings, save the affected assets, and then upgrade to v2.1 or later. v1-to-v2 migration support and this legacy database may be removed in v2.1 or later.
 
-## Main properties
-- `SelectionMethod`
-  - `Random`  
-    Select randomly each time.
-  - `Identifier`  
-    Select deterministically from room identifier.
-  - `Depth From Start`  
-    Select by progression distance from the start.
-- `DungeonRoomSensorClass`  
-  The list of `ADungeonRoomSensorBase`-derived classes that may be placed.
-- `SpawnActorInAisle`  
-  Blueprints additionally placed in aisles after generation completes.
+For new setup, configure Room Sensor gameplay directly in `UDungeonGenerateParameter`:
 
-## About `SpawnActorInAisle`
-This is not for actors inside rooms. It is for extra effects placed on the aisle side.  
-For enemies, treasure, or other gameplay inside the room itself, it is usually clearer to handle them in the `ADungeonRoomSensorBase` Blueprint.
+- `Gameplay.DungeonRoomSensorClass` sets the default `ADungeonRoomSensorBase` Blueprint for generated rooms.
+- `Gameplay.SpawnActorInAisle` sets the default actor Blueprint candidates for generated aisles.
+- `Zones[].GameplayOverride` can override the room sensor and aisle actor list for a zone.
+- `Gameplay.RoomRoles.Roles[].GameplayOverride` can override the room sensor for a gameplay role.
 
-## Editing tips
-- If deeper floors should contain more dangerous rooms, `Depth From Start` is a good fit.
-- Sensor selection only decides which class is placed. The behavior after entering the room belongs in each sensor Blueprint.
-- Advanced custom behavior is not primarily driven by this database alone. For most setups, start with `Random`, `Identifier`, or `Depth From Start`.
+When an older parameter references a `UDungeonRoomSensorDatabase`, the first valid legacy `DungeonRoomSensorClass` is copied to `Gameplay.DungeonRoomSensorClass`, and legacy `SpawnActorInAisle` is copied to `Gameplay.SpawnActorInAisle` if the new field is still empty.
 
-## Read Next
-- [ADungeonRoomSensorBase.en.md](./ADungeonRoomSensorBase.en.md)  
-  Review which events and properties are implemented in the sensor Blueprint.
-- [UDungeonInteriorDatabase.en.md](./UDungeonInteriorDatabase.en.md)  
-  Review the interior-tag flow used from room sensors.
+Recommended migration flow:
+
+1. Open the v1 project with Dungeon Generator v2.0.0.
+2. Open or load the affected `UDungeonGenerateParameter` assets.
+3. Confirm that Room Sensor settings were copied to `Gameplay.DungeonRoomSensorClass` and `Gameplay.SpawnActorInAisle`.
+4. Save the migrated assets.
+5. Upgrade to v2.1 or later only after the v2.0.0 save is complete.
 
 ## Related Pages
-- [ADungeonRoomSensorBase.en.md](./ADungeonRoomSensorBase.en.md)
 - [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md)
-- [UDungeonInteriorDatabase.en.md](./UDungeonInteriorDatabase.en.md)
-
+- [ADungeonRoomSensorBase.en.md](./ADungeonRoomSensorBase.en.md)

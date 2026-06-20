@@ -9,6 +9,24 @@ You usually prepare separate databases for rooms and aisles, then reference them
 
 In other words, Phase 1 is the database deciding "which theme to use", and Phase 2 is the mesh set deciding "which part inside that theme to use".
 
+```mermaid
+graph TD;
+    Database["UDungeonMeshSetDatabase"] --> Policy["Mesh Set Selection Policy"]
+    Policy --> MeshSet["Selected FDungeonMeshSet"]
+    MeshSet --> Floor["Floor Parts"]
+    MeshSet --> Wall["Wall Parts"]
+    MeshSet --> Roof["Roof Parts"]
+    MeshSet --> Slope["Slope Parts"]
+    MeshSet --> Catwalk["Catwalk Parts"]
+    MeshSet --> Chandelier["Chandelier Parts"]
+    Floor --> Result["Generated room or aisle visuals"]
+    Wall --> Result
+    Roof --> Result
+    Slope --> Result
+    Catwalk --> Result
+    Chandelier --> Result
+```
+
 ## Minimum usage
 1. Create a `Mesh set database` asset.
 2. Add one `Mesh Set`.
@@ -101,4 +119,3 @@ Chandeliers are not a shared setting of `UDungeonMeshSetDatabase`. They are deco
 - [FDungeonRandomActorParts.en.md](./FDungeonRandomActorParts.en.md)
 - [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md)
 - [CustomSelector.en.md](./CustomSelector.en.md)
-

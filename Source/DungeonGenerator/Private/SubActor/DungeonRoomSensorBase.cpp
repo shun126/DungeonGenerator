@@ -42,6 +42,7 @@ const TArray<FName>& ADungeonRoomSensorBase::GetDungeonGeneratorTags()
 
 ADungeonRoomSensorBase::ADungeonRoomSensorBase(const FObjectInitializer& initializer)
 	: Super(initializer)
+	, RoomSize(ForceInit)
 	, mLocalRandom(std::make_shared<dungeon::Random>())
 {
 #if WITH_EDITOR
@@ -67,6 +68,7 @@ ADungeonRoomSensorBase::ADungeonRoomSensorBase(const FObjectInitializer& initial
 	}
 	Bounding->SetGenerateOverlapEvents(true);
 	SetRootComponent(Bounding);
+
 }
 
 
@@ -93,6 +95,11 @@ const UBoxComponent* ADungeonRoomSensorBase::GetBounding() const
 const FBox& ADungeonRoomSensorBase::GetRoomSize() const noexcept
 {
 	return RoomSize;
+}
+
+FDungeonGeneratedRoomInfo ADungeonRoomSensorBase::GetGeneratedRoomInfo() const noexcept
+{
+	return RoomInfo;
 }
 
 uint8 ADungeonRoomSensorBase::GetDoorAddingProbability() const noexcept
@@ -155,12 +162,18 @@ void ADungeonRoomSensorBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	// cppcheck-suppress [knownConditionTrueFalse]
-	if (ShowDebugInformation || ForceShowDebugInformation)
+	if ((ShowDebugInformation && mOverlapCount > 0) || ForceShowDebugInformation)
 	{
 		TArray<FString> output;
 		output.Add(TEXT("Identifier:") + FString::FromInt(Identifier));
 		output.Add(TEXT("Parts:") + GetDungeonRoomPartsName(Parts));
 		output.Add(TEXT("Item:") + GetDungeonRoomItemName(Item));
+		output.Add(TEXT("StructuralRole:") + StaticEnum<EDungeonRoomStructuralRole>()->GetNameStringByValue(static_cast<int64>(RoomInfo.RoomStructuralRole)));
+		output.Add(TEXT("GameplayRole:") + StaticEnum<EDungeonRoomGameplayRole>()->GetNameStringByValue(static_cast<int64>(RoomInfo.RoomGameplayRole)));
+		output.Add(FString(TEXT("SecretRoom:")) + (RoomInfo.bSecretRoom ? TEXT("On") : TEXT("Off")));
+		output.Add(FString(TEXT("DeadEndRoom:")) + (RoomInfo.bDeadEndRoom ? TEXT("On") : TEXT("Off")));
+		output.Add(FString(TEXT("MainPathRoom:")) + (RoomInfo.bMainPathRoom ? TEXT("On") : TEXT("Off")));
+		output.Add(FString(TEXT("LockedRouteRoom:")) + (RoomInfo.bLockedRouteRoom ? TEXT("On") : TEXT("Off")));
 		output.Add(TEXT("BranchId:") + FString::FromInt(BranchId));
 		output.Add(TEXT("DepthFromStart:") + FString::FromInt(DepthFromStart));
 		output.Add(FString(TEXT("AutoReset:")) + (AutoReset ? TEXT("On") : TEXT("Off")));
@@ -176,11 +189,7 @@ void ADungeonRoomSensorBase::Tick(float DeltaSeconds)
 			message.Append(TEXT("\n"));
 		}
 		
-		FVector location = GetActorLocation();
-		static constexpr double offsetHeight = 100;
-		location.Z -= Bounding->GetScaledBoxExtent().Z;
-		location.Z += offsetHeight;
-		DrawDebugString(GetWorld(), location, message, nullptr, FColor::White, 0, true, 1.f);
+		DrawDebugString(GetWorld(), GetActorLocation(), message, nullptr, FColor::White, 0, true, 1.f);
 	}
 }
 #endif
@@ -193,6 +202,7 @@ bool ADungeonRoomSensorBase::InvokePrepare(
 	const float horizontalGridSize,
 	const EDungeonRoomParts parts,
 	const EDungeonRoomItem item,
+	const FDungeonGeneratedRoomInfo& roomInfo,
 	const uint8 branchId,
 	const uint8 depthFromStart,
 	const uint8 deepestDepthFromStart)
@@ -208,6 +218,7 @@ bool ADungeonRoomSensorBase::InvokePrepare(
 	Identifier = identifier;
 	Parts = parts;
 	Item = item;
+	RoomInfo = roomInfo;
 	BranchId = branchId;
 	DepthFromStart = depthFromStart;
 	DeepestDepthFromStart = deepestDepthFromStart;
@@ -225,23 +236,38 @@ void ADungeonRoomSensorBase::InvokeInitialize()
 	{
 		DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Initialize"), *GetName());
 
-		const float depthFromStartRatio = DeepestDepthFromStart > 0 ?
-			static_cast<float>(DepthFromStart) / static_cast<float>(DeepestDepthFromStart) :
-			0.0f;
-		OnNativeInitialize();
-		OnInitialize(Parts, Item, DepthFromStart, depthFromStartRatio);
+		{
+			if (Item == EDungeonRoomItem::Key)
+			{
+				DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Key spawned."), *GetName());
+				if (AActor* spawnedActor = SpawnActorInRoomImpl(SpawnKeyActor, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn))
+					DungeonRoomSpawnedActors.Add(spawnedActor);
+			}
+			if (Item == EDungeonRoomItem::UniqueKey)
+			{
+				DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Unique key spawned."), *GetName());
+				if (AActor* spawnedActor = SpawnActorInRoomImpl(SpawnUniqueKeyActor, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn))
+					DungeonRoomSpawnedActors.Add(spawnedActor);
+			}
 
-		if (Item == EDungeonRoomItem::Key)
-		{
-			DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Key spawned."), *GetName());
-			SpawnActorInRoomImpl(SpawnKeyActor, true);
+			SpawnActorsInRoomImpl();
 		}
-		if (Item == EDungeonRoomItem::UniqueKey)
+
 		{
-			DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Unique key spawned."), *GetName());
-			SpawnActorInRoomImpl(SpawnUniqueKeyActor, true);
+			const float depthFromStartRatio = DeepestDepthFromStart > 0 ?
+				static_cast<float>(DepthFromStart) / static_cast<float>(DeepestDepthFromStart) :
+				0.0f;
+			RoomInfo.Identifier = Identifier;
+			RoomInfo.Parts = Parts;
+			RoomInfo.Item = Item;
+			RoomInfo.BranchId = BranchId;
+			RoomInfo.DepthFromStart = DepthFromStart;
+			RoomInfo.DeepestDepthFromStart = DeepestDepthFromStart;
+			RoomInfo.DepthFromStartRatio = depthFromStartRatio;
+			RoomInfo.bHasLockedDoor = HasLockedDoor();
+			OnNativeInitialize();
+			OnInitialize(RoomInfo);
 		}
-		SpawnActorsInRoomImpl();
 
 		mState = State::Initialized;
 	}
@@ -304,41 +330,221 @@ void ADungeonRoomSensorBase::AddDungeonChandelier(AActor* actor)
 	DungeonChandeliers.Add(actor);
 }
 
+float ADungeonRoomSensorBase::GetDefaultGameplayRoleEnemySpawnMultiplier(const EDungeonRoomGameplayRole role) noexcept
+{
+	switch (role)
+	{
+	case EDungeonRoomGameplayRole::None:
+		return 0.5f;
+	case EDungeonRoomGameplayRole::Combat:
+		return 1.0f;
+	case EDungeonRoomGameplayRole::Treasure:
+		return 0.8f;
+	case EDungeonRoomGameplayRole::Puzzle:
+		return 0.5f;
+	case EDungeonRoomGameplayRole::Rest:
+		return 0.0f;
+	case EDungeonRoomGameplayRole::Boss:
+		return 2.0f;
+	case EDungeonRoomGameplayRole::Secret:
+		return 0.7f;
+	default:
+		return 1.0f;
+	}
+}
+
+float ADungeonRoomSensorBase::GetDefaultStructuralRoleEnemySpawnMultiplier(const EDungeonRoomStructuralRole role) noexcept
+{
+	switch (role)
+	{
+	case EDungeonRoomStructuralRole::Start:
+	case EDungeonRoomStructuralRole::Goal:
+		return 0.0f;
+	case EDungeonRoomStructuralRole::Hub:
+	case EDungeonRoomStructuralRole::Connector:
+	case EDungeonRoomStructuralRole::Branch:
+	case EDungeonRoomStructuralRole::DeadEnd:
+	default:
+		return 1.0f;
+	}
+}
+
+float ADungeonRoomSensorBase::FindGameplayRoleEnemySpawnMultiplier(const FDungeonGameplayRoleEnemySpawnMultipliers& multipliers, const EDungeonRoomGameplayRole role) noexcept
+{
+	switch (role)
+	{
+	case EDungeonRoomGameplayRole::None:
+		return FMath::Max(0.f, multipliers.None_);
+	case EDungeonRoomGameplayRole::Combat:
+		return FMath::Max(0.f, multipliers.Combat_);
+	case EDungeonRoomGameplayRole::Treasure:
+		return FMath::Max(0.f, multipliers.Treasure_);
+	case EDungeonRoomGameplayRole::Puzzle:
+		return FMath::Max(0.f, multipliers.Puzzle_);
+	case EDungeonRoomGameplayRole::Rest:
+		return FMath::Max(0.f, multipliers.Rest_);
+	case EDungeonRoomGameplayRole::Boss:
+		return FMath::Max(0.f, multipliers.Boss_);
+	case EDungeonRoomGameplayRole::Secret:
+		return FMath::Max(0.f, multipliers.Secret_);
+	default:
+		return GetDefaultGameplayRoleEnemySpawnMultiplier(role);
+	}
+}
+
+float ADungeonRoomSensorBase::FindStructuralRoleEnemySpawnMultiplier(const FDungeonStructuralRoleEnemySpawnMultipliers& multipliers, const EDungeonRoomStructuralRole role) noexcept
+{
+	switch (role)
+	{
+	case EDungeonRoomStructuralRole::Start:
+		return FMath::Max(0.f, multipliers.Start);
+	case EDungeonRoomStructuralRole::Goal:
+		return FMath::Max(0.f, multipliers.Goal);
+	case EDungeonRoomStructuralRole::Hub:
+		return FMath::Max(0.f, multipliers.Hub);
+	case EDungeonRoomStructuralRole::Connector:
+		return FMath::Max(0.f, multipliers.Connector);
+	case EDungeonRoomStructuralRole::Branch:
+		return FMath::Max(0.f, multipliers.Branch);
+	case EDungeonRoomStructuralRole::DeadEnd:
+		return FMath::Max(0.f, multipliers.DeadEnd);
+	default:
+		return GetDefaultStructuralRoleEnemySpawnMultiplier(role);
+	}
+}
+
+int32 ADungeonRoomSensorBase::CalculateSpawnActorsInRoomCount(
+	const int32 baseCount,
+	const FDungeonGeneratedRoomInfo& roomInfo,
+	const FDungeonGameplayRoleEnemySpawnMultipliers& gameplayRoleEnemySpawnMultipliers,
+	const FDungeonStructuralRoleEnemySpawnMultipliers& structuralRoleEnemySpawnMultipliers) noexcept
+{
+	if (baseCount <= 0)
+	{
+		return 0;
+	}
+
+	const float scale =
+		FindGameplayRoleEnemySpawnMultiplier(gameplayRoleEnemySpawnMultipliers, roomInfo.RoomGameplayRole) *
+		FindStructuralRoleEnemySpawnMultiplier(structuralRoleEnemySpawnMultipliers, roomInfo.RoomStructuralRole);
+	return FMath::Max(0, FMath::RoundToInt(static_cast<float>(baseCount) * scale));
+}
+
+float ADungeonRoomSensorBase::GetGameplayRoleEnemySpawnMultiplier(const EDungeonRoomGameplayRole role) const noexcept
+{
+	return FindGameplayRoleEnemySpawnMultiplier(GameplayRoleEnemySpawnMultipliers, role);
+}
+
+float ADungeonRoomSensorBase::GetStructuralRoleEnemySpawnMultiplier(const EDungeonRoomStructuralRole role) const noexcept
+{
+	return FindStructuralRoleEnemySpawnMultiplier(StructuralRoleEnemySpawnMultipliers, role);
+}
+
+int32 ADungeonRoomSensorBase::CalculateSpawnActorsInRoomCount() const
+{
+	const int32 baseCount = CalculateAreaBasedActorCount(
+		Bounding->Bounds.GetBox(),
+		AreaRequiredPerPerson,
+		MaxNumberOfActor
+	);
+	return CalculateSpawnActorsInRoomCount(
+		baseCount,
+		RoomInfo,
+		GameplayRoleEnemySpawnMultipliers,
+		StructuralRoleEnemySpawnMultipliers
+	);
+}
+
+/*
+ * Calculates the unscaled actor count from room area only.
+ * 部屋面積のみから倍率適用前のアクター数を計算します。
+ */
+int32 ADungeonRoomSensorBase::CalculateAreaBasedActorCount(const FBox& bounds, const float areaRequiredPerPerson, const int32 maxNumberOfActor) noexcept
+{
+	const float deltaX = (bounds.Max.X - bounds.Min.X);
+	const float deltaY = (bounds.Max.Y - bounds.Min.Y);
+	const float squaredArea = deltaX * deltaY;
+	const float squaredAreaRequiredPerPerson = areaRequiredPerPerson * areaRequiredPerPerson;
+	const int32 numberOfActor = std::max(0, static_cast<int32>(squaredArea / squaredAreaRequiredPerPerson));
+	return std::min(numberOfActor, maxNumberOfActor);
+}
+
+#if WITH_DEV_AUTOMATION_TESTS
+int32 ADungeonRoomSensorBase::CalculateSpawnActorsInRoomCountForTest(
+	const int32 baseCount,
+	const FDungeonGeneratedRoomInfo& roomInfo,
+	const FDungeonGameplayRoleEnemySpawnMultipliers& gameplayRoleEnemySpawnMultipliers,
+	const FDungeonStructuralRoleEnemySpawnMultipliers& structuralRoleEnemySpawnMultipliers) noexcept
+{
+	return CalculateSpawnActorsInRoomCount(
+		baseCount,
+		roomInfo,
+		gameplayRoleEnemySpawnMultipliers,
+		structuralRoleEnemySpawnMultipliers);
+}
+
+int32 ADungeonRoomSensorBase::CalculateIdealNumberOfActorForTest(
+	const FBox& bounds,
+	const float areaRequiredPerPerson,
+	const int32 maxNumberOfActor,
+	const FDungeonGeneratedRoomInfo& roomInfo,
+	const FDungeonGameplayRoleEnemySpawnMultipliers& gameplayRoleEnemySpawnMultipliers,
+	const FDungeonStructuralRoleEnemySpawnMultipliers& structuralRoleEnemySpawnMultipliers) noexcept
+{
+	const int32 baseCount = CalculateAreaBasedActorCount(bounds, areaRequiredPerPerson, maxNumberOfActor);
+	return CalculateSpawnActorsInRoomCount(
+		baseCount,
+		roomInfo,
+		gameplayRoleEnemySpawnMultipliers,
+		structuralRoleEnemySpawnMultipliers);
+}
+#endif
+
 void ADungeonRoomSensorBase::SpawnActorsInRoomImpl()
 {
 	if (HasAuthority() == false)
 		return;
-	if (Parts != EDungeonRoomParts::Hall && Parts != EDungeonRoomParts::Hanare)
-		return;
 	if (SpawnActors.IsEmpty())
 		return;
 
-	const int32 idealNumberOfActor = IdealNumberOfActor(AreaRequiredPerPerson, MaxNumberOfActor);
-	for (int32 i = 0; i < idealNumberOfActor; ++i)
+	const int32 spawnCount = CalculateSpawnActorsInRoomCount();
+	if (spawnCount <= 0)
+		return;
+
+	for (int32 i = 0; i < spawnCount; ++i)
 	{
 		const auto& spawnActorPath = SpawnActors[mSynchronizedRandom.GetInteger(SpawnActors.Num())];
 		DUNGEON_GENERATOR_VERBOSE(TEXT("ADungeonRoomSensorBase(%s) Actor(%s) spawned."), *GetName(), *spawnActorPath.GetAssetName());
-		SpawnActorInRoomImpl(spawnActorPath, false);
+		if (AActor* spawnedActor = SpawnActorInRoomImpl(spawnActorPath, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding))
+			DungeonRoomSpawnedActors.Add(spawnedActor);
 	}
 }
 
-void ADungeonRoomSensorBase::SpawnActorInRoomImpl(const FSoftObjectPath& spawnActorPath, const bool force)
+AActor* ADungeonRoomSensorBase::SpawnActorInRoomImpl(const FSoftObjectPath& spawnActorPath, const ESpawnActorCollisionHandlingMethod spawnActorCollisionHandlingMethod)
 {
 	if (HasAuthority() == false)
-		return;
+		return nullptr;
 	if (spawnActorPath.IsValid() == false)
-		return;
+		return nullptr;
 
+	check(
+		spawnActorCollisionHandlingMethod == ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn ||
+		spawnActorCollisionHandlingMethod == ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding
+	);
+
+	AActor* spawnedActor = nullptr;
 	do {
 		FTransform transform;
 		if (RandomTransform(transform, 100.f, false))
 		{
 			const FSoftObjectPath path(spawnActorPath.ToString() + "_C");
 			const TSoftClassPtr<AActor> softClassPointer(path);
-			SpawnActorFromClass(softClassPointer.LoadSynchronous(), transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding, nullptr);
+			auto* actorClass = softClassPointer.LoadSynchronous();
+			spawnedActor = SpawnActorFromClass(actorClass, transform, spawnActorCollisionHandlingMethod, nullptr);
 			break;
 		}
-	} while (force);
+	} while (spawnActorCollisionHandlingMethod == ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+	return spawnedActor;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -389,13 +595,13 @@ void ADungeonRoomSensorBase::OnEndOverlap(UPrimitiveComponent* OverlappedCompone
 // BluePrint functions
 int32 ADungeonRoomSensorBase::IdealNumberOfActor(const float areaRequiredPerPerson, const int32 maxNumberOfActor) const
 {
-	const FBox& bounds = Bounding->Bounds.GetBox();
-	const float deltaX = (bounds.Max.X - bounds.Min.X);
-	const float deltaY = (bounds.Max.Y - bounds.Min.Y);
-	const float squaredArea = deltaX * deltaY;
-	const float squaredAreaRequiredPerPerson = areaRequiredPerPerson * areaRequiredPerPerson;
-	int32 numberOfActor = std::max(0, static_cast<int32>(squaredArea / squaredAreaRequiredPerPerson));
-	return std::min(numberOfActor, maxNumberOfActor);
+	const int32 baseCount = CalculateAreaBasedActorCount(Bounding->Bounds.GetBox(), areaRequiredPerPerson, maxNumberOfActor);
+	return CalculateSpawnActorsInRoomCount(
+		baseCount,
+		RoomInfo,
+		GameplayRoleEnemySpawnMultipliers,
+		StructuralRoleEnemySpawnMultipliers
+	);
 }
 
 bool ADungeonRoomSensorBase::RandomPoint(FVector& result, const float offsetHeight, const bool useLocalRandom) const

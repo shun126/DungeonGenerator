@@ -9,7 +9,7 @@
 - 生成したメッシュを `Mesh set database` に登録する
 
 ## メッシュフィットツールとは
-メッシュフィットツールは、Content Browser で選んだ Static Mesh の Bounds を確認し、`DungeonGenerateParameter` の `Grid Size` と `Vertical Grid Size` に合うか判定するツールです。
+メッシュフィットツールは、Content Browser で選んだ Static Mesh の Bounds を確認し、`DungeonGenerateParameter` の `Theme.HorizontalGridSize` と `Theme.VerticalGridSize` に合うか判定するツールです。ツールUIでは、これらは `Horizontal Grid Size` / `Grid Size` と `Vertical Grid Size` として表示されます。
 
 ツールは元の Static Mesh を直接変更しません。  
 `Generate Fitted Meshes` を実行すると、選択した出力先に新しい Static Mesh アセットを作ります。
@@ -46,7 +46,7 @@ Content Browser で、確認したい Static Mesh を 1 つ以上選択します
 
 ### `DungeonGenerateParameter`
 グリッド寸法を読むための `DungeonGenerateParameter` を指定します。  
-ここで指定した `Grid Size` と `Vertical Grid Size` が、フィット判定の基準になります。
+ここで指定した `Theme.HorizontalGridSize`（UI上の `Horizontal Grid Size` / `Grid Size`）と `Theme.VerticalGridSize`（`Vertical Grid Size`）が、フィット判定の基準になります。
 
 ### `Output Directory`
 補正済み Static Mesh を保存する Content Browser 上のフォルダです。  

@@ -1,5 +1,6 @@
 /**
- * ミッショングラフが攻略可能かテストします
+ * Tests whether a MissionGraph is solvable.
+ * ミッショングラフが攻略可能かテストします。
  *
  * @author		Shun Moriya
  * @copyright	2024- Shun Moriya
@@ -7,98 +8,389 @@
  */
 
 #include "MissionGraphTester.h"
-#include "../RoomGeneration/Aisle.h"
 #include "../Debug/Debug.h"
+#include "../RoomGeneration/Aisle.h"
+#include <algorithm>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace dungeon
 {
-	MissionGraphTester::MissionGraphTester(const std::list<std::shared_ptr<Room>>& rooms, const std::vector<Aisle>& aisles)
+	namespace
 	{
-		// 例外を投げても良いがMissionGraphTesterはローカルデバッグ用なのでcheckにした
-		check(std::find_if(rooms.begin(), rooms.end(), [](const std::shared_ptr<Room>& room)
-			{
-				return room->GetParts() == Room::Parts::Goal;
-			}) != rooms.end());
-
-		const auto i = std::find_if(rooms.begin(), rooms.end(), [](const std::shared_ptr<Room>& room)
+		enum class LockType : uint8_t
 		{
-			return room->GetParts() == Room::Parts::Start;
-		});
-		// 例外を投げても良いがMissionGraphTesterはローカルデバッグ用なのでcheckにした
-		check(i != rooms.end());
+			None,
+			Common,
+			Unique,
+		};
 
-		mRootNode = std::make_shared<Node>();
-		mRootNode->mIdentifier = (*i)->GetIdentifier();
-		mRootNode->mRoomParts = (*i)->GetParts();
-		mRootNode->mRoomItem = (*i)->GetItem();
-
-		InitializeParameter parameter(rooms, aisles);
-		Initialize(mRootNode, *i, parameter);
-
-		// 冒険を開始
-		DUNGEON_GENERATOR_LOG(TEXT("Start a MissionGraph Test"));
-		Inventory inventory;
-		bool shouldRetry;
-		do {
-			shouldRetry = false;
-			mResult = mRootNode->SeekGoal(inventory, shouldRetry);
-		} while (mResult == false && shouldRetry == true);
-
-		// 冒険の結果
-		if (mResult)
+		struct RoomData final
 		{
-			if (inventory.mNumberOfKeys == 0)
-			{
-				DUNGEON_GENERATOR_LOG(TEXT("Test succeeded. The goal was reached."));
-			}
-			else
-			{
-				DUNGEON_GENERATOR_WARNING(TEXT("Test succeeded. The goal was reached. However, there are %d keys remaining."),
-					inventory.mNumberOfKeys);
-			}
+			Room::Parts Parts = Room::Parts::Unidentified;
+			Room::Item Item = Room::Item::Empty;
+		};
+
+		struct AisleData final
+		{
+			size_t Room0 = 0;
+			size_t Room1 = 0;
+			LockType Lock = LockType::None;
+		};
+
+		struct MissionGraphData final
+		{
+			std::vector<RoomData> Rooms;
+			std::vector<AisleData> Aisles;
+			size_t StartRoom = 0;
+			size_t GoalRoom = 0;
+			size_t CommonLockCount = 0;
+			size_t UniqueLockCount = 0;
+			bool bHasStartRoom = false;
+			bool bHasGoalRoom = false;
+		};
+
+		struct SearchState final
+		{
+			std::vector<uint8_t> ReachableRooms;
+			std::vector<uint8_t> CollectedRooms;
+			std::vector<uint8_t> OpenedAisles;
+			uint8_t CommonKeys = 0;
+			uint8_t UniqueKeys = 0;
+		};
+
+		bool IsAisleOpen(const SearchState& state, const AisleData& aisle, const size_t aisleIndex) noexcept
+		{
+			return aisle.Lock == LockType::None || state.OpenedAisles[aisleIndex] != 0;
 		}
-		else
+
+		bool IsSuccess(const MissionGraphData& graph, const SearchState& state) noexcept
 		{
-			DUNGEON_GENERATOR_ERROR(TEXT("Test failure. The goal was not reached."));
+			if (state.ReachableRooms[graph.GoalRoom] == 0 || state.CommonKeys != 0 || state.UniqueKeys != 0)
+			{
+				return false;
+			}
+
+			for (size_t aisleIndex = 0; aisleIndex < graph.Aisles.size(); ++aisleIndex)
+			{
+				if (graph.Aisles[aisleIndex].Lock != LockType::None && state.OpenedAisles[aisleIndex] == 0)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		std::string MakeVisitedKey(const SearchState& state)
+		{
+			std::string key;
+			key.reserve(state.CollectedRooms.size() + state.OpenedAisles.size() + 2);
+			for (const uint8_t collected : state.CollectedRooms)
+			{
+				key.push_back(collected != 0 ? '1' : '0');
+			}
+			key.push_back('|');
+			for (const uint8_t opened : state.OpenedAisles)
+			{
+				key.push_back(opened != 0 ? '1' : '0');
+			}
+			key.push_back('|');
+			key.push_back(static_cast<char>(state.CommonKeys));
+			key.push_back(static_cast<char>(state.UniqueKeys));
+			return key;
+		}
+
+		void ExpandReachableRooms(const MissionGraphData& graph, SearchState& state) noexcept
+		{
+			bool changed;
+			do
+			{
+				changed = false;
+				for (size_t aisleIndex = 0; aisleIndex < graph.Aisles.size(); ++aisleIndex)
+				{
+					const AisleData& aisle = graph.Aisles[aisleIndex];
+					if (!IsAisleOpen(state, aisle, aisleIndex))
+					{
+						continue;
+					}
+
+					if (state.ReachableRooms[aisle.Room0] != 0 && state.ReachableRooms[aisle.Room1] == 0)
+					{
+						state.ReachableRooms[aisle.Room1] = 1;
+						changed = true;
+					}
+					if (state.ReachableRooms[aisle.Room1] != 0 && state.ReachableRooms[aisle.Room0] == 0)
+					{
+						state.ReachableRooms[aisle.Room0] = 1;
+						changed = true;
+					}
+				}
+
+				for (size_t roomIndex = 0; roomIndex < graph.Rooms.size(); ++roomIndex)
+				{
+					if (state.ReachableRooms[roomIndex] == 0 || state.CollectedRooms[roomIndex] != 0)
+					{
+						continue;
+					}
+
+					switch (graph.Rooms[roomIndex].Item)
+					{
+					case Room::Item::Key:
+						++state.CommonKeys;
+						state.CollectedRooms[roomIndex] = 1;
+						changed = true;
+						break;
+					case Room::Item::UniqueKey:
+						++state.UniqueKeys;
+						state.CollectedRooms[roomIndex] = 1;
+						changed = true;
+						break;
+					default:
+						break;
+					}
+				}
+			} while (changed);
+		}
+
+		bool HasEarlyGoalAccess(const MissionGraphData& graph, const SearchState& state) noexcept
+		{
+			return state.ReachableRooms[graph.GoalRoom] != 0 && !IsSuccess(graph, state);
+		}
+
+		bool HasBypassedLock(const MissionGraphData& graph, const SearchState& state) noexcept
+		{
+			for (size_t aisleIndex = 0; aisleIndex < graph.Aisles.size(); ++aisleIndex)
+			{
+				const AisleData& aisle = graph.Aisles[aisleIndex];
+				if (aisle.Lock != LockType::None &&
+					state.OpenedAisles[aisleIndex] == 0 &&
+					state.ReachableRooms[aisle.Room0] != 0 &&
+					state.ReachableRooms[aisle.Room1] != 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool CanOpenUniqueLock(const MissionGraphData& graph, const SearchState& state) noexcept
+		{
+			if (state.UniqueKeys == 0 || state.CommonKeys != 0)
+			{
+				return false;
+			}
+
+			for (size_t aisleIndex = 0; aisleIndex < graph.Aisles.size(); ++aisleIndex)
+			{
+				if (graph.Aisles[aisleIndex].Lock == LockType::Common && state.OpenedAisles[aisleIndex] == 0)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		bool BuildMissionGraphData(
+			const std::list<std::shared_ptr<Room>>& rooms,
+			const std::vector<Aisle>& aisles,
+			MissionGraphData& outGraph) noexcept
+		{
+			std::unordered_map<Identifier, size_t> roomIndices;
+			outGraph.Rooms.reserve(rooms.size());
+			for (const std::shared_ptr<Room>& room : rooms)
+			{
+				if (!room)
+				{
+					continue;
+				}
+
+				RoomData data;
+				data.Parts = room->GetParts();
+				data.Item = room->GetItem();
+
+				const size_t roomIndex = outGraph.Rooms.size();
+				roomIndices.emplace(room->GetIdentifier(), roomIndex);
+				outGraph.Rooms.emplace_back(data);
+
+				if (data.Parts == Room::Parts::Start)
+				{
+					outGraph.StartRoom = roomIndex;
+					outGraph.bHasStartRoom = true;
+				}
+				else if (data.Parts == Room::Parts::Goal)
+				{
+					outGraph.GoalRoom = roomIndex;
+					outGraph.bHasGoalRoom = true;
+				}
+			}
+
+			if (!outGraph.bHasStartRoom || !outGraph.bHasGoalRoom)
+			{
+				return false;
+			}
+
+			outGraph.Aisles.reserve(aisles.size());
+			for (const Aisle& aisle : aisles)
+			{
+				const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
+				const auto& room1 = aisle.GetPoint(1)->GetOwnerRoom();
+				if (!room0 || !room1)
+				{
+					return false;
+				}
+
+				const auto room0Index = roomIndices.find(room0->GetIdentifier());
+				const auto room1Index = roomIndices.find(room1->GetIdentifier());
+				if (room0Index == roomIndices.end() || room1Index == roomIndices.end())
+				{
+					return false;
+				}
+
+				AisleData data;
+				data.Room0 = room0Index->second;
+				data.Room1 = room1Index->second;
+				if (aisle.IsUniqueLocked())
+				{
+					data.Lock = LockType::Unique;
+					++outGraph.UniqueLockCount;
+				}
+				else if (aisle.IsLocked())
+				{
+					data.Lock = LockType::Common;
+					++outGraph.CommonLockCount;
+				}
+				outGraph.Aisles.emplace_back(data);
+			}
+
+			return true;
+		}
+
+		bool ValidateKeyLockCounts(const MissionGraphData& graph) noexcept
+		{
+			size_t commonKeyCount = 0;
+			size_t uniqueKeyCount = 0;
+			for (const RoomData& room : graph.Rooms)
+			{
+				if (room.Item == Room::Item::Key)
+				{
+					++commonKeyCount;
+				}
+				else if (room.Item == Room::Item::UniqueKey)
+				{
+					++uniqueKeyCount;
+				}
+			}
+
+			return
+				commonKeyCount == graph.CommonLockCount &&
+				uniqueKeyCount == graph.UniqueLockCount &&
+				graph.UniqueLockCount == 1;
+		}
+
+		bool CanSolveMissionGraph(const MissionGraphData& graph)
+		{
+			if (graph.Rooms.empty() || !ValidateKeyLockCounts(graph))
+			{
+				return false;
+			}
+
+			SearchState initialState;
+			initialState.ReachableRooms.resize(graph.Rooms.size(), 0);
+			initialState.CollectedRooms.resize(graph.Rooms.size(), 0);
+			initialState.OpenedAisles.resize(graph.Aisles.size(), 0);
+			initialState.ReachableRooms[graph.StartRoom] = 1;
+			ExpandReachableRooms(graph, initialState);
+			if (HasEarlyGoalAccess(graph, initialState) || HasBypassedLock(graph, initialState))
+			{
+				return false;
+			}
+			if (IsSuccess(graph, initialState))
+			{
+				return true;
+			}
+
+			std::queue<SearchState> queue;
+			std::unordered_set<std::string> visited;
+			visited.emplace(MakeVisitedKey(initialState));
+			queue.emplace(std::move(initialState));
+
+			while (!queue.empty())
+			{
+				SearchState state = std::move(queue.front());
+				queue.pop();
+
+				for (size_t aisleIndex = 0; aisleIndex < graph.Aisles.size(); ++aisleIndex)
+				{
+					const AisleData& aisle = graph.Aisles[aisleIndex];
+					if (aisle.Lock == LockType::None || state.OpenedAisles[aisleIndex] != 0)
+					{
+						continue;
+					}
+					if (state.ReachableRooms[aisle.Room0] == 0 && state.ReachableRooms[aisle.Room1] == 0)
+					{
+						continue;
+					}
+
+					SearchState nextState = state;
+					if (aisle.Lock == LockType::Common)
+					{
+						if (nextState.CommonKeys == 0)
+						{
+							continue;
+						}
+						--nextState.CommonKeys;
+					}
+					else if (aisle.Lock == LockType::Unique)
+					{
+						if (!CanOpenUniqueLock(graph, nextState))
+						{
+							continue;
+						}
+						--nextState.UniqueKeys;
+					}
+
+					nextState.OpenedAisles[aisleIndex] = 1;
+					ExpandReachableRooms(graph, nextState);
+					if (HasEarlyGoalAccess(graph, nextState) || HasBypassedLock(graph, nextState))
+					{
+						return false;
+					}
+					if (IsSuccess(graph, nextState))
+					{
+						return true;
+					}
+
+					const std::string key = MakeVisitedKey(nextState);
+					if (visited.insert(key).second)
+					{
+						queue.emplace(std::move(nextState));
+					}
+				}
+			}
+
+			return false;
 		}
 	}
 
-	void MissionGraphTester::Initialize(const std::shared_ptr<Node>& parentNode, const std::shared_ptr<Room>& parentRoom, InitializeParameter& parameter)
+	MissionGraphTester::MissionGraphTester(const std::list<std::shared_ptr<Room>>& rooms, const std::vector<Aisle>& aisles)
 	{
-		for (const auto& aisle : parameter.mAisles)
+		MissionGraphData graph;
+		if (!BuildMissionGraphData(rooms, aisles, graph))
 		{
-			const auto& room0 = aisle.GetPoint(0)->GetOwnerRoom();
-			const auto& room1 = aisle.GetPoint(1)->GetOwnerRoom();
-			if (parentRoom == room0 || parentRoom == room1)
-			{
-				if (parameter.mPassableAisles.contains(&aisle) == true)
-					continue;
-				parameter.mPassableAisles.emplace(&aisle);
+			DUNGEON_GENERATOR_WARNING(TEXT("MissionGraph test failed. Start or goal room is missing."));
+			return;
+		}
 
-				// 通路ノードを作成
-				auto newAisle = std::make_shared<Node>();
-				newAisle->mIdentifier = aisle.GetIdentifier();
-				if (aisle.IsUniqueLocked() == true)
-					newAisle->mRoomKey = Room::Item::UniqueKey;
-				else if (aisle.IsLocked() == true)
-					newAisle->mRoomKey = Room::Item::Key;
-
-				// 元の部屋に新しい通路を接続
-				parentNode->mNodes.emplace_back(newAisle);
-
-				// 部屋ノードを作成
-				const std::shared_ptr<Room>& nextRoom = (parentRoom != room0) ? room0 : room1;
-				auto nextNode = std::make_shared<Node>();
-				nextNode->mIdentifier = nextRoom->GetIdentifier();
-				nextNode->mRoomParts = nextRoom->GetParts();
-				nextNode->mRoomItem = nextRoom->GetItem();
-
-				// 通路に新しい部屋を接続
-				newAisle->mNodes.emplace_back(nextNode);
-
-				// 次の部屋を初期化
-				Initialize(nextNode, nextRoom , parameter);
-			}
+		mResult = CanSolveMissionGraph(graph);
+		if (mResult)
+		{
+			DUNGEON_GENERATOR_LOG(TEXT("MissionGraph test succeeded."));
+		}
+		else
+		{
+			DUNGEON_GENERATOR_WARNING(TEXT("MissionGraph test failed. The generated key-lock route is not solvable."));
 		}
 	}
 
@@ -106,77 +398,4 @@ namespace dungeon
 	{
 		return mResult;
 	}
-
-	bool MissionGraphTester::Node::SeekGoal(Inventory& inventory, bool& shouldRetry) const
-	{
-		// ゴールに到着！
-		if (mRoomParts == Room::Parts::Goal)
-			return true;
-
-		for (const auto& node : mNodes)
-		{
-			// ユニーク鍵がかかっている？
-			if (node->mRoomKey == Room::Item::UniqueKey)
-			{
-				check(node->mRoomItem == Room::Item::Empty);
-
-				// ユニーク鍵を持っている？
-				if (inventory.mNumberOfUniqueKeys > 0)
-				{
-					// ユニーク鍵を消費して次の部屋へ
-					--inventory.mNumberOfUniqueKeys;
-					node->mRoomKey = Room::Item::Empty;
-					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Used a unique key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
-					if (node->SeekGoal(inventory, shouldRetry) == true)
-						return true;
-				}
-			}
-			// 鍵がかかっている？
-			else if (node->mRoomKey == Room::Item::Key)
-			{
-				check(node->mRoomItem == Room::Item::Empty);
-
-				// 鍵を持っている？
-				if (inventory.mNumberOfKeys > 0)
-				{
-					// 鍵を消費して次の部屋へ
-					--inventory.mNumberOfKeys;
-					node->mRoomKey = Room::Item::Empty;
-					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Used a key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
-					if (node->SeekGoal(inventory, shouldRetry) == true)
-						return true;
-				}
-			}
-			else
-			{
-				check(node->mRoomKey == Room::Item::Empty);
-
-				// ユニーク鍵を拾った？
-				if (node->mRoomItem == Room::Item::UniqueKey)
-				{
-					++inventory.mNumberOfUniqueKeys;
-					node->mRoomItem = Room::Item::Empty;
-					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Picked up a unique key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
-				}
-				// 鍵を拾った？
-				else if (node->mRoomItem == Room::Item::Key)
-				{
-					++inventory.mNumberOfKeys;
-					node->mRoomItem = Room::Item::Empty;
-					shouldRetry = true;
-					DUNGEON_GENERATOR_LOG(TEXT(" -> Picked up a key in Room %d. (%d|%d)"), static_cast<uint16_t>(node->mIdentifier), inventory.mNumberOfUniqueKeys, inventory.mNumberOfKeys);
-				}
-
-				// 次の部屋へ
-				if (node->SeekGoal(inventory, shouldRetry) == true)
-					return true;
-			}
-		}
-
-		return false;
-	}
-
 }

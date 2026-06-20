@@ -29,6 +29,7 @@ All Rights Reserved.
 #include "MissionGraph.h"
 #include "../Generator.h"
 #include "../Helper/DrawLots.h"
+#include <algorithm>
 #include <vector>
 
 namespace dungeon
@@ -148,6 +149,14 @@ namespace dungeon
 		{
 			return nullptr;
 		}
+		const auto lockedPurposeAisle = std::find_if(aisles.begin(), aisles.end(), [](const Aisle* aisle)
+			{
+				return aisle != nullptr && aisle->GetPurpose() == EDungeonAislePurpose::Locked;
+			});
+		if (lockedPurposeAisle != aisles.end())
+		{
+			return *lockedPurposeAisle;
+		}
 		if (aisles.size() == 1)
 		{
 			return aisles[0];
@@ -173,6 +182,15 @@ namespace dungeon
 				return false;
 			}
 		);
+
+		const auto firstNonLockedPurpose = std::remove_if(aisles.begin(), aisles.end(), [](const Aisle* aisle)
+			{
+				return aisle == nullptr || aisle->GetPurpose() != EDungeonAislePurpose::Locked;
+			});
+		if (firstNonLockedPurpose != aisles.begin())
+		{
+			aisles.erase(firstNonLockedPurpose, aisles.end());
+		}
 	}
 
 	uint32_t MissionGraph::DetermineUniqueKeyPlacementProbability(const uint8_t branchId, const std::shared_ptr<const Room>& room) noexcept

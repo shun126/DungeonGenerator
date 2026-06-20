@@ -19,7 +19,7 @@ Set up `UDungeonMeshSetDatabase` like this:
 1. `Mesh Set Selection Policy = Custom Selector`
 2. Assign a `UDungeonPartsSelector`-derived asset to `Custom Mesh Set Selector`
 
-`SelectMeshSetIndex` is then called with `FMeshSetQuery` and the number of candidates, and should return the chosen mesh-set index.
+`SelectMeshSetIndex` is then called with `FDungeonMeshSetQuery` and the number of candidates, and should return the chosen mesh-set index.
 
 ## Choosing individual parts with a custom rule
 Floors, walls, roofs, slopes, catwalks, chandeliers, pillars, torches, and doors can also use `Custom Selector`.
@@ -29,15 +29,17 @@ Floors, walls, roofs, slopes, catwalks, chandeliers, pillars, torches, and doors
 - On `UDungeonGenerateParameter` for pillars / torches / doors and similar fixtures  
   Set the corresponding `*SelectionPolicy` to `Custom Selector` and assign `Custom Dungeon Parts Selector`.
 
-In that case, `SelectPartsIndex` is called with `FPartsQuery` and the candidate count, and should return the final part index.
+In that case, `SelectPartsIndex` is called with `FDungeonPartsQuery` and the candidate count, and should return the final part index.
 
 ## Using the sample selector
 `UDungeonSamplePartsSelector` is included as a sample implementation.
 
-- `FMeshSetQuery`  
+- `FDungeonMeshSetQuery`  
   The query passed when selecting a mesh set.
-- `FPartsQuery`  
+- `FDungeonPartsQuery`  
   The query passed when selecting an individual part. The sample includes deterministic rules using `NeighborMask6` and `SeedKey`.
+
+Both query structs include `GridX`, `GridY`, and `GridZ`. These values are local dungeon grid cell coordinates, so use them for rules such as "use this mesh every third cell" or "change parts by floor height." They are not Unreal world-space positions.
 
 A practical starting point is to duplicate the sample and add conditions gradually.
 

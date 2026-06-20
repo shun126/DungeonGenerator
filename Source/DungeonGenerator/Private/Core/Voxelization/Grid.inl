@@ -50,14 +50,26 @@ namespace dungeon
 		SetDirection(direction);
 	}
 
-	inline Grid Grid::CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
+	inline Grid::Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart, const EDungeonRoomStructuralRole roomStructuralRole, const EDungeonRoomGameplayRole roomGameplayRole, const int32 zoneIndex) noexcept
+		: mIdentifier(identifier)
+		, mDepthRatioFromStart(depthRatioFromStart)
+		, mRoomStructuralRole(roomStructuralRole)
+		, mRoomGameplayRole(roomGameplayRole)
+		, mZoneIndex(zoneIndex)
 	{
-		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier, depthRatioFromStart);
+		SetType(type);
+		SetProps(Props::None);
+		SetDirection(direction);
 	}
 
-	inline Grid Grid::CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
+	inline Grid Grid::CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, const EDungeonRoomStructuralRole roomStructuralRole, const EDungeonRoomGameplayRole roomGameplayRole, const int32 zoneIndex) noexcept
 	{
-		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier, depthRatioFromStart);
+		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier, depthRatioFromStart, roomStructuralRole, roomGameplayRole, zoneIndex);
+	}
+
+	inline Grid Grid::CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, const EDungeonRoomStructuralRole roomStructuralRole, const EDungeonRoomGameplayRole roomGameplayRole, const int32 zoneIndex) noexcept
+	{
+		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier, depthRatioFromStart, roomStructuralRole, roomGameplayRole, zoneIndex);
 	}
 
 	inline Grid::Type Grid::GetType() const noexcept
@@ -175,6 +187,36 @@ namespace dungeon
 	inline void Grid::SetDepthRatioFromStart(const uint8_t depthRatioFromStart) noexcept
 	{
 		mDepthRatioFromStart = depthRatioFromStart;
+	}
+
+	inline EDungeonRoomStructuralRole Grid::GetRoomStructuralRole() const noexcept
+	{
+		return mRoomStructuralRole;
+	}
+
+	inline void Grid::SetRoomStructuralRole(const EDungeonRoomStructuralRole roomStructuralRole) noexcept
+	{
+		mRoomStructuralRole = roomStructuralRole;
+	}
+
+	inline EDungeonRoomGameplayRole Grid::GetRoomGameplayRole() const noexcept
+	{
+		return mRoomGameplayRole;
+	}
+
+	inline void Grid::SetRoomGameplayRole(const EDungeonRoomGameplayRole roomGameplayRole) noexcept
+	{
+		mRoomGameplayRole = roomGameplayRole;
+	}
+
+	inline int32 Grid::GetZoneIndex() const noexcept
+	{
+		return mZoneIndex;
+	}
+
+	inline void Grid::SetZoneIndex(const int32 zoneIndex) noexcept
+	{
+		mZoneIndex = zoneIndex;
 	}
 
 

@@ -1,5 +1,21 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 2026mmdd-2.0.0 (100)
+### Changes
+#### Migration policy
+- v2.0.0 keeps legacy `DeprecatedProperty` fields in the runtime class layout so v1 assets can be migrated safely to the v2 parameter groups.
+- `FDungeonGeneratedRoomInfo` and `ADungeonRoomSensorBase::GetGeneratedRoomInfo()` are now the standard v2 API for generated room information. Legacy room-information fields on `ADungeonRoomSensorBase` remain as deprecated migration fields.
+- Removed unreleased v2 room-flag enemy spawn scales from `ADungeonRoomSensorBase` so helper enemy counts are tuned only by area, `GameplayRoleEnemySpawnMultipliers`, and `StructuralRoleEnemySpawnMultipliers`.
+- A future version may limit v1 -> v2 migration to Editor/cook-only flows. After that policy is adopted, directly loading unsaved v1 assets in runtime builds may become unsupported.
+- Legacy properties should only be removed after the project workflow reliably converts and saves v1 assets as v2 assets through the Editor or cook migration path.
+### 変更点
+#### 移行ポリシー
+- v2.0.0 では、v1 のアセットを v2 のパラメータグループに安全に移行できるよう、ランタイムクラスのレイアウトにレガシーな `DeprecatedProperty` フィールドが維持されています。
+- `FDungeonGeneratedRoomInfo` および `ADungeonRoomSensorBase::GetGeneratedRoomInfo()` は、生成された部屋情報に関する v2 の標準 API となりました。`ADungeonRoomSensorBase` 上のレガシーなルーム情報フィールドは、非推奨の移行用フィールドとして残されています。
+- `ADungeonRoomSensorBase` から、未公開の v2 ルームフラグによる敵スポーン倍率を削除しました。これにより、ヘルパーの敵数は、エリア、`GameplayRoleEnemySpawnMultipliers`、および `StructuralRoleEnemySpawnMultipliers` によってのみ調整されるようになりました。
+- 将来のバージョンでは、v1 から v2 への移行がエディタ/クック専用フローに限定される可能性があります。このポリシーが採用された後、ランタイムビルドで保存されていない v1 アセットを直接読み込むことはサポートされなくなる可能性があります。
+- レガシープロパティは、プロジェクトのワークフローにおいて、エディタまたはクックによる移行パスを経由して v1 アセットが確実に v2 アセットに変換・保存された後にのみ削除してください。
+
 ## 20260606-1.9.2 (66)
 ### Changes
 - Fixed an issue with the plant spawn range

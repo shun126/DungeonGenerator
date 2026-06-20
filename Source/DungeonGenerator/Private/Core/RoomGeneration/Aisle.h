@@ -8,6 +8,7 @@
 
 #pragma once
 #include "../Helper/Identifier.h"
+#include "Parameter/DungeonLayoutTypes.h"
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -28,7 +29,7 @@ namespace dungeon
 		 * @param[in]  p0		辺の頂点
 		 * @param[in]  p1		辺の頂点
 		 */
-		Aisle(const bool main, const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1) noexcept;
+		Aisle(const bool main, const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1, const EDungeonAislePurpose purpose = EDungeonAislePurpose::MainPath) noexcept;
 
 		/**
 		 * コピーコンストラクタ
@@ -77,6 +78,13 @@ namespace dungeon
 		 * 幹線通路か取得します
 		 */
 		bool IsMain() const noexcept;
+
+		/**
+		 * Get aisle purpose assigned by the layout planner.
+		 *
+		 * レイアウトプランナーが割り当てた通路目的を取得します。
+		 */
+		EDungeonAislePurpose GetPurpose() const noexcept;
 
 		/**
 		 * 閉鎖状態を取得します
@@ -147,6 +155,7 @@ namespace dungeon
 		double mLength;
 		Identifier mIdentifier;
 		bool mMain = false;
+		EDungeonAislePurpose mPurpose = EDungeonAislePurpose::MainPath;
 		uint8_t mHeight = 1;
 		bool mLocked = false;
 		bool mUniqueLocked = false;

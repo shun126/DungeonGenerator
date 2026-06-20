@@ -10,11 +10,50 @@
 #include "Helper/DungeonAisleGridMap.h"
 #include "Helper/DungeonRandom.h"
 #include "Parameter/DungeonMeshSetDatabase.h"
+#include <Serialization/Archive.h>
 #include <cmath>
 #include <unordered_set>
 
 UDungeonRoomSensorDatabase::UDungeonRoomSensorDatabase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
+{
+}
+
+void UDungeonRoomSensorDatabase::Serialize(FArchive& Ar)
+{
+	Ar.UsingCustomVersion(FDungeonGeneratorAssetVersion::GUID);
+	Super::Serialize(Ar);
+
+	if (Ar.IsLoading())
+	{
+		LoadedAssetVersion = FDungeonGeneratorAssetVersion::Get(Ar);
+	}
+}
+
+void UDungeonRoomSensorDatabase::PostLoad()
+{
+	Super::PostLoad();
+	MigrateFromAssetVersion(LoadedAssetVersion);
+	ApplyPostLoadCompatibilityFixups();
+#if WITH_EDITOR
+	FDungeonAssetMigrationDelegates::RequestMigration(this, LoadedAssetVersion);
+#endif
+}
+
+/*
+ * Runs migration steps that depend on the asset format version saved in the uasset.
+ * uassetに保存されたアセット形式バージョンに依存する移行処理を実行します。
+ */
+void UDungeonRoomSensorDatabase::MigrateFromAssetVersion(const int32 assetVersion)
+{
+	(void)assetVersion;
+}
+
+/*
+ * Applies compatibility fixups that are still required after version-specific migration.
+ * バージョン別移行後も必要な互換補正を適用します。
+ */
+void UDungeonRoomSensorDatabase::ApplyPostLoadCompatibilityFixups()
 {
 }
 
@@ -53,6 +92,23 @@ UClass* UDungeonRoomSensorDatabase::Select(const uint16_t identifier, const uint
 		DUNGEON_GENERATOR_ERROR(TEXT("Set the correct SelectionMethod"));
 		return nullptr;
 	}
+}
+
+UClass* UDungeonRoomSensorDatabase::GetFirstValidRoomSensorClass() const
+{
+	for (const auto& dungeonRoomSensorClass : DungeonRoomSensorClass)
+	{
+		if (IsValid(dungeonRoomSensorClass))
+		{
+			return dungeonRoomSensorClass;
+		}
+	}
+	return nullptr;
+}
+
+const TArray<FSoftObjectPath>& UDungeonRoomSensorDatabase::GetSpawnActorInAisle() const
+{
+	return SpawnActorInAisle;
 }
 
 void UDungeonRoomSensorDatabase::OnEndGeneration(UDungeonRandom* synchronizedRandom, const UDungeonAisleGridMap* aisleGridMap, const float verticalGridSize, const std::function<void(const FSoftObjectPath&, const FTransform&)>& spawnActor) const

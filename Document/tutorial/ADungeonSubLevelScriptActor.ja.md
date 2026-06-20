@@ -18,7 +18,7 @@
 
 ## 重要なポイント
 - `Width` / `Depth` / `Height` はセンチメートルではなく**グリッド数**です。
-- `Horizontal Size` / `Vertical Size` は、本体側の `GridSize` / `VerticalGridSize` と一致している必要があります。
+- `Horizontal Size` / `Vertical Size` は、本体側の `Theme.HorizontalGridSize` / `Theme.VerticalGridSize` と一致している必要があります。
 - `UDungeonSubLevelDatabase` の `Build` は、このクラスからサイズとグリッド情報を読み取ってデータベースへコピーします。
 
 ## 編集時の注意
@@ -36,4 +36,3 @@
 - [UDungeonSubLevelDatabase.ja.md](./UDungeonSubLevelDatabase.ja.md)
 - [LobbyConnection.ja.md](./LobbyConnection.ja.md)
 - [ADungeonGenerateActor.ja.md](./ADungeonGenerateActor.ja.md)
-

@@ -644,6 +644,17 @@ UDungeonPartition* ADungeonMainLevelScriptActor::Find(const FVector& worldLocati
 	return DungeonPartitions[partitionIndex];
 }
 
+bool ADungeonMainLevelScriptActor::IsPartitionActive(const int32 partitionIndex) const noexcept
+{
+	if (!DungeonPartitions.IsValidIndex(partitionIndex))
+	{
+		return false;
+	}
+
+	const UDungeonPartition* partition = DungeonPartitions[partitionIndex];
+	return IsValid(partition) && partition->IsPartitionActivate();
+}
+
 /*
  * 点で検索しているので、巨大なアクターは誤判定に注意してください。
  */
@@ -1504,7 +1515,7 @@ void ADungeonMainLevelScriptActor::UpdateShadowCastingPointAndSpotLights()
 	}
 
 	// 降順に並び替える
-	std::sort(pointLightComponents.begin(), pointLightComponents.end(), [](const PointLightPair& l, const PointLightPair& r)
+	std::stable_sort(pointLightComponents.begin(), pointLightComponents.end(), [](const PointLightPair& l, const PointLightPair& r)
 		{
 			return l.first > r.first;
 		}

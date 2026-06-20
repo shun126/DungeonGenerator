@@ -68,6 +68,11 @@ namespace dungeon
 		, mBranchId(other.mBranchId)
 		, mNumberOfGates(other.mNumberOfGates)
 		, mVerticalRoomMargin(other.mVerticalRoomMargin)
+		, mStructuralRole(other.mStructuralRole)
+		, mGameplayRole(other.mGameplayRole)
+		, mZoneIndex(other.mZoneIndex)
+		, mMainPathRoom(other.mMainPathRoom)
+		, mLockedRouteRoom(other.mLockedRouteRoom)
 	{
 	}
 
@@ -90,6 +95,11 @@ namespace dungeon
 		mBranchId = other.mBranchId;
 		mNumberOfGates = other.mNumberOfGates;
 		mVerticalRoomMargin = other.mVerticalRoomMargin;
+		mStructuralRole = other.mStructuralRole;
+		mGameplayRole = other.mGameplayRole;
+		mZoneIndex = other.mZoneIndex;
+		mMainPathRoom = other.mMainPathRoom;
+		mLockedRouteRoom = other.mLockedRouteRoom;
 		return *this;
 	}
 

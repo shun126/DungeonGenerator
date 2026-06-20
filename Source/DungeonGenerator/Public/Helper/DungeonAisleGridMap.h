@@ -21,12 +21,33 @@ struct FDungeonAisleGrid
 {
 	GENERATED_BODY()
 
+	/*
+	 * Identifier of the generated aisle that owns this grid.
+	 * このグリッドを所有する生成通路の識別子です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	int32 Identifier = INDEX_NONE;
+
 	/**
 	 * Aisle grid direction
 	 * 通路グリッドの方向
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
 	EDungeonDirection Direction = EDungeonDirection::North;
+
+	/*
+	 * Start-to-goal depth ratio of the owning aisle, stored as 0 to 255.
+	 * 所有する通路のスタートからゴールまでの深度比です。0 から 255 で保持します。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	uint8 DepthRatioFromStart = 0;
+
+	/*
+	 * Zone index assigned to the owning aisle.
+	 * 所有する通路に割り当てられた Zone 番号です。
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	int32 ZoneIndex = INDEX_NONE;
 
 	/**
 	 * Center position of aisle grid (height is floor position)
@@ -62,7 +83,7 @@ public:
 	 * Register aisle grid
 	 * 通路グリッドを登録します
 	 */
-	void Register(const int32 identifier, const EDungeonDirection direction, const FVector& location);
+	void Register(int32 identifier, EDungeonDirection direction, const FVector& location, uint8 depthRatioFromStart, int32 zoneIndex);
 
 	/**
 	 * Update aisle grid
