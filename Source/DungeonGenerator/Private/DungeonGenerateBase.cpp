@@ -160,6 +160,13 @@ namespace
 		return mask;
 	}
 
+	bool IsVisibleGeneratedGrid(const dungeon::Grid& grid) noexcept
+	{
+		if (grid.Is(dungeon::Grid::Type::UpSpace) || grid.Is(dungeon::Grid::Type::Stairwell))
+			return false;
+		return grid.Is(dungeon::Grid::Type::Slope) || grid.Is(dungeon::Grid::Type::DownSpace) || grid.CanBuildFloor(false);
+	}
+
 #if WITH_EDITOR
 	FString NormalizeEditorPackageNameForComparison(const FString& packageName)
 	{
@@ -493,6 +500,64 @@ std::shared_ptr<const dungeon::Generator> ADungeonGenerateBase::GetGenerator() c
 	return mGenerator;
 }
 
+bool ADungeonGenerateBase::GetVisibleGridHeightRange(int32& minZ, int32& maxZ) const noexcept
+{
+	if (mVisibleGridHeightRangeValid == false)
+		return false;
+
+	minZ = mMinVisibleGridZ;
+	maxZ = mMaxVisibleGridZ;
+	return true;
+}
+
+/*
+ * Clears the cached visible grid height range when the generated dungeon changes.
+ * 生成済みダンジョンが変わるときに、表示可能なグリッド高さ範囲のキャッシュをクリアします。
+ */
+void ADungeonGenerateBase::InvalidateVisibleGridHeightRange() noexcept
+{
+	mVisibleGridHeightRangeValid = false;
+	mMinVisibleGridZ = 0;
+	mMaxVisibleGridZ = 0;
+}
+
+/*
+ * Caches the Z range that contains visible generated grid cells.
+ * 表示可能な生成済みグリッドセルを含むZ範囲をキャッシュします。
+ */
+void ADungeonGenerateBase::CacheVisibleGridHeightRange() noexcept
+{
+	InvalidateVisibleGridHeightRange();
+
+	if (mGenerator == nullptr || mGenerator->GetLastError() != dungeon::Generator::Error::Success)
+		return;
+
+	const std::shared_ptr<dungeon::Voxel> voxel = mGenerator->GetVoxel();
+	if (voxel == nullptr)
+		return;
+
+	voxel->Each([this](const FIntVector& location, const dungeon::Grid& grid) -> bool
+		{
+			if (IsVisibleGeneratedGrid(grid) == false)
+				return true;
+
+			if (mVisibleGridHeightRangeValid == false)
+			{
+				mMinVisibleGridZ = location.Z;
+				mMaxVisibleGridZ = location.Z;
+				mVisibleGridHeightRangeValid = true;
+			}
+			else
+			{
+				mMinVisibleGridZ = FMath::Min(mMinVisibleGridZ, location.Z);
+				mMaxVisibleGridZ = FMath::Max(mMaxVisibleGridZ, location.Z);
+			}
+
+			return true;
+		}
+	);
+}
+
 void ADungeonGenerateBase::OnPreDungeonGeneration()
 {
 }
@@ -532,6 +597,7 @@ void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 
 		// ジェネレータを解放
 		mGenerator.reset();
+		InvalidateVisibleGridHeightRange();
 
 		// 生成したパラメータを解放
 		mParameter = nullptr;
@@ -549,6 +615,7 @@ void ADungeonGenerateBase::Dispose(const bool flushStreamLevels)
 bool ADungeonGenerateBase::BeginDungeonGeneration(const UDungeonGenerateParameter* parameter, const bool hasAuthority)
 {
 	MEASURE_TIME_START(stopwatch);
+	InvalidateVisibleGridHeightRange();
 	dungeon::GenerateParameter generateParameter;
 	if (!BeginDungeonGenerationPhase_Prepare(parameter, hasAuthority, generateParameter))
 	{
@@ -582,9 +649,10 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_Prepare(const UDungeonGen
 	dungeon::CreateDebugDirectory();
 #endif
 
-	DUNGEON_GENERATOR_LOG(TEXT("version '%s', license '%s', uuid '%s', commit '%s', HasAuthority '%s'"),
+	DUNGEON_GENERATOR_LOG(TEXT("version '%s', license '%s', build '%s', uuid '%s', commit '%s', HasAuthority '%s'"),
 		TEXT(DUNGEON_GENERATOR_PLUGIN_VERSION_NAME),
 		TEXT(JENKINS_LICENSE),
+		TEXT(JENKINS_BUILD_TAG),
 		TEXT(JENKINS_UUID),
 		TEXT(JENKINS_GIT_COMMIT),
 		hasAuthority ? TEXT("Yes") : TEXT("No")
@@ -773,12 +841,15 @@ bool ADungeonGenerateBase::BeginDungeonGenerationPhase_RunGenerator(dungeon::Gen
 	// 生成エラーを確認する
 	if (dungeon::Generator::Error::Success != generatorError)
 	{
+		InvalidateVisibleGridHeightRange();
 #if WITH_EDITOR
 		// デバッグに必要な情報（デバッグ生成パラメータ）を出力する
 		//mParameter->DumpToJson();
 #endif
 		return false;
 	}
+
+	CacheVisibleGridHeightRange();
 
 	{
 		const FDungeonLayoutMetrics& metrics = mGenerator->GetLastLayoutMetrics();
@@ -1162,7 +1233,7 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 	if (bSelectWallPartsByFace || parts != nullptr)
 	{
 		// 北側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z), dungeon::Direction::North, false))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y - 1, cp.mGridLocation.Z), dungeon::Direction::North, false, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
 			if (bSelectWallPartsByFace)
@@ -1178,7 +1249,7 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			}
 		}
 		// 南側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z), dungeon::Direction::South, false))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X, cp.mGridLocation.Y + 1, cp.mGridLocation.Z), dungeon::Direction::South, false, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
 			if (bSelectWallPartsByFace)
@@ -1194,7 +1265,7 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			}
 		}
 		// 東側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::East, false))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X + 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::East, false, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
 			if (bSelectWallPartsByFace)
@@ -1210,7 +1281,7 @@ void ADungeonGenerateBase::CreateImplement_ReserveWall(const CreateImplementPara
 			}
 		}
 		// 西側の壁
-		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::West, false))
+		if (cp.mGrid.CanBuildWall(mGenerator->GetGrid(cp.mGridLocation.X - 1, cp.mGridLocation.Y, cp.mGridLocation.Z), dungeon::Direction::West, false, false))
 		{
 			// 面によるパーツ選択を行う場合はここで抽選する
 			if (bSelectWallPartsByFace)
@@ -1580,7 +1651,7 @@ void ADungeonGenerateBase::CreateImplement_AddPillarAndTorch(const CreateImpleme
 				++validCastTorchLightShadowCount;
 
 			// 柱必要か調べます
-			if (fromGrid.CanBuildWall(toGrid, wallChecker.mDirection, false) == true)
+			if (fromGrid.CanBuildWall(toGrid, wallChecker.mDirection, false, false) == true)
 			{
 				++validGridCount;
 				AddFixtureGridCandidate(fixtureCandidates, checkLocation - direction);
@@ -2800,7 +2871,7 @@ FBox ADungeonGenerateBase::CalculateBoundingBox() const
 				boundingBox += FBox(min, max);
 			}
 		);
-		boundingBox += GetActorLocation();
+		boundingBox = boundingBox.ShiftBy(GetActorLocation());
 		boundingBox.Min.Z -= mParameter->GetGridSize().VerticalSize;
 		boundingBox.Max.Z += mParameter->GetGridSize().VerticalSize;
 		return boundingBox;

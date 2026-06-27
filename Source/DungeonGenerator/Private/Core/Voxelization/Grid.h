@@ -297,7 +297,7 @@ namespace dungeon
 		 * @param[in]	mergeRooms	部屋と部屋を結合する
 		 * @return		trueならば壁の生成が可能
 		 */
-		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept;
+		bool CanBuildWall(const Grid& toGrid, const Direction::Index direction, bool mergeRooms, bool minimap) const noexcept;
 
 		/**
 		 * 天井のメッシュ生成禁止に設定します

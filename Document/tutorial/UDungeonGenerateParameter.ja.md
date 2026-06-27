@@ -54,6 +54,10 @@ graph TD;
   | `BossRoute` | ゴール付近のボス戦や最終遭遇に向けて盛り上げるルート。 |
   | `HubQuest` | ハブ部屋から複数のクエスト風分岐へ進むレイアウト。 |
 
+![5つの Progression Policy のイメージ](images/ProgressionPolicyStyles.png)
+
+画像の `S` はスタート、`G` はゴール、明るい線は代表的な進行経路を示します。`Free Exploration` はループや近道、`Start To Goal` は読み取りやすい主経路、`Keys And Locks` は Key を取得してから Lock を通る順序、`Boss Route` は終盤の Boss、`Hub Quest` は中央の Hub から広がる分岐が特徴です。この画像は各 Policy の違いを理解するための概念例であり、生成される部屋形状や装飾を固定するものではありません。
+
 ```mermaid
 graph LR;
     subgraph FreeExploration["Free Exploration"]
@@ -93,17 +97,18 @@ graph LR;
     end
 ```
 
-  v1 設定から移行する場合、`UseMissionGraph = true` は `Path.ProgressionPolicy = KeysAndLocks` に対応します。
+  まず `Path.ProgressionPolicy` を選んでください。これは経路の型を決める主な設定です。`Path.MainRouteBias`、`Path.LoopRouteDensity`、`Path.ExtraCorridorComplexity` は、選んだスタイルの中で結果を微調整する上級者向け設定です。
+  v1 設定から移行する場合、`UseMissionGraph = true` は `Path.ProgressionPolicy = KeysAndLocks` に対応します。MissionGraph を使っていない通常の v1 アセットは `StartToGoal` に移行します。
 - `Path.LayoutCandidateCount`
   複数のレイアウト候補を作り、スコアが高い候補を採用するための数です。
   値を上げると、良いレイアウトを選びやすくなりますが、その分だけ生成コストも増えます。まずは `3`、品質とコストのバランスを見るなら `4-8`、エディタで結果を確認する用途なら `9-16` を目安にしてください。
   実装上、`1` や `2` を指定しても最低 `3` 候補として扱われます。`8` を超える値はランタイム生成では重くなりやすいため、主にエディタ確認や固定シードでの調整向きです。
-- `Path.MainRouteRatio`
-  スタートからゴールまでの主経路に配置する部屋の割合です。値を下げると分岐部屋が増え、値を上げると主経路が長くなり分岐部屋が減ります。
+- `Path.MainRouteBias`
+  主経路の強さを調整する上級者向け設定です。`0` は選んだ進行スタイルの標準です。負の値にすると分岐部屋が増える方向に寄り、正の値にすると主経路が長くなり分岐部屋が減る方向に寄ります。
 - `Path.LoopRouteDensity`
-  ループ経路や代替経路の多さです。`KeysAndLocks` 進行では、鍵付き扉を迂回できないように安全ではないループは無効化されます。
+  ループ経路や代替経路の多さを調整する上級者向け設定です。`0` は選んだ進行スタイルの標準です。値を上げると、そのポリシーが許す範囲でループが増えます。`KeysAndLocks` 進行では、鍵付き扉を迂回できないように安全ではないループは無効化されます。`StartToGoal`、`BossRoute`、`HubQuest` では途中の部屋にループを接続できますが、ゴール部屋は1接続の終端に保たれます。`FreeExploration` ではゴール付近のループも許可されます。
 - `Path.ExtraCorridorComplexity`
-  最小限の経路ネットワークを作った後に、追加する通路の複雑度です。`KeysAndLocks` 進行では、鍵付きルートを解ける状態に保つため、この値は無視され `0` として扱われます。
+  進行スタイルの経路ネットワークを作った後に、追加する通路の複雑度を調整する上級者向け設定です。`0` は選んだポリシー標準以上の追加通路を作らない設定です。`KeysAndLocks` 進行では、鍵付きルートを解ける状態に保つため、この値は無視され `0` として扱われます。
 - `Path.CorridorCeilingHeightPolicy`
   通路の天井高さを `1 Grid`、`2 Grids`、`Random` から選びます。見た目だけでなく、通路側に置ける装飾の余裕にも影響します。
 
@@ -120,6 +125,10 @@ graph LR;
 | `Rest` | 強い遭遇の間に置く、安全または低圧の部屋。 |
 | `Boss` | 主に `BossRoute` で主経路終盤に割り当てられる大きな遭遇。 |
 | `Secret` | 隠し発見、任意報酬、秘密イベント。 |
+
+![Gameplay Role ごとの部屋イメージ](images/RoomGameplayRoleStyles.png)
+
+画像は各 Role をゲーム内でどう使えるかを示す例です。`None` は特別な用途を持たない通常部屋、`Combat` は戦闘、`Treasure` は報酬や鍵、`Puzzle` は仕掛け、`Rest` は休憩、`Boss` は大きな遭遇、`Secret` は隠し要素を表します。Role を設定しただけで画像の敵、宝箱、パズルが自動配置されるわけではありません。生成された Role を Room Sensor の Blueprint 処理や Role ごとの Theme Override で利用し、実際のゲーム内容と見た目を作ります。
 
 `Start`、`Goal`、`Hub`、`Connector`、`Branch`、`DeadEnd` はルート側で決まる構造ロールです。`BossRoute` は主経路の終盤に `Boss` ゲームプレイ役割を割り当てます。`HubQuest` は主経路序盤の部屋を構造ロール `Hub` にします。`Boss` プロファイルを用意すれば、役割ごとの部屋メッシュ上書きには使えます。
 

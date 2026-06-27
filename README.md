@@ -32,13 +32,13 @@ Dungeon Generator is useful when you want a playable dungeon structure quickly, 
 
 Use `Path.ProgressionPolicy` to shape the player's route: open exploration with loops, a clear start-to-goal path, key-and-lock progression, a boss build-up route, or a hub quest layout with branches.
 
-![Progression policy styles](Document/ProgressionPolicyStyles.png)
+![Progression policy styles](Document/tutorial/images/ProgressionPolicyStyles.png)
 
 ## Design Rooms Around Player Experience
 
 Use `Gameplay.RoomRoles` to mark rooms as combat, treasure, puzzle, rest, boss, or secret spaces, then connect those roles to your own sensors, events, visuals, interiors, fixtures, and Blueprint logic.
 
-![Room gameplay role styles](Document/RoomGameplayRoleStyles.png)
+![Room gameplay role styles](Document/tutorial/images/RoomGameplayRoleStyles.png)
 
 ## Epic/Fab Version
 

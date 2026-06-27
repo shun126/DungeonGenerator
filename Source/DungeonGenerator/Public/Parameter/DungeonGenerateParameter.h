@@ -401,9 +401,11 @@ private:
 
 	/*
 	 * Migrates legacy top-level 1.x properties into the current grouped settings.
+	 * bForceLegacyDefaults copies default-valued v1 fields while loading pre-v2 assets.
 	 * 旧1.xのトップレベルプロパティを現在のグループ化された設定へ移行します。
+	 * bForceLegacyDefaultsはv2より前のアセット読み込み時に、v1のデフォルト値もコピーします。
 	 */
-	void MigrateLegacyTopLevelProperties();
+	void MigrateLegacyTopLevelProperties(bool bForceLegacyDefaults = false);
 	void MigrateLegacyRoomSensorSettings();
 
 	/*

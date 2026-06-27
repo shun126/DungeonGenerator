@@ -28,15 +28,13 @@ This actor manages the partitions for the level. During play, it checks the play
 The most important settings are:
 
 - `bEnableLoadControl`
-  Enables the partition-based load-control system. Keep this enabled for large runtime dungeons.
+  Enables the PVS-based partition load-control system. Keep this enabled for large runtime dungeons.
 - `ActivationRangeScale`
   Scales the active range around the player. Increase this value if actors appear too late or disappear too close to the player.
 - `PartitionGridCountOverride`
   Overrides the automatic partition size. Leave each axis at `0` unless you need advanced tuning.
-- `bUsePrecomputedPartitionVisibility`
-  Uses generated dungeon visibility information so hidden partitions do not need to stay active. This should usually stay enabled.
 - `PrecomputedVisibilityDilationHopCount`
-  Expands visible partitions through neighboring partitions. Increase this if you see pop-in near corners or doors.
+  Expands PVS-visible partitions through neighboring partitions. Increase this if you see pop-in near corners, doors, or vertical transitions.
 - `MaxPartitionActivationsPerFrame`
   Limits how many partitions can become active in one frame. Lower values reduce frame spikes but make activation spread over more frames.
 - `MaxPartitionInactivationsPerFrame`

@@ -1,6 +1,6 @@
 # Dungeon Generator クイックスタート
 
-このページでは、**最短でダンジョンを 1 つ生成して確認する手順**を説明します。  
+このページでは、**最短でダンジョンを 1 つ生成して確認する手順**を説明します。
 まずはエディタ上で見た目を確認し、その後でレベル配置用の `ADungeonGenerateActor` に繋げる流れをおすすめします。
 
 ## ゴール
@@ -10,7 +10,7 @@
 - `Generate dungeon` で生成結果を確認する
 
 ## 始める前に: プラグインを有効化する
-初回のみ、先に `DungeonGenerator` プラグインを有効化します。  
+初回のみ、先に `DungeonGenerator` プラグインを有効化します。
 Unreal Editor のメニューから次の順で操作してください。
 
 ![enable-plugin-ja](./images/LoadPlugin.png)
@@ -25,12 +25,12 @@ Unreal Editor のメニューから次の順で操作してください。
 Content Browser の `DungeonGenerator` カテゴリから、次のアセットを作成します。
 
 1. `Generate parameter`
-2. `Mesh set database`  
+2. `Mesh set database`
    部屋用
-3. `Mesh set database`  
+3. `Mesh set database`
    通路用
 
-最初はこの 3 つだけで十分です。  
+最初はこの 3 つだけで十分です。
 `Interior database`、`Sub level database`、`Gameplay.DungeonRoomSensorClass` はあとから追加できます。
 
 最初に見た目を確認したら、次は `Gameplay.DungeonRoomSensorClass` を追加し、`ADungeonRoomSensorBase` の Helper パラメータを試す流れがおすすめです。`DungeonGenerator|Helper` の設定を使うと、細かい Blueprint 制御に進む前に、敵や鍵アクターの簡単なスポーンをすばやく確認できます。
@@ -59,12 +59,12 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
 - `Structure.RoomCountRange = 10-10`
 - `Path.StartRoomPolicy = UseSouthernMost`
   北・南・東・西・上下・中央からスタート部屋の位置を選べます。
-- `Path.ExtraCorridorComplexity = 5`
+- `Path.ExtraCorridorComplexity = 0`
 
-`Path.ProgressionPolicy = KeysAndLocks` を使わない最初の確認では、`Path.ExtraCorridorComplexity` は 1 以上のままにしておくと混乱が少ないです。
+最初の確認では経路調整値を `0` のままにして、まず `Path.ProgressionPolicy` の標準形状を確認してください。
 
 ## 4. エディタでプレビューする
-`Window > DungeonGenerator` を開きます。  
+`Window > DungeonGenerator` を開きます。
 ウィンドウ内で `Generate parameter` を選択し、次の順で操作します。
 
 1. `Verify`
@@ -82,19 +82,19 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
 ## 5. レベルに組み込む
 実際のレベルで使うときは、`ADungeonGenerateActor` を配置し、`DungeonGenerateParameter` に同じ `Generate parameter` を指定します。
 
-- レベル開始時に自動生成したい  
+- レベル開始時に自動生成したい
   `AutoGenerateAtStart = true`
-- 任意タイミングで生成したい  
+- 任意タイミングで生成したい
   Blueprint などから `GenerateDungeon` または `GenerateDungeonWithParameter` を呼ぶ
 
 詳細は [ADungeonGenerateActor.ja.md](./ADungeonGenerateActor.ja.md) を参照してください。
 
 ## よくある失敗
-- 生成ボタンを押しても何も出ない  
+- 生成ボタンを押しても何も出ない
   `Verify` を実行し、床 / 壁 / 天井メッシュが入っているか確認してください。
-- 見た目は出たがレベルに組み込めない  
+- 見た目は出たがレベルに組み込めない
   `ADungeonGenerateActor` に `DungeonGenerateParameter` を割り当てているか確認してください。
-- サブレベルを使ったらサイズがずれる  
+- サブレベルを使ったらサイズがずれる
   `UDungeonSubLevelDatabase` の `Build` と、サブレベル側 `ADungeonSubLevelScriptActor` のグリッドサイズ確認が必要です。
 
 ## 次に読む

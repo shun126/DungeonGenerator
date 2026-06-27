@@ -1,119 +1,202 @@
 # Generate Minimap Textures
 
-This page explains generated dungeon minimaps in two ways:  
-**saving them as texture assets** and **showing them in a widget at runtime**.
+This page explains how to create a minimap from a generated dungeon and display it in the game UI.
 
-For the first pass, start by confirming that you can generate a texture asset in the editor.  
-After that, move on to runtime UI display and icon overlays.
+There are two main ways to use minimaps:
+
+- Generate minimap textures in the editor and save them as assets
+- Generate the minimap at runtime and display it in a widget
+
+If this is your first setup, start by generating a texture in the editor and checking the result.  
+After that, add runtime display, masks, and icon overlays one step at a time.
 
 ## Goal
 - Generate minimap textures in the editor
-- Display the minimap in UI at runtime
-- Overlay icons when needed
+- Display a runtime minimap with `UDungeonMiniMapWidget`
+- Overlay player or objective icons on the minimap
+- Match an icon size to one map grid cell
 
 ## What to Know First
-- To generate a texture in the editor, you must have a **dungeon generated immediately beforehand**
-- To show it at runtime, get the minimap object from `ADungeonGenerateActor`
-- For easier debugging, confirm the texture first and add icons later
+- Minimap textures are created from the **most recently generated dungeon data**
+- Multi-floor dungeons generate separate minimap textures per floor
+- Use `UDungeonMiniMapWidget` for an in-game minimap
+- Use `UDungeonMapWidget` for a full map screen or menu-style map
+- To show icons, add a `DungeonIconWidget` to your Widget Blueprint
 
 ## Prerequisites
 - [QuickStart.en.md](./QuickStart.en.md) is complete
 - You can generate a dungeon successfully
-- You can preview from `Window > DungeonGenerator`, or you already use `ADungeonGenerateActor` in a level
+- You have an `ADungeonGenerateActor` in the level, or you can preview from `Window > DungeonGenerator`
 
 ## A. Create Minimap Texture Assets in the Editor
-Start by creating minimap textures that are saved into the Content Browser.  
-This is useful for checking the look and prototyping UI.
 
-### 1. Generate a Dungeon First
-Minimap textures are created from the **most recently generated dungeon data**.  
+Start by creating minimap textures that are saved into the Content Browser.  
+This is useful for checking the minimap colors and the per-floor result before wiring UI.
+
+### 1. Generate a Dungeon
+
+Minimap textures are created from the last generated dungeon.  
 If you have not generated a dungeon yet, run `Generate dungeon` first.
 
-### 2. Confirm That the Buttons Are Enabled
-The following buttons are available only when valid dungeon generation data exists.
+### 2. Check the Generation Buttons
+
+When valid dungeon generation data exists, the following buttons are available:
 
 - `Generate texture with size`
 - `Generate texture with scale`
 
-If the buttons are disabled, the dungeon may not have been generated successfully.
+If the buttons are disabled, the dungeon may not have been generated yet, or the generation may have failed.
 
 ![Texture generation window](images/MiniMap1.png)
 
-### 3. Export the Texture
-Use either button depending on what you want to control.
+### 3. Choose a Generation Method
+
+Choose the method that matches what you want to control.
 
 - `Generate texture with size`  
-  Use this when you want to decide the output size directly
+  Use this when you want to fix the output texture size, such as `512 x 512`. This is useful when the final UI texture size is already decided.
 - `Generate texture with scale`  
-  Use this when you want to control output density instead
+  Use this when you want to fix the number of dots per grid cell. This is useful when icons or mask ranges should align with map grid units.
+
+For runtime minimaps, it is usually easiest to start with the same idea as `Generate texture with scale`.  
+For example, when `DotScale` is `20`, one map grid cell is 20 dots wide.
 
 ### 4. Check the Output Location
-When you press the button, a texture asset is created in the `ProceduralTextures` folder in the Content Browser.
+
+After generation, texture assets are created in the `ProceduralTextures` folder in the Content Browser.
 
 ![](images/MiniMap2.png)
 
 ### 5. Check the Per-Floor Result
-The minimap is generated as **a separate texture for each floor**.  
-This helps players understand multi-floor dungeons more easily.  
-Lower floors are shown in lighter colors.
 
-## B. Show the Minimap in a Widget at Runtime
-If you generate the dungeon during gameplay, you can display the minimap directly in UI without saving texture assets.
+The minimap is generated as a separate texture for each floor.  
+For multi-floor dungeons, switching the displayed texture based on the player's height makes the current floor easy to understand.
 
-### 1. Get the Minimap Object After Dungeon Generation
-After `ADungeonGenerateActor` generates the dungeon,  
-you can obtain a `DungeonMinimapTextureLayer` object.
+## B. Display a Runtime Minimap
 
-![](images/MiniMap3.png)
+If the dungeon is generated during gameplay, you can display the minimap directly in UI without saving texture assets.
 
-### 2. Select the Texture for the Current Floor
-Use `DungeonMinimapTextureLayer` to get the texture that matches the player's current height.
+### 1. Create a Widget Blueprint
 
-![](images/MiniMap4.png)
+Create a Widget Blueprint for the minimap and set its parent class to `UDungeonMiniMapWidget`.  
+Add at least the following widgets:
 
-### 3. Assign It to a Widget
-Set the retrieved texture on a widget brush and display it.
+- `OutImage`  
+  The `Image` widget that displays the minimap texture. The name must be `OutImage`.
+- `OutIconWidget`  
+  Add this only when you want icon overlays. Its type must be `DungeonIconWidget`, and its name must be `OutIconWidget`.
 
-![](images/MiniMap5.png)
+### 2. Assign the Display Material
+
+Set a minimap display material to `OutMaterial` on `UDungeonMiniMapWidget`.  
+By default, the widget writes textures to these material parameter names:
+
+- `BaseTexture`  
+  The main minimap texture.
+- `MaskTexture`  
+  The mask texture used to hide unexplored areas.
+
+If your material uses different parameter names, update `BaseTextureName` and `MaskTextureName` on the widget to match.
+
+### 3. Choose How the Minimap Texture Layer Is Created
+
+`UDungeonMiniMapWidget` can either generate a minimap texture layer at runtime or use a layer that was already generated by `ADungeonGenerateActor`.
+
+- Enable `Generate Dungeon Mini Map Texture Layer`  
+  The widget generates the minimap at runtime. This is the easiest first setup.
+- Disable `Generate Dungeon Mini Map Texture Layer`  
+  The widget uses an already generated minimap. This is useful when multiple widgets should share the same minimap data.
+
+Choose the generation method with these settings:
+
+- Enable `Generate Minimap Texture With Size`  
+  `TextureWidth` controls the texture size.
+- Disable `Generate Minimap Texture With Size`  
+  `DotScale` controls the number of dots per grid cell. The default is `20`.
+
+### 4. Decide Whether to Use a Mask
+
+Enable `Create Mask Texture` if you want to generate a mask texture too.  
+Use this when only the area near the player should be visible.
+
+`Player Visible Radius` controls how far the mask is cleared around the player. The unit is centimeters, the standard Unreal world unit.
+
+### 5. Choose the Map Direction
+
+Use `Is Map North Up` to choose how the minimap is oriented.
+
+- Enabled  
+  North always stays at the top. This is easier to read like a map.
+- Disabled  
+  The map rotates with the player or camera. This works well for radar-style minimaps.
 
 ## C. Overlay Icons
-Adding icons for the player or targets makes exploration easier.  
-Use `DungeonIconWidget` to help display these icons.
 
-### 1. Prepare the Icon You Want to Show
-First, set the icon you want to display on the brush.
+Icons for the player, objectives, keys, doors, or enemies help players understand the dungeon while exploring.
+
+### 1. Add `OutIconWidget`
+
+Place a `DungeonIconWidget` inside the minimap Widget Blueprint and name it `OutIconWidget`.  
+This widget is optional, but it is required if you want to show icons.
+
+### 2. Assign Icon Images to Brush
+
+Set the icon images in the `Brush` array of `DungeonIconWidget`.  
+`IconIndex` is the index of this `Brush` array.
 
 ![](images/MiniMapIcon1.png)
 
 ![](images/MiniMapIcon2.png)
 
-### 2. Register the Icon
-Use `Register or Set` to register the display location.  
-If the same ID already exists, it can update the existing icon.
+### 3. Match an Icon to One Grid Cell
 
-### 3. Unregister the Icon
-Use `Unregister` when the icon is no longer needed.
+If you want an icon width to match one map grid cell, call `Set Icon Brush Size To Grid`.
+
+- `IconIndex`  
+  The index of the `Brush` entry to resize.
+- `GridUnitWidth`  
+  The width in grid units. Use `1.0` for one grid cell, `0.5` for half a grid cell, and `2.0` for two grid cells.
+
+For example, if `DotScale` is `20` and `GridUnitWidth` is `1.0`, that Brush `ImageSize` becomes `20 x 20`.  
+When using `UDungeonMapWidget`, icons still scale with `MapZoom`, so they stay aligned with the map during zooming.
+
+### 4. Register Icons
+
+Use `Icon Register Or Set` to display or update an icon.  
+Calling it again for the same Actor updates the icon position.
+
+Use `Icon Register Or Set Rotated` when the icon should rotate.  
+This is useful for player or enemy direction indicators.
+
+### 5. Remove Icons
+
+Use `Icon Unregister` when an icon is no longer needed.  
+Use `Icon Unregister All` to remove every registered icon.
 
 ![](images/MiniMapIcon3.png)
 
 ## Verify the Result
-- Pressing the texture generation button creates assets in `ProceduralTextures`
-- Separate textures exist for separate floors
-- The minimap changes to the correct floor based on player height
-- Icons appear in the expected positions
+- Generating minimap textures in the editor creates assets in `ProceduralTextures`
+- The runtime minimap appears in `OutImage`
+- The displayed floor changes based on the player's height
+- If masks are enabled, the area around the player becomes visible
+- Icons registered through `OutIconWidget` appear in the expected positions
+- `Set Icon Brush Size To Grid` matches the icon base size to the map grid width
 
 ## Common Mistakes
 - `Generate texture with size` or `Generate texture with scale` is disabled  
-  Make sure a dungeon was generated immediately beforehand
-- The texture was created, but nothing appears in the UI  
-  Make sure the texture retrieved from `DungeonMinimapTextureLayer` is actually assigned to the widget
+  Generate the dungeon first. Minimap generation uses the latest dungeon result.
+- Nothing appears in the widget  
+  Check that an `Image` named `OutImage` exists, and that `OutMaterial` and the texture parameter names match.
 - The displayed floor is wrong  
-  Recheck the logic that maps player height to floor selection
-- The icon does not appear  
-  Recheck the `Register or Set` ID, display coordinates, and brush setup
+  Check the player's height, the dungeon `Vertical Size`, and the floor settings.
+- Icons do not appear  
+  Check the `OutIconWidget` name, the `Brush` array, the `IconIndex`, and whether the registered Actor is valid.
+- Icon size does not match the grid  
+  Call `Set Icon Brush Size To Grid` after the minimap texture layer has been generated. `GridUnitWidth = 1.0` means one grid cell wide.
 
 ## Notes
-For a concrete integration example, see `Content/Widget/Main/PlayGameWidget` in the sample project.
+For a concrete integration example, see `Content/Widget/WBP_SampleDungeonPlayGame` in the sample project.
 
 ## Read Next
 - [ADungeonGenerateActor.en.md](./ADungeonGenerateActor.en.md)

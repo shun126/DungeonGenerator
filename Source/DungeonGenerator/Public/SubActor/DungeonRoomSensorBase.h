@@ -135,7 +135,6 @@ public:
 	 * 部屋の範囲内のランダムな位置を取得します
 	 * useLocalRandomをfalseにした場合、必ず全てのクライアントで同じ回数呼び出すようにしてください。
 	 * 部屋の範囲内のランダムなトランスフォームを取得します
-	 *
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	bool RandomPoint(FVector& result, const float offsetHeight = 0.f, const bool useLocalRandom = true) const;
@@ -146,7 +145,6 @@ public:
 	 * 部屋の範囲内のランダムな位置を取得します
 	 * useLocalRandomをfalseにした場合、必ず全てのクライアントで同じ回数呼び出すようにしてください。
 	 * 部屋の範囲内のランダムなトランスフォームを取得します
-	 *
 	 */
 	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
 	bool RandomTransform(FTransform& result, const float offsetHeight = 0.f, const bool useLocalRandom = true) const;

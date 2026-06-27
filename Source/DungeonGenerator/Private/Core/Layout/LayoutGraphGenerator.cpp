@@ -144,21 +144,41 @@ namespace dungeon
 			}
 			return EDungeonRoomGameplayRole::None;
 		}
+
+		int32 SelectBranchParentIndex(const GenerateParameter& parameter, const int32 mainPathCount, const int32 branchIndex, const bool bGoalCanReceiveExtraRoutes) noexcept
+		{
+			const auto& path = parameter.GetPathSettings();
+			if (path.ProgressionPolicy == EDungeonProgressionPolicy::HubQuest && mainPathCount > 2 && (branchIndex % 4) != 3)
+			{
+				return 1;
+			}
+
+			if (path.ProgressionPolicy == EDungeonProgressionPolicy::FreeExploration && mainPathCount > 2 && (branchIndex % 5) == 0)
+			{
+				return mainPathCount - 1;
+			}
+
+			const int32 lastBranchParent = bGoalCanReceiveExtraRoutes ? mainPathCount - 1 : mainPathCount - 2;
+			const int32 firstBranchParent = lastBranchParent >= 1 ? 1 + parameter.GetRandom()->Get<int32>(lastBranchParent) : 0;
+			return std::clamp(firstBranchParent, 0, mainPathCount - 1);
+		}
 	}
 
 	LayoutGraph LayoutGraphGenerator::Generate(const GenerateParameter& parameter)
 	{
 		const auto& settings = parameter.GetPathSettings();
 		const int32 roomCount = ClampRoomCount(parameter.GetNumberOfCandidateRooms());
+		const float effectiveMainRouteRatio = CalculateEffectiveMainRouteRatio(settings);
+		const float effectiveLoopRouteDensity = CalculateEffectiveLoopRouteDensity(settings);
 		const int32 mainPathCount = std::clamp(
-			static_cast<int32>(std::round(static_cast<float>(roomCount) * settings.MainRouteRatio)),
+			static_cast<int32>(std::round(static_cast<float>(roomCount) * effectiveMainRouteRatio)),
 			2,
 			roomCount
 		);
 
 		LayoutGraph graph;
 		graph.Nodes.reserve(roomCount);
-		graph.Edges.reserve(roomCount + static_cast<int32>(static_cast<float>(roomCount) * settings.LoopRouteDensity) + 1);
+		graph.Edges.reserve(roomCount + static_cast<int32>(static_cast<float>(roomCount) * effectiveLoopRouteDensity) + 1);
 
 		for (int32 index = 0; index < mainPathCount; ++index)
 		{
@@ -192,13 +212,13 @@ namespace dungeon
 
 		graph.StartNodeIndex = 0;
 		graph.GoalNodeIndex = static_cast<size_t>(mainPathCount - 1);
+		const bool bGoalCanReceiveExtraRoutes = settings.ProgressionPolicy == EDungeonProgressionPolicy::FreeExploration;
 
 		const int32 remainingRoomCount = roomCount - mainPathCount;
 		for (int32 branchIndex = 0; branchIndex < remainingRoomCount; ++branchIndex)
 		{
 			const int32 nodeIndex = mainPathCount + branchIndex;
-			const int32 firstBranchParent = 1 + parameter.GetRandom()->Get<int32>(std::max(1, mainPathCount - 2));
-			const int32 parentIndex = std::clamp(firstBranchParent, 0, mainPathCount - 1);
+			const int32 parentIndex = SelectBranchParentIndex(parameter, mainPathCount, branchIndex, bGoalCanReceiveExtraRoutes);
 
 			LayoutRoomNode node;
 			node.Index = static_cast<size_t>(nodeIndex);
@@ -226,7 +246,7 @@ namespace dungeon
 			graph.Edges.emplace_back(edge);
 		}
 
-		int32 loopCount = static_cast<int32>(std::round(static_cast<float>(roomCount) * settings.LoopRouteDensity));
+		int32 loopCount = static_cast<int32>(std::round(static_cast<float>(roomCount) * effectiveLoopRouteDensity));
 		loopCount = std::clamp(loopCount, 0, std::max(0, roomCount / 2));
 		if (parameter.GetPathSettings().ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks)
 		{
@@ -239,6 +259,10 @@ namespace dungeon
 			++attempts;
 			const size_t room0 = static_cast<size_t>(parameter.GetRandom()->Get<int32>(0, roomCount));
 			const size_t room1 = static_cast<size_t>(parameter.GetRandom()->Get<int32>(0, roomCount));
+			if (!bGoalCanReceiveExtraRoutes && (room0 == graph.GoalNodeIndex || room1 == graph.GoalNodeIndex))
+			{
+				continue;
+			}
 			if (room0 == room1 || HasEdge(graph, room0, room1))
 			{
 				continue;

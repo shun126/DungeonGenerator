@@ -164,32 +164,49 @@ void ADungeonRoomSensorBase::Tick(float DeltaSeconds)
 	// cppcheck-suppress [knownConditionTrueFalse]
 	if ((ShowDebugInformation && mOverlapCount > 0) || ForceShowDebugInformation)
 	{
-		TArray<FString> output;
-		output.Add(TEXT("Identifier:") + FString::FromInt(Identifier));
-		output.Add(TEXT("Parts:") + GetDungeonRoomPartsName(Parts));
-		output.Add(TEXT("Item:") + GetDungeonRoomItemName(Item));
-		output.Add(TEXT("StructuralRole:") + StaticEnum<EDungeonRoomStructuralRole>()->GetNameStringByValue(static_cast<int64>(RoomInfo.RoomStructuralRole)));
-		output.Add(TEXT("GameplayRole:") + StaticEnum<EDungeonRoomGameplayRole>()->GetNameStringByValue(static_cast<int64>(RoomInfo.RoomGameplayRole)));
-		output.Add(FString(TEXT("SecretRoom:")) + (RoomInfo.bSecretRoom ? TEXT("On") : TEXT("Off")));
-		output.Add(FString(TEXT("DeadEndRoom:")) + (RoomInfo.bDeadEndRoom ? TEXT("On") : TEXT("Off")));
-		output.Add(FString(TEXT("MainPathRoom:")) + (RoomInfo.bMainPathRoom ? TEXT("On") : TEXT("Off")));
-		output.Add(FString(TEXT("LockedRouteRoom:")) + (RoomInfo.bLockedRouteRoom ? TEXT("On") : TEXT("Off")));
-		output.Add(TEXT("BranchId:") + FString::FromInt(BranchId));
-		output.Add(TEXT("DepthFromStart:") + FString::FromInt(DepthFromStart));
-		output.Add(FString(TEXT("AutoReset:")) + (AutoReset ? TEXT("On") : TEXT("Off")));
-		output.Add(TEXT("DoorAddingProbability:") + FString::FromInt(DoorAddingProbability));
-		output.Add(TEXT("Doors:") + FString::FromInt(DungeonDoors.Num()));
-		output.Add(TEXT("Torches:") + FString::FromInt(DungeonTorches.Num()));
-		output.Add(TEXT("Chandeliers:") + FString::FromInt(DungeonChandeliers.Num()));
-
-		FString message;
-		for (const FString& line : output)
 		{
-			message.Append(line);
-			message.Append(TEXT("\n"));
+			TArray<FString> output;
+			output.Add(TEXT("Identifier:") + FString::FromInt(Identifier));
+			output.Add(TEXT("Parts:") + GetDungeonRoomPartsName(Parts));
+			output.Add(TEXT("Item:") + GetDungeonRoomItemName(Item));
+			output.Add(TEXT("StructuralRole:") + StaticEnum<EDungeonRoomStructuralRole>()->GetNameStringByValue(static_cast<int64>(RoomInfo.RoomStructuralRole)));
+			output.Add(TEXT("GameplayRole:") + StaticEnum<EDungeonRoomGameplayRole>()->GetNameStringByValue(static_cast<int64>(RoomInfo.RoomGameplayRole)));
+			output.Add(FString(TEXT("SecretRoom:")) + (RoomInfo.bSecretRoom ? TEXT("On") : TEXT("Off")));
+			output.Add(FString(TEXT("DeadEndRoom:")) + (RoomInfo.bDeadEndRoom ? TEXT("On") : TEXT("Off")));
+			output.Add(FString(TEXT("MainPathRoom:")) + (RoomInfo.bMainPathRoom ? TEXT("On") : TEXT("Off")));
+			output.Add(FString(TEXT("LockedRouteRoom:")) + (RoomInfo.bLockedRouteRoom ? TEXT("On") : TEXT("Off")));
+			output.Add(TEXT("BranchId:") + FString::FromInt(BranchId));
+			output.Add(TEXT("DepthFromStart:") + FString::FromInt(DepthFromStart));
+			output.Add(FString(TEXT("AutoReset:")) + (AutoReset ? TEXT("On") : TEXT("Off")));
+			output.Add(TEXT("DoorAddingProbability:") + FString::FromInt(DoorAddingProbability));
+			output.Add(TEXT("Doors:") + FString::FromInt(DungeonDoors.Num()));
+			output.Add(TEXT("Torches:") + FString::FromInt(DungeonTorches.Num()));
+			output.Add(TEXT("Chandeliers:") + FString::FromInt(DungeonChandeliers.Num()));
+
+			FString message;
+			for (const FString& line : output)
+			{
+				message.Append(line);
+				message.Append(TEXT("\n"));
+			}
+			
+			DrawDebugString(GetWorld(), GetActorLocation(), message, nullptr, FColor::White, 0, true, 1.f);
 		}
-		
-		DrawDebugString(GetWorld(), GetActorLocation(), message, nullptr, FColor::White, 0, true, 1.f);
+
+		if (IsValid(Bounding))
+		{
+			DrawDebugBox(
+				GetWorld(),
+				Bounding->GetComponentLocation(),
+				Bounding->GetScaledBoxExtent(),
+				Bounding->GetComponentQuat(),
+				FColor::Cyan,
+				false,
+				0.f,
+				0,
+				5.f
+			);
+		}
 	}
 }
 #endif

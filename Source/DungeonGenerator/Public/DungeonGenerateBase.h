@@ -154,6 +154,12 @@ public:
 	 */
 	FBox CalculateBoundingBox() const;
 
+	/*
+	 * Gets the minimum and maximum Z values that contain visible generated grid cells.
+	 * 表示可能な生成済みグリッドセルを含む最小および最大のZ値を取得します。
+	 */
+	bool GetVisibleGridHeightRange(int32& minZ, int32& maxZ) const noexcept;
+
 	/**
 	 * Get the length of the longest straight line
 	 * 最も長い直線の長さを取得します
@@ -179,6 +185,8 @@ public:
 private:
 	std::shared_ptr<dungeon::Random> GetSynchronizedRandom() const noexcept;
 	const std::shared_ptr<dungeon::Random>& GetRandom() const noexcept;
+	void InvalidateVisibleGridHeightRange() noexcept;
+	void CacheVisibleGridHeightRange() noexcept;
 
 	////////////////////////////////////////////////////////////////////////////
 	// アクターのスポーンと破棄
@@ -524,7 +532,27 @@ private:
 	// 生成時のCRC32
 	mutable uint32_t mCrc32AtCreation = ~0;
 
-	// 生成済みフラグ
+	/*
+	 * Minimum Z value that contains a visible generated grid cell.
+	 * 表示可能な生成済みグリッドセルを含む最小Z値です。
+	 */
+	int32 mMinVisibleGridZ = 0;
+
+	/*
+	 * Maximum Z value that contains a visible generated grid cell.
+	 * 表示可能な生成済みグリッドセルを含む最大Z値です。
+	 */
+	int32 mMaxVisibleGridZ = 0;
+
+	/*
+	 * True when the cached visible grid height range is valid for the current generated dungeon.
+	 * 現在の生成済みダンジョンに対して、表示可能なグリッド高さ範囲のキャッシュが有効な場合はtrueです。
+	 */
+	bool mVisibleGridHeightRangeValid = false;
+
+	/*
+	 * 生成済みフラグ
+	 */
 	bool mGenerated = false;
 
 	// friend class

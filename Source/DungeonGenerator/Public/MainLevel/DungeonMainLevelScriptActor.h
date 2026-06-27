@@ -132,11 +132,24 @@ public:
 	virtual void Tick(float deltaSeconds) override;
 
 private:
+	/*
+	 * Describes why a partition visibility sample was added.
+	 * パーティション可視性サンプルが追加された理由を表します。
+	 */
+	enum class EPartitionVisibilitySampleType : uint8
+	{
+		Center,
+		Edge,
+		SlopeLower,
+		SlopeUpper
+	};
+
 	struct FPartitionVisibilitySample
 	{
 		const ADungeonGenerateActor* DungeonGenerateActor = nullptr;
 		FIntVector GridLocation = FIntVector::ZeroValue;
 		FVector WorldLocation = FVector::ZeroVector;
+		EPartitionVisibilitySampleType SampleType = EPartitionVisibilitySampleType::Center;
 	};
 
 	/*
@@ -344,16 +357,6 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
 	FIntVector PartitionGridCountOverride = FIntVector::ZeroValue;
-
-	/**
-	 * Uses precomputed potential visibility sets built after dungeon generation
-	 * to control runtime partition activation.
-	 *
-	 * ダンジョン生成後に構築した PVS を使用して、
-	 * 実行時の partition アクティブ制御を行います。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-	bool bUsePrecomputedPartitionVisibility = true;
 
 	/**
 	 * Expands precomputed visible partitions by neighbor graph hops.

@@ -17,6 +17,9 @@
 
 namespace dungeon
 {
+	constexpr float MainRouteBiasInfluence = 0.16f;
+	constexpr float LoopRouteDensityInfluence = 0.35f;
+
 	/*
 	 * Node used before concrete room placement.
 	 * 具体的な部屋配置の前に使うレイアウトノードです。
@@ -72,4 +75,18 @@ namespace dungeon
 		FDungeonLayoutMetrics Metrics;
 		FDungeonLayoutScore Score;
 	};
+
+	struct RouteShapeProfile
+	{
+		float BaseMainRouteRatio = 0.55f;
+		float MinEffectiveMainRouteRatio = 0.10f;
+		float MaxEffectiveMainRouteRatio = 1.00f;
+		float LoopRouteDensity = 0.10f;
+		float MinLoopRouteDensity = 0.00f;
+		float MaxLoopRouteDensity = 1.00f;
+	};
+
+	RouteShapeProfile GetRouteShapeProfile(const EDungeonProgressionPolicy policy) noexcept;
+	float CalculateEffectiveMainRouteRatio(const FDungeonPathSettings& settings) noexcept;
+	float CalculateEffectiveLoopRouteDensity(const FDungeonPathSettings& settings) noexcept;
 }

@@ -223,11 +223,46 @@ struct DUNGEONGENERATOR_API FDungeonPathSettings
 	GENERATED_BODY()
 
 	/**
-	 * Progression model used for routes and gates.
-	 * 経路とゲートに使用する進行モデルです。
+	 * Number of layout candidates evaluated before selecting the best dungeon.
+	 * 最良のダンジョンを選ぶ前に評価するレイアウト候補数です。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ToolTip = "Progression model used for routes and gates. Keys And Locks creates a solvable locked-door route and disables unsafe loop and extra corridor settings."))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "3", ClampMax = "16", ToolTip = "Number of layout candidates evaluated before the best dungeon is selected. Higher values improve selection quality but increase generation cost."))
+	uint8 LayoutCandidateCount = 3;
+
+	/**
+	 * Primary progression style used to shape routes, branches, loops, and gates.
+	 * 経路、分岐、ループ、ゲートの形を決める主な進行スタイルです。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ToolTip = "Primary progression style for the dungeon structure. Choose this first: Free Exploration, Start To Goal, Keys And Locks, Boss Route, or Hub Quest. Route ratio, loop density, and corridor complexity are advanced fine-tuning controls inside this style."))
 	EDungeonProgressionPolicy ProgressionPolicy = EDungeonProgressionPolicy::StartToGoal;
+
+	/**
+	 * Advanced bias toward branch-heavy or main-route-heavy layouts.
+	 * 分岐多めまたは主経路重視へ寄せる上級者向け調整です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "-1.00", ClampMax = "1.00", ToolTip = "Advanced tuning for main-route emphasis. 0 uses the selected ProgressionPolicy baseline. Negative values create more branches. Positive values emphasize the main route."))
+	float MainRouteBias = 0.0f;
+
+	/**
+	 * Advanced adjustment for loops and alternate routes.
+	 * ループ経路と代替経路を調整する上級者向け設定です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "0.00", ClampMax = "1.00", EditCondition = "ProgressionPolicy != EDungeonProgressionPolicy::KeysAndLocks", ToolTip = "Advanced tuning for loops and alternate routes. 0 uses the selected ProgressionPolicy baseline. Higher values add more loops where the policy allows them. Keys And Locks disables unsafe loops so locked doors cannot be bypassed."))
+	float LoopRouteDensity = 0.0f;
+
+	/**
+	 * Advanced corridor complexity applied after the minimum route network is built.
+	 * 最小経路ネットワーク構築後に通路の複雑さを調整する上級者向け設定です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "0", ClampMax = "10", EditCondition = "ProgressionPolicy != EDungeonProgressionPolicy::KeysAndLocks", ToolTip = "Advanced tuning for extra corridor complexity after the ProgressionPolicy route network is built. 0 adds no extra corridor complexity beyond the policy baseline. Keys And Locks treats this as 0 to keep locked-door routes solvable."))
+	uint8 ExtraCorridorComplexity = 0;
+
+	/**
+	 * Selection policy for corridor ceiling height.
+	 * 通路の天井高を選ぶ方針です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ToolTip = "Corridor ceiling height selection policy. Random varies between one-grid and two-grid corridor ceilings."))
+	EDungeonAisleCeilingHeightPolicy CorridorCeilingHeightPolicy = EDungeonAisleCeilingHeightPolicy::Random;
 
 	/**
 	 * Policy used to choose the start room.
@@ -240,7 +275,7 @@ struct DUNGEONGENERATOR_API FDungeonPathSettings
 	 * Policy used to choose the goal room.
 	 * ゴール部屋を選ぶための方針です。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ToolTip = "Policy used to choose the generated goal room. Goal rooms are always a single endpoint."))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ToolTip = "Policy used to choose which generated room becomes the goal. ProgressionPolicy controls how strictly the goal is kept as a route endpoint."))
 	EDungeonGoalLocationPolicy GoalRoomPolicy = EDungeonGoalLocationPolicy::UseNorthernMost;
 
 	/**
@@ -249,41 +284,6 @@ struct DUNGEONGENERATOR_API FDungeonPathSettings
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ToolTip = "Move PlayerStart actors to generated start rooms when generation completes. Disable this when you keep PlayerStart actors in a hand-authored lobby."))
 	bool bMovePlayerStartToStartRoom = true;
-
-	/**
-	 * Number of layout candidates evaluated before selecting the best dungeon.
-	 * 最良のダンジョンを選ぶ前に評価するレイアウト候補数です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "3", ClampMax = "16", ToolTip = "Number of layout candidates evaluated before the best dungeon is selected. Higher values improve selection quality but increase generation cost."))
-	int32 LayoutCandidateCount = 3;
-
-	/**
-	 * Ratio of rooms placed on the main route from start to goal.
-	 * 開始からゴールまでのメイン経路に配置する部屋の割合です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "0.10", ClampMax = "1.00", ToolTip = "Ratio of rooms placed on the main route from start to goal. Lower values create more branch rooms. Higher values create a longer main route with fewer branch rooms."))
-	float MainRouteRatio = 0.55f;
-
-	/**
-	 * Amount of loops and alternate routes to create.
-	 * 生成するループ経路と代替経路の量です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "0.00", ClampMax = "1.00", EditCondition = "ProgressionPolicy != EDungeonProgressionPolicy::KeysAndLocks", ToolTip = "Amount of loops and alternate routes to create. Keys And Locks disables this setting so locked doors cannot be bypassed."))
-	float LoopRouteDensity = 0.20f;
-
-	/*
-	 * Additional corridor complexity applied after the minimum route network is built.
-	 * 最小経路ネットワーク構築後に追加する通路の複雑さです。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "0", ClampMax = "10", EditCondition = "ProgressionPolicy != EDungeonProgressionPolicy::KeysAndLocks", ToolTip = "Additional corridor complexity. 0 uses the minimum corridor network. Keys And Locks disables this setting to keep locked-door routes solvable."))
-	uint8 ExtraCorridorComplexity = 5;
-
-	/**
-	 * Selection policy for corridor ceiling height.
-	 * 通路の天井高を選ぶ方針です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ToolTip = "Corridor ceiling height selection policy. Random varies between one-grid and two-grid corridor ceilings."))
-	EDungeonAisleCeilingHeightPolicy CorridorCeilingHeightPolicy = EDungeonAisleCeilingHeightPolicy::Random;
 };
 
 /*

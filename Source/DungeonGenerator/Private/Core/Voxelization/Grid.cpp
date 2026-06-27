@@ -121,7 +121,7 @@ namespace dungeon
 	/**
 	 * 自身からtoGridを見た時に壁が生成されるか判定します
 	 */
-	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms) const noexcept
+	bool Grid::CanBuildWall(const Grid& toGrid, const Direction::Index direction, const bool mergeRooms, const bool minimap) const noexcept
 	{
 		// TODO: NoWallMeshGenerationフラグは進入禁止に使用されている別途生成禁止フラグが必要
 		if (IsNoWallMeshGeneration(direction))
@@ -162,7 +162,7 @@ namespace dungeon
 				toGrid.IsKindOfSpatialType();	// 範囲外
 		}
 		// 門
-		else if (IsKindOfGateType())
+		if (IsKindOfGateType())
 		{
 			// 門対部屋、または通路、またはスロープ
 			if (toGrid.IsKindOfRoomType() || toGrid.IsKindOfAisleType() || toGrid.IsKindOfSlopeType())
@@ -177,20 +177,15 @@ namespace dungeon
 			return toGrid.IsKindOfSpatialType();
 		}
 		// 通路
-		else if (IsKindOfAisleType())
+		if (IsKindOfAisleType())
 		{
 			// 通路対門以外の部屋
 			if (toGrid.IsKindOfRoomTypeWithoutGate())
 			{
-
-
-
 				if (GetIdentifier() == toGrid.GetIdentifier())
 				{
 					return false;
 				}
-
-
 
 				return true;
 			}
@@ -227,7 +222,7 @@ namespace dungeon
 			return toGrid.IsKindOfSpatialType();
 		}
 		// スロープとスロープの空間
-		else if (IsKindOfSlopeType())
+		if (IsKindOfSlopeType())
 		{
 			// スロープ対門以外の部屋
 			if (toGrid.IsKindOfRoomTypeWithoutGate())
@@ -240,19 +235,18 @@ namespace dungeon
 				return CanBuildWall_SlopeVsRoom();
 			}
 			// スロープ対門
-			else if (toGrid.IsKindOfGateType())
+			if (toGrid.IsKindOfGateType())
 			{
 
 				if (GetIdentifier() == toGrid.GetIdentifier())
 				{
 					return false;
 				}
-
 
 				return CanBuildWall_SlopeVsGate(toGrid, direction);
 			}
 			// スロープ対通路
-			else if (toGrid.IsKindOfAisleType())
+			if (toGrid.IsKindOfAisleType())
 			{
 
 				if (GetIdentifier() == toGrid.GetIdentifier())
@@ -260,13 +254,20 @@ namespace dungeon
 					return false;
 				}
 
-
 				return CanBuildWall_SlopeVsAisle(toGrid, direction);
 			}
 			// スロープ対スロープ
-			else if (toGrid.IsKindOfSlopeType())
+			if (toGrid.IsKindOfSlopeType())
 			{
 				return CanBuildWall_SlopeVsSlope(toGrid, direction);
+			}
+			if (minimap)
+			{
+				// スロープの正面がスロープと同じ方向なら壁を作らない
+				if (GetDirection().IsNorthSouth() == Direction::IsNorthSouth(direction))
+				{
+					return false;
+				}
 			}
 			// 範囲外なら壁
 			return toGrid.IsKindOfSpatialType();

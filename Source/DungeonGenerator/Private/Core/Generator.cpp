@@ -2355,10 +2355,10 @@ namespace dungeon
 				const Grid& westGrid = mVoxel->Get(location.X - 1, location.Y, location.Z);
 				const Grid& upperGrid = mVoxel->Get(location.X, location.Y, location.Z + 1);
 
-				grid.SetNorthWall(grid.CanBuildWall(northGrid, Direction::North, mergeRooms));
-				grid.SetSouthWall(grid.CanBuildWall(southGrid, Direction::South, mergeRooms));
-				grid.SetEastWall(grid.CanBuildWall(eastGrid, Direction::East, mergeRooms));
-				grid.SetWestWall(grid.CanBuildWall(westGrid, Direction::West, mergeRooms));
+				grid.SetNorthWall(grid.CanBuildWall(northGrid, Direction::North, mergeRooms, false));
+				grid.SetSouthWall(grid.CanBuildWall(southGrid, Direction::South, mergeRooms, false));
+				grid.SetEastWall(grid.CanBuildWall(eastGrid, Direction::East, mergeRooms, false));
+				grid.SetWestWall(grid.CanBuildWall(westGrid, Direction::West, mergeRooms, false));
 				grid.SetFloor(grid.CanBuildSlope() || grid.CanBuildFloor(true));
 				grid.SetCeiling(grid.CanBuildRoof(upperGrid, true));
 				return true;

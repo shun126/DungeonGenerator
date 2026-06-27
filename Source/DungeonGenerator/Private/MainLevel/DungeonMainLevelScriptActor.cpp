@@ -207,7 +207,30 @@ void ADungeonMainLevelScriptActor::CollectPartitionBuildActors(const FPartitionB
  */
 void ADungeonMainLevelScriptActor::AccumulatePartitionBuildActor(const ADungeonGenerateActor* dungeonGenerateActor, FPartitionBuildContext& context)
 {
-	context.Bounding += dungeonGenerateActor->CalculateBoundingBox();
+	FBox traversableGridBounds(EForceInit::ForceInit);
+	if (IsValid(dungeonGenerateActor->mParameter))
+	{
+		if (const std::shared_ptr<const dungeon::Generator> generator = dungeonGenerateActor->GetGenerator())
+		{
+			if (const auto& voxel = generator->GetVoxel())
+			{
+				const FVector actorLocation = dungeonGenerateActor->GetActorLocation();
+				const FVector gridSize3D = dungeonGenerateActor->mParameter->GetGridSize().To3D();
+				voxel->Each([dungeonGenerateActor, actorLocation, gridSize3D, &traversableGridBounds](const FIntVector& location, const dungeon::Grid& grid)
+					{
+						if (!IsTraversableGrid(grid))
+							return true;
+
+						const FVector cellMin = dungeonGenerateActor->mParameter->ToWorld(location) + actorLocation;
+						traversableGridBounds += FBox(cellMin, cellMin + gridSize3D);
+						return true;
+					}
+				);
+			}
+		}
+	}
+
+	context.Bounding += traversableGridBounds.IsValid ? traversableGridBounds : dungeonGenerateActor->CalculateBoundingBox();
 
 	const auto& dungeonLongestStraightPath = dungeonGenerateActor->GetLongestStraightPath();
 	context.DungeonMaxLongestStraightPath.X = FMath::Max(context.DungeonMaxLongestStraightPath.X, dungeonLongestStraightPath.X);
@@ -889,21 +912,58 @@ void ADungeonMainLevelScriptActor::BuildPartitionVisibilitySamples(const TArray<
 				if (!DungeonPartitions.IsValidIndex(partitionIndex))
 					return true;
 
-				FPartitionVisibilitySample sample;
-				sample.DungeonGenerateActor = dungeonGenerateActor;
-				sample.GridLocation = location;
-				sample.WorldLocation = worldLocation;
+				const auto makeSample = [dungeonGenerateActor, location](const FVector& sampleWorldLocation, const EPartitionVisibilitySampleType sampleType)
+				{
+					FPartitionVisibilitySample sample;
+					sample.DungeonGenerateActor = dungeonGenerateActor;
+					sample.GridLocation = location;
+					sample.WorldLocation = sampleWorldLocation;
+					sample.SampleType = sampleType;
+					return sample;
+				};
+
+				const FPartitionVisibilitySample centerSample = makeSample(worldLocation, EPartitionVisibilitySampleType::Center);
+				const FPartitionVisibilitySample edgeSample = makeSample(worldLocation, EPartitionVisibilitySampleType::Edge);
 
 				const FBox& bounds = DungeonPartitions[partitionIndex]->GetBounds();
 				const FVector center = bounds.GetCenter();
 				FPartitionVisibilityAccumulator& accumulator = accumulators[partitionIndex];
-				assignSample(accumulator.Center, sample, FVector::DistSquared(center, worldLocation), true);
-				assignSample(accumulator.MinX, sample, worldLocation.X, true);
-				assignSample(accumulator.MaxX, sample, worldLocation.X, false);
-				assignSample(accumulator.MinY, sample, worldLocation.Y, true);
-				assignSample(accumulator.MaxY, sample, worldLocation.Y, false);
-				assignSample(accumulator.MinZ, sample, worldLocation.Z, true);
-				assignSample(accumulator.MaxZ, sample, worldLocation.Z, false);
+				assignSample(accumulator.Center, centerSample, FVector::DistSquared(center, worldLocation), true);
+				assignSample(accumulator.MinX, edgeSample, worldLocation.X, true);
+				assignSample(accumulator.MaxX, edgeSample, worldLocation.X, false);
+				assignSample(accumulator.MinY, edgeSample, worldLocation.Y, true);
+				assignSample(accumulator.MaxY, edgeSample, worldLocation.Y, false);
+				assignSample(accumulator.MinZ, edgeSample, worldLocation.Z, true);
+				assignSample(accumulator.MaxZ, edgeSample, worldLocation.Z, false);
+
+				if (grid.IsKindOfSlopeType())
+				{
+					const FVector gridSize = dungeonGenerateActor->mParameter->GetGridSize().To3D();
+					const FVector slopeDirection = FVector(
+						static_cast<float>(grid.GetDirection().GetVector().X),
+						static_cast<float>(grid.GetDirection().GetVector().Y),
+						0.f
+					);
+					const FVector catwalkDirection = FVector(
+						static_cast<float>(grid.GetCatwalkDirection().GetVector().X),
+						static_cast<float>(grid.GetCatwalkDirection().GetVector().Y),
+						0.f
+					);
+					const FVector slopeOffset(
+						slopeDirection.X * gridSize.X * 0.35f,
+						slopeDirection.Y * gridSize.Y * 0.35f,
+						gridSize.Z * 0.25f
+					);
+					const FVector catwalkOffset(
+						catwalkDirection.X * gridSize.X * 0.2f,
+						catwalkDirection.Y * gridSize.Y * 0.2f,
+						0.f
+					);
+
+					TArray<FPartitionVisibilitySample>& samples = mPartitionVisibilitySamples[partitionIndex];
+					samples.Add(makeSample(worldLocation - slopeOffset + catwalkOffset, EPartitionVisibilitySampleType::SlopeLower));
+					samples.Add(makeSample(worldLocation + slopeOffset + catwalkOffset, EPartitionVisibilitySampleType::SlopeUpper));
+				}
 				return true;
 			}
 		);
@@ -916,7 +976,7 @@ void ADungeonMainLevelScriptActor::BuildPartitionVisibilitySamples(const TArray<
 
 		for (const FPartitionVisibilitySample& existing : destination)
 		{
-			if (existing.DungeonGenerateActor == sample.DungeonGenerateActor && existing.GridLocation == sample.GridLocation)
+			if (existing.DungeonGenerateActor == sample.DungeonGenerateActor && existing.GridLocation == sample.GridLocation && existing.SampleType == sample.SampleType)
 				return;
 		}
 
@@ -1094,7 +1154,7 @@ bool ADungeonMainLevelScriptActor::HasPrecomputedPartitionVisibility() const noe
 
 bool ADungeonMainLevelScriptActor::IsPartitionLoadControlAvailable() const noexcept
 {
-	return bEnableLoadControl && bUsePrecomputedPartitionVisibility && HasPrecomputedPartitionVisibility();
+	return bEnableLoadControl && HasPrecomputedPartitionVisibility();
 }
 
 void ADungeonMainLevelScriptActor::MarkPrecomputedPartitionVisibility(const int32 sourcePartitionIndex) const
@@ -1174,7 +1234,7 @@ bool ADungeonMainLevelScriptActor::TracePartitionVisibility(const FPartitionVisi
 	if (!voxel->Contain(sourceSample.GridLocation) || !voxel->Contain(targetSample.GridLocation))
 		return false;
 
-	auto isTransitionOpen = [voxel](const FIntVector& fromCell, const FIntVector& toCell)
+	auto isHorizontalTransitionOpen = [voxel](const FIntVector& fromCell, const FIntVector& toCell)
 	{
 		if (!voxel->Contain(fromCell) || !voxel->Contain(toCell))
 			return false;
@@ -1193,6 +1253,22 @@ bool ADungeonMainLevelScriptActor::TracePartitionVisibility(const FPartitionVisi
 			return !fromGrid.HasSouthWall() && !toGrid.HasNorthWall();
 		if (delta == FIntVector(0, -1, 0))
 			return !fromGrid.HasNorthWall() && !toGrid.HasSouthWall();
+		return false;
+	};
+
+	auto isTransitionOpen = [voxel, &isHorizontalTransitionOpen](const FIntVector& fromCell, const FIntVector& toCell)
+	{
+		if (!voxel->Contain(fromCell) || !voxel->Contain(toCell))
+			return false;
+
+		const dungeon::Grid& fromGrid = voxel->Get(fromCell);
+		const dungeon::Grid& toGrid = voxel->Get(toCell);
+		if (!IsTraversableGrid(fromGrid) || !IsTraversableGrid(toGrid))
+			return false;
+
+		const FIntVector delta = toCell - fromCell;
+		if (FMath::Abs(delta.X) + FMath::Abs(delta.Y) == 1 && delta.Z == 0)
+			return isHorizontalTransitionOpen(fromCell, toCell);
 		if (delta == FIntVector(0, 0, 1))
 			return !fromGrid.HasCeiling() && !toGrid.HasFloor();
 		if (delta == FIntVector(0, 0, -1))
@@ -1201,7 +1277,61 @@ bool ADungeonMainLevelScriptActor::TracePartitionVisibility(const FPartitionVisi
 		return false;
 	};
 
-	auto canTraverseDelta = [&isTransitionOpen](const FIntVector& startCell, const FIntVector& targetCell)
+	auto isSlopeDiagonalTransitionOpen = [voxel, &isHorizontalTransitionOpen](const FIntVector& startCell, const FIntVector& targetCell)
+	{
+		if (!voxel->Contain(startCell) || !voxel->Contain(targetCell))
+			return false;
+
+		const dungeon::Grid& startGrid = voxel->Get(startCell);
+		const dungeon::Grid& targetGrid = voxel->Get(targetCell);
+		if (!IsTraversableGrid(startGrid) || !IsTraversableGrid(targetGrid))
+			return false;
+
+		const FIntVector delta = targetCell - startCell;
+		if (delta.Z == 0)
+			return false;
+		if (FMath::Abs(delta.X) > 1 || FMath::Abs(delta.Y) > 1 || FMath::Abs(delta.Z) > 1)
+			return false;
+		if (FMath::Abs(delta.X) + FMath::Abs(delta.Y) <= 0)
+			return false;
+
+		TArray<FIntVector, TInlineAllocator<6>> cellsToCheck;
+		cellsToCheck.Add(startCell);
+		cellsToCheck.Add(targetCell);
+
+		FIntVector currentHorizontalCell = startCell;
+		if (delta.X != 0)
+		{
+			const FIntVector nextHorizontalCell = currentHorizontalCell + FIntVector(delta.X > 0 ? 1 : -1, 0, 0);
+			if (!isHorizontalTransitionOpen(currentHorizontalCell, nextHorizontalCell))
+				return false;
+			cellsToCheck.Add(nextHorizontalCell);
+			cellsToCheck.Add(nextHorizontalCell + FIntVector(0, 0, delta.Z));
+			currentHorizontalCell = nextHorizontalCell;
+		}
+		if (delta.Y != 0)
+		{
+			const FIntVector nextHorizontalCell = currentHorizontalCell + FIntVector(0, delta.Y > 0 ? 1 : -1, 0);
+			if (!isHorizontalTransitionOpen(currentHorizontalCell, nextHorizontalCell))
+				return false;
+			cellsToCheck.Add(nextHorizontalCell);
+			cellsToCheck.Add(nextHorizontalCell + FIntVector(0, 0, delta.Z));
+		}
+
+		for (const FIntVector& cell : cellsToCheck)
+		{
+			if (!voxel->Contain(cell))
+				continue;
+
+			const dungeon::Grid& grid = voxel->Get(cell);
+			if (IsTraversableGrid(grid) && grid.IsKindOfSlopeType())
+				return true;
+		}
+
+		return false;
+	};
+
+	auto canTraverseDelta = [&isTransitionOpen, &isSlopeDiagonalTransitionOpen](const FIntVector& startCell, const FIntVector& targetCell)
 	{
 		const FIntVector delta = targetCell - startCell;
 		if (FMath::Abs(delta.X) > 1 || FMath::Abs(delta.Y) > 1 || FMath::Abs(delta.Z) > 1)
@@ -1212,6 +1342,8 @@ bool ADungeonMainLevelScriptActor::TracePartitionVisibility(const FPartitionVisi
 			return true;
 		if (manhattanDistance == 1)
 			return isTransitionOpen(startCell, targetCell);
+		if (isSlopeDiagonalTransitionOpen(startCell, targetCell))
+			return true;
 
 		std::array<FIntVector, 3> axisSteps = {
 			FIntVector::ZeroValue,
@@ -1588,16 +1720,14 @@ bool ADungeonMainLevelScriptActor::TestSegmentAABB(const FVector& segmentStart, 
 
 void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 {
-	// パーティエーションの状態を線で描画します
 	constexpr double Margin = 10;
-	for (const UDungeonPartition* partition : DungeonPartitions)
+	auto drawPartitionBox = [this, Margin](const int32 partitionIndex, const FColor& color, const float thickness)
 	{
-		if (!IsValid(partition))
-			continue;
+		if (!DungeonPartitions.IsValidIndex(partitionIndex) || !IsValid(DungeonPartitions[partitionIndex]))
+			return;
 
-		const FBox& bounds = partition->GetBounds();
+		const FBox& bounds = DungeonPartitions[partitionIndex]->GetBounds();
 		const FVector halfSize = bounds.GetExtent() - FVector(Margin);
-		const auto color = partition->IsMarked() ? FColor::Red : FColor::Blue;
 		UKismetSystemLibrary::DrawDebugBox(
 			GetWorld(),
 			bounds.GetCenter(),
@@ -1605,10 +1735,106 @@ void ADungeonMainLevelScriptActor::DrawDebugInformation() const
 			color,
 			FRotator::ZeroRotator,
 			0.f,
-			10.f
+			thickness
+		);
+	};
+
+	auto getSampleColor = [](const EPartitionVisibilitySampleType sampleType)
+	{
+		switch (sampleType)
+		{
+		case EPartitionVisibilitySampleType::Center:
+			return FColor::White;
+		case EPartitionVisibilitySampleType::Edge:
+			return FColor::Cyan;
+		case EPartitionVisibilitySampleType::SlopeLower:
+			return FColor::Green;
+		case EPartitionVisibilitySampleType::SlopeUpper:
+			return FColor::Orange;
+		default:
+			return FColor::White;
+		}
+	};
+
+	for (int32 partitionIndex = 0; partitionIndex < DungeonPartitions.Num(); ++partitionIndex)
+	{
+		const UDungeonPartition* partition = DungeonPartitions[partitionIndex];
+		if (!IsValid(partition))
+			continue;
+
+		drawPartitionBox(partitionIndex, partition->IsMarked() ? FColor::Red : FColor::Blue, 10.f);
+	}
+
+	if (mBounding.IsValid)
+	{
+		UKismetSystemLibrary::DrawDebugBox(
+			GetWorld(),
+			mBounding.GetCenter(),
+			mBounding.GetExtent(),
+			FColor::Yellow,
+			FRotator::ZeroRotator,
+			0.f,
+			20.f
 		);
 	}
 
-	// 有効な範囲を黄色い線で描画します
+	const UWorld* world = GetWorld();
+	if (!IsValid(world))
+		return;
+
+	for (FConstPlayerControllerIterator iterator = world->GetPlayerControllerIterator(); iterator; ++iterator)
+	{
+		const APlayerController* playerController = iterator->Get();
+		if (!IsValid(playerController))
+			continue;
+
+		const APawn* playerPawn = playerController->GetPawn();
+		if (!IsValid(playerPawn) || !playerPawn->IsPlayerControlled())
+			continue;
+
+		const FVector pawnLocation = playerPawn->GetActorLocation();
+		const int32 currentPartitionIndex = FindPartitionIndex(pawnLocation);
+		if (!DungeonPartitions.IsValidIndex(currentPartitionIndex))
+		{
+			const bool insideBounding = mBounding.IsValid && mBounding.IsInsideOrOn(pawnLocation);
+			UKismetSystemLibrary::DrawDebugSphere(
+				GetWorld(),
+				pawnLocation,
+				30.f,
+				16,
+				insideBounding ? FColor::Magenta : FColor::Yellow,
+				0.f,
+				4.f
+			);
+			continue;
+		}
+
+		if (HasPrecomputedPartitionVisibility())
+		{
+			for (int32 partitionIndex = 0; partitionIndex < DungeonPartitions.Num(); ++partitionIndex)
+			{
+				if (IsPrecomputedPartitionVisible(currentPartitionIndex, partitionIndex))
+					drawPartitionBox(partitionIndex, FColor::Cyan, 4.f);
+			}
+		}
+
+		drawPartitionBox(currentPartitionIndex, FColor::White, 30.f);
+
+		if (mPartitionVisibilitySamples.IsValidIndex(currentPartitionIndex))
+		{
+			for (const FPartitionVisibilitySample& sample : mPartitionVisibilitySamples[currentPartitionIndex])
+			{
+				UKismetSystemLibrary::DrawDebugSphere(
+					GetWorld(),
+					sample.WorldLocation,
+					18.f,
+					12,
+					getSampleColor(sample.SampleType),
+					0.f,
+					3.f
+				);
+			}
+		}
+	}
 }
 #endif

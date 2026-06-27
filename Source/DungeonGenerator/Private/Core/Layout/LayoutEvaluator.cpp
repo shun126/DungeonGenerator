@@ -22,6 +22,59 @@ namespace dungeon
 		constexpr float loopScoreWeight = 0.60f;
 		constexpr float specialDeadEndScoreWeight = 0.50f;
 		constexpr float aisleDistanceScoreWeight = 0.75f;
+		constexpr float policyScoreWeight = 1.25f;
+
+		int32 CountGraphDegree(const LayoutGraph& graph, const size_t nodeIndex) noexcept
+		{
+			int32 degree = 0;
+			for (const LayoutAisleEdge& edge : graph.Edges)
+			{
+				if (edge.Room0 == nodeIndex || edge.Room1 == nodeIndex)
+				{
+					++degree;
+				}
+			}
+			return degree;
+		}
+
+		bool HasBossNearGoal(const LayoutGraph& graph) noexcept
+		{
+			if (graph.GoalNodeIndex >= graph.Nodes.size())
+			{
+				return false;
+			}
+
+			const int32 goalDepth = graph.Nodes[graph.GoalNodeIndex].DesiredDepth;
+			return std::any_of(graph.Nodes.begin(), graph.Nodes.end(), [goalDepth](const LayoutRoomNode& node)
+				{
+					return node.GameplayRole == EDungeonRoomGameplayRole::Boss && node.DesiredBranch == 0 && node.DesiredDepth >= goalDepth - 2;
+				}
+			);
+		}
+
+		int32 CountEarlyHubBranches(const LayoutGraph& graph) noexcept
+		{
+			int32 branchCount = 0;
+			for (const LayoutAisleEdge& edge : graph.Edges)
+			{
+				const size_t room0 = edge.Room0;
+				const size_t room1 = edge.Room1;
+				if (room0 >= graph.Nodes.size() || room1 >= graph.Nodes.size())
+				{
+					continue;
+				}
+
+				const bool bRoom0EarlyHub = graph.Nodes[room0].DesiredBranch == 0 && graph.Nodes[room0].DesiredDepth == 1;
+				const bool bRoom1EarlyHub = graph.Nodes[room1].DesiredBranch == 0 && graph.Nodes[room1].DesiredDepth == 1;
+				const bool bRoom0Branch = graph.Nodes[room0].DesiredBranch > 0;
+				const bool bRoom1Branch = graph.Nodes[room1].DesiredBranch > 0;
+				if ((bRoom0EarlyHub && bRoom1Branch) || (bRoom1EarlyHub && bRoom0Branch))
+				{
+					++branchCount;
+				}
+			}
+			return branchCount;
+		}
 
 		/*
 		 * Returns the empty gap between two one-dimensional room ranges.
@@ -73,6 +126,30 @@ namespace dungeon
 				CalculateIntervalGap(room0.GetLeft(), room0.GetRight(), room1.GetLeft(), room1.GetRight()) +
 				CalculateIntervalGap(room0.GetTop(), room0.GetBottom(), room1.GetTop(), room1.GetBottom()) +
 				CalculateIntervalGap(room0.GetBackground(), room0.GetForeground(), room1.GetBackground(), room1.GetForeground());
+		}
+
+		float ScoreProgressionPolicyExpression(const GenerateParameter& parameter, const LayoutCandidate& candidate, const FDungeonLayoutMetrics& metrics) noexcept
+		{
+			const EDungeonProgressionPolicy policy = parameter.GetPathSettings().ProgressionPolicy;
+			const int32 goalDegree = CountGraphDegree(candidate.Graph, candidate.Graph.GoalNodeIndex);
+			const float endpointScore = goalDegree == 1 ? 1.f : 0.f;
+			const float openGoalScore = goalDegree > 1 ? 1.f : 0.f;
+			const float loopScore = metrics.RoomCount > 0 ? std::clamp(static_cast<float>(metrics.LoopCount) / std::max(1.f, static_cast<float>(metrics.RoomCount) * 0.25f), 0.f, 1.f) : 0.f;
+
+			switch (policy)
+			{
+			case EDungeonProgressionPolicy::FreeExploration:
+				return loopScore * 0.70f + openGoalScore * 0.50f;
+			case EDungeonProgressionPolicy::KeysAndLocks:
+				return (metrics.LockedRouteCount > 0 ? 0.80f : -0.80f) + (metrics.LoopCount == 0 ? 0.50f : -0.50f) + endpointScore * 0.30f;
+			case EDungeonProgressionPolicy::BossRoute:
+				return (HasBossNearGoal(candidate.Graph) ? 0.80f : -0.80f) + endpointScore * 0.40f + (metrics.LoopCount <= 2 ? 0.25f : 0.f);
+			case EDungeonProgressionPolicy::HubQuest:
+				return std::clamp(static_cast<float>(CountEarlyHubBranches(candidate.Graph)) / 3.f, 0.f, 1.f) * 0.85f + endpointScore * 0.35f;
+			case EDungeonProgressionPolicy::StartToGoal:
+			default:
+				return endpointScore * 0.50f + (metrics.LoopCount <= std::max(1, metrics.RoomCount / 5) ? 0.30f : 0.f);
+			}
 		}
 	}
 
@@ -186,9 +263,11 @@ namespace dungeon
 		score.bAccepted = metrics.RoomCount >= 3 && metrics.AisleCount >= metrics.RoomCount - 1 && metrics.bMissionSolvable;
 		score.Reason = score.bAccepted ? TEXT("Accepted") : TEXT("Rejected: disconnected or undersized layout");
 
-		const float targetCriticalPath = std::max(2.f, static_cast<float>(metrics.RoomCount) * settings.MainRouteRatio);
+		const float effectiveMainRouteRatio = CalculateEffectiveMainRouteRatio(settings);
+		const float effectiveLoopRouteDensity = CalculateEffectiveLoopRouteDensity(settings);
+		const float targetCriticalPath = std::max(2.f, static_cast<float>(metrics.RoomCount) * effectiveMainRouteRatio);
 		const bool bKeysAndLocks = parameter.GetPathSettings().ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks;
-		const float targetLoops = bKeysAndLocks ? 0.f : std::max(1.f, static_cast<float>(metrics.RoomCount) * settings.LoopRouteDensity);
+		const float targetLoops = bKeysAndLocks ? 0.f : std::max(1.f, static_cast<float>(metrics.RoomCount) * effectiveLoopRouteDensity);
 		const float aisleDistanceScale = std::max(1.f, static_cast<float>(std::max(parameter.GetMaxRoomWidth(), parameter.GetMaxRoomDepth()) + parameter.GetHorizontalRoomMargin()));
 		const float aisleDistanceScore = 1.f / (1.f + metrics.AverageAisleDistance / aisleDistanceScale + metrics.MaxAisleDistance / (aisleDistanceScale * 2.f));
 
@@ -196,7 +275,8 @@ namespace dungeon
 			criticalPathScoreWeight * ScoreRatio(static_cast<float>(metrics.CriticalPathLength), targetCriticalPath) +
 			loopScoreWeight * ScoreRatio(static_cast<float>(metrics.LoopCount), targetLoops) +
 			specialDeadEndScoreWeight * metrics.SpecialDeadEndCoverage +
-			aisleDistanceScoreWeight * aisleDistanceScore;
+			aisleDistanceScoreWeight * aisleDistanceScore +
+			policyScoreWeight * ScoreProgressionPolicyExpression(parameter, candidate, metrics);
 		if (!parameter.GetZoneSettings().Zones.IsEmpty())
 		{
 			score.TotalScore += ScoreRatio(static_cast<float>(metrics.ZoneCount), static_cast<float>(parameter.GetZoneSettings().Zones.Num()));

@@ -52,12 +52,12 @@ namespace
 		parameter.SetLayoutCandidateCount(settings.LayoutCandidateCount);
 	}
 
-	void ConfigureRouteShape(dungeon::GenerateParameter& parameter, const float mainPathRatio, const float loopDensity)
+	void ConfigureRouteShape(dungeon::GenerateParameter& parameter, const float mainRouteBias, const float loopDensity)
 	{
 		ConfigureBaseParameter(parameter);
 
 		auto settings = parameter.GetPathSettings();
-		settings.MainRouteRatio = mainPathRatio;
+		settings.MainRouteBias = mainRouteBias;
 		settings.LoopRouteDensity = loopDensity;
 		parameter.SetPathSettings(settings);
 	}
@@ -67,7 +67,7 @@ namespace
 		ConfigureBaseParameter(parameter);
 
 		auto settings = parameter.GetPathSettings();
-		settings.MainRouteRatio = 0.60f;
+		settings.MainRouteBias = 0.30f;
 		settings.LoopRouteDensity = 0.15f;
 		parameter.SetPathSettings(settings);
 		parameter.SetExpansionPolicy(dungeon::ExpansionPolicy::ExpandVertically);
@@ -132,6 +132,56 @@ namespace
 		dungeon::LayoutEvaluator::Evaluate(parameter, 0, candidate);
 		outMetrics = candidate.Metrics;
 		return candidate.Score.bAccepted;
+	}
+
+	int32 CountGraphDegree(const dungeon::LayoutGraph& graph, const size_t nodeIndex)
+	{
+		int32 degree = 0;
+		for (const dungeon::LayoutAisleEdge& edge : graph.Edges)
+		{
+			if (edge.Room0 == nodeIndex || edge.Room1 == nodeIndex)
+			{
+				++degree;
+			}
+		}
+		return degree;
+	}
+
+	int32 CountEarlyHubBranches(const dungeon::LayoutGraph& graph)
+	{
+		int32 branchCount = 0;
+		for (const dungeon::LayoutAisleEdge& edge : graph.Edges)
+		{
+			if (edge.Room0 >= graph.Nodes.size() || edge.Room1 >= graph.Nodes.size())
+			{
+				continue;
+			}
+
+			const bool bRoom0EarlyHub = graph.Nodes[edge.Room0].DesiredBranch == 0 && graph.Nodes[edge.Room0].DesiredDepth == 1;
+			const bool bRoom1EarlyHub = graph.Nodes[edge.Room1].DesiredBranch == 0 && graph.Nodes[edge.Room1].DesiredDepth == 1;
+			const bool bRoom0Branch = graph.Nodes[edge.Room0].DesiredBranch > 0;
+			const bool bRoom1Branch = graph.Nodes[edge.Room1].DesiredBranch > 0;
+			if ((bRoom0EarlyHub && bRoom1Branch) || (bRoom1EarlyHub && bRoom0Branch))
+			{
+				++branchCount;
+			}
+		}
+		return branchCount;
+	}
+
+	bool HasBossNearGoal(const dungeon::LayoutGraph& graph)
+	{
+		if (graph.GoalNodeIndex >= graph.Nodes.size())
+		{
+			return false;
+		}
+
+		const int32 goalDepth = graph.Nodes[graph.GoalNodeIndex].DesiredDepth;
+		return std::any_of(graph.Nodes.begin(), graph.Nodes.end(), [goalDepth](const dungeon::LayoutRoomNode& node)
+			{
+				return node.GameplayRole == EDungeonRoomGameplayRole::Boss && node.DesiredBranch == 0 && node.DesiredDepth >= goalDepth - 2;
+			}
+		);
 	}
 
 	std::vector<std::shared_ptr<dungeon::Room>> CollectRooms(const std::shared_ptr<dungeon::Generator>& generator)
@@ -211,33 +261,75 @@ bool FDungeonLayoutRouteGraphTest::RunTest(const FString& Parameters)
 	(void)Parameters;
 
 	{
+		const FDungeonPathSettings settings;
+		TestEqual(TEXT("MainRouteBias defaults to the selected policy baseline"), settings.MainRouteBias, 0.f);
+		TestEqual(TEXT("LoopRouteDensity defaults to the selected policy baseline"), settings.LoopRouteDensity, 0.f);
+		TestEqual(TEXT("ExtraCorridorComplexity defaults to no extra corridor complexity"), settings.ExtraCorridorComplexity, static_cast<uint8>(0));
+
 		dungeon::GenerateParameter parameter;
-		ConfigureRouteShape(parameter, 0.80f, 0.05f);
+		ConfigureRouteShape(parameter, 0.00f, 0.00f);
 		FDungeonLayoutMetrics metrics;
-		TestTrue(TEXT("Long main-path graph is accepted"), EvaluateProfileGraph(parameter, metrics));
-		TestTrue(TEXT("MainPathRatio increases main route length"), metrics.CriticalPathLength >= 12);
+		TestTrue(TEXT("Zero route tuning keeps the policy baseline accepted"), EvaluateProfileGraph(parameter, metrics));
+		TestTrue(TEXT("StartToGoal policy baseline keeps a readable main route"), metrics.CriticalPathLength >= 8);
 	}
 
 	{
 		dungeon::GenerateParameter parameter;
-		ConfigureRouteShape(parameter, 0.50f, 0.45f);
+		ConfigureRouteShape(parameter, 1.00f, 0.00f);
+		FDungeonLayoutMetrics metrics;
+		TestTrue(TEXT("Long main-path graph is accepted"), EvaluateProfileGraph(parameter, metrics));
+		TestTrue(TEXT("Positive MainRouteBias nudges the policy profile toward a longer route"), metrics.CriticalPathLength >= 11);
+	}
+
+	{
+		dungeon::GenerateParameter parameter;
+		ConfigureRouteShape(parameter, 0.00f, 0.45f);
 		FDungeonLayoutMetrics metrics;
 		TestTrue(TEXT("Loop-dense graph is accepted"), EvaluateProfileGraph(parameter, metrics));
 		TestTrue(TEXT("Loop density increases loop count"), metrics.LoopCount >= 3);
 	}
 
 	{
+		dungeon::GenerateParameter parameter;
+		ConfigureRouteShape(parameter, 0.00f, 0.75f);
+		auto route = parameter.GetPathSettings();
+		route.ProgressionPolicy = EDungeonProgressionPolicy::FreeExploration;
+		parameter.SetPathSettings(route);
+		FDungeonLayoutMetrics metrics;
+		TestTrue(TEXT("FreeExploration graph is accepted"), EvaluateProfileGraph(parameter, metrics));
+		TestTrue(TEXT("FreeExploration keeps loop density active"), metrics.LoopCount >= 3);
+		const dungeon::LayoutGraph graph = dungeon::LayoutGraphGenerator::Generate(parameter);
+		TestTrue(TEXT("FreeExploration permits extra routes near the goal"), CountGraphDegree(graph, graph.GoalNodeIndex) > 1);
+	}
+
+	const auto testGoalEndpointPolicy = [this](const TCHAR* what, const EDungeonProgressionPolicy policy)
+		{
+			dungeon::GenerateParameter parameter;
+			ConfigureRouteShape(parameter, -1.00f, 0.85f);
+			auto route = parameter.GetPathSettings();
+			route.ProgressionPolicy = policy;
+			parameter.SetPathSettings(route);
+
+			const dungeon::LayoutGraph graph = dungeon::LayoutGraphGenerator::Generate(parameter);
+			TestEqual(what, CountGraphDegree(graph, graph.GoalNodeIndex), 1);
+		};
+	testGoalEndpointPolicy(TEXT("StartToGoal keeps goal as a single endpoint"), EDungeonProgressionPolicy::StartToGoal);
+	testGoalEndpointPolicy(TEXT("BossRoute keeps goal as a single endpoint"), EDungeonProgressionPolicy::BossRoute);
+	testGoalEndpointPolicy(TEXT("HubQuest keeps goal as a single endpoint"), EDungeonProgressionPolicy::HubQuest);
+
+	{
 		dungeon::GenerateParameter lowMainPathParameter;
-		ConfigureRouteShape(lowMainPathParameter, 0.40f, 0.05f);
+		ConfigureRouteShape(lowMainPathParameter, -1.00f, 0.00f);
 		FDungeonLayoutMetrics lowMainPathMetrics;
-		TestTrue(TEXT("Low MainPathRatio graph is accepted"), EvaluateProfileGraph(lowMainPathParameter, lowMainPathMetrics));
+		TestTrue(TEXT("Negative MainRouteBias graph is accepted"), EvaluateProfileGraph(lowMainPathParameter, lowMainPathMetrics));
 
 		dungeon::GenerateParameter highMainPathParameter;
-		ConfigureRouteShape(highMainPathParameter, 0.80f, 0.05f);
+		ConfigureRouteShape(highMainPathParameter, 1.00f, 0.00f);
 		FDungeonLayoutMetrics highMainPathMetrics;
-		TestTrue(TEXT("High MainPathRatio graph is accepted"), EvaluateProfileGraph(highMainPathParameter, highMainPathMetrics));
+		TestTrue(TEXT("Positive MainRouteBias graph is accepted"), EvaluateProfileGraph(highMainPathParameter, highMainPathMetrics));
 
-		TestTrue(TEXT("Lower MainPathRatio creates more branch rooms"), lowMainPathMetrics.BranchCount > highMainPathMetrics.BranchCount);
+		TestTrue(TEXT("Negative MainRouteBias creates more branch rooms"), lowMainPathMetrics.BranchCount > highMainPathMetrics.BranchCount);
+		TestTrue(TEXT("Positive MainRouteBias creates a longer main route"), highMainPathMetrics.CriticalPathLength > lowMainPathMetrics.CriticalPathLength);
 	}
 
 	{
@@ -261,6 +353,41 @@ bool FDungeonLayoutRouteGraphTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Keys-and-locks graph is accepted"), EvaluateProfileGraph(parameter, metrics));
 		TestTrue(TEXT("Keys-and-locks graph has a locked route"), metrics.LockedRouteCount >= 1);
 		TestEqual(TEXT("Keys-and-locks disables unsafe requested loops"), metrics.LoopCount, 0);
+	}
+
+	{
+		dungeon::GenerateParameter parameter;
+		ConfigureRouteShape(parameter, -1.00f, 1.00f);
+		auto route = parameter.GetPathSettings();
+		route.ProgressionPolicy = EDungeonProgressionPolicy::BossRoute;
+		parameter.SetPathSettings(route);
+
+		const dungeon::LayoutGraph graph = dungeon::LayoutGraphGenerator::Generate(parameter);
+		TestTrue(TEXT("BossRoute keeps a boss room near the goal even with extreme tuning"), HasBossNearGoal(graph));
+		TestEqual(TEXT("BossRoute keeps goal as a single endpoint"), CountGraphDegree(graph, graph.GoalNodeIndex), 1);
+	}
+
+	{
+		dungeon::GenerateParameter parameter;
+		ConfigureRouteShape(parameter, 1.00f, 0.00f);
+		auto route = parameter.GetPathSettings();
+		route.ProgressionPolicy = EDungeonProgressionPolicy::HubQuest;
+		parameter.SetPathSettings(route);
+
+		const dungeon::LayoutGraph graph = dungeon::LayoutGraphGenerator::Generate(parameter);
+		TestTrue(TEXT("HubQuest keeps branches attached to the early hub"), CountEarlyHubBranches(graph) >= 3);
+		TestEqual(TEXT("HubQuest keeps goal as a single endpoint"), CountGraphDegree(graph, graph.GoalNodeIndex), 1);
+	}
+
+	{
+		dungeon::GenerateParameter parameter;
+		ConfigureRouteShape(parameter, 1.00f, 0.00f);
+		auto route = parameter.GetPathSettings();
+		route.ProgressionPolicy = EDungeonProgressionPolicy::FreeExploration;
+		parameter.SetPathSettings(route);
+		FDungeonLayoutMetrics metrics;
+		TestTrue(TEXT("FreeExploration graph with extreme main route tuning is accepted"), EvaluateProfileGraph(parameter, metrics));
+		TestTrue(TEXT("FreeExploration keeps a shorter critical path than linear policies"), metrics.CriticalPathLength <= 12);
 	}
 
 	return true;
@@ -579,6 +706,13 @@ bool FDungeonLegacyFloorModeMigrationTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Legacy UseMissionGraph migrates to KeysAndLocks"), parameter->GetPathSettings().ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks);
 	}
 
+	{
+		auto* parameter = NewObject<UDungeonGenerateParameter>();
+		parameter->MigrateLegacyTopLevelProperties(true);
+		TestEqual(TEXT("Legacy default AisleComplexity migrates to Path.ExtraCorridorComplexity"), parameter->GetPathSettings().ExtraCorridorComplexity, static_cast<uint8>(5));
+		TestEqual(TEXT("Legacy migration keeps MainRouteBias at policy baseline"), parameter->GetPathSettings().MainRouteBias, 0.f);
+	}
+
 
 	return true;
 }
@@ -734,7 +868,7 @@ bool FDungeonRoomRoleProfileBranchSelectionTest::RunTest(const FString& Paramete
 	parameter.SetNumberOfCandidateRooms(24);
 
 	auto route = parameter.GetPathSettings();
-	route.MainRouteRatio = 0.45f;
+	route.MainRouteBias = -0.60f;
 	route.LoopRouteDensity = 0.f;
 	parameter.SetPathSettings(route);
 

@@ -55,6 +55,10 @@ graph TD;
   | `BossRoute` | A route that builds toward a boss or final encounter near the goal. |
   | `HubQuest` | A hub-centered layout where the player can branch out to quest-like rooms. |
 
+![Illustration of the five Progression Policies](images/ProgressionPolicyStyles.png)
+
+In the image, `S` marks the start, `G` marks the goal, and the bright line shows a representative progression route. `Free Exploration` emphasizes loops and shortcuts, `Start To Goal` a readable main route, `Keys And Locks` the order of collecting a Key before passing a Lock, `Boss Route` a Boss near the end, and `Hub Quest` branches spreading from a central Hub. This is a conceptual illustration of the differences between Policies; it does not prescribe the exact room shapes or decoration that will be generated.
+
 ```mermaid
 graph LR;
     subgraph FreeExploration["Free Exploration"]
@@ -94,17 +98,18 @@ graph LR;
     end
 ```
 
-  When migrating from v1 settings, `UseMissionGraph = true` maps to `Path.ProgressionPolicy = KeysAndLocks`.
+  Choose `Path.ProgressionPolicy` first. It is the main control for the route archetype, while `Path.MainRouteBias`, `Path.LoopRouteDensity`, and `Path.ExtraCorridorComplexity` are advanced fine-tuning controls inside the selected style.
+  When migrating from v1 settings, `UseMissionGraph = true` maps to `Path.ProgressionPolicy = KeysAndLocks`. Normal v1 assets without MissionGraph migrate to `StartToGoal`.
 - `Path.LayoutCandidateCount`
   Controls how many layout candidates are generated and compared before the best candidate is selected.
   Higher values make it easier to choose a better layout, but they also increase generation cost. Start with `3`, use `4-8` for a balance of quality and cost, and use `9-16` mainly for editor previews or fixed-seed tuning.
   Internally, `1` and `2` are still treated as at least `3` candidates. Values above `8` can become expensive for runtime generation.
-- `Path.MainRouteRatio`
-  Ratio of rooms placed on the main path from start to goal. Lower values create more branch rooms. Higher values create a longer main path with fewer branch rooms.
+- `Path.MainRouteBias`
+  Advanced tuning for main-route emphasis. `0` uses the selected progression style baseline. Negative values nudge the layout toward more branch rooms. Positive values nudge it toward a longer main route with fewer branch rooms.
 - `Path.LoopRouteDensity`
-  How much loop routing and alternate routes should be created. `KeysAndLocks` progression disables unsafe loops so the player cannot bypass locked doors.
+  Advanced tuning for loop routing and alternate routes. `0` uses the selected progression style baseline. Higher values add more loops where the policy allows them. `KeysAndLocks` progression disables unsafe loops so the player cannot bypass locked doors. In `StartToGoal`, `BossRoute`, and `HubQuest`, loops can connect intermediate rooms, but the goal room remains a single endpoint. `FreeExploration` can also connect loops near the goal.
 - `Path.ExtraCorridorComplexity`
-  Adds extra corridor complexity after the minimum route network is built. `KeysAndLocks` progression ignores this value and behaves as `0` to keep the key-and-lock route solvable.
+  Advanced tuning that adds extra corridor complexity after the progression route network is built. `0` adds no extra corridor complexity beyond the selected policy baseline. `KeysAndLocks` progression ignores this value and behaves as `0` to keep the key-and-lock route solvable.
 - `Path.CorridorCeilingHeightPolicy`
   Selects aisle ceiling height from `1 Grid`, `2 Grids`, and `Random`. This affects both the look and the vertical space available for aisle-side decoration.
 
@@ -121,6 +126,10 @@ Available branch gameplay roles are `None`, `Combat`, `Treasure`, `Puzzle`, `Res
 | `Rest` | Safe or lower-pressure rooms between stronger encounters. |
 | `Boss` | A major encounter, usually assigned by `BossRoute` near the end of the main path. |
 | `Secret` | Hidden discoveries, optional rewards, or secret events. |
+
+![Room concepts for each Gameplay Role](images/RoomGameplayRoleStyles.png)
+
+The image illustrates how each Role can be used in a game. `None` is a normal room without a special purpose, `Combat` an encounter, `Treasure` a reward or key, `Puzzle` a mechanism or challenge, `Rest` a break, `Boss` a major encounter, and `Secret` hidden content. Assigning a Role does not automatically place the pictured enemies, treasure chests, or puzzles. Use the generated Role in Room Sensor Blueprint logic and Role-specific Theme Overrides to build the actual gameplay and visuals.
 
 `Start`, `Goal`, `Hub`, `Connector`, `Branch`, and `DeadEnd` are structural roles controlled by route logic. `BossRoute` assigns the `Boss` gameplay role near the end of the main path. `HubQuest` marks an early main-path room as a structural `Hub`. A `Boss` profile can still provide role-specific room mesh overrides.
 

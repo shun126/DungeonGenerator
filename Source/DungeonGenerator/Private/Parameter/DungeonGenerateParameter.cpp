@@ -286,7 +286,7 @@ void UDungeonGenerateParameter::MigrateFromAssetVersion(const int32 assetVersion
 	if (assetVersion < FDungeonGeneratorAssetVersion::Version2_0)
 	{
 		const bool bHasLegacyTopLevelData = HasLegacyTopLevelPropertyData();
-		MigrateLegacyTopLevelProperties();
+		MigrateLegacyTopLevelProperties(true);
 		if (!bHasLegacyTopLevelData && !bFixtureSelectionPoliciesMigrated)
 		{
 			MigrateLegacyFixtureSelectionPolicies();
@@ -303,9 +303,9 @@ void UDungeonGenerateParameter::MigrateFromAssetVersion(const int32 assetVersion
  * Migrates legacy top-level 1.x properties into the current grouped settings.
  * 旧1.xのトップレベルプロパティを現在のグループ化された設定へ移行します。
  */
-void UDungeonGenerateParameter::MigrateLegacyTopLevelProperties()
+void UDungeonGenerateParameter::MigrateLegacyTopLevelProperties(const bool bForceLegacyDefaults)
 {
-	if (!HasLegacyTopLevelPropertyData())
+	if (!bForceLegacyDefaults && !HasLegacyTopLevelPropertyData())
 	{
 		return;
 	}
@@ -380,7 +380,7 @@ void UDungeonGenerateParameter::MigrateLegacyTopLevelProperties()
 		Path.LayoutCandidateCount = FMath::Clamp(static_cast<int32>(LayoutCandidateCount), 3, 16);
 	}
 
-	if (Path.ExtraCorridorComplexity == 5)
+	if (bForceLegacyDefaults || Path.ExtraCorridorComplexity == 0)
 	{
 		Path.ExtraCorridorComplexity = AisleComplexity;
 	}
@@ -723,7 +723,7 @@ void UDungeonGenerateParameter::DumpToJson() const
 		jsonString += TEXT(" \"MovePlayerStartToStartingPoint\":") + boolValue(IsMovePlayerStartToStartingPoint()) + TEXT(",\n");
 		jsonString += TEXT(" \"UseMissionGraph\":") + boolValue(IsUseMissionGraph()) + TEXT(",\n");
 		jsonString += TEXT(" \"Path.LayoutCandidateCount\":") + FString::FromInt(Path.LayoutCandidateCount) + TEXT(",\n");
-		jsonString += TEXT(" \"Path.MainRouteRatio\":") + FString::SanitizeFloat(Path.MainRouteRatio) + TEXT(",\n");
+		jsonString += TEXT(" \"Path.MainRouteBias\":") + FString::SanitizeFloat(Path.MainRouteBias) + TEXT(",\n");
 		jsonString += TEXT(" \"Path.LoopRouteDensity\":") + FString::SanitizeFloat(Path.LoopRouteDensity) + TEXT(",\n");
 		jsonString += TEXT(" \"Path.ExtraCorridorComplexity\":") + FString::FromInt(Path.ExtraCorridorComplexity) + TEXT(",\n");
 		jsonString += TEXT(" \"Path.CorridorCeilingHeightPolicy\":\"") + UEnum::GetValueAsString(Path.CorridorCeilingHeightPolicy) + TEXT("\",\n");
