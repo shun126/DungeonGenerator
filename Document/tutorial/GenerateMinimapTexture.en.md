@@ -72,6 +72,10 @@ After generation, texture assets are created in the `ProceduralTextures` folder 
 The minimap is generated as a separate texture for each floor.  
 For multi-floor dungeons, switching the displayed texture based on the player's height makes the current floor easy to understand.
 
+Each texture is a cumulative view through the selected floor. Lower floors remain visible with dimmer floors and thinner walls, while the selected floor is brighter with thicker walls. A floor includes its complete vertical band: from that floor's elevation up to, but not including, the next floor's elevation. The highest floor continues to the top of the dungeon voxel area. This keeps tall rooms, stairs, and slopes on the floor they belong to without making the highest floor fade near the top.
+
+The generated floor elevation is also the exact minimap switching boundary. A Character switches floors when the bottom of its collision capsule crosses that elevation; other Pawn types use their actor origin. The dungeon actor's world Z is used as the voxel origin, so moving the dungeon actor vertically moves both the debug floor planes and minimap boundaries together.
+
 ## B. Display a Runtime Minimap
 
 If the dungeon is generated during gameplay, you can display the minimap directly in UI without saving texture assets.
@@ -196,7 +200,7 @@ Use `Icon Unregister All` to remove every registered icon.
   Call `Set Icon Brush Size To Grid` after the minimap texture layer has been generated. `GridUnitWidth = 1.0` means one grid cell wide.
 
 ## Notes
-For a concrete integration example, see `Content/Widget/WBP_SampleDungeonPlayGame` in the sample project.
+For a concrete integration example, open the included `Content/Maps/Demonstration.umap` sample and inspect the plugin-content Widget Blueprint at `Content/Widget/WBP_SampleDungeonPlayGame`.
 
 ## Read Next
 - [ADungeonGenerateActor.en.md](./ADungeonGenerateActor.en.md)

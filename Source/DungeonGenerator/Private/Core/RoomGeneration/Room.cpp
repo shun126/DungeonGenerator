@@ -1,8 +1,6 @@
 /**
- * 部屋に関するソースファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -67,6 +65,7 @@ namespace dungeon
 		, mDepthFromStart(other.mDepthFromStart)
 		, mBranchId(other.mBranchId)
 		, mNumberOfGates(other.mNumberOfGates)
+		, mHorizontalRoomMargin(other.mHorizontalRoomMargin)
 		, mVerticalRoomMargin(other.mVerticalRoomMargin)
 		, mStructuralRole(other.mStructuralRole)
 		, mGameplayRole(other.mGameplayRole)
@@ -94,6 +93,7 @@ namespace dungeon
 		mDepthFromStart = other.mDepthFromStart;
 		mBranchId = other.mBranchId;
 		mNumberOfGates = other.mNumberOfGates;
+		mHorizontalRoomMargin = other.mHorizontalRoomMargin;
 		mVerticalRoomMargin = other.mVerticalRoomMargin;
 		mStructuralRole = other.mStructuralRole;
 		mGameplayRole = other.mGameplayRole;

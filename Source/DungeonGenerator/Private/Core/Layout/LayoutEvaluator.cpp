@@ -1,9 +1,13 @@
 /**
- * Layout evaluator for dungeon layout candidates.
- *
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
+ */
+
+/**
+ * @file
+ * Layout evaluator for dungeon layout candidates.
+ * LayoutEvaluator を表します。
  */
 
 #include "LayoutEvaluator.h"
@@ -12,6 +16,7 @@
 #include <cmath>
 #include <limits>
 #include <queue>
+#include <unordered_set>
 #include <vector>
 
 namespace dungeon
@@ -44,10 +49,15 @@ namespace dungeon
 				return false;
 			}
 
-			const int32 goalDepth = graph.Nodes[graph.GoalNodeIndex].DesiredDepth;
-			return std::any_of(graph.Nodes.begin(), graph.Nodes.end(), [goalDepth](const LayoutRoomNode& node)
+			return std::any_of(graph.Edges.begin(), graph.Edges.end(), [&graph](const LayoutAisleEdge& edge)
 				{
-					return node.GameplayRole == EDungeonRoomGameplayRole::Boss && node.DesiredBranch == 0 && node.DesiredDepth >= goalDepth - 2;
+					if (!edge.bMainPath)
+						return false;
+					if (edge.Room0 == graph.GoalNodeIndex && edge.Room1 < graph.Nodes.size())
+						return graph.Nodes[edge.Room1].GameplayRole == EDungeonRoomGameplayRole::Boss;
+					if (edge.Room1 == graph.GoalNodeIndex && edge.Room0 < graph.Nodes.size())
+						return graph.Nodes[edge.Room0].GameplayRole == EDungeonRoomGameplayRole::Boss;
+					return false;
 				}
 			);
 		}
@@ -77,7 +87,6 @@ namespace dungeon
 		}
 
 		/*
-		 * Returns the empty gap between two one-dimensional room ranges.
 		 * 1次元の部屋範囲同士にある空き距離を返します。
 		 */
 		int32 CalculateIntervalGap(const int32 min0, const int32 max0, const int32 min1, const int32 max1) noexcept
@@ -90,7 +99,6 @@ namespace dungeon
 		}
 
 		/*
-		 * Returns a purpose weight used when scoring aisle length.
 		 * 通路距離を採点するときに使う通路目的ごとの重みを返します。
 		 */
 		float GetAisleDistanceWeight(const Aisle& aisle) noexcept
@@ -100,24 +108,35 @@ namespace dungeon
 				return 1.25f;
 			}
 
+			float weight;
 			switch (aisle.GetPurpose())
 			{
 			case EDungeonAislePurpose::Locked:
 			case EDungeonAislePurpose::VerticalTransition:
-				return 1.10f;
+				weight = 1.10f;
+				break;
 			case EDungeonAislePurpose::Branch:
-				return 0.85f;
+				weight = 0.85f;
+				break;
 			case EDungeonAislePurpose::Loop:
 			case EDungeonAislePurpose::Shortcut:
-				return 0.65f;
+				weight = 0.65f;
+				break;
 			case EDungeonAislePurpose::MainPath:
 			default:
-				return 1.00f;
+				weight = 1.00f;
+				break;
 			}
+
+			// 階層をまたぐ通路は経路が長くなりやすいので、目的ごとの重みへ上乗せします
+			if (aisle.IsVerticalTransition())
+			{
+				weight *= 1.10f;
+			}
+			return weight;
 		}
 
 		/*
-		 * Calculates aisle distance as the sum of room shell gaps on each axis.
 		 * 各軸の部屋外周間ギャップ合計として通路距離を計算します。
 		 */
 		int32 CalculateRoomPairAisleDistance(const Room& room0, const Room& room1) noexcept
@@ -126,6 +145,53 @@ namespace dungeon
 				CalculateIntervalGap(room0.GetLeft(), room0.GetRight(), room1.GetLeft(), room1.GetRight()) +
 				CalculateIntervalGap(room0.GetTop(), room0.GetBottom(), room1.GetTop(), room1.GetBottom()) +
 				CalculateIntervalGap(room0.GetBackground(), room0.GetForeground(), room1.GetBackground(), room1.GetForeground());
+		}
+
+		struct FInitialCollisionScore final
+		{
+			uint32 Count = 0;
+			uint64 Depth = 0;
+		};
+
+		/**
+		 * Calculates collision count and penetration volume before selecting a layout candidate.
+		 * レイアウト候補を選択する前の衝突数と貫入体積を計算します。
+		 */
+		FInitialCollisionScore CalculateInitialCollisionScore(
+			const GenerateParameter& parameter,
+			const std::list<std::shared_ptr<Room>>& rooms) noexcept
+		{
+			const std::vector<std::shared_ptr<Room>> roomArray(rooms.begin(), rooms.end());
+			const auto overlapDepth = [](const int32 min0, const int32 max0, const int32 min1, const int32 max1) -> uint64
+				{
+					const int32 overlap = std::min(max0, max1) - std::max(min0, min1);
+					return overlap > 0 ? static_cast<uint64>(overlap) : 0;
+				};
+
+			FInitialCollisionScore score;
+			for (size_t roomIndex = 0; roomIndex < roomArray.size(); ++roomIndex)
+			{
+				const auto& room0 = roomArray[roomIndex];
+				for (size_t otherRoomIndex = roomIndex + 1; otherRoomIndex < roomArray.size(); ++otherRoomIndex)
+				{
+					const auto& room1 = roomArray[otherRoomIndex];
+					const uint8 horizontalMargin = std::max(
+						static_cast<uint8>(parameter.GetHorizontalRoomMargin()),
+						std::max(room0->GetHorizontalRoomMargin(), room1->GetHorizontalRoomMargin()));
+					const uint8 verticalMargin = parameter.GetExpansionPolicy() == ExpansionPolicy::Flat ? 0 : std::max(
+						static_cast<uint8>(parameter.GetVerticalRoomMargin()),
+						std::max(room0->GetVerticalRoomMargin(), room1->GetVerticalRoomMargin()));
+					if (!room0->Intersect(*room1, horizontalMargin, verticalMargin))
+						continue;
+
+					++score.Count;
+					score.Depth +=
+						overlapDepth(room0->GetLeft() - horizontalMargin, room0->GetRight() + horizontalMargin, room1->GetLeft(), room1->GetRight()) *
+						overlapDepth(room0->GetTop() - horizontalMargin, room0->GetBottom() + horizontalMargin, room1->GetTop(), room1->GetBottom()) *
+						overlapDepth(room0->GetBackground() - verticalMargin, room0->GetForeground() + verticalMargin, room1->GetBackground(), room1->GetForeground());
+				}
+			}
+			return score;
 		}
 
 		float ScoreProgressionPolicyExpression(const GenerateParameter& parameter, const LayoutCandidate& candidate, const FDungeonLayoutMetrics& metrics) noexcept
@@ -141,7 +207,8 @@ namespace dungeon
 			case EDungeonProgressionPolicy::FreeExploration:
 				return loopScore * 0.70f + openGoalScore * 0.50f;
 			case EDungeonProgressionPolicy::KeysAndLocks:
-				return (metrics.LockedRouteCount > 0 ? 0.80f : -0.80f) + (metrics.LoopCount == 0 ? 0.50f : -0.50f) + endpointScore * 0.30f;
+				// 関門になる通路は LayoutGraphGenerator がループから保護済みなので、ループは減点しません
+				return (metrics.LockedRouteCount > 0 ? 0.80f : -0.80f) + loopScore * 0.35f + endpointScore * 0.30f;
 			case EDungeonProgressionPolicy::BossRoute:
 				return (HasBossNearGoal(candidate.Graph) ? 0.80f : -0.80f) + endpointScore * 0.40f + (metrics.LoopCount <= 2 ? 0.25f : 0.f);
 			case EDungeonProgressionPolicy::HubQuest:
@@ -202,14 +269,17 @@ namespace dungeon
 			case EDungeonAislePurpose::Shortcut:
 				++metrics.LoopCount;
 				break;
-			case EDungeonAislePurpose::VerticalTransition:
-				++metrics.VerticalTransitionCount;
-				break;
 			case EDungeonAislePurpose::Locked:
 				++metrics.LockedRouteCount;
 				break;
 			default:
 				break;
+			}
+
+			// 階層移動は通路目的とは独立した属性なので、部屋の高さから数えます
+			if (aisle.IsVerticalTransition())
+			{
+				++metrics.VerticalTransitionCount;
 			}
 		}
 		if (metrics.CriticalPathLength > 0)
@@ -217,6 +287,7 @@ namespace dungeon
 			++metrics.CriticalPathLength;
 		}
 
+		std::unordered_set<int32> matchedZoneIndices;
 		for (size_t index = 0; index < candidate.Graph.Nodes.size(); ++index)
 		{
 			const LayoutRoomNode& node = candidate.Graph.Nodes[index];
@@ -226,11 +297,12 @@ namespace dungeon
 			}
 			if (node.ZoneIndex != INDEX_NONE)
 			{
-				metrics.ZoneCount = std::max(metrics.ZoneCount, node.ZoneIndex + 1);
+				matchedZoneIndices.emplace(node.ZoneIndex);
 			}
 			metrics.AverageIntensity += node.Intensity;
 
-			if (degree[index] <= 1 && index != candidate.Graph.StartNodeIndex && index != candidate.Graph.GoalNodeIndex)
+			const bool bStartNode = std::find(candidate.Graph.StartNodeIndices.begin(), candidate.Graph.StartNodeIndices.end(), index) != candidate.Graph.StartNodeIndices.end();
+			if (degree[index] <= 1 && !bStartNode && index != candidate.Graph.GoalNodeIndex)
 			{
 				++metrics.DeadEndCount;
 				if (IsSpecialGameplayRole(node.GameplayRole))
@@ -239,6 +311,7 @@ namespace dungeon
 				}
 			}
 		}
+		metrics.ZoneCount = static_cast<int32>(matchedZoneIndices.size());
 		if (!candidate.Graph.Nodes.empty())
 		{
 			metrics.AverageIntensity /= static_cast<float>(candidate.Graph.Nodes.size());
@@ -267,16 +340,27 @@ namespace dungeon
 		const float effectiveLoopRouteDensity = CalculateEffectiveLoopRouteDensity(settings);
 		const float targetCriticalPath = std::max(2.f, static_cast<float>(metrics.RoomCount) * effectiveMainRouteRatio);
 		const bool bKeysAndLocks = parameter.GetPathSettings().ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks;
-		const float targetLoops = bKeysAndLocks ? 0.f : std::max(1.f, static_cast<float>(metrics.RoomCount) * effectiveLoopRouteDensity);
+		const float targetLoops = std::max(1.f, static_cast<float>(metrics.RoomCount) * effectiveLoopRouteDensity);
 		const float aisleDistanceScale = std::max(1.f, static_cast<float>(std::max(parameter.GetMaxRoomWidth(), parameter.GetMaxRoomDepth()) + parameter.GetHorizontalRoomMargin()));
 		const float aisleDistanceScore = 1.f / (1.f + metrics.AverageAisleDistance / aisleDistanceScale + metrics.MaxAisleDistance / (aisleDistanceScale * 2.f));
+		const auto initialCollisionScore = CalculateInitialCollisionScore(parameter, candidate.Rooms);
+		/*
+		 * std::powは正しく丸める事が規格で要求されておらず、実装ごとに結果が変わり得ます。
+		 * 生成の結果を左右する値なので、乗算だけで立方を求めます。乗算は正しく丸められます。
+		 */
+		const double aisleDistanceScaleAsDouble = static_cast<double>(aisleDistanceScale);
+		const double collisionDepthScale = std::max(1., aisleDistanceScaleAsDouble * aisleDistanceScaleAsDouble * aisleDistanceScaleAsDouble);
+		const float collisionPenalty =
+			static_cast<float>(initialCollisionScore.Count) * 0.75f +
+			static_cast<float>(std::min(10., static_cast<double>(initialCollisionScore.Depth) / collisionDepthScale)) * 0.10f;
 
 		score.TotalScore =
 			criticalPathScoreWeight * ScoreRatio(static_cast<float>(metrics.CriticalPathLength), targetCriticalPath) +
 			loopScoreWeight * ScoreRatio(static_cast<float>(metrics.LoopCount), targetLoops) +
 			specialDeadEndScoreWeight * metrics.SpecialDeadEndCoverage +
 			aisleDistanceScoreWeight * aisleDistanceScore +
-			policyScoreWeight * ScoreProgressionPolicyExpression(parameter, candidate, metrics);
+			policyScoreWeight * ScoreProgressionPolicyExpression(parameter, candidate, metrics) -
+			collisionPenalty;
 		if (!parameter.GetZoneSettings().Zones.IsEmpty())
 		{
 			score.TotalScore += ScoreRatio(static_cast<float>(metrics.ZoneCount), static_cast<float>(parameter.GetZoneSettings().Zones.Num()));

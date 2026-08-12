@@ -1,9 +1,13 @@
 /**
- * Intent-driven dungeon layout graph types.
- *
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
+ */
+
+/**
+ * @file
+ * Intent-driven dungeon layout graph types.
+ * LayoutGraph を表します。
  */
 
 #include "LayoutGraph.h"
@@ -18,7 +22,8 @@ namespace dungeon
 		case EDungeonProgressionPolicy::FreeExploration:
 			return { 0.42f, 0.25f, 0.60f, 0.28f, 0.15f, 0.45f };
 		case EDungeonProgressionPolicy::KeysAndLocks:
-			return { 0.62f, 0.50f, 0.78f, 0.00f, 0.00f, 0.00f };
+			// 鍵と扉の関門になる通路は LayoutGraphGenerator がループから保護するため、ループを許可しています
+			return { 0.62f, 0.50f, 0.78f, 0.08f, 0.00f, 0.22f };
 		case EDungeonProgressionPolicy::BossRoute:
 			return { 0.72f, 0.58f, 0.90f, 0.05f, 0.00f, 0.12f };
 		case EDungeonProgressionPolicy::HubQuest:

@@ -1,8 +1,11 @@
 /**
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
- *
+ */
+
+/**
+ * @file
  * Checks whether the sample character remains close enough to the recorded home position.
  * サンプルキャラクターが記録されたホーム位置から十分近い範囲に残っているかを判定します。
  */
@@ -17,11 +20,11 @@ bool UBTD_DungeonSampleTerritoryRange::CalculateRawConditionValue(UBehaviorTreeC
 {
 	const auto* controller = ownerComponent.GetAIOwner();
 	if (IsValid(controller) == false)
-		return EBTNodeResult::Failed;
+		return false;
 
 	const auto* ownerCharacter = Cast<ADungeonSampleCharacterBase>(controller->GetPawn());
 	if (IsValid(ownerCharacter) == false)
-		return EBTNodeResult::Failed;
+		return false;
 
 	const auto distance = FVector::Distance(ownerCharacter->GetActorLocation(), ownerCharacter->GetHomeLocation());
 	constexpr double range = 50 * 100;

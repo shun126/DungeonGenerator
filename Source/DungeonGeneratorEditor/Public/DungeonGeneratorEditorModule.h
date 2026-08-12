@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -47,6 +47,7 @@ private:
 	void SetAssetData(const FAssetData& assetData);
 	void UpdateGenerateButtonEnabled() const;
 	void RunValidation(const bool bDeepCheck);
+	void RebuildIssueList();
 	bool HasValidationErrors() const;
 	FReply OnClickedVerifyButton();
 	FReply OnClickedCopyDiagnosticsButton() const;
@@ -72,5 +73,7 @@ private:
 	TSharedPtr<SButton> mCopyDiagnosticsButton;
 	TSharedPtr<SListView<TSharedPtr<FDungeonValidationIssue>>> mValidationListView;
 	TArray<TSharedPtr<FDungeonValidationIssue>> mValidationIssueItems;
+	TArray<FDungeonValidationIssue> mParameterIssues;
+	TArray<FDungeonValidationIssue> mGenerationIssues;
 	TUniquePtr<FDungeonAssetMigrationService> MigrationService;
 };

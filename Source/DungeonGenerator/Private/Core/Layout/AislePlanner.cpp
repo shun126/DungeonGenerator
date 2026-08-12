@@ -1,9 +1,13 @@
 /**
- * Aisle planner for intent-driven dungeon layouts.
- *
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
+ */
+
+/**
+ * @file
+ * Aisle planner for intent-driven dungeon layouts.
+ * AislePlanner を表します。
  */
 
 #include "AislePlanner.h"
@@ -11,22 +15,6 @@
 
 namespace dungeon
 {
-	namespace
-	{
-		/*
-		 * Returns the aisle purpose after concrete room heights are known.
-		 * 実際の部屋高さが確定した後の通路目的を返します。
-		 */
-		EDungeonAislePurpose ResolveAislePurpose(const LayoutAisleEdge& edge, const std::shared_ptr<Room>& room0, const std::shared_ptr<Room>& room1) noexcept
-		{
-			if (edge.Purpose == EDungeonAislePurpose::Locked)
-			{
-				return edge.Purpose;
-			}
-			return room0->GetZ() != room1->GetZ() ? EDungeonAislePurpose::VerticalTransition : edge.Purpose;
-		}
-	}
-
 	bool AislePlanner::Plan(const LayoutGraph& graph, std::list<std::shared_ptr<Room>>& rooms, std::vector<Aisle>& aisles, std::shared_ptr<const Point>& startPoint, std::shared_ptr<const Point>& goalPoint) noexcept
 	{
 		if (graph.Nodes.empty() || rooms.empty())
@@ -42,6 +30,8 @@ namespace dungeon
 			room->ResetReservationNumber();
 			room->SetItem(Room::Item::Empty);
 			room->SetParts(Room::Parts::Unidentified);
+			room->SetMainPathRoom(false);
+			room->SetLockedRouteRoom(false);
 			indexedRooms.emplace_back(room);
 		}
 
@@ -76,7 +66,9 @@ namespace dungeon
 
 			auto point0 = std::make_shared<Point>(room0);
 			auto point1 = std::make_shared<Point>(room1);
-			aisles.emplace_back(edge.bMainPath, point0, point1, ResolveAislePurpose(edge, room0, room1));
+			// 通路目的はレイアウトグラフの意図をそのまま保持します
+			// 階層をまたぐかどうかは Aisle::IsVerticalTransition で部屋の高さから判定します
+			aisles.emplace_back(edge.bMainPath, point0, point1, edge.Purpose);
 		}
 
 		ApplyRoomParts(graph, indexedRooms);
@@ -100,6 +92,7 @@ namespace dungeon
 		for (size_t index = 0; index < indexedRooms.size(); ++index)
 		{
 			const std::shared_ptr<Room>& room = indexedRooms[index];
+			room->SetStructuralRole(graph.Nodes[index].StructuralRole);
 			switch (graph.Nodes[index].StructuralRole)
 			{
 			case EDungeonRoomStructuralRole::Start:

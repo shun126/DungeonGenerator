@@ -34,7 +34,7 @@ graph TD;
 
 ## 見た目を整える
 - [PrepareMeshParts.ja.md](./PrepareMeshParts.ja.md)
-  自前メッシュを使い始めるための入口です。床 / 壁 / 屋根 / スロープの最低限の作り方、向き、原点、確認ポイントを初心者向けに説明します。
+  自前メッシュを使い始めるための入口です。必須の床 / 壁 / 天井、スロープが必要になる条件、正しい向きと原点を初心者向けに説明します。
 - [StaticMeshFitTool.ja.md](./StaticMeshFitTool.ja.md)
   選択した Static Mesh が Dungeon Generator のグリッド寸法に合うか確認し、補正済みコピーを生成する手順です。
 - [UDungeonMeshSetDatabase.ja.md](./UDungeonMeshSetDatabase.ja.md)
@@ -65,7 +65,7 @@ graph TD;
 - [ApplyMissionGraph.ja.md](./ApplyMissionGraph.ja.md)
   鍵付き扉と鍵配置を使った攻略ルートを MissionGraph で構成するガイドです。
 - [CustomSelector.ja.md](./CustomSelector.ja.md)
-  selector asset を使ってメッシュセットや各パーツの選択ルールを差し替えます。
+  組み込みまたは Blueprint のセレクターオブジェクトで、Mesh Set や各パーツの選択ルールを差し替えます。
 - [LobbyConnection.ja.md](./LobbyConnection.ja.md)
   既存ロビーや開始部屋サブレベルとダンジョンを接続する手順です。
 

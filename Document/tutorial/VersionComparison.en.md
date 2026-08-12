@@ -2,13 +2,13 @@
 
 Dungeon Generator v2.0.0 is a major update designed to create more than randomly connected rooms and corridors. It focuses on **playable progression, visual variety across the dungeon, and settings that are easier to tune**.
 
-> **Release status:** v2.0.0 is currently in development and has not been released. This page reflects the current implementation, and details may change before the final release.
+> **Warning — no v1.x migration support:** v2.0.0 contains breaking changes and does not support upgrading or converting v1.x projects or assets. Keep your v1.x project and plugin version intact. To use v2.0.0, create and configure the Dungeon Generator setup again for v2 in a separate project or branch.
 
-You can continue using meshes, interiors, sublevels, and other content created for v1.x while gaining clearer control over progression, room purposes, and theme changes. However, the generation algorithm and parameter structure have changed, so the same seed and settings may not reproduce the exact v1.x layout.
+Some source content, such as compatible meshes, may be reusable after manual review, but v1.x Dungeon Generator assets, parameters, Blueprints, and C++ integrations are not migrated automatically. The generation algorithm and parameter structure have changed, so the same seed and similar settings are not expected to reproduce a v1.x layout.
 
 ## Main differences
 
-| Area | v1.x | v2.0.0 | What the upgrade provides |
+| Area | v1.x | v2.0.0 | What v2 provides |
 | --- | --- | --- | --- |
 | Level design | Individually tune room counts, sizes, floors, corridor complexity, and related values | Start with a `Progression Policy` that coordinates the main route, branches, loops, start, and goal | Choose a layout based on how it should play, such as free exploration, keys and locks, or a route toward a boss |
 | Layout candidates | Generate a layout from the selected conditions | Evaluate multiple candidates and select the better-scoring layout | Balance candidate count against generation cost while making the result easier to steer |
@@ -38,7 +38,7 @@ In v2.0.0, first choose the dungeon's basic play style with `Path.ProgressionPol
 
 In the image, `S` marks the start, `G` marks the goal, and the bright line shows a representative progression route. The positions of the Key/Lock, Boss, and Hub make it easier to compare how different Policies can produce different player experiences from a similar number of rooms. This is a conceptual example; it does not prescribe the exact room shapes or decoration that will be generated.
 
-`Keys And Locks` restricts unsafe loops and extra corridors so players cannot bypass locked doors. A v1.x asset with `UseMissionGraph` enabled migrates to this Policy. A regular v1.x asset that did not use MissionGraph migrates to `Start To Goal`.
+`Keys And Locks` prevents unsafe loops around locks. Extra corridor complexity still applies to unlocked aisles, while locked aisles disable intersections and merging so players cannot bypass the door. When rebuilding a v1.x design manually, `Keys And Locks` is the closest v2 Policy to the old `UseMissionGraph` behavior. For a regular start-to-goal v1.x design, begin with `Start To Goal` and tune the new settings for the intended result.
 
 ## Communicate room purpose with Gameplay Roles
 
@@ -64,49 +64,45 @@ Keeping the current production workflow can be reasonable in the following situa
 - The project does not need the new Progression Policies, Room Roles, Zone Overrides, or map features
 - Existing results, including fixed-seed layouts, must not change
 
-Migration carries many existing values forward, but generated results still need to be reviewed. Compare the value of the new controls with the time required for retuning and testing.
+Because there is no supported v1.x-to-v2 migration path, adopting v2 means rebuilding the Dungeon Generator configuration and integrations. Compare the value of the new controls with the time required to recreate, retune, and test the project.
 
-## Migrate v1.x assets to v2.0.0
+## Rebuild a v1.x design in v2.0.0
 
-1. **Back up the project.**
-   Create a source-control branch or retain a copy of the project and assets that can still be opened with v1.x.
-2. **Install v2.0.0 and open the project in Unreal Editor.**
-   When a Dungeon Generator asset is loaded, legacy values are converted in memory into the v2.0.0 setting groups.
-3. **Review the converted settings.**
-   Inspect `Theme`, `Structure`, `Path`, and `Gameplay` in `UDungeonGenerateParameter`. Generate the dungeon again, including with representative fixed seeds, and compare the result.
-4. **Check the `DungeonGenerator Migration` log.**
-   Review information, warnings, errors, and suggested fixes in Unreal Editor's Message Log. A v1.x asset without a Custom Version is treated as a v1.x asset and produces a warning that requests review before saving.
-5. **Check Blueprint and C++ references.**
-   Pay particular attention to legacy room-information fields on Room Sensors, Mesh／Parts selection logic, and classes whose names or locations changed.
-6. **Save the assets after they pass review.**
-   Saving writes the v2.0.0 format. There is no documented downgrade workflow back to v1.x, so do not overwrite the backup until validation is complete.
+There is no supported in-place upgrade or automatic asset conversion. Treat v2.0.0 as a new implementation:
 
-### Main settings migrated automatically
-
-- Grid sizes, room count, room dimensions, room margins, and floor mode
-- Layout candidate count, corridor complexity, and corridor ceiling height
-- Start／goal selection, PlayerStart movement, and MissionGraph usage
-- Room and corridor Mesh Set Databases
-- Pillars, torches, doors, and their legacy selection methods
-- Interior Database, SubLevel Database, and Room Sensor references
-
-Automatic migration maps existing values to their new storage locations. It does not automatically redesign the game around the new Roles, Zones, Fixture Overrides, or detailed Progression Policy settings.
+1. **Keep a restorable v1.x project.**
+   Preserve a source-control branch or copy that retains the v1.x plugin and can still open the original assets.
+2. **Create a separate v2 workspace.**
+   Do not overwrite the working v1.x project or assume that opening its Dungeon Generator assets in v2 will convert them.
+3. **Recreate the generation settings.**
+   Build new v2 assets and configure `Theme`, `Structure`, `Path`, `Zones`, and `Gameplay`. Use the comparison table as a guide, not as a one-to-one parameter map.
+4. **Reconnect project integrations manually.**
+   Update Blueprint and C++ code for renamed or removed APIs, and recreate Room Sensor, selector, Interior, SubLevel, and minimap connections where required.
+5. **Retest the result as a new dungeon design.**
+   Validate editor and runtime generation, visuals, progression, gameplay, replication, and performance. Fixed v1.x seeds and layouts are not compatibility targets in v2.
 
 ## Notes for Blueprint and C++ users
 
-In v2.0.0, the standard API for generated room information is `FDungeonGeneratedRoomInfo` together with `ADungeonRoomSensorBase::GetGeneratedRoomInfo()`. Legacy fields on the Room Sensor remain for migration, but new implementations should use the standard API.
+In v2.0.0, the standard API for generated room information is `FDungeonGeneratedRoomInfo` together with `ADungeonRoomSensorBase::GetGeneratedRoomInfo()`. Rebuild integrations against this API rather than relying on v1 Room Sensor fields.
+
+`EnableLightShadowControl`, `IsEnableLightCastShadowControl()`, and `SetEnableLightCastShadowControl()` have been removed in v2.0.0. If a v1 Blueprint or C++ class references them, remove those references manually before compiling with v2.0.0. Point Light and Spot Light shadows are now managed automatically by the runtime light-control system.
+
+`GetInquireInteriorTags()` and `InquireInteriorTags` have been replaced by `GetProvidedContextTags()` and `ProvidedContextTags`. This rename is not redirected automatically: recreate Room Sensor Blueprint implementations under the new event and re-enter saved Interior Location Component values.
+
+`EDungeonInteriorPlacementAnchor`, `PlacementAnchors`, and the placement-query `Anchor` member have been removed. v2 Interior Actor placement no longer creates an automatic room-center candidate. Explicit nested spawn positions authored with `UDungeonInteriorLocationComponent` continue to work.
+
+Nested Interior Location spawning now requires the target Part to declare at least one `RequiredContextTags` entry. When recreating an untagged nested placement, add matching `ProvidedContextTags` to the Interior Location. Recursive branches also skip Actor Classes already present in their ancestry.
 
 Mesh Set and individual-part selection are organized around Mesh Set Selectors and Parts Selectors. If the project has custom Blueprint or C++ selection logic, verify not only that it compiles, but also that it selects the intended candidates under representative conditions.
 
-## Pre-upgrade checklist
+## v2 rebuild checklist
 
-- A restorable backup of the v1.x project and assets exists
-- Representative fixed seeds and expected generation results have been recorded
-- The project has identified its `UDungeonGenerateParameter`, Mesh Set, Interior, SubLevel, and Room Sensor assets
-- Migration warnings and errors have been reviewed
+- A restorable v1.x project with the v1.x plugin is preserved
+- v2 work is taking place in a separate project or source-control branch
+- New v2 `UDungeonGenerateParameter`, Mesh Set, Interior, SubLevel, and Room Sensor assets have been created as required
 - Both editor generation and runtime generation have been tested
 - Blueprint／C++ integration for Room Sensors, selectors, and the minimap has been tested
-- Visual appearance and gameplay progression have been checked before saving migrated assets
+- Visual appearance and gameplay progression have been validated as a new v2 design
 
 ## Related pages
 

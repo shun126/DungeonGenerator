@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -35,7 +35,7 @@ struct FDungeonSpawnActorParameter
 	 *
 	 * このルールでスポーン対象にするアクタークラスです。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.Actor"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ToolTip = "Actor class that can be spawned by this rule.", AllowedClasses = "/Script/Engine.Actor"))
 	TObjectPtr<UClass> ActorClass = nullptr;
 
 	/**
@@ -43,7 +43,11 @@ struct FDungeonSpawnActorParameter
 	 *
 	 * 候補アクタークラス間のランダム選択に使う出現ウェイトです。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator", meta = (ClampMin = "1", ToolTip = "Relative selection weight among candidate actor classes. This is not a percentage."))
+	int32 SelectionWeight = 10;
+
+	/** Version 1 selection weight retained only for migration. 移行専用に保持するバージョン1の選択Weightです。 */
+	UPROPERTY(meta = (DeprecatedProperty))
 	uint8 Probability = 10;
 };
 
@@ -69,22 +73,26 @@ class DUNGEONGENERATOR_API ADungeonActorSpawnDirector : public AActor
 
 public:
 	/**
+	 * Represents ADungeonActorSpawnDirector.
 	 * コンストラクタ
 	 */
 	explicit ADungeonActorSpawnDirector(const FObjectInitializer& objectInitializer);
 
 	/**
+	 * Destroys the ~ADungeonActorSpawnDirector instance.
 	 * デストラクタ
 	 */
 	virtual ~ADungeonActorSpawnDirector() override = default;
 
-
 	// overrides
+	/** Migrates legacy Blueprint defaults after loading. ロード後に旧Blueprintの既定値を移行します。 */
+	virtual void PostLoad() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	/**
+	 * Represents Root.
 	 * ルートシーンコンポーネント
 	 */
 	UPROPERTY()
@@ -95,7 +103,7 @@ protected:
 	 *
 	 * 生成対象となるアクターのクラス型とその発生確率を指定して下さい。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ToolTip = "Specify the class type of the actor to be generated and its probability of occurrence."))
 	TArray<FDungeonSpawnActorParameter> SpawnActorParameters;
 
 	/**
@@ -103,7 +111,7 @@ protected:
 	 *
 	 * アクターをスポーンする間隔
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ToolTip = "Interval to spawn actors", ClampMin = "1"))
 	float SpawnIntervalTime = 60.f;
 
 	/**
@@ -113,7 +121,7 @@ protected:
 	 * アクターをスポーンする最大人数
 	 * この人数を超えるとスポナーはアクターをスポーンしません
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ToolTip = "Maximum number of actors to spawn. If this number is exceeded, the spawner will not spawn actors"))
 	uint8 MaxSpawnedActorsInWorld = 10;
 
 private:

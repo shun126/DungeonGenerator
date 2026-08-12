@@ -8,7 +8,7 @@
 #include "Parameter/Selector/DungeonPartsSelectorBase.h"
 #include "DungeonUniformRandomPartsSelector.generated.h"
 
-/*
+/**
  * Uniform random parts selector.
  * 一様ランダムでパーツを選択するセレクターです。
  */

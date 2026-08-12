@@ -1,12 +1,13 @@
 /**
  * A*によるパス検索 ヘッダーファイル
  *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #pragma once
+#include "../Debug/BuildInformation.h"
 
 namespace dungeon
 {
@@ -27,6 +28,11 @@ namespace dungeon
 
 	inline uint64_t PathFinder::Hash(const FIntVector& location) noexcept
 	{
+#if JENKINS_FOR_DEVELOP
+		check((1 << 22) > location.X && location.X >= 0);
+		check((1 << 22) > location.Y && location.Y >= 0);
+		check((1 << 22) > location.Z && location.Z >= 0);
+#endif
 		return
 			static_cast<uint64_t>(location.Z) << 44 |
 			static_cast<uint64_t>(location.Y) << 22 |
@@ -212,11 +218,14 @@ namespace dungeon
 
 	inline PathFinder::NodeType PathFinder::Result::GetNodeTypeFromStart(const size_t index) const noexcept
 	{
+		// 経路はゴールからスタートの順に記録されているので、末尾から数えます
+		check(index < mRoute.size());
 		return (mRoute.end() - 1 - index)->mNodeType;
 	}
 
 	inline PathFinder::NodeType PathFinder::Result::GetNodeTypeFromGoal(const size_t index) const noexcept
 	{
+		check(index < mRoute.size());
 		return (mRoute.begin() + index)->mNodeType;
 	}
 

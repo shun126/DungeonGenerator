@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -10,7 +10,8 @@
 #include "DungeonSelectionQuery.generated.h"
 
 /**
- * Kind of dungeon parts requested by custom selector.
+ * Identifies the kind of dungeon part requested from a custom selector.
+ * カスタムセレクターへ要求するダンジョンパーツの種類を識別します。
  */
 UENUM(BlueprintType)
 enum class EDungeonPartsSelectorTarget : uint8
@@ -28,8 +29,10 @@ enum class EDungeonPartsSelectorTarget : uint8
 };
 
 /**
- * Lightweight query parameters for parts selection.
- * Hot path friendly POD-like data only.
+ * Lightweight, read-only context supplied when selecting a dungeon part.
+ * Frequently executed selection paths use only POD-like values to avoid object lookups.
+ * ダンジョンパーツ選択時に渡される軽量な読み取り専用コンテキストです。
+ * 頻繁に実行される選択処理でオブジェクト参照を避けるため、PODに近い値だけを保持します。
  */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonPartsQuery
@@ -37,19 +40,19 @@ struct DUNGEONGENERATOR_API FDungeonPartsQuery
 	GENERATED_BODY()
 
 	/**
-	 * Target area where the queried part is being selected (room or aisle).
-	 *
-	 * パーツ選択を行う対象領域（部屋/通路）です。
+	 * Kind of part being selected, such as a floor, wall, fixture, or door.
+	 * 選択対象となる床、壁、設置物、ドアなどのパーツ種別です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Kind of part currently being selected, such as a floor, wall, fixture, or door."))
 	EDungeonPartsSelectorTarget Target = EDungeonPartsSelectorTarget::Floor;
 
 	/**
-	 * Requested piece type to select, such as floor, wall, or roof.
-	 *
-	 * 選択対象となるピース種別（床・壁・屋根など）です。
+	 * Internal voxel grid type at the selection location.
+	 * Values correspond to the generator's internal grid representation and are intended for advanced selectors.
+	 * 選択位置にある内部ボクセルグリッドの種類です。
+	 * 値は生成器内部のグリッド表現に対応し、上級者向けセレクターで使用します。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Internal voxel grid type at the selection location. This advanced value corresponds to the generator's internal grid representation."))
 	uint8 PieceType = 0;
 
 	/**
@@ -57,7 +60,7 @@ struct DUNGEONGENERATOR_API FDungeonPartsQuery
 	 *
 	 * 方向付きパーツ候補との照合に使う回転インデックスです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Rotation index of the selection location, used by selectors that distinguish directional candidates."))
 	uint8 Rotation = 0;
 
 	/**
@@ -65,7 +68,7 @@ struct DUNGEONGENERATOR_API FDungeonPartsQuery
 	 *
 	 * 隣接判定に使う6方向セルのビットマスクです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Six-bit adjacency mask for neighboring cells. Use this with topology-aware selectors."))
 	uint8 NeighborMask6 = 0;
 
 	/**
@@ -97,22 +100,22 @@ struct DUNGEONGENERATOR_API FDungeonPartsQuery
 	 *
 	 * 部屋固有の選択ロジックに使う部屋IDです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Identifier of the room that owns this grid cell, or INDEX_NONE when the cell is not owned by a room."))
 	int32 RoomId = INDEX_NONE;
 
 	/**
-	 * Gameplay role assigned to the room that owns this grid.
+	 * Structural route role assigned to the room that owns this grid.
 	 *
-	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
+	 * このグリッドを所有する部屋に割り当てられた経路構造上の役割です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Structural route role of the room that owns this grid cell, such as Start, Goal, Branch, or Dead End."))
 	EDungeonRoomStructuralRole RoomStructuralRole = EDungeonRoomStructuralRole::Connector;
 
 	/**
 	 * Gameplay role assigned to the room that owns this grid.
 	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Gameplay role of the room that owns this grid cell, such as Combat, Treasure, Puzzle, or Secret."))
 	EDungeonRoomGameplayRole RoomGameplayRole = EDungeonRoomGameplayRole::None;
 
 	/**
@@ -120,23 +123,23 @@ struct DUNGEONGENERATOR_API FDungeonPartsQuery
 	 *
 	 * 進行度と階層条件で割り当てられたゾーン番号です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Zero-based index of the zone selected for this location, or INDEX_NONE when no zone matches."))
 	int32 ZoneIndex = INDEX_NONE;
 
 	/**
-	 * Graph depth from the start room used for progression-aware selection.
+	 * Normalized progress from the start room, in the range 0 to 1.
 	 *
-	 * 進行度を考慮した選択に使うスタート部屋からの深さです。
+	 * 進行度を考慮した選択に使う、0から1に正規化されたスタート部屋からの進行度です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Normalized progress from the start room. 0 is near the start and 1 is at the deepest generated progress."))
 	float DepthFromStart = 0;
 
 	/**
-	 * Distance to the goal room used for progression-aware selection.
+	 * Inverse normalized progress used as an approximate distance to the goal.
 	 *
-	 * 進行度を考慮した選択に使うゴール部屋までの距離です。
+	 * ゴールまでのおおよその距離として使う、正規化進行度の反転値です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Inverse of Depth From Start. Values near 0 are closer to the deepest generated progress; this is not a world-space distance."))
 	float DistanceToGoal = 0;
 
 	/**
@@ -144,13 +147,15 @@ struct DUNGEONGENERATOR_API FDungeonPartsQuery
 	 *
 	 * 場所ごとのランダム選択を決定論的にするための固定シードキーです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Stable per-location seed key for deterministic custom selection. Do not treat this value as a sequential index."))
 	int32 SeedKey = 0;
 };
 
 /**
- * Lightweight query parameters for mesh-set selection.
- * Hot path friendly POD-like data only.
+ * Lightweight, read-only context supplied when selecting a mesh set.
+ * Frequently executed selection paths use only POD-like values to avoid object lookups.
+ * メッシュセット選択時に渡される軽量な読み取り専用コンテキストです。
+ * 頻繁に実行される選択処理でオブジェクト参照を避けるため、PODに近い値だけを保持します。
  */
 USTRUCT(BlueprintType)
 struct DUNGEONGENERATOR_API FDungeonMeshSetQuery
@@ -186,22 +191,22 @@ struct DUNGEONGENERATOR_API FDungeonMeshSetQuery
 	 *
 	 * 部屋固有の選択ロジックに使う部屋IDです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Identifier of the room that owns this grid cell, or INDEX_NONE when the cell is not owned by a room."))
 	int32 RoomId = INDEX_NONE;
 
 	/**
-	 * Gameplay role assigned to the room that owns this grid.
+	 * Structural route role assigned to the room that owns this grid.
 	 *
-	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
+	 * このグリッドを所有する部屋に割り当てられた経路構造上の役割です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Structural route role of the room that owns this grid cell, such as Start, Goal, Branch, or Dead End."))
 	EDungeonRoomStructuralRole RoomStructuralRole = EDungeonRoomStructuralRole::Connector;
 
 	/**
 	 * Gameplay role assigned to the room that owns this grid.
 	 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Gameplay role of the room that owns this grid cell, such as Combat, Treasure, Puzzle, or Secret."))
 	EDungeonRoomGameplayRole RoomGameplayRole = EDungeonRoomGameplayRole::None;
 
 	/**
@@ -209,23 +214,23 @@ struct DUNGEONGENERATOR_API FDungeonMeshSetQuery
 	 *
 	 * 進行度と階層条件で割り当てられたゾーン番号です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Zero-based index of the zone selected for this location, or INDEX_NONE when no zone matches."))
 	int32 ZoneIndex = INDEX_NONE;
 
 	/**
-	 * Graph depth from the start room used for progression-aware selection.
+	 * Normalized progress from the start room, in the range 0 to 1.
 	 *
-	 * 進行度を考慮した選択に使うスタート部屋からの深さです。
+	 * 進行度を考慮した選択に使う、0から1に正規化されたスタート部屋からの進行度です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Normalized progress from the start room. 0 is near the start and 1 is at the deepest generated progress."))
 	float DepthFromStart = 0;
 
 	/**
-	 * Distance to the goal room used for progression-aware selection.
+	 * Inverse normalized progress used as an approximate distance to the goal.
 	 *
-	 * 進行度を考慮した選択に使うゴール部屋までの距離です。
+	 * ゴールまでのおおよその距離として使う、正規化進行度の反転値です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Inverse of Depth From Start. Values near 0 are closer to the deepest generated progress; this is not a world-space distance."))
 	float DistanceToGoal = 0;
 
 	/**
@@ -233,7 +238,7 @@ struct DUNGEONGENERATOR_API FDungeonMeshSetQuery
 	 *
 	 * 場所ごとのランダム選択を決定論的にするための固定シードキーです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Stable per-location seed key for deterministic custom selection. Do not treat this value as a sequential index."))
 	int32 SeedKey = 0;
 };
 

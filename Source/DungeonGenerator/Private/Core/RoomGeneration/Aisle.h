@@ -1,8 +1,6 @@
 /**
- * 通路に関するヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -18,6 +16,7 @@ namespace dungeon
 	class Point;
 
 	/**
+	 * Represents Aisle.
 	 * 通路 クラス
 	 */
 	class Aisle final
@@ -44,6 +43,7 @@ namespace dungeon
 		Aisle(Aisle&& other) noexcept;
 
 		/**
+		 * Destroys the ~Aisle instance.
 		 * デストラクタ
 		 */
 		~Aisle() = default;
@@ -75,9 +75,22 @@ namespace dungeon
 		const Identifier& GetIdentifier() const noexcept;
 
 		/**
+		 * Returns the zone index of the deeper endpoint room, using the larger room identifier to break equal-depth ties.
+		 * 深度の大きい接続先の部屋の Zone インデックスを返し、同深度の場合は大きい部屋識別子を優先します。
+		 */
+		int32 GetZoneIndex() const noexcept;
+
+		/**
+		 * Returns whether ain.
 		 * 幹線通路か取得します
 		 */
 		bool IsMain() const noexcept;
+
+		/**
+		 * Sets whether this aisle belongs to the selected main route.
+		 * この通路が選択された主経路に属するかを設定します。
+		 */
+		void SetMain(bool main) noexcept;
 
 		/**
 		 * Get aisle purpose assigned by the layout planner.
@@ -87,36 +100,56 @@ namespace dungeon
 		EDungeonAislePurpose GetPurpose() const noexcept;
 
 		/**
+		 * Sets the purpose assigned by the layout planner.
+		 * レイアウトプランナーが割り当てた通路目的を設定します。
+		 */
+		void SetPurpose(EDungeonAislePurpose purpose) noexcept;
+
+		/**
+		 * Returns whether this aisle moves between floors.
+		 * この通路が階層をまたぐか取得します
+		 * 部屋の位置は生成中に変化するため、呼び出した時点の部屋の高さから判定します
+		 */
+		bool IsVerticalTransition() const noexcept;
+
+		/**
+		 * Returns whether Locked.
 		 * 閉鎖状態を取得します
 		 */
 		bool IsLocked() const noexcept;
 
 		/**
+		 * Sets Lock.
 		 * 閉鎖状態を設定します
 		 */
 		void SetLock(const bool lock) noexcept;
 
 		/**
+		 * Returns whether UniqueLocked.
 		 * ユニークな鍵が必要な状態を取得します
 		 */
 		bool IsUniqueLocked() const noexcept;
 
 		/**
+		 * Sets UniqueLock.
 		 * ユニークな鍵が必要な状態を設定します
 		 */
 		void SetUniqueLock(const bool lock) noexcept;
 
 		/**
+		 * Returns whether AnyLocked.
 		 * 何らかの鍵が必要な状態を取得します
 		 */
 		bool IsAnyLocked() const noexcept;
 
 		/**
+		 * Returns Height.
 		 * 通路の高さを取得します
 		 */
 		uint8_t GetHeight() const noexcept;
 
 		/**
+		 * Sets Height.
 		 * 通路の高さを設定します
 		 */
 		void SetHeight(const uint8_t height) noexcept;

@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -14,10 +14,6 @@
 #include <UObject/UnrealType.h>
 #endif
 #include <cmath>
-
-#if WITH_EDITOR
-#include "Helper/DungeonDebugUtility.h"
-#endif
 
 UDungeonMeshSetDatabase::UDungeonMeshSetDatabase(const FObjectInitializer& objectInitializer)
 	: Super(objectInitializer)
@@ -54,6 +50,11 @@ void UDungeonMeshSetDatabase::MigrateFromAssetVersion(const int32 assetVersion)
 	if (assetVersion < FDungeonGeneratorAssetVersion::Version2_0 || !bSelectionPolicyMigrated)
 	{
 		MigrateSelectionPolicies();
+	}
+	if (assetVersion < FDungeonGeneratorAssetVersion::Version2_0)
+	{
+		for (FDungeonMeshSet& meshSet : Parts)
+			meshSet.MigrateSpawnChancesFromVersion1();
 	}
 }
 
@@ -123,21 +124,3 @@ const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t i
 		return &Parts[random->Get<uint32_t>(size)];
 	return &Parts[0];
 }
-
-#if WITH_EDITOR
-FString UDungeonMeshSetDatabase::DumpToJson(const uint32 indent) const
-{
-	FString json = dungeon::Indent(indent) + TEXT("\"Parts\":[\n");
-	for (int32 i = 0; i < Parts.Num(); ++i)
-	{
-		if (i != 0)
-			json += TEXT(",");
-		json += dungeon::Indent(indent + 1) + TEXT("{\n");
-		json += Parts[i].DumpToJson(indent + 2);
-		json += TEXT("\n");
-		json += dungeon::Indent(indent + 1) + TEXT("}\n");
-	}
-	json += dungeon::Indent(indent) + TEXT("]");
-	return json;
-}
-#endif

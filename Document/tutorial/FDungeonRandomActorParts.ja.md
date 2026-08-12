@@ -1,16 +1,14 @@
-# FDungeonRandomActorParts 説明書
+# FDungeonRandomActorParts リファレンス
 
-FDungeonRandomActorParts は、**同じスポーン地点に複数のアクター候補を登録し、確率で出し分けるための入れ物**です。向きやオフセットを持つ FDungeonActorPartsWithDirection を継承しつつ、`Frequency` で出現頻度を調整できます。
+`FDungeonRandomActorParts`は、Actor候補の向き、オフセット、分かりやすい百分率の生成確率をまとめる設定です。
 
-## 主な使い方
-- 祠・宝箱・環境オブジェクトなど、同じ場所に「たまに置きたい」装飾を確率付きで登録します。
-- ダンジョン生成パラメータ側の「ランダムアクター」配列に追加すると、生成時に抽選されます。
+## 主なプロパティ
 
-## UPROPERTY の意味
-- **Frequency (`float`, EditAnywhere/BlueprintReadWrite, 0.0〜1.0)**  
-  配置確率。1.0 なら毎回必ず配置、0.5 なら 50% の確率で出現します。複数のパーツを並べる場合、それぞれ個別に判定されるため「二つとも出る」こともあります。確率を下げればレア感を演出できます。
+- `Spawn Chance`（`float`、0%～100%）：1回の選択でこのActorが候補に参加する確率です。`0%`では候補にならず、`100%`では必ず候補になります。
+
+Spawn ChanceはSelection Weightではありません。Spawn Chanceは候補へ参加するかを決め、重み付きSelectorは参加した候補の選ばれやすさを決めます。
 
 ## 編集のヒント
-- 同じ役割のアクターを複数登録しておくと、Frequency を調整するだけで「ごくまれにレアオブジェクトが混ざる」などの演出が簡単になります。
-- 回転や位置合わせはベースクラスの Transform 設定を利用してください。メッシュの向きに合わせて方向指定しておくと自然に並びます。
 
+- 珍しい小物を通常の装飾へ混ぜる場合は、Spawn Chanceを低くします。
+- 継承したTransform設定でActorの前方向と配置オフセットを合わせます。

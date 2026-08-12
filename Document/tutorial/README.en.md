@@ -34,7 +34,7 @@ graph TD;
 
 ## Improve Visuals
 - [PrepareMeshParts.en.md](./PrepareMeshParts.en.md)
-  The starting point for using your own meshes. It explains the minimum floor, wall, roof, and slope setup, along with orientation, pivot, and validation tips.
+  The starting point for using your own meshes. It explains the required floor, wall, and roof setup, when a slope is needed, and the correct orientation and pivot.
 - [StaticMeshFitTool.en.md](./StaticMeshFitTool.en.md)
   Check selected Static Mesh assets against the Dungeon Generator grid and generate fitted copies.
 - [UDungeonMeshSetDatabase.en.md](./UDungeonMeshSetDatabase.en.md)
@@ -65,7 +65,7 @@ graph TD;
 - [ApplyMissionGraph.en.md](./ApplyMissionGraph.en.md)
   Build a progression route with locked doors and key placement using MissionGraph.
 - [CustomSelector.en.md](./CustomSelector.en.md)
-  Replace mesh-set or part selection rules with selector assets.
+  Replace mesh-set or part selection rules with built-in or Blueprint selector objects.
 - [LobbyConnection.en.md](./LobbyConnection.en.md)
   Connect a prebuilt lobby or a hand-authored start-room sublevel to the dungeon.
 

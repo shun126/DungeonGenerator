@@ -15,7 +15,6 @@
 namespace Dungeon::MeshSet
 {
 	/*
-	 * Selects a deterministic fallback index when no synchronized random stream exists.
 	 * 同期乱数ストリームがない場合に決定論的なフォールバックインデックスを選択します。
 	 */
 	int32 SelectFallbackIndex(const int32 SeedKey, const int32 NumCandidates)
@@ -26,7 +25,6 @@ namespace Dungeon::MeshSet
 	}
 
 	/*
-	 * Selects a uniform index using the synchronized random stream when available.
 	 * 利用可能な場合は同期乱数ストリームを使用して一様なインデックスを選択します。
 	 */
 	int32 SelectUniformRandomIndex(const FDungeonMeshSetQuery& Query, const std::shared_ptr<dungeon::Random>& Random, const int32 NumCandidates)

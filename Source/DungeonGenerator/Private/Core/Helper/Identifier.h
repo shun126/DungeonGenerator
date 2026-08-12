@@ -1,8 +1,6 @@
 /**
- * 識別子クラスヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -13,17 +11,20 @@
 namespace dungeon
 {
 	/**
+	 * Represents Identifier.
 	 * 識別子クラス
 	 */
 	class Identifier final
 	{
 	public:
 		/**
+		 * Represents IdentifierType.
 		 * 識別子の型
 		 */
 		using IdentifierType = uint16_t;
 
 		/**
+		 * Represents Type.
 		 * 識別子のタイプ
 		 */
 		enum class Type : uint8_t
@@ -54,8 +55,9 @@ namespace dungeon
 		bool IsType(const Type type) const noexcept;
 		static bool IsType(const IdentifierType identifier, const Type type) noexcept;
 
-		/*
+		/**
 		Reset counter to identify
+		 * Counter をリセットします。
 		*/
 		static void ResetCounter();
 

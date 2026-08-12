@@ -1,10 +1,14 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * 三角形に関するヘッダーファイル
  *
  * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #pragma once
@@ -15,39 +19,45 @@ namespace dungeon
 	class Point;
 
 	/**
+	 * Represents Triangle.
 	 * 三角形クラス
 	 */
 	class Triangle final
 	{
 	public:
 		/**
+		 * Represents Triangle.
 		 * コンストラクタ
 		 * 3頂点を与えて三角形をつくる
 		 */
 		Triangle(const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3) noexcept;
 
 		/**
+		 * Represents Triangle.
 		 * コンストラクタ
 		 * 3頂点を与えて三角形をつくる
 		 */
 		Triangle(const FVector& p1, const FVector& p2, const FVector& p3) noexcept;
 
 		/**
+		 * Represents Triangle.
 		 * コピーコンストラクタ
 		 */
 		Triangle(const Triangle& other) noexcept;
 
 		/**
+		 * Represents Triangle.
 		 * ムーブコンストラクタ
 		 */
 		Triangle(Triangle&& other) noexcept;
 
 		/**
+		 * Destroys the ~Triangle instance.
 		 * デストラクタ
 		 */
 		~Triangle() = default;
 
-		/*
+		/**
 		他の三角形と共有点を持つか
 		@param[in]	other	比較する三角形
 		@return		trueならば共通の頂点を持っている
@@ -80,21 +90,25 @@ namespace dungeon
 		bool IsCCW() const noexcept;
 
 		/**
+		 * Represents CW.
 		 * 右回りの面に変換します
 		 */
 		void CW() noexcept;
 
 		/**
+		 * Represents CCW.
 		 * 左回りの面に変換します
 		 */
 		void CCW() noexcept;
 
 		/**
+		 * Represents operator.
 		 * コピー代入
 		 */
 		Triangle& operator=(const Triangle& other) noexcept;
 
 		/**
+		 * Represents operator.
 		 * ムーブ代入
 		 */
 		Triangle& operator=(Triangle&& other) noexcept;
@@ -114,6 +128,7 @@ namespace dungeon
 		bool operator!=(const Triangle& other) const noexcept;
 
 		/**
+		 * Represents operator.
 		 * 頂点を取得します
 		 */
 		FVector operator[](const size_t index) const noexcept;

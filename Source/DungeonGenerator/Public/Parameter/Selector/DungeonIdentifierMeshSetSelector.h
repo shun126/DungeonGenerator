@@ -8,7 +8,7 @@
 #include "Parameter/Selector/DungeonMeshSetSelectorBase.h"
 #include "DungeonIdentifierMeshSetSelector.generated.h"
 
-/*
+/**
  * Identifier mesh-set selector.
  * 識別子でメッシュセットを選択するセレクターです。
  */

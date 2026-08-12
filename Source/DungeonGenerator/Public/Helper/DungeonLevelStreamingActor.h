@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -23,11 +23,13 @@ class DUNGEONGENERATOR_API ADungeonLevelStreamingActor : public AActor
 public:
 	/**
 	 * constructor
+	 * ADungeonLevelStreamingActor を表します。
 	 */
 	explicit ADungeonLevelStreamingActor(const FObjectInitializer& initializer);
 
 	/**
 	 * destructor
+	 * ~A Du ng eo nL ev el St re am in gA ct or インスタンスを破棄します。
 	 */
 	virtual ~ADungeonLevelStreamingActor() override = default;
 
@@ -49,13 +51,15 @@ protected:
 protected:
 	/**
 	 * Overlap volume to trigger level streaming
+	 * OverlapVolume を表します。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Overlap volume to trigger level streaming"))
 	TObjectPtr<UBoxComponent> OverlapVolume;
 
 	/**
 	 * Level streaming path
+	 * Path を表します。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/Engine.World"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ToolTip = "Level streaming path", AllowedClasses = "/Script/Engine.World"))
 	FSoftObjectPath Path;
 };

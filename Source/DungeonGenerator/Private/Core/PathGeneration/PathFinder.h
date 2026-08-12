@@ -1,8 +1,6 @@
 /**
- * A*によるパス検索 ヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -17,6 +15,7 @@
 namespace dungeon
 {
 	/**
+	 * Represents PathFinder.
 	 * A*によるパス検索クラス
 	 */
 	class PathFinder final : NonCopyable
@@ -38,6 +37,7 @@ namespace dungeon
 		};
 
 		/**
+		 * Represents NodeType.
 		 * 検索ノードの種類
 		 */
 		enum class NodeType : uint8_t
@@ -54,11 +54,13 @@ namespace dungeon
 
 	public:
 		/**
+		 * Represents PathFinder.
 		 * コンストラクタ
 		 */
 		PathFinder() = default;
 
 		/**
+		 * Destroys the ~PathFinder instance.
 		 * デストラクタ
 		 */
 		~PathFinder() = default;
@@ -116,6 +118,7 @@ namespace dungeon
 		bool Pop(uint64_t& nextKey, NodeType& nextNodeType, uint32_t& nextCost, FIntVector& nextLocation, Direction& nextDirection, SearchDirection& nextSearchDirection) noexcept;
 
 		/**
+		 * Represents Commit.
 		 * 経路を確定する
 		 */
 		bool Commit(const FIntVector& goal) noexcept;
@@ -180,6 +183,7 @@ namespace dungeon
 		void RevertOpenNode(const uint64_t parentHash);
 
 		/**
+		 * Represents ClearOpenNode.
 		 * 使用予約されたノードと使用中のノードをクリアする
 		 */
 		void ClearOpenNode();
@@ -229,6 +233,7 @@ namespace dungeon
 
 	private:
 		/**
+		 * Represents aseNode.
 		 * 基底ノード
 		 */
 		struct BaseNode
@@ -283,11 +288,13 @@ namespace dungeon
 			bool IsValidPath() const noexcept;
 
 			/**
+			 * Returns PathLength.
 			 * 経路の長さを取得します
 			 */
 			size_t GetPathLength() const noexcept;
 
 			/**
+			 * Represents Path.
 			 * 経路を取得します
 			 */
 			template<typename Function>
@@ -348,6 +355,7 @@ namespace dungeon
 			void InvalidateGoalLocationType() noexcept;
 
 			/**
+			 * Represents ComputeLongestStraightPath.
 			 * 最も長い直線を計算します
 			 */
 			FIntVector2 ComputeLongestStraightPath() const noexcept;

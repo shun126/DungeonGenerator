@@ -1,9 +1,13 @@
 /**
- * Stopwatch class header files
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
+ */
+
+/**
+ * @file
+ * Stopwatch class header files
+ * Stopwatch を表します。
  */
 
 #pragma once

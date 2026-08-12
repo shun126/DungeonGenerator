@@ -1,17 +1,25 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #include "SubActor/DungeonDoorBase.h"
 #include "Core/Helper/Crc.h"
 #include "Core/Math/Random.h"
+#include "Net/UnrealNetwork.h"
 
 ADungeonDoorBase::ADungeonDoorBase(const FObjectInitializer& initializer)
 	: Super(initializer)
 {
 	bReplicates = true;
+}
+
+void ADungeonDoorBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ADungeonDoorBase, Props);
 }
 
 void ADungeonDoorBase::InvokeInitialize(const std::shared_ptr<dungeon::Random>& random, const EDungeonRoomProps props)

@@ -1,26 +1,18 @@
-# UDungeonRoomSensorDatabase 移行メモ
+# UDungeonRoomSensorDatabase 非推奨 API の注意
 
-`UDungeonRoomSensorDatabase` は v2.0.0 で deprecated になりました。古いアセットをロードして移行するためだけに残されています。
+`UDungeonRoomSensorDatabase` は非推奨であり、Version 2 の設定では使用しません。新しいコンテンツでは作成・使用しないでください。
 
-v2.0.0 は、v1 の Room Sensor Database 参照を移行するためのリリースです。v1 アセットをまだ使っているプロジェクトでは、v2.1 以降へ更新する前に v2.0.0 でプロジェクトを開き、移行後の設定を確認して、対象アセットを保存してください。v1 から v2 への移行サポートとこの旧 Database は、v2.1 以降で削除される可能性があります。
+部屋の Gameplay 設定は `UDungeonGenerateParameter` に直接設定します。
 
-新しい設定では、Room Sensor 関連の Gameplay 設定を `UDungeonGenerateParameter` に直接設定します。
+- `Gameplay.DungeonRoomSensorClass` に、標準の `ADungeonRoomSensorBase` 派生 Blueprint を設定します。
+- `Gameplay.SpawnActorInAisle` に、生成通路内の標準 Actor 候補を設定します。
+- `Zones[].GameplayOverride` で、Zone ごとに Room Sensor や通路 Actor を置き換えられます。
+- `Gameplay.RoomRoles.Roles[].GameplayOverride` で、Gameplay Role ごとに Room Sensor を置き換えられます。
 
-- `Gameplay.DungeonRoomSensorClass` は、生成部屋で使うデフォルトの `ADungeonRoomSensorBase` Blueprint です。
-- `Gameplay.SpawnActorInAisle` は、生成通路内にスポーンするデフォルトの Actor Blueprint 候補です。
-- `Zones[].GameplayOverride` では、Zone ごとの Room Sensor と通路 Actor 候補を上書きできます。
-- `Gameplay.RoomRoles.Roles[].GameplayOverride` では、Gameplay Role ごとの Room Sensor を上書きできます。
-
-古い parameter が `UDungeonRoomSensorDatabase` を参照している場合、旧 `DungeonRoomSensorClass` 配列の最初の有効なクラスを `Gameplay.DungeonRoomSensorClass` へコピーします。旧 `SpawnActorInAisle` は、新しい `Gameplay.SpawnActorInAisle` が空の場合にコピーされます。
-
-推奨する移行手順:
-
-1. v1 プロジェクトを Dungeon Generator v2.0.0 で開きます。
-2. 対象の `UDungeonGenerateParameter` アセットを開く、またはロードします。
-3. Room Sensor 設定が `Gameplay.DungeonRoomSensorClass` と `Gameplay.SpawnActorInAisle` にコピーされていることを確認します。
-4. 移行後のアセットを保存します。
-5. v2.0.0 で保存が完了してから、v2.1 以降へ更新します。
+古い保存データを認識するため、実装内部に旧フィールドやロード時変換が残る場合があります。しかし、これは Version 1 から Version 2 への移行サポートではありません。Version 1 のプロジェクトを復元できるよう、別プロジェクトまたは別のソース管理ブランチで、新しい Version 2 アセットへ手動で設定を作り直してください。
 
 ## 関連ページ
+
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
 - [ADungeonRoomSensorBase.ja.md](./ADungeonRoomSensorBase.ja.md)
+- [VersionComparison.ja.md](./VersionComparison.ja.md)

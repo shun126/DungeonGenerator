@@ -6,6 +6,7 @@
 
 #include "DungeonDeferredActorSpawnManager.h"
 #include "DungeonGenerateBase.h"
+#include "Core/Debug/Debug.h"
 #include <Misc/EngineVersionComparison.h>
 
 FDungeonDeferredActorSpawnManager::~FDungeonDeferredActorSpawnManager()
@@ -13,9 +14,9 @@ FDungeonDeferredActorSpawnManager::~FDungeonDeferredActorSpawnManager()
 	CancelAll(/*bNotifyCallbacks=*/false);
 }
 
-void FDungeonDeferredActorSpawnManager::SetMaxSpawnsPerUpdate(const int32 InMaxSpawnsPerUpdate)
+void FDungeonDeferredActorSpawnManager::SetMaxRequestsPerUpdate(const int32 InMaxRequestsPerUpdate)
 {
-	MaxSpawnsPerUpdate = InMaxSpawnsPerUpdate;
+	MaxRequestsPerUpdate = InMaxRequestsPerUpdate;
 }
 
 void FDungeonDeferredActorSpawnManager::SetMaxTimePerUpdate(const double InMaxTimePerUpdate)
@@ -35,7 +36,8 @@ void FDungeonDeferredActorSpawnManager::RequestSpawn(
 	const FTransform& Transform,
 	const FActorSpawnParameters& SpawnParameters,
 	const int32 PartitionIndex,
-	TFunction<void(AActor*)> OnSpawned)
+	TFunction<void(AActor*)> OnSpawned,
+	UObject* RequestOwner)
 {
 	FDungeonDeferredActorSpawnRequest Request;
 	Request.World = World;
@@ -45,13 +47,15 @@ void FDungeonDeferredActorSpawnManager::RequestSpawn(
 	Request.SpawnParameters = SpawnParameters;
 	Request.PartitionIndex = PartitionIndex;
 	Request.OnSpawned = MoveTemp(OnSpawned);
+	Request.RequestOwner = RequestOwner;
+	Request.bRequiresValidRequestOwner = RequestOwner != nullptr;
 	PendingRequests.Add(MoveTemp(Request));
 }
 
 int32 FDungeonDeferredActorSpawnManager::Update(const TFunctionRef<bool(int32)>& IsPartitionActive)
 {
 	const double StartSecond = FPlatformTime::Seconds();
-	int32 SpawnedThisUpdate = 0;
+	int32 ProcessedThisUpdate = 0;
 
 	while (NumQueued() > 0)
 	{
@@ -68,19 +72,22 @@ int32 FDungeonDeferredActorSpawnManager::Update(const TFunctionRef<bool(int32)>&
 		PendingRequests.RemoveAt(RequestIndex, 1, false);
 #endif
 
+		const bool bCancelledForInvalidOwner = Request.bRequiresValidRequestOwner && !Request.RequestOwner.IsValid();
 		AActor* Spawned = TrySpawnRequest(Request);
+		if (!Spawned && !bCancelledForInvalidOwner)
+		{
+			const UClass* RequestedClass = Request.ActorClass.Get();
+			DUNGEON_GENERATOR_WARNING(TEXT("Deferred Actor spawn failed for '%s'."), RequestedClass ? *RequestedClass->GetPathName() : TEXT("Invalid Class"));
+		}
 
 		if (Request.OnSpawned)
 		{
 			Request.OnSpawned(Spawned);
 		}
 
-		if (Spawned)
-		{
-			++SpawnedThisUpdate;
-		}
+		++ProcessedThisUpdate;
 
-		if (MaxSpawnsPerUpdate > 0 && SpawnedThisUpdate >= MaxSpawnsPerUpdate)
+		if (MaxRequestsPerUpdate > 0 && ProcessedThisUpdate >= MaxRequestsPerUpdate)
 		{
 			break;
 		}
@@ -95,12 +102,12 @@ int32 FDungeonDeferredActorSpawnManager::Update(const TFunctionRef<bool(int32)>&
 		}
 	}
 
-	if (SpawnedThisUpdate > 0)
+	if (ProcessedThisUpdate > 0)
 	{
 		PendingRequests.Shrink();
 	}
 
-	return SpawnedThisUpdate;
+	return ProcessedThisUpdate;
 }
 
 void FDungeonDeferredActorSpawnManager::CancelAll(const bool bNotifyCallbacks)
@@ -129,12 +136,17 @@ void FDungeonDeferredActorSpawnManager::ShiftQueuedRequests(const FVector& Delta
 	}
 }
 
-/*
+/**
  * Spawns one queued actor request.
  * キュー済みActor生成要求を1件生成します。
  */
 AActor* FDungeonDeferredActorSpawnManager::TrySpawnRequest(const FDungeonDeferredActorSpawnRequest& Request)
 {
+	if (Request.bRequiresValidRequestOwner && !Request.RequestOwner.IsValid())
+	{
+		return nullptr;
+	}
+
 	UWorld* World = Request.World.Get();
 	UClass* ActorClass = Request.ActorClass.Get();
 	if (!World || !ActorClass)
@@ -151,7 +163,7 @@ AActor* FDungeonDeferredActorSpawnManager::TrySpawnRequest(const FDungeonDeferre
 	);
 }
 
-/*
+/**
  * Finds the next request, preferring active partitions before inactive or unknown partitions.
  * アクティブなパーティションを非アクティブまたは不明なパーティションより優先して次の要求を検索します。
  */

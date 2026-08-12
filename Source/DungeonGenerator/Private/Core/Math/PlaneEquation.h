@@ -1,8 +1,6 @@
 /**
- * 平面に関するヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -12,6 +10,7 @@
 namespace dungeon
 {
 	/**
+	 * Represents Plane.
 	 * 平面クラス
 	 */
 	class Plane final
@@ -66,4 +65,4 @@ namespace dungeon
 	};
 }
 
-#include "Plane.inl"
+#include "PlaneEquation.inl"

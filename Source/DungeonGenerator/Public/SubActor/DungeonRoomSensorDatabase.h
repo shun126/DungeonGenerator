@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -46,21 +46,23 @@ class DUNGEONGENERATOR_API UDungeonRoomSensorDatabase : public UObject, public I
 public:
 	/**
 	 * constructor
+	 * UDungeonRoomSensorDatabase を表します。
 	 */
 	explicit UDungeonRoomSensorDatabase(const FObjectInitializer& ObjectInitializer);
 
 	/**
 	 * destructor
+	 * ~U Du ng eo nR oo mS en so rD at ab as e インスタンスを破棄します。
 	 */
 	virtual ~UDungeonRoomSensorDatabase() override = default;
 
-	/*
+	/**
 	 * Serializes this asset and stamps the DungeonGenerator asset format version.
 	 * このアセットをシリアライズし、DungeonGeneratorアセット形式バージョンを記録します。
 	 */
 	virtual void Serialize(FArchive& Ar) override;
 
-	/*
+	/**
 	 * Applies version-based compatibility handling after this asset is loaded.
 	 * このアセットのロード後にバージョンに基づく互換処理を適用します。
 	 */
@@ -78,14 +80,13 @@ public:
 	 */
 	UClass* Select(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random) const;
 
-	/*
-	 * Returns the first valid room sensor class for migration into UDungeonGenerateParameter.
-	 * UDungeonGenerateParameter へ移行するため、最初の有効な Room Sensor クラスを返します。
+	/**
+	 * Returns SpawnActorInAisle.
+	 * SpawnActorInAisle を返します。
 	 */
 	UClass* GetFirstValidRoomSensorClass() const;
 
-	/*
-	 * Returns legacy aisle actor settings for migration into UDungeonGenerateParameter.
+	/**
 	 * UDungeonGenerateParameter へ移行するため、旧通路 Actor 設定を返します。
 	 */
 	const TArray<FSoftObjectPath>& GetSpawnActorInAisle() const;
@@ -104,7 +105,7 @@ protected:
 	 * Room Sensor Generation Rules
 	 * ルームセンサーの生成ルール
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor")
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", meta = (ToolTip = "Room Sensor Generation Rules"))
 	EDungeonMeshSetSelectionMethod SelectionMethod = EDungeonMeshSetSelectionMethod::DepthFromStart;
 
 	/**
@@ -112,7 +113,7 @@ protected:
 	 *
 	 * 配置するRoomSensorを登録して下さい。
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonRoomSensorBase"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|RoomSensor", meta = (ToolTip = "Register the RoomSensor to be placed.", AllowedClasses = "/Script/DungeonGenerator.DungeonRoomSensorBase"))
 	TArray<TObjectPtr<UClass>> DungeonRoomSensorClass;
 
 	/**
@@ -120,24 +121,24 @@ protected:
 	 *
 	 * 通路にスポーンするアクター
 	 */
-	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Aisle", meta = (AllowedClasses = "/Script/Engine.Blueprint"))
+	UPROPERTY(EditAnywhere, Category = "DungeonGenerator|Aisle", meta = (ToolTip = "Actor spawning in an aisle", AllowedClasses = "/Script/Engine.Blueprint"))
 	TArray<FSoftObjectPath> SpawnActorInAisle;
 
 private:
-	/*
+	/**
 	 * Runs version-specific migration for the serialized asset format.
 	 * 保存形式バージョンごとの移行処理を実行します。
 	 */
 	void MigrateFromAssetVersion(const int32 assetVersion);
 
-	/*
+	/**
 	 * Applies compatibility fixups that must remain valid for every asset version.
 	 * 全てのアセット形式で有効に保つ必要がある互換補正を適用します。
 	 */
 	void ApplyPostLoadCompatibilityFixups();
 
 #if WITH_EDITORONLY_DATA
-	/*
+	/**
 	 * Editor-only state that reports the latest in-memory migration result for this asset.
 	 * このアセットの最新のメモリ上移行結果を報告するEditor専用状態です。
 	 */
@@ -145,7 +146,7 @@ private:
 	FDungeonAssetMigrationState MigrationState;
 #endif
 
-	/*
+	/**
 	 * Serialized asset format version captured during Serialize for PostLoad migration.
 	 * PostLoad移行で使用するためにSerialize中に取得した保存形式バージョンです。
 	 */

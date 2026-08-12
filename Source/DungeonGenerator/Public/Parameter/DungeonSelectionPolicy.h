@@ -1,3 +1,9 @@
+/**
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
+ * All Rights Reserved.
+ */
+
 #pragma once
 #include <CoreMinimal.h>
 #include "DungeonSelectionPolicy.generated.h"
@@ -5,6 +11,8 @@
 /**
  * Unified selection policy used internally by mesh-set and parts selection.
  * Legacy enums are kept for asset compatibility and migrated to this policy.
+ * メッシュセット選択とパーツ選択で共通して使用する選択ポリシーです。
+ * 旧列挙型はアセット互換性のために保持され、このポリシーへ移行されます。
  */
 UENUM(BlueprintType)
 enum class EDungeonSelectionPolicy : uint8

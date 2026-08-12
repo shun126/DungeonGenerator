@@ -1,8 +1,6 @@
 /**
- * ゴール条件 ヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -13,42 +11,50 @@
 namespace dungeon
 {
 	/**
+	 * Represents PathGoalCondition.
 	 * ゴール条件クラス
 	 */
 	class PathGoalCondition final
 	{
 	public:
 		/**
+		 * Represents PathGoalCondition.
 		 * コンストラクタ
 		 */
 		PathGoalCondition() = default;
 
 		/**
+		 * Represents PathGoalCondition.
 		 * コンストラクタ
 		 */
 		explicit PathGoalCondition(const FIntRect& rect) noexcept;
 
 		/**
+		 * Represents PathGoalCondition.
 		 * コピーコンストラクタ
 		 */
 		explicit PathGoalCondition(const PathGoalCondition& other) noexcept;
 
 		/**
+		 * Represents PathGoalCondition.
 		 * ムーブコンストラクタ
 		 */
 		explicit PathGoalCondition(PathGoalCondition&& other) noexcept;
 
 		/**
+		 * Destroys the ~PathGoalCondition instance.
 		 * デストラクタ
 		 */
 		~PathGoalCondition() = default;
 
 		/**
+		 * Represents Get.
 		 * ゴール範囲を取得
 		 */
 		const FIntRect& Get() const noexcept;
 
 		/**
+		 * Represents Set.
 		 * ゴール範囲を設定
 		 */
 		void Set(const FIntRect& rect) noexcept;
@@ -61,11 +67,13 @@ namespace dungeon
 		bool Contains(const FIntVector& location) const noexcept;
 
 		/**
+		 * Represents operator.
 		 * コピー代入
 		 */
 		PathGoalCondition& operator=(const PathGoalCondition& other) noexcept;
 
 		/**
+		 * Represents operator.
 		 * ムーブ代入
 		 */
 		PathGoalCondition& operator=(PathGoalCondition&& other) noexcept;
@@ -73,7 +81,7 @@ namespace dungeon
 	private:
 		FIntRect mRect;
 	};
-	
+
 	inline PathGoalCondition::PathGoalCondition(const FIntRect& rect) noexcept
 		: mRect(rect)
 	{

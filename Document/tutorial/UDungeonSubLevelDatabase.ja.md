@@ -55,7 +55,7 @@ graph TD;
 - どの構造役割に置けるか (`AllowedStructuralRoles`)
 - どのゲームプレイ役割に置けるか (`AllowedGameplayRoles`)
 - どの種類のアイテム部屋に置けるか
-- `AddingProbability`
+- `SpawnChance`
 
 `AllowedStructuralRoles` と `AllowedGameplayRoles` は `Random Sublevel` だけで使われます。空のままなら、その役割軸では絞り込みません。スタート、ゴール、予約番号で指定される優先サブレベルは従来どおり優先され、この条件では絞り込まれません。
 
@@ -71,6 +71,7 @@ graph TD;
 - サブレベルを編集したあとに `Build` を忘れると、サイズや接続情報が古いまま残ります。
 - `Build` はレベルを一時ロードして解析するため、**現在編集中のそのレベル自身**は対象にしない方が安全です。
 - すでにロード済みのロビーをそのままスタート部屋にしたい場合は、この Database ではなく `ADungeonGenerateActor` の `StartRoomSubLevelScriptActor` を使います。この Actor 側設定が有効な間、この Database の `StartRoom` は開始部屋には使われません。
+- Interior PartsではStart／Goalによるフィルターを行いません。開始部屋や目的部屋の内装とレイアウトを作り込みたい場合は、ここの`StartRoom`または`GoalRoom`を使用してください。
 
 ## 次に読む
 - [ADungeonSubLevelScriptActor.ja.md](./ADungeonSubLevelScriptActor.ja.md)  

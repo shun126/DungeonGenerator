@@ -1,8 +1,8 @@
 /**
  * 部屋に関するヘッダーファイル
  *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -281,6 +281,11 @@ namespace dungeon
 	inline void Room::AddGateCount(const uint8_t count) noexcept
 	{
 		mNumberOfGates += count;
+	}
+
+	inline void Room::RemoveGateCount(const uint8_t count) noexcept
+	{
+		mNumberOfGates = count < mNumberOfGates ? mNumberOfGates - count : 0;
 	}
 
 	inline uint8_t Room::GetVerticalRoomMargin() const noexcept

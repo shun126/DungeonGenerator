@@ -21,6 +21,17 @@ Unreal Editor のメニューから次の順で操作してください。
 
 有効化が終わると、Content Browser の `DungeonGenerator` カテゴリから必要なアセットを作成できるようになります。
 
+## 最初に同梱サンプルを試す
+
+Dungeon Generator には、次の 2 つのサンプルマップがプラグインコンテンツとして同梱されています。別のデモプロジェクトをダウンロードする必要はありません。
+
+- `Content/Maps/Demonstration.umap`
+  同梱コンテンツを使った標準的なランタイム生成、ゲームプレイ、ミニマップを確認できます。最初はこちらを開いてください。
+- `Content/Maps/DemonstrationWithStartRoom.umap`
+  制作者が用意した開始部屋のサブレベルと、生成されたダンジョンを接続する例を確認できます。
+
+Content Browser の設定で `Show Plugin Content` を有効にし、`DungeonGenerator Content/Maps` を開いて、確認したいマップをダブルクリックします。Play を押すとサンプルを実行できます。
+
 ## 1. 必須アセットを作る
 Content Browser の `DungeonGenerator` カテゴリから、次のアセットを作成します。
 
@@ -41,9 +52,9 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
 - `Floor Parts`
 - `Wall Parts`
 - `Roof Parts`
-- `Slope Parts`
+- `Slope Parts`（高低差が生じるレイアウトでは推奨）
 
-ただし、床 / 壁 / 天井 / スロープが 1 つもない状態では生成できません。
+部屋用と通路用の各データベースでは、床 / 壁 / 天井メッシュが必須です。スロープ未設定はエラーではなく警告ですが、高低差が生成されても想定した移動面が表示されません。上下移動を作る Floor Mode やレイアウトを使う前に、スロープメッシュも登録してください。
 
 ## 3. `Generate parameter` にデータベースを割り当てる
 `Generate parameter` を開き、最低限次の項目を設定します。
@@ -53,7 +64,7 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
 - `Theme.DungeonAisleMeshPartsDatabase`
   通路用 `Mesh set database`
 
-最初は次の状態のままで問題ありません。
+最初の確認には、次の設定値が分かりやすいです。
 
 - `RandomSeed = 0`
 - `Structure.RoomCountRange = 10-10`
@@ -92,6 +103,8 @@ Content Browser の `DungeonGenerator` カテゴリから、次のアセット�
 ## よくある失敗
 - 生成ボタンを押しても何も出ない
   `Verify` を実行し、床 / 壁 / 天井メッシュが入っているか確認してください。
+- 高低差は生成されたが、階段やスロープが見えない
+  部屋用と通路用の Mesh Set に `Slope Parts` を追加し、もう一度 `Verify` を実行してください。
 - 見た目は出たがレベルに組み込めない
   `ADungeonGenerateActor` に `DungeonGenerateParameter` を割り当てているか確認してください。
 - サブレベルを使ったらサイズがずれる

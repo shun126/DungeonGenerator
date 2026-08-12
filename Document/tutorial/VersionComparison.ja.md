@@ -2,13 +2,13 @@
 
 Dungeon Generator v2.0.0 は、単に部屋と通路をランダム生成するだけでなく、**遊び方を意識した経路、場所ごとに変化する見た目、調整しやすい設定**を作るためのメジャーアップデートです。
 
-> **リリース状況:** v2.0.0 は現在開発中で、まだ正式リリースされていません。このページは現在の実装に基づいており、正式リリースまでに仕様が変わる可能性があります。
+> **警告 — v1.x からの移行はサポートされません:** v2.0.0 には破壊的な変更が含まれており、v1.x のプロジェクトやアセットをアップグレードまたは変換することはできません。v1.x のプロジェクトとプラグイン環境はそのまま保管してください。v2.0.0 を使用する場合は、別のプロジェクトまたはブランチで Dungeon Generator の設定を新しく作成してください。
 
-v1.x で作成したメッシュ、内装、サブレベルなどの資産を活かしながら、ダンジョンの進行、部屋の役割、テーマの変化をより明確に設計できます。ただし、生成アルゴリズムとパラメータ構成が変わるため、同じシードと設定でも v1.x と完全に同じレイアウトになるとは限りません。
+互換性を確認したメッシュなど、一部の素材は手動で再利用できる場合がありますが、v1.x の Dungeon Generator アセット、パラメータ、Blueprint、C++ 連携は自動移行されません。生成アルゴリズムとパラメータ構成も変更されているため、同じシードと似た設定を使用しても、v1.x と同じレイアウトは再現されません。
 
 ## 主な違い
 
-| 項目 | v1.x | v2.0.0 | アップグレードで得られること |
+| 項目 | v1.x | v2.0.0 | v2 で得られること |
 | --- | --- | --- | --- |
 | レベル設計 | 部屋数、サイズ、階層、通路の複雑さなどを個別に調整 | `Progression Policy` を起点に、主経路、分岐、ループ、スタート、ゴールをまとめて設計 | 「自由探索」「鍵と扉」「ボスへ向かう道」など、遊び方からレイアウトを選べる |
 | レイアウト候補 | 指定した条件からレイアウトを生成 | 複数候補を評価し、より適したレイアウトを採用 | 候補数と生成コストのバランスを調整しながら、狙いに近い結果を選びやすい |
@@ -38,7 +38,7 @@ v2.0.0 では、最初に `Path.ProgressionPolicy` でダンジョンの基本�
 
 画像の `S` はスタート、`G` はゴール、明るい線は代表的な進行経路です。Key／Lock、Boss、Hub の位置関係を見ると、同じ部屋数でも Policy によってプレイヤー体験がどう変わるかを比較できます。この画像は概念例であり、実際に生成される部屋形状や装飾を固定するものではありません。
 
-`Keys And Locks` は、鍵付き扉を別ルートから迂回できないよう、危険なループや追加通路を制限します。v1.x で `UseMissionGraph` を有効にしていたアセットは、この Policy へ移行します。通常の v1.x アセットは `Start To Goal` へ移行します。
+`Keys And Locks` は、ロックを迂回する危険なループを防ぎます。追加通路の複雑度は未施錠通路には作用しますが、鍵付き通路では交差と結合が無効になり、扉を迂回できません。v1.x の構成を手動で作り直す場合、旧 `UseMissionGraph` に最も近い v2 の Policy は `Keys And Locks` です。通常のスタートからゴールへ進む構成は `Start To Goal` を出発点にして、新しい設定を目的に合わせて調整してください。
 
 ## Gameplay Role で部屋の目的を伝える
 
@@ -64,49 +64,45 @@ Gameplay Role は、生成された部屋に `None`、`Combat`、`Treasure`、`P
 - 新しい Progression Policy、Room Role、Zone Override、マップ機能を必要としていない
 - 固定シードを含め、現在の生成結果を変えたくない
 
-v2.0.0 への移行では既存値の多くが引き継がれますが、生成結果の再確認は必要です。アップグレードの価値と、再調整・テストに必要な時間を比較してください。
+v1.x から v2 への移行パスはサポートされないため、v2 の採用には Dungeon Generator の設定と連携処理の再構築が必要です。新機能の価値と、再作成・再調整・テストに必要な時間を比較してください。
 
-## v1.x アセットを v2.0.0 へ移行する
+## v1.x の構成を v2.0.0 で作り直す
 
-1. **プロジェクトをバックアップします。**
-   ソース管理のブランチを作るか、v1.x で開けるプロジェクトとアセットのコピーを残してください。
-2. **v2.0.0 を導入し、Unreal Editor でプロジェクトを開きます。**
-   対象の Dungeon Generator アセットを読み込むと、旧形式の値がメモリ上で v2.0.0 の設定グループへ自動変換されます。
-3. **変換結果を確認します。**
-   `UDungeonGenerateParameter` の `Theme`、`Structure`、`Path`、`Gameplay` を確認し、同じシードでもダンジョンを再生成して比較してください。
-4. **`DungeonGenerator Migration` ログを確認します。**
-   Unreal Editor の Message Log で、情報、警告、エラーと修正案を確認します。Custom Version を持たない v1.x アセットは v1.x として扱われ、保存前の確認を求める警告が表示されます。
-5. **Blueprint と C++ の参照を確認します。**
-   特に Room Sensor の旧部屋情報フィールド、Mesh／Parts の選択処理、名前や配置が変わったクラスを確認してください。
-6. **問題がなければアセットを保存します。**
-   保存すると v2.0.0 形式になります。v1.x へ戻す正式なダウングレード手順はないため、確認が終わるまでバックアップを上書きしないでください。
+上書きアップグレードやアセットの自動変換はサポートされません。v2.0.0 は新しい実装として扱ってください。
 
-### 自動移行される主な設定
-
-- グリッドサイズ、部屋数、部屋サイズ、部屋間隔、階層モード
-- レイアウト候補数、通路の複雑さ、通路の天井高
-- スタート／ゴールの選択、PlayerStart の移動、MissionGraph の使用有無
-- 部屋／通路の Mesh Set Database
-- 柱、たいまつ、ドアと、それらの旧選択方式
-- Interior Database、SubLevel Database、Room Sensor の参照
-
-自動移行は既存値を新しい保存先へ対応付けるためのものです。新しい Role、Zone、Fixture Override、Progression Policy の詳細設定まで、自動的にゲームデザインを作り直すものではありません。
+1. **復元できる v1.x プロジェクトを保管します。**
+   v1.x プラグインを維持し、元のアセットを開けるソース管理ブランチまたはコピーを残してください。
+2. **v2 専用の作業環境を用意します。**
+   稼働中の v1.x プロジェクトを上書きしたり、v1.x の Dungeon Generator アセットを v2 で開けば変換されると想定したりしないでください。
+3. **生成設定を新しく作成します。**
+   v2 用のアセットを作成し、`Theme`、`Structure`、`Path`、`Zones`、`Gameplay` を設定します。比較表は参考として使用し、パラメータが一対一で対応するとは考えないでください。
+4. **プロジェクトとの連携を手動で作り直します。**
+   改名または削除された API に合わせて Blueprint／C++ を修正し、必要に応じて Room Sensor、Selector、Interior、SubLevel、ミニマップとの連携を再構築します。
+5. **新しいダンジョン設計としてテストします。**
+   エディタ生成、ランタイム生成、見た目、進行、ゲームプレイ、レプリケーション、負荷を確認してください。v1.x の固定シードやレイアウトは、v2 の互換性対象ではありません。
 
 ## Blueprint／C++ 利用者向けの注意
 
-v2.0.0 では、生成された部屋情報の標準 API は `FDungeonGeneratedRoomInfo` と `ADungeonRoomSensorBase::GetGeneratedRoomInfo()` です。Room Sensor 上の旧フィールドは移行用として残されていますが、新しい実装では標準 API を使用してください。
+v2.0.0 では、生成された部屋情報の標準 API は `FDungeonGeneratedRoomInfo` と `ADungeonRoomSensorBase::GetGeneratedRoomInfo()` です。v1 の Room Sensor フィールドに依存せず、この API に合わせて連携処理を作り直してください。
+
+`EnableLightShadowControl`、`IsEnableLightCastShadowControl()`、`SetEnableLightCastShadowControl()` はv2.0.0で削除されました。v1のBlueprintまたはC++クラスから参照している場合は、v2.0.0でコンパイルする前に該当する参照を手動で削除してください。Point LightとSpot Lightの影は、現在の実行時ライト制御システムが自動で管理します。
+
+`GetInquireInteriorTags()`と`InquireInteriorTags`は、`GetProvidedContextTags()`と`ProvidedContextTags`へ置き換えられました。この名前変更は自動リダイレクトされません。Room Sensor Blueprintの実装を新しいEventで作り直し、Interior Location Componentに保存していた値を再入力してください。
+
+`EDungeonInteriorPlacementAnchor`、`PlacementAnchors`、Placement Queryの`Anchor`メンバーは削除されました。v2のInterior Actor配置では、部屋中央の自動候補を生成しません。`UDungeonInteriorLocationComponent`で制作者が指定する入れ子スポーン位置は引き続き利用できます。
+
+Interior Locationの入れ子スポーンでは、対象Partsに1つ以上の`RequiredContextTags`が必要になりました。タグなしの入れ子配置を作り直す場合は、Interior Locationへ対応する`ProvidedContextTags`を設定してください。再帰分岐では、祖先に存在するActor Classも候補から除外されます。
 
 Mesh Set と個別パーツの選択は、Mesh Set Selector／Parts Selector を使う構成へ整理されています。独自の Blueprint または C++ 選択処理がある場合は、コンパイルが通ることだけでなく、同じ条件で意図した候補が選ばれることも確認してください。
 
-## アップグレード前の確認リスト
+## v2 再構築の確認リスト
 
-- v1.x プロジェクトとアセットを復元できるバックアップがある
-- 代表的な固定シードと期待する生成結果を記録した
-- 使用中の `UDungeonGenerateParameter`、Mesh Set、Interior、SubLevel、Room Sensor を洗い出した
-- 移行ログの警告とエラーを確認した
+- v1.x プラグインを含む、復元可能な v1.x プロジェクトを保管した
+- v2 の作業を別のプロジェクトまたはソース管理ブランチで行っている
+- 必要な v2 用 `UDungeonGenerateParameter`、Mesh Set、Interior、SubLevel、Room Sensor アセットを新しく作成した
 - エディタ生成とランタイム生成の両方をテストした
 - Blueprint／C++ の Room Sensor、セレクター、ミニマップ連携をテストした
-- 移行後のアセットを保存する前に、見た目とゲーム進行を確認した
+- 新しい v2 の設計として、見た目とゲーム進行を確認した
 
 ## 関連ページ
 

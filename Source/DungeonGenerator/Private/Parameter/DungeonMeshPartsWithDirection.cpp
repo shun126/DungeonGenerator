@@ -1,14 +1,10 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #include "Parameter/DungeonMeshPartsWithDirection.h"
-
-#if WITH_EDITOR
-#include "Helper/DungeonDebugUtility.h"
-#endif
 
 FTransform FDungeonMeshPartsWithDirection::CalculateWorldTransform(const std::shared_ptr<dungeon::Random>& random, const FTransform& transform) const noexcept
 {
@@ -29,12 +25,3 @@ FTransform FDungeonMeshPartsWithDirection::CalculateWorldTransform(const std::sh
 {
 	return FDungeonPartsTransform::CalculateWorldTransform(random, position, direction, PlacementDirection);
 }
-
-#if WITH_EDITOR
-FString FDungeonMeshPartsWithDirection::DumpToJson(const uint32 indent) const
-{
-	FString json = Super::DumpToJson(indent) + TEXT(",\n");
-	json += dungeon::Indent(indent) + TEXT("\"PlacementDirection\":\"") + UEnum::GetValueAsString(PlacementDirection) + TEXT("\"");
-	return json;
-}
-#endif

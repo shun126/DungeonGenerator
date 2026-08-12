@@ -1,8 +1,6 @@
 /**
- * ベクターに関するヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -13,6 +11,7 @@ namespace dungeon
 {
 	/**
 	 * Converts an integer vector to a real vector
+	 * ToVector を表します。
 	 */
 	inline FVector ToVector(const FIntVector& vector) noexcept
 	{
@@ -21,6 +20,7 @@ namespace dungeon
 
 	/**
 	 * Converts an real vector to a integer vector
+	 * ToIntVector を表します。
 	 */
 	inline FIntVector ToIntVector(const FVector& vector) noexcept
 	{
@@ -30,6 +30,7 @@ namespace dungeon
 	/**
 	 * Converts an integer vector to a integer point
 	 * (Note that the Z value is discarded.)
+	 * ToIntPoint を表します。
 	 */
 	inline FIntPoint ToIntPoint(const FIntVector& vector) noexcept
 	{
@@ -39,6 +40,7 @@ namespace dungeon
 	/**
 	 * Converts an real vector to a integer point
 	 * (Note that the Z value is discarded.)
+	 * ToIntPoint を表します。
 	 */
 	inline FIntPoint ToIntPoint(const FVector& vector) noexcept
 	{

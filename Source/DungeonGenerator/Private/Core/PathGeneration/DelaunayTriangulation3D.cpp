@@ -1,10 +1,14 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * 三次元ドロネー三角形分割に関するソースファイル
  *
  * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #include "DelaunayTriangulation3D.h"
@@ -17,22 +21,22 @@ namespace dungeon
 	DelaunayTriangulation3D::DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept
 	{
 		std::list<Tetrahedron> tetrahedrons;
-		
+
 		if (pointList.empty())
 			return;
 
-		// 巨大な外部四面体を作る  
+		// 巨大な外部四面体を作る
 		Tetrahedron hugeTetrahedron = MakeHugeTetrahedron(pointList);
 		tetrahedrons.emplace_back(hugeTetrahedron);
 
-		// 点を逐次添加し、反復的に四面体分割を行う  
+		// 点を逐次添加し、反復的に四面体分割を行う
 		for (const std::shared_ptr<const Point>& point : pointList)
 		{
-			// 追加候補の四面体を保持する一時マップ  
+			// 追加候補の四面体を保持する一時マップ
 			TetraMap rddcMap;
 
-			// 現在の四面体セットから要素を一つずつ取り出して、    
-			// 与えられた点が各々の四面体の外接球の中に含まれるかどうか判定    
+			// 現在の四面体セットから要素を一つずつ取り出して、
+			// 与えられた点が各々の四面体の外接球の中に含まれるかどうか判定
 			{
 				auto tIter = tetrahedrons.begin();
 				while (tIter != tetrahedrons.end())
@@ -68,7 +72,7 @@ namespace dungeon
 		}
 
 #if 0
-		// TODO: 最後に、外部三角形の頂点を削除  
+		// TODO: 最後に、外部三角形の頂点を削除
 		{
 			auto tIter = tetrahedrons.begin();
 			while (tIter != tetrahedrons.end())

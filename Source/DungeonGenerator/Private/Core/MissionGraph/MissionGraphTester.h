@@ -1,8 +1,6 @@
 /**
- * ミッショングラフが攻略可能かテストします
- *
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 

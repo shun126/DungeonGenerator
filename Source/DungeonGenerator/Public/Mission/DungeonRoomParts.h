@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -42,6 +42,7 @@ enum class EDungeonRoomLocatorParts : uint8
 
 /**
  * Number of different room parts
+ * DungeonRoomPartsSize を表します。
  */
 static constexpr uint8 DungeonRoomPartsSize = static_cast<uint8>(EDungeonRoomParts::Goal) + 1;
 
@@ -50,11 +51,13 @@ static constexpr uint8 DungeonRoomPartsSize = static_cast<uint8>(EDungeonRoomPar
  * Same content as dungeon::Room::Parts
  * @param[in]	parts	EDungeonRoomParts
  * @return		Symbol name for EDungeonRoomParts
+ * DungeonRoomPartsName を返します。
  */
 extern const FString& GetDungeonRoomPartsName(const EDungeonRoomParts parts);
 
 /**
  * Compare EDungeonRoomParts and EDungeonRoomLocatorParts
+ * Equal を表します。
  */
 inline constexpr bool Equal(const EDungeonRoomParts parts, const EDungeonRoomLocatorParts locatorParts)
 {
@@ -63,6 +66,7 @@ inline constexpr bool Equal(const EDungeonRoomParts parts, const EDungeonRoomLoc
 
 /**
  * Compare EDungeonRoomParts and EDungeonRoomLocatorParts
+ * Equal を表します。
  */
 inline constexpr bool Equal(const EDungeonRoomLocatorParts locatorParts, const EDungeonRoomParts parts)
 {

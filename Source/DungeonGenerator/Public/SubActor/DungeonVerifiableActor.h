@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -40,13 +40,11 @@ public:
 
 public:
 	/**
-	 * Calculates the CRC32 of the actor
 	 * アクターのCRC32を計算します
 	 */
 	static uint32_t GenerateCrc32(const AActor* actor, uint32_t crc = 0xffffffffU) noexcept;
 
 	/**
-	 * Calculates the CRC32 of the FBox
 	 * FBoxのCRC32を計算します
 	 */
 	static uint32_t GenerateCrc32(const FBox& box, uint32_t crc = 0xffffffffU) noexcept;

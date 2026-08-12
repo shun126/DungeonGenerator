@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -22,7 +22,6 @@ namespace
 	uint32 MakeTargetSalt(const EDungeonPartsSelectorTarget target)
 	{
 		/*
-		 * Adds another deterministic split per target (Floor / Wall / Roof ...).
 		 * This prevents "same SeedKey => same index pattern" across unrelated targets.
 		 *
 		 * Target（Floor / Wall / Roof など）ごとに、さらに決定的な系列分離を追加します。

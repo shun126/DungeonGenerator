@@ -31,7 +31,7 @@ graph TD;
 
 ## Layout settings
 - `Structure.RoomCountRange`
-  Target room count. Set Min and Max to the same value when you want a fixed room count.
+  Inclusive room-count range. One value is selected when generation starts and shared by every layout candidate. Set Min and Max to the same value to use a fixed count without consuming random state.
 - `Structure.RoomWidth` / `RoomDepth` / `RoomHeight`
   Generated room size. Larger values feel more like halls; smaller values feel more maze-like.
 - `Structure.HorizontalRoomMargin` / `VerticalRoomMargin`
@@ -51,13 +51,15 @@ graph TD;
   | --- | --- |
   | `FreeExploration` | Open exploration with loops, shortcuts, and optional side rooms. |
   | `StartToGoal` | A readable main route from the start room to the goal room. |
-  | `KeysAndLocks` | A guaranteed solvable route where keys unlock required doors and unsafe bypass loops are disabled. |
+  | `KeysAndLocks` | A validated key-and-lock route when the layout can place it; otherwise generation succeeds lock-free and reports `DG_GEN_KEYS_NOT_PLACED`. |
   | `BossRoute` | A route that builds toward a boss or final encounter near the goal. |
   | `HubQuest` | A hub-centered layout where the player can branch out to quest-like rooms. |
 
 ![Illustration of the five Progression Policies](images/ProgressionPolicyStyles.png)
 
 In the image, `S` marks the start, `G` marks the goal, and the bright line shows a representative progression route. `Free Exploration` emphasizes loops and shortcuts, `Start To Goal` a readable main route, `Keys And Locks` the order of collecting a Key before passing a Lock, `Boss Route` a Boss near the end, and `Hub Quest` branches spreading from a central Hub. This is a conceptual illustration of the differences between Policies; it does not prescribe the exact room shapes or decoration that will be generated.
+
+Keys And Locks placement is best effort. If the layout has no eligible room for the Unique Key, generation returns a reachable dungeon without keys or locks and reports `DG_GEN_KEYS_NOT_PLACED` through `GetLastGenerationIssues()`. See [ApplyMissionGraph.en.md](./ApplyMissionGraph.en.md) before making locks mandatory in your game.
 
 ```mermaid
 graph LR;
@@ -99,7 +101,7 @@ graph LR;
 ```
 
   Choose `Path.ProgressionPolicy` first. It is the main control for the route archetype, while `Path.MainRouteBias`, `Path.LoopRouteDensity`, and `Path.ExtraCorridorComplexity` are advanced fine-tuning controls inside the selected style.
-  When migrating from v1 settings, `UseMissionGraph = true` maps to `Path.ProgressionPolicy = KeysAndLocks`. Normal v1 assets without MissionGraph migrate to `StartToGoal`.
+  Version 1 assets are not migrated automatically. When rebuilding settings manually, the old `UseMissionGraph = true` concept corresponds to `KeysAndLocks`; a normal start-to-goal route corresponds to `StartToGoal`.
 - `Path.LayoutCandidateCount`
   Controls how many layout candidates are generated and compared before the best candidate is selected.
   Higher values make it easier to choose a better layout, but they also increase generation cost. Start with `3`, use `4-8` for a balance of quality and cost, and use `9-16` mainly for editor previews or fixed-seed tuning.
@@ -109,7 +111,7 @@ graph LR;
 - `Path.LoopRouteDensity`
   Advanced tuning for loop routing and alternate routes. `0` uses the selected progression style baseline. Higher values add more loops where the policy allows them. `KeysAndLocks` progression disables unsafe loops so the player cannot bypass locked doors. In `StartToGoal`, `BossRoute`, and `HubQuest`, loops can connect intermediate rooms, but the goal room remains a single endpoint. `FreeExploration` can also connect loops near the goal.
 - `Path.ExtraCorridorComplexity`
-  Advanced tuning that adds extra corridor complexity after the progression route network is built. `0` adds no extra corridor complexity beyond the selected policy baseline. `KeysAndLocks` progression ignores this value and behaves as `0` to keep the key-and-lock route solvable.
+  Advanced tuning that permits additional intersections and corridor complexity. `0` keeps the simplest baseline. In `KeysAndLocks`, the value still applies to unlocked aisles; locked aisles always disable intersections and merging so no bypass can appear around the lock. In the current Details panel the field becomes read-only after selecting `KeysAndLocks`; set the value before changing the Policy, or set it from Blueprint/C++ when you intentionally want complexity on unlocked aisles.
 - `Path.CorridorCeilingHeightPolicy`
   Selects aisle ceiling height from `1 Grid`, `2 Grids`, and `Random`. This affects both the look and the vertical space available for aisle-side decoration.
 
@@ -131,7 +133,7 @@ Available branch gameplay roles are `None`, `Combat`, `Treasure`, `Puzzle`, `Res
 
 The image illustrates how each Role can be used in a game. `None` is a normal room without a special purpose, `Combat` an encounter, `Treasure` a reward or key, `Puzzle` a mechanism or challenge, `Rest` a break, `Boss` a major encounter, and `Secret` hidden content. Assigning a Role does not automatically place the pictured enemies, treasure chests, or puzzles. Use the generated Role in Room Sensor Blueprint logic and Role-specific Theme Overrides to build the actual gameplay and visuals.
 
-`Start`, `Goal`, `Hub`, `Connector`, `Branch`, and `DeadEnd` are structural roles controlled by route logic. `BossRoute` assigns the `Boss` gameplay role near the end of the main path. `HubQuest` marks an early main-path room as a structural `Hub`. A `Boss` profile can still provide role-specific room mesh overrides.
+`Start`, `Goal`, `Hub`, `Connector`, `Branch`, and `DeadEnd` are structural roles controlled by route logic. `BossRoute` assigns the `Boss` gameplay role near the end of the main path. `HubQuest` marks an early main-path room as a structural `Hub`. A `Boss` profile can provide role-specific room meshes, interiors, fixtures, and a Room Sensor override.
 
 To create more secret rooms, increase `BranchSelectionWeight` on the `Secret` profile. There is no separate setting just for secret-room probability.
 
@@ -140,7 +142,7 @@ graph TD;
     Profiles["Gameplay.RoomRoles.Roles"] --> Weights["BranchSelectionWeight<br/>None, Combat, Treasure, Puzzle, Rest, Secret"]
     Weights --> BranchRooms["Generated branch rooms"]
     BossPolicy["Path.ProgressionPolicy = BossRoute"] --> BossRoom["Boss gameplay role<br/>near the end of the main path"]
-    KeyPolicy["Path.ProgressionPolicy = KeysAndLocks"] --> KeyRooms["Key and UniqueKey rooms<br/>Treasure gameplay role"]
+    KeyPolicy["Path.ProgressionPolicy = KeysAndLocks<br/>when placement succeeds"] --> KeyRooms["Key and UniqueKey rooms<br/>Treasure gameplay role"]
     BranchRooms --> GeneratedInfo["Generated room information<br/>RoomGameplayRole"]
     BossRoom --> GeneratedInfo
     KeyRooms --> GeneratedInfo
@@ -174,7 +176,7 @@ graph TD;
 - `Zones[].SelectionWeight`
   Relative weight used when more than one Zone matches the same progress and floor. A value of `0` prevents that Zone from being selected.
 - `Zones[].ThemeOverride`
-  Optional room and aisle Mesh Set Databases, Interior Database, and Fixtures used only in that Zone. Enable the explicit override flags when you want an empty value to intentionally disable inherited interiors or fixtures.
+  Optional room and aisle Mesh Set Databases, Interior Database, Fixtures, and aisle-slope base-light settings used only in that Zone. Enable `bOverrideAisleSlopeBaseLight` to replace the complete inherited light setting.
 - `Zones[].GameplayOverride`
   Optional Room Sensor class and aisle actor overrides used only in that Zone.
 
@@ -183,7 +185,7 @@ If multiple Zones overlap, only Zones whose `ProgressRange` and `FloorRange` bot
 Theme priority is simple: a matching room role override is used first for room meshes, interiors, and fixtures, then the matching Zone override, then the standard settings in `Theme`. Aisles and slopes use the Zone override or the standard settings in `Theme`.
 
 ## Gameplay
-`Gameplay` only keeps references needed after generation.
+`Gameplay` connects generated layout information to Room Sensors, role overrides, aisle actors, and special-room sublevels.
 
 - `Gameplay.DungeonRoomSensorClass`
   Default `ADungeonRoomSensorBase`-derived Blueprint used in generated rooms. `Gameplay.RoomRoles.Roles[].GameplayOverride` has first priority, then `Zones[].GameplayOverride`, then this default.
@@ -212,8 +214,12 @@ graph TD;
   Candidates and selection rules for pillars, torches, doors, and Unique Lock doors. `UniqueDoorParts` is mainly used for goal or boss doors created by Keys And Locks progression, and falls back to `DoorParts` when left empty.
 - `Theme.Fixtures.*PartsSelector`
   Selector objects used when choosing fixture candidates such as pillars, torches, doors, and Unique Lock doors.
-- `Theme.bDeferredVegetationSpawn`
-  Spawns vegetation over multiple frames to reduce Play start stalls. Use the related `Theme|VegetationPerformance` settings to tune per-frame spawn and tree-build budgets. For runtime actor, light, AI, collision, and Tick control, see [LoadReduction.en.md](./LoadReduction.en.md).
+- `Theme.AisleSlopeBaseLight`
+  Configures the shadow-free Point Light that keeps aisle slopes outside rooms readable. One server-generated, replicated light actor is placed above the midpoint of each slope, so resolved Zone overrides also appear for existing and late-joining clients. You can adjust whether it is enabled, its intensity units and value, color, attenuation radius, and height above the slope surface. Room slopes are excluded and continue to use Room Sensor guidance lights.
+
+Each aisle-slope light uses a dedicated actor registered with the dungeon partition at that slope. Its light is hidden automatically at long range. Because it does not cast shadows, an excessive `Attenuation Radius` can leak through walls or between floors. Start with the default and increase it gradually.
+
+Vegetation and Actor distribution settings now belong to the Dungeon Generator Actor's `GenerationPerformance`, not the Theme. This lets the same Parameter Asset use different frame budgets for each map or runtime environment. See [LoadReduction.en.md](./LoadReduction.en.md) for details.
 
 ## Recommended workflow
 First stabilize generation with `Structure`, `Path`, and `Theme`.

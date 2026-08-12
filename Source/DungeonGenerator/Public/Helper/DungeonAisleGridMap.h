@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -9,7 +9,7 @@
 #include <CoreMinimal.h>
 #include <Kismet/BlueprintFunctionLibrary.h>
 #include <functional>
-#include <unordered_map>
+#include <map>
 #include "DungeonAisleGridMap.generated.h"
 
 /**
@@ -21,39 +21,39 @@ struct FDungeonAisleGrid
 {
 	GENERATED_BODY()
 
-	/*
+	/**
 	 * Identifier of the generated aisle that owns this grid.
 	 * このグリッドを所有する生成通路の識別子です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Identifier of the generated aisle that owns this grid."))
 	int32 Identifier = INDEX_NONE;
 
 	/**
 	 * Aisle grid direction
 	 * 通路グリッドの方向
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Aisle grid direction"))
 	EDungeonDirection Direction = EDungeonDirection::North;
 
-	/*
+	/**
 	 * Start-to-goal depth ratio of the owning aisle, stored as 0 to 255.
 	 * 所有する通路のスタートからゴールまでの深度比です。0 から 255 で保持します。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Start-to-goal depth ratio of the owning aisle, stored as 0 to 255."))
 	uint8 DepthRatioFromStart = 0;
 
-	/*
+	/**
 	 * Zone index assigned to the owning aisle.
 	 * 所有する通路に割り当てられた Zone 番号です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Zone index assigned to the owning aisle."))
 	int32 ZoneIndex = INDEX_NONE;
 
 	/**
 	 * Center position of aisle grid (height is floor position)
 	 * 通路グリッドの中心位置（高さは床の位置）
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Center position of aisle grid (height is floor position)"))
 	FVector Location = FVector::ZeroVector;
 };
 
@@ -70,11 +70,13 @@ class DUNGEONGENERATOR_API UDungeonAisleGridMap : public UObject
 
 public:
 	/**
+	 * Represents UDungeonAisleGridMap.
 	 * コンストラクタ
 	 */
 	explicit UDungeonAisleGridMap(const FObjectInitializer& initializer);
 
 	/**
+	 * Destroys the ~UDungeonAisleGridMap instance.
 	 * デストラクタ
 	 */
 	virtual ~UDungeonAisleGridMap() override = default;
@@ -89,7 +91,7 @@ public:
 	 * Update aisle grid
 	 * 通路グリッドを更新します
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "DungeonGenerator", meta = (ToolTip = "Update aisle grid"))
 	void ForEach(const FDungeonAisleGridMapLoopSignature& OnLoop) const;
 
 	/**
@@ -103,7 +105,7 @@ public:
 	}
 
 private:
-	std::unordered_map<uint16_t, TArray<FDungeonAisleGrid>> mAisleGridMap;
+	std::map<uint16_t, TArray<FDungeonAisleGrid>> mAisleGridMap;
 
 	friend class UDungeonAisleGridMapBlueprintFunctionLibrary;
 };
@@ -122,6 +124,6 @@ public:
 	 * Update aisle grid
 	 * 通路グリッドを更新します
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator", meta = (ToolTip = "Update aisle grid"))
 	static void ForEach(const UDungeonAisleGridMap* aisleGridArray, const FDungeonAisleGridMapLoopSignature& OnLoop);
 };

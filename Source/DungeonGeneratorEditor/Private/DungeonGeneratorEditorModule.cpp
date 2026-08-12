@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -315,11 +315,9 @@ void FDungeonGenerateEditorModule::SetAssetData(const FAssetData& assetData)
 	}
 	else
 	{
-		mValidationIssueItems.Reset();
-		if (mValidationListView.IsValid())
-		{
-			mValidationListView->RequestListRefresh();
-		}
+		mParameterIssues.Reset();
+		mGenerationIssues.Reset();
+		RebuildIssueList();
 	}
 	UpdateGenerateButtonEnabled();
 
@@ -334,10 +332,20 @@ void FDungeonGenerateEditorModule::UpdateGenerateButtonEnabled() const
 
 void FDungeonGenerateEditorModule::RunValidation(const bool bDeepCheck)
 {
+	mParameterIssues.Reset();
+	mGenerationIssues.Reset();
+	FDungeonParameterValidator::Validate(mDungeonGenerateParameter.Get(), mParameterIssues, bDeepCheck);
+	RebuildIssueList();
+}
+
+void FDungeonGenerateEditorModule::RebuildIssueList()
+{
 	mValidationIssueItems.Reset();
-	TArray<FDungeonValidationIssue> issues;
-	FDungeonParameterValidator::Validate(mDungeonGenerateParameter.Get(), issues, bDeepCheck);
-	for (const FDungeonValidationIssue& issue : issues)
+	for (const FDungeonValidationIssue& issue : mParameterIssues)
+	{
+		mValidationIssueItems.Emplace(MakeShared<FDungeonValidationIssue>(issue));
+	}
+	for (const FDungeonValidationIssue& issue : mGenerationIssues)
 	{
 		mValidationIssueItems.Emplace(MakeShared<FDungeonValidationIssue>(issue));
 	}
@@ -350,9 +358,13 @@ void FDungeonGenerateEditorModule::RunValidation(const bool bDeepCheck)
 
 bool FDungeonGenerateEditorModule::HasValidationErrors() const
 {
-	return mValidationIssueItems.ContainsByPredicate([](const TSharedPtr<FDungeonValidationIssue>& issue)
+	/*
+	 * 生成失敗の報告はパラメータの不備とは限らないため、生成ボタンの抑止には使いません。
+	 * 抑止に使うと、同じパラメータのままシードを変えて試す事ができなくなります。
+	 */
+	return mParameterIssues.ContainsByPredicate([](const FDungeonValidationIssue& issue)
 		{
-			return issue.IsValid() && issue->Severity == EDungeonValidationSeverity::Error;
+			return issue.Severity == EDungeonValidationSeverity::Error;
 		});
 }
 
@@ -461,6 +473,17 @@ FString FDungeonGenerateEditorModule::FormatIssuesForClipboard() const
 		);
 	}
 
+	if (mGenerationIssues.Num() > 0)
+	{
+		report += TEXT("GenerationIssues:\n");
+		for (const FDungeonValidationIssue& issue : mGenerationIssues)
+		{
+			report += FString::Printf(TEXT("- [%s] [%s] %s | Hint: %s | Asset: %s\n"),
+				*FormatSeverity(issue.Severity), *issue.Code.ToString(), *issue.Message.ToString(), *issue.FixHint.ToString(),
+				issue.RelatedAsset.IsValid() ? *issue.RelatedAsset.ToString() : TEXT("None"));
+		}
+	}
+
 	report += TEXT("Issues:\n");
 	for (const TSharedPtr<FDungeonValidationIssue>& item : mValidationIssueItems)
 	{
@@ -516,7 +539,25 @@ FReply FDungeonGenerateEditorModule::OnClickedGenerateButton()
 
 	if (!dungeonActor->Generate(dungeonGenerateParameter))
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to generate dungeon"));
+		// アクターを破棄する前に失敗の理由を退避します
+		mGenerationIssues = dungeonActor->GetLastGenerationIssues();
+		RebuildIssueList();
+
+		const FDungeonValidationIssue* reason = mGenerationIssues.FindByPredicate([](const FDungeonValidationIssue& issue)
+			{
+				return issue.Severity == EDungeonValidationSeverity::Error;
+			});
+		if (reason != nullptr)
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, FText::Format(
+				LOCTEXT("GenerationFailed", "Failed to generate dungeon.\n\n{0}\n\nHint: {1}\n\nSee the issue list for details."),
+				reason->Message, reason->FixHint));
+		}
+		else
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("Message", "Failed to generate dungeon"));
+		}
+
 		OnClickedClearButton();
 		return FReply::Unhandled();
 	}

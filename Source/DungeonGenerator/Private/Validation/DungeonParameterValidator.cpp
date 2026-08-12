@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -188,14 +188,14 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		));
 	}
 
-	if (structure.RoomCountRange.Max <= 0 || structure.RoomCountRange.Min > structure.RoomCountRange.Max)
+	if (structure.RoomCountRange.Min < 3 || structure.RoomCountRange.Max > 100 || structure.RoomCountRange.Min > structure.RoomCountRange.Max)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
 			TEXT("DG_PARAM_RANGE"),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalid", "NumberOfCandidateRooms must be greater than 0."),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalidHint", "Set Number Of Candidate Rooms to 1 or more."),
-			TEXT("NumberOfCandidateRooms")
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalid", "Structure.RoomCountRange must stay between 3 and 100, and Min cannot be greater than Max."),
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalidHint", "Set both room-count endpoints between 3 and 100, with Min less than or equal to Max."),
+			TEXT("Structure.RoomCountRange")
 		));
 	}
 
@@ -204,31 +204,43 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Warning,
 			TEXT("DG_PARAM_ATTEMPTS_LOW"),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountLow", "NumberOfCandidateRooms is very low and generation may fail frequently."),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountLowHint", "Increase Number Of Candidate Rooms to improve generation success rate."),
-			TEXT("NumberOfCandidateRooms")
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountLow", "Structure.RoomCountRange is very low and generation may fail frequently."),
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountLowHint", "Increase the room-count range to improve generation success rate."),
+			TEXT("Structure.RoomCountRange")
 		));
 	}
 
 	if (params->IsUseMissionGraph() && path.ExtraCorridorComplexity > 0)
 	{
 		outIssues.Emplace(MakeIssue(
-			EDungeonValidationSeverity::Warning,
+			EDungeonValidationSeverity::Info,
 			TEXT("DG_PARAM_CONSTRAINT"),
-			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisle", "Path.ExtraCorridorComplexity is ignored while Keys And Locks progression is enabled."),
-			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisleHint", "Keys And Locks uses a MissionGraph-safe route so locked doors cannot be bypassed."),
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisle", "Path.ExtraCorridorComplexity does not apply to locked aisles while Keys And Locks progression is enabled."),
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisleHint", "A locked aisle needs its own gate and corridor so that the locked door cannot be bypassed. Every other aisle still gains intersections."),
 			TEXT("Path.ExtraCorridorComplexity")
 		));
 	}
 
-	if (params->IsUseMissionGraph() && path.LoopRouteDensity > 0.f)
+	// Path.LoopRouteDensity は Keys And Locks でも有効です。
+	// 鍵と扉の関門になる通路は LayoutGraphGenerator がループから保護するため、迂回路は発生しません。
+
+	/*
+	 * KeysAndLocksは開始部屋とゴール部屋を分断する橋へ鍵をかけるため、開始部屋が一意に
+	 * 定まらないUseMultiStartを扱えません。UseCentralPointは中央の部屋が選ばれやすく
+	 * 橋が残りにくいため、同じく対象外にしています。
+	 * ApplyPostLoadCompatibilityFixupsがアセットの読み込み時にUseSouthernMostへ書き換える
+	 * ので、利用者が気付けるよう通知します。
+	 */
+	if (params->IsUseMissionGraph() &&
+		(path.StartRoomPolicy == EDungeonStartLocationPolicy::UseCentralPoint ||
+			path.StartRoomPolicy == EDungeonStartLocationPolicy::UseMultiStart))
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Warning,
 			TEXT("DG_PARAM_CONSTRAINT"),
-			NSLOCTEXT("DungeonParameterValidator", "MissionGraphLoopDensity", "Path.LoopRouteDensity is ignored while Keys And Locks progression is enabled."),
-			NSLOCTEXT("DungeonParameterValidator", "MissionGraphLoopDensityHint", "Keys And Locks currently disables unsafe loops so locked doors cannot be bypassed."),
-			TEXT("Path.LoopRouteDensity")
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphStartRoom", "Path.StartRoomPolicy is changed to Use Southernmost while Keys And Locks progression is enabled."),
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphStartRoomHint", "Keys And Locks locks the aisles that separate the start room from the goal room, so it needs a single start room that leaves those aisles intact. Choose another policy to keep your setting."),
+			TEXT("Path.StartRoomPolicy")
 		));
 	}
 

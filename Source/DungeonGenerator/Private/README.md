@@ -116,10 +116,11 @@ sequenceDiagram
     Generate ->> SeparateRooms : 部屋の分離
     Generate ->> ExtractionAisles : 通路の生成
     Generate ->> SetRoomParts : 部屋のパーツ（役割）を設定する
-    Generate ->> AdjustedStartAndGoalSubLevel : 開始部屋と終了部屋のサブレベルを配置する隙間を調整
+    Generate ->> AdjustReservedSubLevels : 常時ロードするサブレベルを通常部屋へ割り当て
     Generate ->> AdjustRoomSize : 部屋の大きさを調整する
     Generate ->> SeparateRooms : 部屋の分離
     Generate ->> SeparateRooms : 部屋の分離
+    Generate ->> FinalizeEndpointLayout : 開始部屋と終了部屋を確定して登録サイズを適用
     Generate ->> ExpandSpace : 全ての部屋が収まるように空間を拡張
     Generate ->> AdjustPoints : Pointの同期
     Generate ->> InvokeRoomCallbacks : スタート部屋とゴール部屋のコールバックを呼ぶ
@@ -134,11 +135,12 @@ graph TD;
 GenerateRooms --> SeparateRooms1
 SeparateRooms1 --> ExtractionAisles
 ExtractionAisles --> SetRoomParts
-SetRoomParts --> AdjustedStartAndGoalSubLevel
-AdjustedStartAndGoalSubLevel --> AdjustRoomSize
+SetRoomParts --> AdjustReservedSubLevels
+AdjustReservedSubLevels --> AdjustRoomSize
 AdjustRoomSize --> SeparateRooms{ SeparateRooms }
 SeparateRooms --> |分割失敗| ExtractionAisles
-SeparateRooms --> ExpandSpace
+SeparateRooms --> FinalizeEndpointLayout
+FinalizeEndpointLayout --> ExpandSpace
 ExpandSpace --> AdjustPoints
 AdjustPoints --> InvokeRoomCallbacks
 InvokeRoomCallbacks --> MarkBranchId

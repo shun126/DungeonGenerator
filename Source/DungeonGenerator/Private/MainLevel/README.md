@@ -10,6 +10,15 @@ Runtime では Player/Pawn の現在 Partition を起点に PVS を参照し、�
 PVS は厳密な遮蔽判定ではなく、見えているものを消さないために保守的に広める設計です。
 壁、床、天井で明確に遮られている場合は除外しますが、見える可能性が残る場合は対象 Partition を有効化側に含めます。
 
+通常の可視性サンプルは、Partition の中央と 3D Bounds の8隅をアンカーにして、各アンカーに最も近い traversable grid から最大9点を選びます。
+屋根を生成できる grid については、天井面のすぐ下に対象側専用のサンプル候補を置きます。
+Partition 上面の中央、四隅、四辺中央に近い9点を先に並べ、その後へ未選択の全Roof候補を決定的な順序で追加します。一般的な見通しでは代表点で早期終了しつつ、部屋端や複数スロープのRoofも取りこぼしません。
+同じ DungeonGenerateActor、grid、サンプル種別へ集約された点は重複させません。
+
+屋根サンプルは可視性判定の対象側だけに使います。
+視点側には通常サンプルとスロープサンプルだけを使い、プレイヤーが天井面にいると仮定した過剰な PVS 拡張を避けます。
+デバッグ表示では通常中央点を白、通常境界点をシアン、スロープ下側を緑、上側をオレンジで描画します。判定距離内の全Roof点は、現在のPVSに含まれる場合は明るい紫、除外された場合は暗い紫で描画します。
+
 スロープ、吹き抜け、上下階をつなぐ空間では、床中心だけの直線判定だと上下方向の見通しを取りこぼしやすくなります。
 そのため、`Slope` / `Stairwell` / `DownSpace` / `UpSpace` では入口側、出口側、上下空間を表す追加サンプルを使い、PVS を安全側に広げます。
 
@@ -65,7 +74,7 @@ UDungeonPartiation --* ADungeonMainLevelScriptActor
 
 # パーティション構築シーケンス
 
-`PreInitializeComponents()` または `RebuildSparsePartitionGraphAndRefresh()` から `ExecutePartitionBuild()` を呼び、現在の生成済み dungeon から runtime 用の Partition graph と PVS を作ります。
+`RebuildSparsePartitionGraphAndRefresh()` から `ExecutePartitionBuild()` を呼び、現在の生成済み dungeon から runtime 用の Partition graph と PVS を作ります。
 
 ```mermaid
 sequenceDiagram
@@ -111,7 +120,7 @@ sequenceDiagram
     LevelScript ->> LevelScript : ProcessPartitionTransitionQueue()
     LevelScript ->> Partition : CallPartitionActivate() / CallPartitionInactivate()
     Partition ->> Activator : CallPartitionActivate() / CallPartitionInactivate()
-    LevelScript ->> LevelScript : UpdateShadowCastingPointAndSpotLights()
+    LevelScript ->> LevelScript : UpdatePointAndSpotLightStates()
 ```
 
 # Runtime 再構築シーケンス

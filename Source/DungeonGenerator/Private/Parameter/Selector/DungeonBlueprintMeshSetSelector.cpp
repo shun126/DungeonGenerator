@@ -11,7 +11,6 @@
 namespace
 {
 	/*
-	 * Selects a uniform fallback index for invalid Blueprint results.
 	 * 無効な Blueprint 結果に対して一様なフォールバックインデックスを選択します。
 	 */
 	int32 SelectUniformRandomIndex(const FDungeonMeshSetQuery& Query, const std::shared_ptr<dungeon::Random>& Random, const int32 NumCandidates)

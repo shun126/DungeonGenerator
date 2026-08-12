@@ -1,10 +1,14 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * 最小スパニングツリーに関するソースファイル
  *
  * @cite		https://algo-logic.info/kruskal-mst/
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #include "MinimumSpanningTree.h"
@@ -295,9 +299,9 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 			for (const auto& e : mEdges)
 			{
 				DUNGEON_GENERATOR_LOG(TEXT("MinimumSpanningTree: out: %d %d-%d (%f)"),
-					e.GetIdentifier().Get(),
-					e.GetPoint(0)->GetOwnerRoom()->GetIdentifier().Get(),
-					e.GetPoint(1)->GetOwnerRoom()->GetIdentifier().Get(),
+					static_cast<uint16_t>(e.GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(0)->GetOwnerRoom()->GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(1)->GetOwnerRoom()->GetIdentifier()),
 					e.GetLength()
 				);
 			}
@@ -335,9 +339,9 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 			for (const auto& e : mEdges)
 			{
 				DUNGEON_GENERATOR_LOG(TEXT("MinimumSpanningTree: mix: %d %d-%d (%f)"),
-					e.GetIdentifier().Get(),
-					e.GetPoint(0)->GetOwnerRoom()->GetIdentifier().Get(),
-					e.GetPoint(1)->GetOwnerRoom()->GetIdentifier().Get(),
+					static_cast<uint16_t>(e.GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(0)->GetOwnerRoom()->GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(1)->GetOwnerRoom()->GetIdentifier()),
 					e.GetLength()
 				);
 			}

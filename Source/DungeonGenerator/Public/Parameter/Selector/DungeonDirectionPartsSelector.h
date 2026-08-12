@@ -8,7 +8,7 @@
 #include "Parameter/Selector/DungeonPartsSelectorBase.h"
 #include "DungeonDirectionPartsSelector.generated.h"
 
-/*
+/**
  * Direction parts selector.
  * 方向でパーツを選択するセレクターです。
  */

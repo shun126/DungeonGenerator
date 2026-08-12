@@ -31,7 +31,7 @@ graph TD;
 
 ## レイアウトを調整する設定
 - `Structure.RoomCountRange`
-  生成する部屋数の目安です。Min と Max を同じ値にすると、部屋数を固定できます。
+  生成する部屋数の範囲です。生成開始時に Min 以上 Max 以下から1回だけ選び、すべてのレイアウト候補で同じ部屋数を使います。Min と Max を同じ値にすると、乱数状態を消費せずに部屋数を固定できます。
 - `Structure.RoomWidth` / `RoomDepth` / `RoomHeight`
   部屋の大きさです。大きいほど広間寄り、小さいほど迷路寄りになります。
 - `Structure.HorizontalRoomMargin` / `VerticalRoomMargin`
@@ -50,13 +50,15 @@ graph TD;
   | --- | --- |
   | `FreeExploration` | ループ、近道、寄り道部屋を含む自由探索型のダンジョン。 |
   | `StartToGoal` | スタートからゴールまでの主経路を分かりやすく見せたいダンジョン。 |
-  | `KeysAndLocks` | 鍵で必要な扉を開けながら進む、迂回できない解けるルート。 |
+  | `KeysAndLocks` | レイアウトに配置できる場合は検証済みの鍵付きルート。配置できない場合はロックなしで生成に成功し、`DG_GEN_KEYS_NOT_PLACED` を報告します。 |
   | `BossRoute` | ゴール付近のボス戦や最終遭遇に向けて盛り上げるルート。 |
   | `HubQuest` | ハブ部屋から複数のクエスト風分岐へ進むレイアウト。 |
 
 ![5つの Progression Policy のイメージ](images/ProgressionPolicyStyles.png)
 
 画像の `S` はスタート、`G` はゴール、明るい線は代表的な進行経路を示します。`Free Exploration` はループや近道、`Start To Goal` は読み取りやすい主経路、`Keys And Locks` は Key を取得してから Lock を通る順序、`Boss Route` は終盤の Boss、`Hub Quest` は中央の Hub から広がる分岐が特徴です。この画像は各 Policy の違いを理解するための概念例であり、生成される部屋形状や装飾を固定するものではありません。
+
+Keys And Locks の配置はベストエフォートです。Unique Key を置ける部屋がない場合は、鍵もロックもない到達可能なダンジョンを返し、`GetLastGenerationIssues()` から `DG_GEN_KEYS_NOT_PLACED` を報告します。ゲームでロックを必須にする前に [ApplyMissionGraph.ja.md](./ApplyMissionGraph.ja.md) を確認してください。
 
 ```mermaid
 graph LR;
@@ -98,7 +100,7 @@ graph LR;
 ```
 
   まず `Path.ProgressionPolicy` を選んでください。これは経路の型を決める主な設定です。`Path.MainRouteBias`、`Path.LoopRouteDensity`、`Path.ExtraCorridorComplexity` は、選んだスタイルの中で結果を微調整する上級者向け設定です。
-  v1 設定から移行する場合、`UseMissionGraph = true` は `Path.ProgressionPolicy = KeysAndLocks` に対応します。MissionGraph を使っていない通常の v1 アセットは `StartToGoal` に移行します。
+  Version 1 アセットは自動移行されません。手動で設定を作り直す場合、旧 `UseMissionGraph = true` の考え方は `KeysAndLocks`、通常のスタートからゴールへの経路は `StartToGoal` に相当します。
 - `Path.LayoutCandidateCount`
   複数のレイアウト候補を作り、スコアが高い候補を採用するための数です。
   値を上げると、良いレイアウトを選びやすくなりますが、その分だけ生成コストも増えます。まずは `3`、品質とコストのバランスを見るなら `4-8`、エディタで結果を確認する用途なら `9-16` を目安にしてください。
@@ -108,12 +110,12 @@ graph LR;
 - `Path.LoopRouteDensity`
   ループ経路や代替経路の多さを調整する上級者向け設定です。`0` は選んだ進行スタイルの標準です。値を上げると、そのポリシーが許す範囲でループが増えます。`KeysAndLocks` 進行では、鍵付き扉を迂回できないように安全ではないループは無効化されます。`StartToGoal`、`BossRoute`、`HubQuest` では途中の部屋にループを接続できますが、ゴール部屋は1接続の終端に保たれます。`FreeExploration` ではゴール付近のループも許可されます。
 - `Path.ExtraCorridorComplexity`
-  進行スタイルの経路ネットワークを作った後に、追加する通路の複雑度を調整する上級者向け設定です。`0` は選んだポリシー標準以上の追加通路を作らない設定です。`KeysAndLocks` 進行では、鍵付きルートを解ける状態に保つため、この値は無視され `0` として扱われます。
+  追加の交差や通路の複雑さを許可する上級者向け設定です。`0` は最も単純な基準です。`KeysAndLocks` でも未施錠通路には値が適用されますが、鍵付き通路では迂回を作らないよう交差と結合が常に無効になります。現在の Details Panel では `KeysAndLocks` 選択後にこの項目が読み取り専用になるため、未施錠通路へ複雑さを加えたい場合は Policy を切り替える前に値を設定するか、Blueprint / C++ から設定してください。
 - `Path.CorridorCeilingHeightPolicy`
   通路の天井高さを `1 Grid`、`2 Grids`、`Random` から選びます。見た目だけでなく、通路側に置ける装飾の余裕にも影響します。
 
 ## Gameplay.RoomRoles
-`Gameplay.RoomRoles.Roles` は、分岐部屋にどの役割を割り当てやすくするかと、役割ごとの部屋用 Mesh Set Database 上書きをまとめて設定します。
+`Gameplay.RoomRoles.Roles` は、分岐部屋にどの役割を割り当てやすくするかと、役割ごとの部屋メッシュ、Interior、Fixture、Room Sensor の上書きをまとめて設定します。
 分岐部屋で選べるゲームプレイ役割は `None`、`Combat`、`Treasure`、`Puzzle`、`Rest`、`Secret` です。
 
 | Role | 主な用途 |
@@ -130,7 +132,7 @@ graph LR;
 
 画像は各 Role をゲーム内でどう使えるかを示す例です。`None` は特別な用途を持たない通常部屋、`Combat` は戦闘、`Treasure` は報酬や鍵、`Puzzle` は仕掛け、`Rest` は休憩、`Boss` は大きな遭遇、`Secret` は隠し要素を表します。Role を設定しただけで画像の敵、宝箱、パズルが自動配置されるわけではありません。生成された Role を Room Sensor の Blueprint 処理や Role ごとの Theme Override で利用し、実際のゲーム内容と見た目を作ります。
 
-`Start`、`Goal`、`Hub`、`Connector`、`Branch`、`DeadEnd` はルート側で決まる構造ロールです。`BossRoute` は主経路の終盤に `Boss` ゲームプレイ役割を割り当てます。`HubQuest` は主経路序盤の部屋を構造ロール `Hub` にします。`Boss` プロファイルを用意すれば、役割ごとの部屋メッシュ上書きには使えます。
+`Start`、`Goal`、`Hub`、`Connector`、`Branch`、`DeadEnd` はルート側で決まる構造ロールです。`BossRoute` は主経路の終盤に `Boss` ゲームプレイ役割を割り当てます。`HubQuest` は主経路序盤の部屋を構造ロール `Hub` にします。`Boss` プロファイルでは、役割ごとの部屋メッシュ、Interior、Fixture、Room Sensor を上書きできます。
 
 秘密部屋を増やしたい場合は、`Secret` プロファイルの `BranchSelectionWeight` を上げます。秘密部屋だけを別の確率で指定する設定はありません。
 
@@ -139,12 +141,12 @@ graph TD;
     Profiles["Gameplay.RoomRoles.Roles"] --> Weights["BranchSelectionWeight<br/>None, Combat, Treasure, Puzzle, Rest, Secret"]
     Weights --> BranchRooms["生成された分岐部屋"]
     BossPolicy["Path.ProgressionPolicy = BossRoute"] --> BossRoom["Boss ゲームプレイ役割<br/>主経路終盤"]
-    KeyPolicy["Path.ProgressionPolicy = KeysAndLocks"] --> KeyRooms["Key / UniqueKey 部屋<br/>Treasure ゲームプレイ役割"]
+    KeyPolicy["Path.ProgressionPolicy = KeysAndLocks<br/>配置成功時"] --> KeyRooms["Key / UniqueKey 部屋<br/>Treasure ゲームプレイ役割"]
     BranchRooms --> GeneratedInfo["生成された部屋情報<br/>RoomGameplayRole"]
     BossRoom --> GeneratedInfo
     KeyRooms --> GeneratedInfo
     GeneratedInfo --> Sensor["ADungeonRoomSensorBase<br/>Blueprint 分岐"]
-    GeneratedInfo --> RoleTheme["Gameplay.RoomRoles<br/>部屋用 Mesh Set 上書き"]
+    GeneratedInfo --> RoleTheme["Gameplay.RoomRoles<br/>部屋 Mesh / Interior / Fixture / Sensor 上書き"]
 ```
 
 部屋メッシュの優先順位は `Gameplay.RoomRoles` -> `Zones` -> `Theme` です。通路メッシュには役割別上書きは使われません。
@@ -173,7 +175,7 @@ graph TD;
 - `Zones[].SelectionWeight`
   同じ進行度と階層に複数の Zone が一致したときに使う相対重みです。`0` にすると、その Zone は抽選されません。
 - `Zones[].ThemeOverride`
-  その Zone だけで使う部屋用、通路用 Mesh Set Database です。
+  その Zone だけで使う部屋用、通路用 Mesh Set Database と、通路スロープ用ベースライト設定です。`bOverrideAisleSlopeBaseLight` を有効にすると、ライト設定一式を置き換えられます。
 - `Zones[].GameplayOverride`
   その Zone だけで使う Room Sensor クラスや通路 Actor 候補の上書きです。
 
@@ -182,7 +184,7 @@ graph TD;
 Theme の優先順位は単純です。部屋メッシュは、該当する部屋役割の上書き、該当 Zone の上書き、`Theme` の標準 Database の順に使います。通路メッシュは Zone の上書き、または `Theme` の標準通路 Database を使います。
 
 ## Gameplay
-`Gameplay` は、生成後にユーザー実装へつなぐ参照だけを持ちます。
+`Gameplay` は、生成レイアウト情報を Room Sensor、役割別上書き、通路 Actor、特殊部屋サブレベルへ接続します。
 
 - `Gameplay.DungeonRoomSensorClass`
   どの部屋にどの `ADungeonRoomSensorBase` 派生 Blueprint を使うかを決めます。
@@ -216,8 +218,12 @@ RoomRole の上書きは部屋にだけ使われ、通路と坂は Zone -> Theme
   柱、松明、ドア、Unique Lock ドアなどの候補と選択ルールです。`UniqueDoorParts` は Keys And Locks 進行で作られるゴール扉やボスドア向けで、空の場合は `DoorParts` にフォールバックします。
 - `Theme.Fixtures.*PartsSelector`
   柱、松明、ドア、Unique Lock ドアなどの候補を選ぶためのセレクターオブジェクトです。
-- `Theme.bDeferredVegetationSpawn`
-  Play開始時の停止を抑えるため、植生を複数フレームに分けて生成します。1フレームあたりの生成数やツリー構築時間は `Theme|VegetationPerformance` の関連設定で調整します。ランタイム中の Actor、ライト、AI、collision、Tick の制御は [LoadReduction.ja.md](./LoadReduction.ja.md) を参照してください。
+- `Theme.AisleSlopeBaseLight`
+  部屋の外にある通路スロープを見やすくする、影なし Point Light の設定です。各スロープの中央上方に、サーバー生成・同期対応のライトActorが1灯生成されます。解決済みのZone Overrideも、接続中および途中参加クライアントへ反映されます。`Enabled`、明るさの単位と値、色、光が届く距離、スロープ面からの高さを調整できます。部屋内のスロープは対象外で、Room Sensor の誘導光を引き続き使用します。
+
+通路スロープ用ライトは、スロープごとの専用 Actor として生成されます。各 Actor はスロープ位置のダンジョン Partition に登録され、遠距離では自動的に非表示になります。影を落とさないため、`Attenuation Radius` を大きくしすぎると壁や上下階を越えて光が漏れることがあります。まず既定値から少しずつ調整してください。
+
+植生とActorの分散生成はThemeではなく、Dungeon Generator Actorの`GenerationPerformance`で設定します。同じParameter Assetを使いながら、マップや実行環境ごとに処理予算を変更できます。詳しくは[LoadReduction.ja.md](./LoadReduction.ja.md)を参照してください。
 
 ## 推奨の考え方
 最初は `Structure`、`Path`、`Theme` だけで生成を安定させます。

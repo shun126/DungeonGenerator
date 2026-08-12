@@ -1,7 +1,7 @@
 # Prepare Mesh Parts
 
 This page explains **how to prepare mesh parts for the dungeon without guesswork**.  
-You do not need many variations at first. Start by preparing these four types: **floor, wall, roof, and slope**. The goal is to get them registered with the correct orientation and pivot.
+You do not need many variations at first. Start with the three required types—**floor, wall, and roof**—then add a **slope** before enabling layouts with height differences. The goal is to register them with the correct orientation and pivot.
 
 ## Goal
 - Understand the basic parts that must be registered in the room and aisle `Mesh set database`
@@ -9,14 +9,14 @@ You do not need many variations at first. Start by preparing these four types: *
 - Create meshes that are less likely to break when you preview generation
 
 ## What to Prepare First
-For the first check, you only need the following four types.
+For a flat first check, the following three types are required.
 
 - `Floor Parts`
 - `Wall Parts`
 - `Roof Parts`
-- `Slope Parts`
+- `Slope Parts` is not a validation error when empty, but is required to display generated height transitions correctly. Add it before using vertical movement.
 
-With these four, you can already display the dungeon floor, walls, ceilings, and height transitions.  
+With these parts, you can display the dungeon floor, walls, ceilings, and—after adding a slope—height transitions.
 The following parts can be added later.
 
 - Indoor mezzanine floor
@@ -52,14 +52,14 @@ It is required for both rooms and aisles.
 
 ### Rules for Building It
 - Make the **Z axis point upward**
-- Put the **pivot at the center of the surface**
+- Put the **pivot at the center of the bottom face**, so mesh thickness extends upward from the placement plane
 - Give it **enough thickness** to prevent physics objects from falling through
 
 ![BaseFloor-en](images/BaseFloor1.png)
 
 ### Common Mistakes
 - The mesh is too thin, so characters or physics objects fall through
-- The pivot is on an edge, so the part is offset by half a cell
+- The pivot is on an edge or the wrong Z face, so the part is offset from the cell
 - The upward direction is wrong, so placement rotates in an unexpected way
 
 ## 2. Create the Wall
@@ -88,12 +88,10 @@ Even if you eventually want a more open look, it helps to prepare one roof part 
 - It is used to close the top side of rooms and aisles
 
 ### Rules for Building It
-- Make the **Y axis point forward**
-- Use **north-facing wall as 0 degrees, east as 90 degrees, south as 180 degrees, and west as -90 degrees**
-- Put the **pivot at the center of the bottom face**
+- Keep the roof in the **XY plane with Z pointing upward**
+- Put the **pivot at the center of the top face**, so mesh thickness extends downward into the ceiling
+- For directional patterns, keep one consistent authored forward direction and use the part's `PlacementDirection` or Relative Transform to control rotation
 - Give it **enough thickness** to prevent physics objects from falling through
-
-![BaseRoof-en](images/BaseRoof1.png)
 
 ### Common Mistakes
 - The front direction does not match the expected orientation, so patterns or slopes do not line up
@@ -105,18 +103,18 @@ If your dungeon includes vertical movement, this part is required.
 
 ### How It Is Used
 - It is used as a shape that **moves forward 2 grid cells and rises by 1 grid cell**
-- The slope angle is **22.5 degrees**
+- Its visual angle depends on the ratio between the horizontal and vertical grid sizes
 
 ### Rules for Building It
 - Make the **Y axis point forward**
-- Put the **pivot at the center of the bottom face of the first grid cell**
+- Put the **pivot at the center of the bottom face of the complete two-grid footprint**
 - Give it **enough thickness** to prevent physics objects from falling through
 
 ![BaseSlope-en](images/BaseSlope1.png)
 
 ### Common Mistakes
 - Building it as a 1 cell forward / 1 cell up shape, which does not match the expected slope
-- Placing the pivot too close to the center, so the slope does not connect cleanly to the floor
+- Placing the pivot at one end instead of the full footprint center, so the slope does not connect cleanly to the floor
 - Reversing forward and travel direction, so the slope goes up the wrong way
 
 ## 5. Additional Mesh Parts You Can Add Later
@@ -188,7 +186,8 @@ After registration, preview the dungeon from `Window > DungeonGenerator`.
   Recheck mesh thickness and collision
 
 ## Common Mistakes
-- One of floor, wall, roof, or slope is missing, so the generated shape does not look correct
+- A required floor, wall, or roof is missing, so validation fails
+- A slope is missing while the layout contains height transitions, so those transitions do not look correct
 - The pivot is offset, so the mesh floats or sinks by half a grid cell
 - The slope length or height does not match the expected shape, so it does not connect to the floor
 - Too many decorative actors are added before the basic parts are verified

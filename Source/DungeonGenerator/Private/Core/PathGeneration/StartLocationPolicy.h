@@ -1,8 +1,6 @@
 /**
- * ダンジョンの開始位置に関する定義
- *
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 

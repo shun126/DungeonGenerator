@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -8,7 +8,7 @@
 #include <CoreMinimal.h>
 #include "DungeonDirection.generated.h"
 
-/*
+/**
 Enumerated type indicating the direction of the grid in the dungeon
 Even numbers represent north-south and odd numbers represent east-west.
 

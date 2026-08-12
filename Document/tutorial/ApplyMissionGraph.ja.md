@@ -1,135 +1,71 @@
 # MissionGraph を適用する
 
-このページでは、ダンジョン内を進みながら **鍵を見つけて扉を開ける進行ルート** を MissionGraph で追加する方法を説明します。
+`Path.ProgressionPolicy = KeysAndLocks` は、スタートからゴールまでの経路へ鍵とロックの情報を配置します。生成された経路は検証され、鍵付き通路を生成形状から迂回できないようにします。
 
-MissionGraph は現在ベータ版の機能です。  
-通常のダンジョン生成設定が安定してから試すと、設定の切り分けがしやすくなります。
+MissionGraph は現在 Beta 機能です。先に通常のダンジョンが安定して生成できる状態にしてください。
 
-## このページのゴール
-- MissionGraph がダンジョン生成に何を追加するのかを理解する
-- 鍵付き扉と鍵配置の基本的な流れを確認する
-- `DungeonDoor` と `DungeonRoomSensor` の役割を理解する
+## 重要な制限: 配置はベストエフォート
 
-## 先に知っておくこと
-- MissionGraph は、ダンジョンに **スタートからゴールまでの進行ルート** を追加します
-- 鍵付き扉と鍵の配置は、MissionGraph の情報を使うアクターによって実現されます
-- 最初のテストでは複雑な演出を増やさず、`鍵を拾う -> 扉を開ける -> 先へ進む` という流れだけを確認するのがおすすめです
+鍵とロックは、生成レイアウトに適切な部屋とロック可能な経路がある場合だけ作られます。Unique Key を置ける有効な部屋がない場合、生成は失敗せず、鍵もロックもない到達可能なダンジョンとして完了します。このとき `ADungeonGenerateBase::GetLastGenerationIssues()` から `DG_GEN_KEYS_NOT_PLACED` 警告を取得できます。
 
-## 前提条件
-- [QuickStart.ja.md](./QuickStart.ja.md) が完了している
-- 通常のダンジョン生成が動作している
-- [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md) の基本設定を理解している
-- 扉アクターと部屋センサーの両方を追加できる状態になっている
+これは経路破損ではなく、ロックなしのフォールバックです。毎回ロックが必要なゲームでは生成 Issue を確認し、別 Seed で再生成するか、条件を満たす Hall/Hanare 部屋を増やしてください。`RandomSeed` を固定した場合は、同じレイアウトを意図的に再現します。
 
-## MissionGraph が行うこと
-`Path.ProgressionPolicy = KeysAndLocks` にすると、ダンジョン生成時に次のような進行フローが作られます。
+## 最短の設定手順
 
-- プレイヤーはスタート部屋から始まる
-- ルート上の部屋で通常の鍵を見つける
-- 通常の鍵付き扉を開けると、通常の鍵を 1 つ消費する
-- `Unique key` は、ゴール部屋へ続く最後の特別な扉を開ける
-- 最終的にプレイヤーはゴールへ到達する
+### 1. 進行 Policy を有効にする
 
-つまり、MissionGraph は単に部屋を配置するだけではありません。  
-ダンジョンに **意図された攻略順序** を追加する機能です。  
-また、必要な鍵付き扉を迂回してゴールへ到達できないように、生成時にルートの妥当性も検証されます。
+`UDungeonGenerateParameter` で `Path.ProgressionPolicy = KeysAndLocks` にします。
 
-## 最短セットアップ
-まずは最小構成で、MissionGraph が実際にダンジョンへ影響していることを確認します。
+`Path.ExtraCorridorComplexity = 0` は仕組みを確認しやすい基準値ですが、必須ではありません。0 より大きい値は、ロックされていない通路へ交差や複雑さを追加します。鍵付き通路では交差と結合が常に無効になり、専用経路を保って迂回を防ぎます。現在の Details Panel では Keys And Locks へ切り替えた後にこの項目が読み取り専用になるため、0 以外を使う場合は Policy の切り替え前に設定します。Blueprint / C++ から設定することもできます。`Path.LoopRouteDensity` は、ロックを迂回しない範囲で有効です。
 
-### 1. `Generate parameter` で MissionGraph を有効にする
-`UDungeonGenerateParameter` で次の項目を確認してください。
+Keys And Locks では `Path.StartRoomPolicy` に `UseCentralPoint` と `UseMultiStart` を使用できません。
 
-- `Path.ProgressionPolicy = KeysAndLocks`
-- `Path.ExtraCorridorComplexity = 0`
+### 2. Door Actor を用意する
 
-MissionGraph を使う場合、鍵付き扉の進行を迂回できないように、安全ではないルートの複雑化は無視されます。  
-ループは、鍵と扉の順序を壊さない場合にのみ現れることがあります。
-
-### 2. 扉アクターを用意する
-扉アクターは、鍵付き扉の見た目と挙動を担当します。  
-`DungeonDoorBase` を継承した Blueprint 扉を作成し、生成時に使えるように `Door Parts` へ登録します。
+`ADungeonDoorBase` 派生 Blueprint を作り、`Theme.Fixtures.Door Parts` に追加します。最後のロックだけ見た目を変える場合は、`Unique Door Parts` も設定します。
 
 ![](./images/MissionGraph1.png)
 
-### 3. 部屋センサー側で鍵のスポーンを用意する
-鍵とユニーク鍵は、MissionGraph の情報を使って部屋側で扱います。  
-`ADungeonRoomSensorBase` を継承した Blueprint を使っている場合は、必要に応じて `SpawnKeyActor` と `SpawnUniqueKeyActor` を設定してください。
+Door Base は `EDungeonRoomProps` を受け取り、`IsKeyLockedDoor` や `IsUniqueKeyLockedDoor` などの判定を公開します。インベントリ確認、開閉アニメーション、鍵の消費は実装しません。`OnInitialize` で受け取った Props を使い、Door Blueprint 側にゲームプレイ処理を実装してください。
 
-![DungeonRoomSensor](image/DungeonRoomSensor1.png)
+### 3. Key Actor を用意する
+
+`Gameplay.DungeonRoomSensorClass` に指定した `ADungeonRoomSensorBase` 派生 Blueprint で、簡単な確認用に `SpawnKeyActor` と `SpawnUniqueKeyActor` を設定します。
+
+![DungeonRoomSensor](./images/DungeonRoomSensor1.png)
 
 ![](./images/MissionGraph2.png)
 
-### 4. ダンジョンを生成して進行を確認する
-生成後、次の流れが成立しているか確認します。
+これらの Helper は、MissionGraph で印が付いた部屋に設定 Actor をスポーンします。鍵 Actor の取得、インベントリ登録、消費はプラグイン側では実装しません。ゲーム側 Blueprint に処理を実装してください。宝箱や敵撃破から鍵を渡す場合は、`OnInitialize` に渡される部屋情報を使い、独自処理でスポーンまたは付与します。
 
-- プレイヤーがスタート周辺を移動できる
-- ルート上で鍵を拾える
-- その鍵で対応する扉を開けられる
-- 最終的にゴールへ到達できる
+## 配置に成功した場合に保証されること
 
-## 各要素の役割
-MissionGraph の情報は、主に次の 2 種類のアクターで利用されます。
+- 各 Common Key は、対応する進行ロックより前に到達できます。
+- Unique Key は Common Lock の進行後に到達可能になります。
+- Unique Lock はゴール直前の最後のゲートになります。
+- 鍵付き通路は、迂回を作る交差や Gate 共有を行いません。
+- 配置された鍵とロックのグラフが解けない場合は、MissionGraph 検証によって生成が失敗します。
 
-### `DungeonDoor`
-- 鍵情報を受け取り、扉として振る舞う
-- 通常の扉と鍵付き扉を区別する入口になる
+配置できる Common Lock は最大 16 個です。鍵を置く部屋は、別の予約 Item を持たない Hall または Hanare である必要があります。
 
-### `DungeonRoomSensor`
-- 各部屋で必要なアクターやイベントを扱う
-- 鍵やユニーク鍵の配置にも利用できる
+## Play モードで確認する
 
-## グラフの読み方
-下の図は、MissionGraph によって生成された進行構造の例です。
+1. 生成後に `GetLastGenerationIssues()` を確認します。`DG_GEN_KEYS_NOT_PLACED` があれば、その生成結果には意図的に鍵とロックがありません。
+2. 配置成功時は、Common Key と Unique Key の Actor が対象部屋にスポーンしたか確認します。
+3. Door Blueprint が通常扉、Common Lock、Unique Lock を区別できるか確認します。
+4. 鍵の取得、開閉拒否、Common Key の消費、Unique Key の規則を実装したゲーム処理をテストします。
+5. 必要なロックを閉じたままゴールへ到達できないことを確認します。
 
-- 矢印は通路です
-- `Lock` と書かれた矢印は鍵付き扉です
-- `Unique lock` は、そのダンジョン内のユニーク鍵だけで開けられる扉です
-- 四角は部屋です
-- `Item: Key` と `Item: Unique key` は、その部屋に配置されるアイテムを表します
+## トラブルシューティング
 
-```mermaid
-graph TB;
-	0_18_2["Item:Unique key"]
-	15_22_1["Type:Start"]
-	9_20_1["Item:Key"]
-	27_5_1["Type:Goal"]
-	8_26_1["Item:Key"]
-	22_24_1["Item:Key"]
-	10_13_1["Item:Empty"]
-	15_15_1["Item:Empty"]
-	15_7_0["Item:Empty"]
-	20_0_1["Item:Empty"]
+- 鍵も鍵付き扉も出ない: まず Generation Issue を確認してください。有効なレイアウトでも、説明どおりロックなしへフォールバックする場合があります。
+- 扉は出るが鍵が出ない: `Gameplay.DungeonRoomSensorClass`、`SpawnKeyActor`、`SpawnUniqueKeyActor` を確認します。
+- 鍵は出るが取得できない: 取得とインベントリ処理は、Helper の Actor スポーンには含まれないプロジェクト側のゲームプレイです。
+- 扉の見た目はあるがプレイヤーを止めない: `ADungeonDoorBase` 派生 Blueprint に Collision、開閉、ロック判定を実装します。
+- 通路複雑度を上げても鍵付き通路が変わらない: 意図した動作です。その場所では未施錠通路だけに値が適用されます。
 
-	15_22_1<-->|"Lock"|22_24_1;
-	15_22_1<-->8_26_1;
-	8_26_1<-->9_20_1;
-	9_20_1<-->0_18_2;
-	9_20_1<-->|"Lock"|10_13_1;
-	10_13_1<-->15_15_1;
-	15_15_1<-->15_7_0;
-	15_7_0<-->|"Lock"|20_0_1;
-	20_0_1<-->|"Unique lock"|27_5_1;
-```
+## 関連ページ
 
-## 結果を確認する
-- 鍵を拾う前は進めない場所がある
-- 通常の鍵を拾うと通常の鍵付き扉を 1 つ開けられ、その鍵は消費される
-- 最後の `Unique key` と最後の扉が正しく動作する
-- ゴール部屋を開ける前に通常の鍵が使い切られる
-- スタートからゴールまでの進行ルートが成立している
-
-## よくある失敗
-- `Path.ProgressionPolicy = KeysAndLocks` にしたが、通常のダンジョンとの違いが分かりにくい  
-  まずは鍵付き扉と鍵配置だけに絞って、MissionGraph の効果が分かりやすい状態で確認してください
-- `Path.ExtraCorridorComplexity` が意図したセットアップと競合している  
-  MissionGraph では `Path.ExtraCorridorComplexity = 0` を基準にしてください
-- 扉は出るが、鍵が出ない  
-  `DungeonRoomSensor` 側の設定、特に `SpawnKeyActor` と `SpawnUniqueKeyActor` を見直してください
-- 鍵は出るが、扉の見た目や挙動が合わない  
-  `Door Parts` に登録している扉アクターを見直してください
-
-## 次に読む
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
 - [ADungeonRoomSensorBase.ja.md](./ADungeonRoomSensorBase.ja.md)
 - [FDungeonDoorActorParts.ja.md](./FDungeonDoorActorParts.ja.md)

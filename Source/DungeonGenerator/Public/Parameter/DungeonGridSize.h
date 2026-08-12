@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -113,14 +113,16 @@ public:
 
 public:
 	/**
-	 * 水平サイズ
+	 * Horizontal grid-cell size in Unreal world units.
+	 * Unrealワールド単位の水平グリッドセルサイズです。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1", ToolTip = "Horizontal size of one dungeon grid cell in Unreal world units."))
 	float HorizontalSize = 400.f;
 
 	/**
-	 * 垂直サイズ
+	 * Vertical grid-cell size in Unreal world units.
+	 * Unrealワールド単位の垂直グリッドセルサイズです。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ClampMin = "1", ToolTip = "Vertical size of one dungeon grid cell in Unreal world units."))
 	float VerticalSize = 400.f;
 };

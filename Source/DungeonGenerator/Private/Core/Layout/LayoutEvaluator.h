@@ -1,9 +1,13 @@
 /**
- * Layout evaluator for dungeon layout candidates.
- *
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
+ */
+
+/**
+ * @file
+ * Layout evaluator for dungeon layout candidates.
+ * LayoutEvaluator を表します。
  */
 
 #pragma once
@@ -13,7 +17,7 @@ namespace dungeon
 {
 	struct GenerateParameter;
 
-	/*
+	/**
 	 * Scores concrete layout candidates before voxel generation.
 	 * ボクセル生成前の具体的なレイアウト候補を採点します。
 	 */

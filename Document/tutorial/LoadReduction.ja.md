@@ -41,11 +41,17 @@ Play 中はプレイヤー位置を見て、どのパーティションを有効
 - `MaxPartitionInactivationsPerFrame`
   1 フレームで無効化するパーティション数の上限です。大きなエリアから離れる時の負荷を分散できます。
 - `MaxShadowCastingPointAndSpotLights`
-  影を落とす Point Light / Spot Light の最大数です。ローカルライトが多いダンジョンで使います。
+  表示する影付き Point Light / Spot Light の最大数です。上限を超えたライトは影なしで表示し続けずフェードアウトするため、壁を越える光漏れを防げます。`0` なら無制限です。
 - `ShowDebugInformation`
   エディタ上でパーティションのデバッグ情報を表示します。
 
 ![パーティション設定](images/LoadReduction2.jpg)
+
+### 自動生成されるISM/HISM地形
+
+ISMまたはHISMを使用する床、壁、屋根、柱は、ダンジョングリッド基準の固定された`8 × 8 × 2` XYZ空間グループに分けて生成されます。ダンジョンのパーティション構築後、各グループはメッシュ境界が交差するすべてのパーティションに関連付けられます。
+
+関連するパーティションが1つでも有効な間はグループが表示され、すべて無効になった時だけ非表示になります。距離カリングも引き続き適用されるため、2つの仕組みが組み合わさって描画負荷を抑えます。パーティションによる地形制御は表示だけを変更し、CollisionやNavigationは無効にしません。
 
 ## Activator Component を追加する
 プレイヤーから遠い時に休ませたい Actor Blueprint に `UDungeonComponentActivatorComponent` を追加します。
@@ -60,8 +66,6 @@ Actor ごとに、どの処理を制御するか選びます。
   Component の Activation 状態を保存し、あとで復元します。
 - `EnableComponentVisibilityControl`
   無効な間は Component を非表示にします。
-- `EnableLightShadowControl`
-  Point Light / Spot Light の Cast Shadow を制御します。BeginPlay 時点で Cast Shadow が有効なライトだけが対象です。
 - `EnableCollisionEnableControl`
   無効な間はコリジョンを止めます。遠くからでも trace やブロックが必要な Actor では無効にします。
 
@@ -77,7 +81,8 @@ Actor ごとに、どの処理を制御するか選びます。
 - 装飾 Actor
   Component activation と visibility control を有効にします。遠くで触れない小物なら collision control も有効です。
 - ライト
-  Visibility と light shadow control を有効にします。`MaxShadowCastingPointAndSpotLights` で影付きライトが増えすぎないようにします。
+  実行時ライト制御の対象にする非Staticの Point Light / Spot Light に Activator を追加します。`MaxShadowCastingPointAndSpotLights` で、同時に表示する影付きライト数を制限します。
+  自動生成される通路スロープ用ベースライトは専用 Actor を持ち、Visibility control のみを使います。影なしライトなので影予算の対象にはなりません。各 Actor は対応するスロープ位置の Partition に登録されます。
 - インタラクト Actor
   Tick と visibility control は慎重に使います。line trace やインタラクト判定が遠くから必要な場合は collision を残します。
 
@@ -85,24 +90,33 @@ Actor ごとに、どの処理を制御するか選びます。
 負荷制御は、ダンジョンが生成された後の処理を軽くする機能です。
 生成中の一瞬の重さには、植生やメッシュの設定も合わせて確認してください。
 
-- `Theme.bDeferredVegetationSpawn`
-  植生を 1 フレームでまとめて置かず、複数フレームに分けて生成します。
-- `Theme|VegetationPerformance`
-  1 フレームあたりの植生候補数、foliage tree build 数、処理時間の目安を調整します。
+- `GenerationPerformance.ActorSpawn`
+  Room Sensorの敵やキーを含むActor生成を複数フレームへ分散します。`MaxSpawnRequestsPerFrame`は1フレームの要求数、`MaxSpawnTimeMs`は処理時間の上限です。どちらも`0`で無制限になります。
+- `GenerationPerformance.Vegetation`
+  生成開始時にすべての候補を作らず、コンパクトな配置Jobとして保持します。各フレームでPlayer Cameraに近いJobから候補作成、Trace、配置を行います。植生候補数、配置時間、Foliage Tree構築数と構築時間を個別に調整でき、各上限の`0`は無制限です。
+- `bUseDeferredSpawn`
+  Actor SpawnとVegetationに個別の切替があります。無効にすると対応する処理を同期完了します。Editorの静的Generateは設定に関係なく常に同期完了しますが、PIEでは設定が適用されます。
 - Instanced Mesh Cull Distance
   遠くに表示する必要がない静的な見た目には、カリング距離の設定を使います。
 
 ## 困った時
 - 近くの Actor が消える
   `ActivationRangeScale` または `PrecomputedVisibilityDilationHopCount` を上げ、想定したパーティションに登録されているか確認します。
-- ライトは見えるが影が消える
-  `MaxShadowCastingPointAndSpotLights` を上げるか、影を落とす Point Light / Spot Light の数を減らします。
+- 部屋の外から見えるライトが消える
+  通常の閉じたドアでは、ドアが開く段階で部屋のライトが有効になるため、問題になることはほとんどありません。
+  ただし、開いたドア、格子、窓などを通して部屋の外から内部が見えるデザインでは、部屋と通路の Identifier が異なるため、ライトの正面角度カリングが適用されることがあります。
+  ライトの配置方向によって消える場合は、`PointAndSpotLightTurnOnAngle` と `PointAndSpotLightTurnOffAngle` を大きくしてください。原因を切り分ける時は、両方を一時的に `180` 度へ設定します。
+  それでも消える場合は、`ActivationRangeScale` と `PrecomputedVisibilityDilationHopCount` を確認してください。
+- 他のライトに近づくと Point Light / Spot Light がフェードアウトする
+  `MaxShadowCastingPointAndSpotLights` の上限外になっている可能性があります。上限を上げるか、`0` で無制限にするか、影を落とす Point Light / Spot Light の数を減らします。
+- 通路スロープの光が隣の通路や階へ漏れる
+  `Theme.AisleSlopeBaseLight.AttenuationRadius` を下げます。Zoneごとに異なる値が必要なら、Zoneの `bOverrideAisleSlopeBaseLight` を有効にしてください。
 - 敵 AI が止まってしまう
   その敵 Blueprint の `EnableOwnerActorAiControl` を無効にします。
 - 部屋移動時に一瞬重い
   `MaxPartitionActivationsPerFrame` と `MaxPartitionInactivationsPerFrame` を下げます。`OnPartitionActivate` 内で重い処理をしていないかも確認します。
 - 遠くの Static Mesh がまだ重い
-  Instanced Mesh の culling と `Theme.bDeferredVegetationSpawn` も併用します。
+  Instanced Meshのcullingと`GenerationPerformance.Vegetation.bUseDeferredSpawn`も併用します。
 
 ## 便利な Blueprint フック
 `ADungeonMainLevelScriptActor` には、生成前後に呼ばれる Blueprint イベントがあります。
@@ -111,5 +125,9 @@ Actor ごとに、どの処理を制御するか選びます。
   ダンジョン生成前に呼ばれます。ロード画面や一時 UI の表示に使えます。
 - `OnPostDungeonGeneration`
   ダンジョン生成後に呼ばれます。ゲーム開始、ロード UI の非表示、軽い初期化処理に使えます。
+
+ゲームプレイに必要な遅延Actorがすべて処理された時点で開始する場合は、Dungeon Generatorの`OnGenerationSuccess`イベントを使用してください。遠方の植生やFoliage Treeを含むすべての視覚要素が完成するまでロード画面を残す場合は、`OnGenerationComplete`を使用します。ポーリングする場合は`IsGenerationComplete()`で同じ最終状態を取得できます。
+
+Room Sensorに設定した敵、キー、Unique Keyは自動的に遅延生成されます。Blueprintで独自のActorも同じ生成キューへ含める場合は`RequestDeferredSpawnActorFromClass`を呼び、完了コールバックから生成済みActorを受け取ります。既存の`SpawnActorFromClass`は、互換性のため即時生成関数として維持されています。
 
 独自の流れで生成後に通行可能なレイアウトを変えた場合は、`RebuildSparsePartitionGraphAndRefresh()` を呼び、パーティショングラフと activator 登録を更新してください。

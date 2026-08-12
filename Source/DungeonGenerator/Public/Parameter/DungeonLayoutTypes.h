@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -13,6 +13,7 @@
 #include "Parameter/DungeonSelectionPolicy.h"
 #include <CoreMinimal.h>
 #include <Curves/CurveFloat.h>
+#include <Engine/Scene.h>
 #include "DungeonLayoutTypes.generated.h"
 
 class UDungeonInteriorDatabase;
@@ -21,7 +22,7 @@ class UDungeonPartsSelectorBase;
 class UDungeonRoomSensorDatabase;
 class UDungeonSubLevelDatabase;
 
-/*
+/**
  * Defines how generated rooms may use horizontal and vertical placement.
  * 生成される部屋を水平・垂直方向にどのように配置できるかを定義します。
  */
@@ -33,7 +34,7 @@ enum class EDungeonFloorMode : uint8
 	Vertical UMETA(DisplayName = "Vertical", ToolTip = "Place rooms mainly upward and downward across floors."),
 };
 
-/*
+/**
  * Defines how the generated start room is selected.
  * 生成される開始部屋をどの基準で選ぶかを定義します。
  */
@@ -50,7 +51,7 @@ enum class EDungeonStartLocationPolicy : uint8
 	UseMultiStart UMETA(DisplayName = "Use Multi Start", ToolTip = "Use multiple start rooms matched to PlayerStart actors. Keys And Locks progression does not support this option."),
 };
 
-/*
+/**
  * Defines how the generated goal room is selected.
  * 生成されるゴール部屋をどの基準で選ぶかを定義します。
  */
@@ -66,7 +67,7 @@ enum class EDungeonGoalLocationPolicy : uint8
 	UseCentralPoint UMETA(DisplayName = "Use Central Point", ToolTip = "Use the central candidate as the goal room."),
 };
 
-/*
+/**
  * Defines the intended progression model for generated routes.
  * 生成される経路の攻略進行モデルを定義します。
  */
@@ -80,7 +81,7 @@ enum class EDungeonProgressionPolicy : uint8
 	HubQuest UMETA(DisplayName = "Hub Quest", ToolTip = "Create a hub-centered layout with quest-like branches around an early hub room."),
 };
 
-/*
+/**
  * Defines how aisle ceiling height is selected.
  * 通路の天井高の選び方を定義します。
  */
@@ -93,7 +94,7 @@ enum class EDungeonAisleCeilingHeightPolicy : uint8
 	SIZE UMETA(Hidden, ToolTip = "Internal sentinel value."),
 };
 
-/*
+/**
  * Defines how often generated actors should appear.
  * 生成アクターの出現頻度を定義します。
  */
@@ -108,7 +109,7 @@ enum class EDungeonFrequencyOfGeneration : uint8
 	Never UMETA(DisplayName = "Never", ToolTip = "Never generate."),
 };
 
-/*
+/**
  * Defines the route-structure role assigned to generated rooms.
  * 生成された部屋が経路構造上でどの役割を持つかを定義します。
  */
@@ -123,7 +124,7 @@ enum class EDungeonRoomStructuralRole : uint8
 	DeadEnd UMETA(DisplayName = "Dead End", ToolTip = "Room with only one route connection, excluding start and goal rooms."),
 };
 
-/*
+/**
  * Defines the gameplay role assigned to generated rooms.
  * 生成された部屋でプレイヤーにどのような体験をさせるかを定義します。
  */
@@ -139,7 +140,7 @@ enum class EDungeonRoomGameplayRole : uint8
 	Secret UMETA(DisplayName = "Secret", ToolTip = "Use this room for hidden discoveries, optional rewards, or secret events."),
 };
 
-/*
+/**
  * Defines gameplay purposes assigned to generated aisles.
  * 生成された通路に割り当てるゲームプレイ上の目的を定義します。
  */
@@ -154,7 +155,7 @@ enum class EDungeonAislePurpose : uint8
 	VerticalTransition UMETA(DisplayName = "Vertical Transition", ToolTip = "Aisle intended to move between floors."),
 };
 
-/*
+/**
  * Core structure settings that control dungeon size and room spacing.
  * ダンジョンの規模と部屋の間隔を制御する構造設定です。
  */
@@ -163,49 +164,51 @@ struct DUNGEONGENERATOR_API FDungeonStructureSettings
 {
 	GENERATED_BODY()
 
-	/*
-	 * Target range for the initial generated room count.
-	 * 初期生成する部屋数の目標範囲です。
+	/**
+	 * Inclusive target range for the initial generated room count.
+	 * One count is selected at generation start and shared by every layout candidate.
+	 * 初期生成する部屋数の、両端を含む目標範囲です。
+	 * 生成開始時に1回だけ選択し、すべてのレイアウト候補で共有します。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Structure", meta = (ClampMin = "3", ClampMax = "100", ToolTip = "Target range for the initial generated room count."))
-	FInt32Interval RoomCountRange = { 10, 10 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Structure", meta = (ClampMin = "3", ClampMax = "100", ToolTip = "Inclusive target range for the initial room count. One value is selected at generation start and shared by every layout candidate. Set Min and Max to the same value to use a fixed count without consuming random state."))
+	FInt32Interval RoomCountRange = { 5, 25 };
 
-	/*
+	/**
 	 * Width range for generated rooms.
 	 * 生成される部屋の幅の範囲です。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Structure", meta = (UIMin = "1", ClampMin = "1", ToolTip = "Width range for generated rooms."))
 	FInt32Interval RoomWidth = { 3, 8 };
 
-	/*
+	/**
 	 * Depth range for generated rooms.
 	 * 生成される部屋の奥行きの範囲です。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Structure", meta = (UIMin = "1", ClampMin = "1", ToolTip = "Depth range for generated rooms."))
 	FInt32Interval RoomDepth = { 3, 8 };
 
-	/*
+	/**
 	 * Height range for generated rooms.
 	 * 生成される部屋の高さの範囲です。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Structure", meta = (UIMin = "1", ClampMin = "1", ToolTip = "Height range for generated rooms."))
 	FInt32Interval RoomHeight = { 2, 4 };
 
-	/*
+	/**
 	 * Controls whether rooms can spread freely, stay flat, or stack vertically.
 	 * 部屋を自由に広げるか、同じ床高さにそろえるか、垂直方向に並べるかを制御します。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Structure", meta = (ToolTip = "Controls whether rooms can spread freely, stay on one floor height, or stack vertically. Free allows both horizontal and vertical placement. Flat keeps all rooms at the same floor height. Vertical favors upward and downward layouts."))
 	EDungeonFloorMode FloorMode = EDungeonFloorMode::Free;
 
-	/*
+	/**
 	 * Horizontal room-to-room margin.
 	 * 水平方向の部屋間隔です。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Structure", meta = (ClampMin = "0", ToolTip = "Horizontal room-to-room margin. Set this to 0 or a small value when you want rooms to feel clustered without merging walls."))
 	uint8 HorizontalRoomMargin = 2;
 
-	/*
+	/**
 	 * Vertical room-to-room margin used when rooms are separated on multi-floor layouts.
 	 * 複数階層で部屋を分けるときに使う、垂直方向の部屋間隔です。
 	 */
@@ -213,7 +216,7 @@ struct DUNGEONGENERATOR_API FDungeonStructureSettings
 	uint8 VerticalRoomMargin = 0;
 };
 
-/*
+/**
  * Path settings that control route shape, start and goal rooms, and progression gates.
  * 経路形状、開始部屋、ゴール部屋、進行ゲートをまとめて制御する設定です。
  */
@@ -247,7 +250,7 @@ struct DUNGEONGENERATOR_API FDungeonPathSettings
 	 * Advanced adjustment for loops and alternate routes.
 	 * ループ経路と代替経路を調整する上級者向け設定です。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "0.00", ClampMax = "1.00", EditCondition = "ProgressionPolicy != EDungeonProgressionPolicy::KeysAndLocks", ToolTip = "Advanced tuning for loops and alternate routes. 0 uses the selected ProgressionPolicy baseline. Higher values add more loops where the policy allows them. Keys And Locks disables unsafe loops so locked doors cannot be bypassed."))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Path", meta = (ClampMin = "0.00", ClampMax = "1.00", ToolTip = "Advanced tuning for loops and alternate routes. 0 uses the selected ProgressionPolicy baseline. Higher values add more loops where the policy allows them. Keys And Locks keeps the aisles reserved for locked doors free of loops, so a detour can never bypass a locked door."))
 	float LoopRouteDensity = 0.0f;
 
 	/**
@@ -286,7 +289,7 @@ struct DUNGEONGENERATOR_API FDungeonPathSettings
 	bool bMovePlayerStartToStartRoom = true;
 };
 
-/*
+/**
  * Fixture settings that control fixed props such as pillars, torches, and doors.
  * 柱、たいまつ、ドアなどの固定装飾を制御する設定です。
  */
@@ -302,6 +305,7 @@ struct DUNGEONGENERATOR_API FDungeonFixtureSettings
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Pillar", meta = (DisplayName = "Pillar Parts Selector", ToolTip = "Selects one pillar part from the candidates. Uniform Random is assigned automatically when empty."))
 	TObjectPtr<UDungeonPartsSelectorBase> PillarPartsSelector;
 
+	/** Internal migration value used while converting the legacy pillar method. 旧柱選択方式を変換するときに使う内部移行値です。 */
 	UPROPERTY()
 	EDungeonSelectionPolicy PillarPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
@@ -326,6 +330,7 @@ struct DUNGEONGENERATOR_API FDungeonFixtureSettings
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Torch", meta = (DisplayName = "Torch Parts Selector", ToolTip = "Selects one torch actor part from the candidates. Uniform Random is assigned automatically when empty."))
 	TObjectPtr<UDungeonPartsSelectorBase> TorchPartsSelector;
 
+	/** Internal migration value used while converting the legacy torch method. 旧たいまつ選択方式を変換するときに使う内部移行値です。 */
 	UPROPERTY()
 	EDungeonSelectionPolicy TorchPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
@@ -337,11 +342,18 @@ struct DUNGEONGENERATOR_API FDungeonFixtureSettings
 	EDungeonPartsSelectionMethod TorchPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
 	/**
-	 * Frequency used when generating torch lights.
-	 * たいまつを生成するときに使用する頻度です。
+	 * Frequency used when generating torch actors on room walls. Room Role and Zone fixture overrides can replace this value.
+	 * 部屋の壁にたいまつアクターを生成する頻度です。部屋の役割とゾーンの設置物オーバーライドでこの値を置き換えられます。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Torch", meta = (ToolTip = "Frequency of torchlight generation."))
-	EDungeonFrequencyOfGeneration FrequencyOfTorchlightGeneration = EDungeonFrequencyOfGeneration::Rarely;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Torch", meta = (ToolTip = "Controls how often torch actors are generated on room walls. Room Role and Zone fixture overrides can replace this value."))
+	EDungeonFrequencyOfGeneration RoomTorchFrequency = EDungeonFrequencyOfGeneration::Rarely;
+
+	/**
+	 * Frequency used when generating torch actors on aisle walls. Zone fixture overrides can replace this value; Room Role overrides do not affect aisles.
+	 * 通路の壁にたいまつアクターを生成する頻度です。ゾーンの設置物オーバーライドでこの値を置き換えられますが、部屋の役割は通路に影響しません。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Torch", meta = (ToolTip = "Controls how often torch actors are generated on aisle walls. Zone fixture overrides can replace this value; Room Role overrides do not affect aisles."))
+	EDungeonFrequencyOfGeneration AisleTorchFrequency = EDungeonFrequencyOfGeneration::Occasionally;
 
 	/**
 	 * Candidate torch actor parts.
@@ -357,6 +369,7 @@ struct DUNGEONGENERATOR_API FDungeonFixtureSettings
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Door", meta = (DisplayName = "Door Parts Selector", ToolTip = "Selects one door actor part from the candidates. Uniform Random is assigned automatically when empty."))
 	TObjectPtr<UDungeonPartsSelectorBase> DoorPartsSelector;
 
+	/** Internal migration value used while converting the legacy door method. 旧ドア選択方式を変換するときに使う内部移行値です。 */
 	UPROPERTY()
 	EDungeonSelectionPolicy DoorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
@@ -374,24 +387,25 @@ struct DUNGEONGENERATOR_API FDungeonFixtureSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Door", meta = (ToolTip = "Door actor parts."))
 	TArray<FDungeonDoorActorParts> DoorParts;
 
-	/*
+	/**
 	 * Selection policy used when choosing unique lock door actors.
 	 * Unique Lock のドアアクターを選ぶときに使用する選択ポリシーです。
 	 */
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "DungeonGenerator|Theme|Fixtures|Door", meta = (DisplayName = "Unique Door Parts Selector", ToolTip = "Selects one Unique Lock door actor part, usually used for goal or boss doors. Uniform Random is assigned automatically when empty."))
 	TObjectPtr<UDungeonPartsSelectorBase> UniqueDoorPartsSelector;
 
+	/** Internal migration value used while converting the legacy unique-door method. 旧固有ドア選択方式を変換するときに使う内部移行値です。 */
 	UPROPERTY()
 	EDungeonSelectionPolicy UniqueDoorPartsSelectionPolicy = EDungeonSelectionPolicy::Random;
 
-	/*
+	/**
 	 * Legacy unique door selection method retained for asset migration.
 	 * アセット移行のために保持している旧式の Unique Door 選択方式です。
 	 */
 	UPROPERTY()
 	EDungeonPartsSelectionMethod UniqueDoorPartsSelectionMethod = EDungeonPartsSelectionMethod::Random;
 
-	/*
+	/**
 	 * Candidate actor parts used for Unique Lock doors.
 	 * Unique Lock のドアとして使用する候補アクターパーツです。
 	 */
@@ -406,7 +420,59 @@ struct DUNGEONGENERATOR_API FDungeonFixtureSettings
 	TObjectPtr<UDungeonPartsSelectorBase> DungeonPartsSelector;
 };
 
-/*
+/**
+ * Settings for the shadow-free base light generated above each aisle slope.
+ * 各通路スロープの上に生成する、影なしベースライトの設定です。
+ */
+USTRUCT(BlueprintType)
+struct DUNGEONGENERATOR_API FDungeonAisleSlopeBaseLightSettings
+{
+	GENERATED_BODY()
+
+	/**
+	 * Enables one base light above every generated aisle slope.
+	 * 生成された各通路スロープの上にベースライトを1灯生成します。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|AisleSlopeBaseLight", meta = (ToolTip = "Creates one shadow-free Point Light above every generated aisle slope. Room slopes continue to use Room Sensor guidance lights."))
+	bool bEnabled = false;
+
+	/**
+	 * Units used for the intensity of every generated aisle-slope base light.
+	 * 生成される各通路スロープ用ベースライトの明るさに使用する単位です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|AisleSlopeBaseLight", meta = (ValidEnumValues = "Unitless,Candelas,Lumens", EditCondition = "bEnabled", ToolTip = "Units for aisle-slope base light intensity. Lumens and Candelas use physically based inverse-square falloff. Unitless uses the artistic falloff model with exponent 2."))
+	ELightUnits IntensityUnits = ELightUnits::Unitless;
+
+	/**
+	 * Intensity applied to every generated aisle-slope base light.
+	 * 生成される各通路スロープ用ベースライトに適用する明るさです。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|AisleSlopeBaseLight", meta = (ClampMin = "0", UIMin = "0", UIMax = "10000", EditCondition = "bEnabled", ToolTip = "Intensity of each generated aisle-slope Point Light in the selected units."))
+	float Intensity = 5.f;
+
+	/**
+	 * Color applied to every generated aisle-slope base light.
+	 * 生成される各通路スロープ用ベースライトに適用する色です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|AisleSlopeBaseLight", meta = (EditCondition = "bEnabled", ToolTip = "Color of each generated aisle-slope Point Light."))
+	FLinearColor Color = FLinearColor::White;
+
+	/**
+	 * Maximum distance in centimeters reached by each generated light.
+	 * 各生成ライトが届く最大距離（cm）です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|AisleSlopeBaseLight", meta = (ClampMin = "0", EditCondition = "bEnabled", ToolTip = "Attenuation radius in centimeters. Keep this limited because shadow-free Point Lights can illuminate nearby aisles or floors through walls."))
+	float AttenuationRadius = 800.f;
+
+	/**
+	 * Vertical distance in centimeters from the midpoint of the slope surface to the light.
+	 * スロープ面の中央からライトまでの垂直距離（cm）です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|AisleSlopeBaseLight", meta = (ClampMin = "0", EditCondition = "bEnabled", ToolTip = "Vertical distance in centimeters from the midpoint of the slope surface to the Point Light."))
+	float HeightOffset = 200.f;
+};
+
+/**
  * Theme override used by zones.
  * ゾーンで使用する見た目の上書き設定です。
  */
@@ -429,7 +495,21 @@ struct DUNGEONGENERATOR_API FDungeonZoneThemeOverride
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Zones", meta = (ToolTip = "Optional aisle mesh database override for this zone."))
 	TObjectPtr<UDungeonMeshSetDatabase> AisleMeshSetDatabase;
 
-	/*
+	/**
+	 * Enables replacement of the inherited aisle-slope base-light settings.
+	 * 継承した通路スロープ用ベースライト設定の置き換えを有効にします。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Zones", meta = (InlineEditConditionToggle, ToolTip = "Enable this to replace the inherited aisle-slope base-light settings for this zone, including whether lights are generated."))
+	bool bOverrideAisleSlopeBaseLight = false;
+
+	/**
+	 * Aisle-slope base-light settings used while this zone is active.
+	 * このZoneが有効な間に使用する通路スロープ用ベースライト設定です。
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Zones", meta = (EditCondition = "bOverrideAisleSlopeBaseLight", ShowOnlyInnerProperties, ToolTip = "Complete aisle-slope base-light settings for this zone. Disable Enabled here to keep aisle slopes dark in this zone."))
+	FDungeonAisleSlopeBaseLightSettings AisleSlopeBaseLight;
+
+	/**
 	 * Enables the interior database override even when the database is empty.
 	 * データベースが未設定の場合でも、内装データベースの上書きを有効にします。
 	 */
@@ -437,7 +517,7 @@ struct DUNGEONGENERATOR_API FDungeonZoneThemeOverride
 	bool bOverrideDungeonInteriorDatabase = false;
 
 
-	/*
+	/**
 	 * Enables fixture overrides even when all candidate lists are empty.
 	 * 候補リストが空の場合でも、Fixture の上書きを有効にします。
 	 */
@@ -448,11 +528,11 @@ struct DUNGEONGENERATOR_API FDungeonZoneThemeOverride
 	 * Optional fixture override used by matching rooms or zones.
 	 * 条件に一致する部屋またはゾーンで使用する任意の Fixture 上書きです。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Zones", meta = (EditCondition = "bOverrideFixtures", ToolTip = "Fixture override for this role or zone. This replaces inherited pillar, torch, door, unique door, frequency, and custom selector settings."))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Zones", meta = (EditCondition = "bOverrideFixtures", ToolTip = "Fixture override for this role or zone. This replaces inherited pillar, torch, door, unique door, room and aisle torch frequency, and custom selector settings."))
 	FDungeonFixtureSettings Fixtures;
 };
 
-/*
+/**
  * Gameplay override used by room-role profiles.
  * RoomRole profiles can replace the default room sensor class.
  * RoomRole プロファイルでデフォルトの Room Sensor クラスを上書きします。
@@ -462,7 +542,7 @@ struct DUNGEONGENERATOR_API FDungeonRoomRoleGameplayOverride
 {
 	GENERATED_BODY()
 
-	/*
+	/**
 	 * Optional room sensor class override used by rooms with this gameplay role.
 	 * Rooms with this gameplay role can use this Room Sensor class instead of the zone or default class.
 	 * この Gameplay Role の部屋では Zone またはデフォルトの代わりにこの Room Sensor クラスを使えます。
@@ -471,7 +551,7 @@ struct DUNGEONGENERATOR_API FDungeonRoomRoleGameplayOverride
 	TObjectPtr<UClass> DungeonRoomSensorClass;
 };
 
-/*
+/**
  * Gameplay override used by zones.
  * Zones can replace the default room sensor and aisle actor settings.
  * Zone でデフォルトの Room Sensor と通路 Actor 設定を上書きします。
@@ -481,7 +561,7 @@ struct DUNGEONGENERATOR_API FDungeonZoneGameplayOverride
 {
 	GENERATED_BODY()
 
-	/*
+	/**
 	 * Optional room sensor class override used while this zone is active.
 	 * Rooms in this zone can use this Room Sensor class unless their RoomRole overrides it.
 	 * この Zone の部屋では RoomRole 上書きがない場合にこの Room Sensor クラスを使えます。
@@ -489,7 +569,7 @@ struct DUNGEONGENERATOR_API FDungeonZoneGameplayOverride
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Zones", meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonRoomSensorBase", ToolTip = "Optional room sensor class override for rooms in this zone. RoomRole overrides take priority over this value."))
 	TObjectPtr<UClass> DungeonRoomSensorClass;
 
-	/*
+	/**
 	 * Optional actor classes spawned inside aisles while this zone is active.
 	 * Aisles in this zone can spawn these actor Blueprints instead of the default gameplay aisle actors.
 	 * この Zone の通路ではデフォルトの代わりにこれらの Actor Blueprint をスポーンできます。
@@ -528,7 +608,7 @@ struct DUNGEONGENERATOR_API FDungeonRoomRoleProfile
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Gameplay|RoomRoles", meta = (ToolTip = "Optional theme override used by rooms with this role. Room mesh overrides affect room mesh selection only. Aisle meshes still use zone or default theme settings."))
 	FDungeonZoneThemeOverride ThemeOverride;
 
-	/*
+	/**
 	 * Gameplay override used by rooms with this role.
 	 * Rooms with this role can replace the default or zone room sensor class.
 	 * この役割の部屋でデフォルトまたは Zone の Room Sensor クラスを上書きします。
@@ -554,7 +634,7 @@ struct DUNGEONGENERATOR_API FDungeonRoomRoleSettings
 	TArray<FDungeonRoomRoleProfile> Roles;
 };
 
-/*
+/**
  * Definition of a dungeon zone or biome.
  * ダンジョン内のゾーンまたはバイオーム定義です。
  */
@@ -598,7 +678,7 @@ struct DUNGEONGENERATOR_API FDungeonZoneDefinition
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Zones", meta = (ToolTip = "Theme overrides used while generating this zone."))
 	FDungeonZoneThemeOverride ThemeOverride;
 
-	/*
+	/**
 	 * Gameplay override used by this zone when matching conditions are met.
 	 * This zone can replace the default room sensor and aisle actor settings.
 	 * 条件に一致したとき、この Zone でデフォルトの Room Sensor と通路 Actor 設定を上書きします。
@@ -607,7 +687,7 @@ struct DUNGEONGENERATOR_API FDungeonZoneDefinition
 	FDungeonZoneGameplayOverride GameplayOverride;
 };
 
-/*
+/**
  * Zone settings that define biome-like ranges across the dungeon.
  * ダンジョン内のバイオーム的な範囲を定義するゾーン設定です。
  */
@@ -624,7 +704,7 @@ struct DUNGEONGENERATOR_API FDungeonZoneSettings
 	TArray<FDungeonZoneDefinition> Zones;
 };
 
-/*
+/**
  * Gameplay settings for room roles, room sensors, and reserved sublevels.
  * 部屋役割、ルームセンサー、予約サブレベルを制御するゲームプレイ設定です。
  */
@@ -640,7 +720,7 @@ struct DUNGEONGENERATOR_API FDungeonGameplaySpawnSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Gameplay", meta = (ShowOnlyInnerProperties, ToolTip = "Settings for room roles, room visuals, and special-room selection. This does not control room shape or room count."))
 	FDungeonRoomRoleSettings RoomRoles;
 
-	/*
+	/**
 	 * Default room sensor class spawned for generated rooms.
 	 * Generated rooms use this Room Sensor class unless a Zone or RoomRole override replaces it.
 	 * Zone または RoomRole の上書きがない生成部屋では、この Room Sensor クラスを使います。
@@ -648,7 +728,7 @@ struct DUNGEONGENERATOR_API FDungeonGameplaySpawnSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Gameplay", meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonRoomSensorBase", ToolTip = "Default Room Sensor Blueprint used for generated rooms. RoomRole overrides take priority, then Zone overrides, then this default value."))
 	TObjectPtr<UClass> DungeonRoomSensorClass;
 
-	/*
+	/**
 	 * Default actor classes spawned inside generated aisles.
 	 * Generated aisles can spawn these actor Blueprints unless a Zone override replaces them.
 	 * Zone の上書きがない生成通路では、これらの Actor Blueprint をスポーンできます。
@@ -665,7 +745,7 @@ struct DUNGEONGENERATOR_API FDungeonGameplaySpawnSettings
 
 };
 
-/*
+/**
  * Theme settings that control meshes, interiors, fixtures, and visual selection.
  * メッシュ、内装、設置物、見た目の選択を制御するテーマ設定です。
  */
@@ -674,14 +754,14 @@ struct DUNGEONGENERATOR_API FDungeonThemeSettings
 {
 	GENERATED_BODY()
 
-	/*
+	/**
 	 * Horizontal grid size in world units used to align meshes, sublevels, interiors, and generated room placement.
 	 * メッシュ、サブレベル、内装、生成部屋の配置を揃えるためのワールド単位の水平グリッドサイズです。
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme", meta = (ClampMin = "1", DisplayName = "Horizontal Grid Size", ToolTip = "Horizontal grid size in world units used to align meshes, sublevels, interiors, and generated room placement. Match this to the horizontal size of your room and aisle assets."))
 	float HorizontalGridSize = 400.f;
 
-	/*
+	/**
 	 * Vertical grid size in world units used to align floors, sublevels, interiors, and generated room height.
 	 * 床高さ、サブレベル、内装、生成部屋の高さを揃えるためのワールド単位の垂直グリッドサイズです。
 	 */
@@ -710,45 +790,16 @@ struct DUNGEONGENERATOR_API FDungeonThemeSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme", meta = (ShowOnlyInnerProperties, ToolTip = "Default fixture settings for pillars, torches, doors, and custom fixture selection."))
 	FDungeonFixtureSettings Fixtures;
 
-	/*
-	 * Spawn vegetation instances over multiple frames to reduce Play start stalls.
-	 * Play開始時の停止を抑えるため、植生インスタンス生成を複数フレームに分散します。
+	/**
+	 * Default base-light settings used by generated aisle slopes.
+	 * 生成された通路スロープで使用する既定のベースライト設定です。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|VegetationPerformance", meta = (ToolTip = "Spawn vegetation instances over multiple frames. This keeps generation completion timing unchanged while foliage appears over the next frames."))
-	bool bDeferredVegetationSpawn = true;
-
-	/*
-	 * Maximum vegetation candidates processed per frame while deferred spawning is enabled.
-	 * 遅延植生生成が有効なとき、1フレームで処理する植生候補数の上限です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|VegetationPerformance", meta = (ClampMin = "1", ToolTip = "Maximum vegetation candidates processed per frame while deferred spawning is enabled."))
-	int32 MaxVegetationSpawnsPerFrame = 128;
-
-	/*
-	 * Maximum milliseconds spent placing vegetation instances per frame.
-	 * 1フレームで植生インスタンス配置に使う最大ミリ秒です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|VegetationPerformance", meta = (ClampMin = "0.0", ToolTip = "Maximum milliseconds spent placing vegetation instances per frame. Lower values reduce hitches but make foliage appear over more frames."))
-	float MaxVegetationSpawnTimeMs = 2.0f;
-
-	/*
-	 * Maximum foliage component tree builds processed per frame.
-	 * 1フレームで処理するフォリッジコンポーネントのツリー構築数の上限です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|VegetationPerformance", meta = (ClampMin = "1", ToolTip = "Maximum foliage component tree builds processed per frame after deferred vegetation placement finishes."))
-	int32 MaxVegetationTreeBuildsPerFrame = 2;
-
-	/*
-	 * Maximum milliseconds spent rebuilding foliage trees per frame.
-	 * 1フレームでフォリッジツリー再構築に使う最大ミリ秒です。
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme|VegetationPerformance", meta = (ClampMin = "0.0", ToolTip = "Maximum milliseconds spent rebuilding foliage trees per frame after deferred vegetation placement finishes."))
-	float MaxVegetationTreeBuildTimeMs = 1.0f;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator|Theme", meta = (ShowOnlyInnerProperties, ToolTip = "Default shadow-free Point Light settings for generated aisle slopes. Zone overrides can replace the complete setting."))
+	FDungeonAisleSlopeBaseLightSettings AisleSlopeBaseLight;
 
 };
 
-/*
+/**
  * Metrics measured from a generated dungeon layout.
  * 生成されたダンジョンレイアウトから計測した指標です。
  */
@@ -761,137 +812,137 @@ struct DUNGEONGENERATOR_API FDungeonLayoutMetrics
 	 * Number of rooms in the selected layout.
 	 * 選択されたレイアウトに含まれる部屋数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of rooms in the selected layout."))
 	int32 RoomCount = 0;
 
 	/**
 	 * Number of aisles in the selected layout.
 	 * 選択されたレイアウトに含まれる通路数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of aisles in the selected layout."))
 	int32 AisleCount = 0;
 
 	/**
 	 * Number of rooms or segments on the critical path.
 	 * 主経路に含まれる部屋または区間の数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of rooms or route segments on the critical path."))
 	int32 CriticalPathLength = 0;
 
 	/**
 	 * Number of branch aisles in the selected layout.
 	 * 選択されたレイアウトに含まれる分岐通路数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of branch aisles in the selected layout."))
 	int32 BranchCount = 0;
 
 	/**
 	 * Number of loop or shortcut aisles in the selected layout.
 	 * 選択されたレイアウトに含まれるループまたはショートカット通路数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of loop or shortcut aisles in the selected layout."))
 	int32 LoopCount = 0;
 
 	/**
 	 * Number of dead-end rooms in the selected layout.
 	 * 選択されたレイアウトに含まれる行き止まり部屋数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of dead-end rooms in the selected layout."))
 	int32 DeadEndCount = 0;
 
 	/**
 	 * Number of dead-end rooms assigned a special room archetype.
 	 * 特殊な部屋役割が割り当てられた行き止まり部屋数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of dead-end rooms assigned a special gameplay role."))
 	int32 SpecialDeadEndCount = 0;
 
 	/**
 	 * Ratio of dead-end rooms assigned a special room archetype.
 	 * 行き止まり部屋のうち特殊な部屋役割が割り当てられた割合です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Ratio of dead-end rooms assigned a special gameplay role."))
 	float SpecialDeadEndCoverage = 0.f;
 
 	/**
 	 * Number of vertical transition aisles in the selected layout.
 	 * 選択されたレイアウトに含まれる上下移動通路数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of aisles that transition between floors."))
 	int32 VerticalTransitionCount = 0;
 
 	/**
 	 * Distance between the selected start and goal rooms.
 	 * 選択された開始部屋とゴール部屋の距離です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Graph distance between the selected start and goal rooms."))
 	float StartGoalDistance = 0.f;
 
 	/**
 	 * Whether the generated mission route can reach the goal.
 	 * 生成されたミッション経路でゴールへ到達できるかどうかです。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Whether the generated mission route can reach its goal under gate constraints."))
 	bool bMissionSolvable = false;
 
 	/**
 	 * Number of locked-route aisles in the selected layout.
 	 * 選択されたレイアウトに含まれる鍵付き経路の通路数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of locked-route aisles in the selected layout."))
 	int32 LockedRouteCount = 0;
 
 	/**
 	 * Number of rooms assigned the secret archetype.
 	 * Secret役割が割り当てられた部屋数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of rooms assigned the Secret gameplay role."))
 	int32 SecretRoomCount = 0;
 
 	/**
 	 * Number of matched zones in the selected layout.
 	 * 選択されたレイアウトで一致したゾーン数です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Number of distinct zones matched by the selected layout."))
 	int32 ZoneCount = 0;
 
 	/**
 	 * Average room intensity measured across the selected layout.
 	 * 選択されたレイアウト全体で計測した部屋強度の平均値です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Average gameplay intensity across rooms in the selected layout."))
 	float AverageIntensity = 0.f;
 
 	/**
 	 * Sum of weighted room-to-room gaps across all aisles.
 	 * 全通路における重み付き部屋間距離の合計です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Sum of weighted room-to-room gaps across all aisles."))
 	float TotalAisleDistance = 0.f;
 
 	/**
 	 * Average weighted room-to-room gap across all aisles.
 	 * 全通路における重み付き部屋間距離の平均です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Average weighted room-to-room gap across all aisles."))
 	float AverageAisleDistance = 0.f;
 
 	/**
 	 * Longest weighted room-to-room gap across all aisles.
 	 * 全通路における最長の重み付き部屋間距離です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Longest weighted room-to-room gap among all aisles."))
 	float MaxAisleDistance = 0.f;
 
 	/**
 	 * Sum of weighted room-to-room gaps on main-path aisles.
 	 * 主経路通路における重み付き部屋間距離の合計です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Sum of weighted room-to-room gaps on main-path aisles."))
 	float MainPathAisleDistance = 0.f;
 };
 
-/*
+/**
  * Score assigned to a generated dungeon layout candidate.
  * 生成されたダンジョンレイアウト候補に付与するスコアです。
  */
@@ -904,27 +955,27 @@ struct DUNGEONGENERATOR_API FDungeonLayoutScore
 	 * Candidate index that produced this score.
 	 * このスコアを生成した候補番号です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Zero-based index of the generated candidate that produced this score."))
 	int32 CandidateIndex = INDEX_NONE;
 
 	/**
 	 * Total score assigned to the layout candidate.
 	 * レイアウト候補に割り当てられた合計スコアです。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Total evaluation score assigned to this layout candidate."))
 	float TotalScore = 0.f;
 
 	/**
 	 * Whether the candidate passed the minimum layout checks.
 	 * 候補が最低限のレイアウト検査を通過したかどうかです。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Whether this candidate passed the minimum layout acceptance checks."))
 	bool bAccepted = false;
 
 	/**
 	 * Human-readable reason for accepting or rejecting the candidate.
 	 * 候補を採用または却下した理由を表す人が読める文章です。
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DungeonGenerator|Layout", meta = (ToolTip = "Human-readable reason the candidate was accepted or rejected."))
 	FString Reason;
 };

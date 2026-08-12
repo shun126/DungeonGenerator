@@ -8,7 +8,7 @@
 #include "Parameter/Selector/DungeonPartsSelectorBase.h"
 #include "DungeonBlueprintPartsSelector.generated.h"
 
-/*
+/**
  * Blueprint-extensible parts selector.
  * Blueprint で拡張できるパーツセレクターです。
  */
@@ -18,8 +18,7 @@ class DUNGEONGENERATOR_API UDungeonBlueprintPartsSelector : public UDungeonParts
 	GENERATED_BODY()
 
 public:
-	/*
-	 * Selects an index from parts candidates in Blueprint.
+	/**
 	 * Blueprint でパーツ候補からインデックスを選択します。
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "DungeonGenerator|Advanced", meta = (DisplayName = "Select Parts Index", ToolTip = "Called for parts selection. Return an index in [0, NumCandidates). Returning an out-of-range value falls back to uniform random selection. Use Query.SeedKey for deterministic Blueprint logic."))

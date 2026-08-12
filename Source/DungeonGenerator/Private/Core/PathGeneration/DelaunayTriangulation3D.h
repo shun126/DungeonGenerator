@@ -1,10 +1,14 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * 三次元ドロネー三角形分割に関するヘッダーファイル
  *
  * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #pragma once
@@ -16,6 +20,7 @@
 namespace dungeon
 {
 	/**
+	 * Represents DelaunayTriangulation3D.
 	 * 三次元ドロネー三角形分割クラス
 	 *
 	 * コンストラクタに与えられた座標を元に三角形を生成します
@@ -34,11 +39,13 @@ namespace dungeon
 		explicit DelaunayTriangulation3D(const std::vector<std::shared_ptr<const Point>>& pointList) noexcept;
 
 		/**
+		 * Destroys the ~DelaunayTriangulation3D instance.
 		 * デストラクタ
 		 */
 		virtual ~DelaunayTriangulation3D() = default;
 
 		/**
+		 * Represents ForEach.
 		 * 三角形を更新します
 		 */
 		template<typename Function>
@@ -51,6 +58,7 @@ namespace dungeon
 		}
 
 		/**
+		 * Represents ForEach.
 		 * 三角形を更新します
 		 */
 		template<typename Function>

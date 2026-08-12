@@ -8,7 +8,7 @@
 #include "Parameter/Selector/DungeonMeshSetSelectorBase.h"
 #include "DungeonUniformRandomMeshSetSelector.generated.h"
 
-/*
+/**
  * Uniform random mesh-set selector.
  * 一様ランダムでメッシュセットを選択するセレクターです。
  */

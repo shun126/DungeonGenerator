@@ -149,7 +149,7 @@ Content Browser で、確認したい Static Mesh を 1 つ以上選択します
 - 壁は `Wall Parts`
 - 天井は `Roof Parts`
 - スロープは `Slope Parts`
-- 柱は `UDungeonGenerateParameter` の `Pillar Parts` など、柱用の設定
+- 柱は `UDungeonGenerateParameter` の `Theme.Fixtures.Pillar Parts`
 
 登録後、`Window > DungeonGenerator` で `Verify` と `Generate dungeon` を実行し、床、壁、天井、スロープが自然につながるか確認してください。
 

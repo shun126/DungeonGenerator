@@ -1,135 +1,71 @@
 # Apply MissionGraph
 
-This page explains how to use MissionGraph to add a **progression route where the player finds keys and unlocks doors** while moving through the dungeon.
+`Path.ProgressionPolicy = KeysAndLocks` asks the generator to place key and lock metadata on a route from the start to the goal. The generated route is validated so a locked corridor cannot be bypassed through generated geometry.
 
-MissionGraph is currently a beta feature.  
-It is easier to work with after your normal dungeon generation setup is already stable.
+MissionGraph is currently a beta feature. First make sure a normal dungeon generates reliably.
 
-## Goal
-- Understand what MissionGraph adds to dungeon generation
-- Confirm the basic flow of locked doors and key placement
-- Understand the roles of `DungeonDoor` and `DungeonRoomSensor`
+## Important limitation: placement is best effort
 
-## What to Know First
-- MissionGraph adds a **start-to-goal progression route** to the dungeon
-- Locked doors and key placement are realized by actors that use the MissionGraph information
-- For the first test, keep it simple and only verify the flow of `pick up a key -> open a door -> move forward`
+Keys and locks are created only when the generated layout contains suitable rooms and lockable route edges. If no valid room is available for the unique key, generation succeeds as a complete, reachable dungeon without any keys or locks. The generator reports the `DG_GEN_KEYS_NOT_PLACED` warning through `ADungeonGenerateBase::GetLastGenerationIssues()`.
 
-## Prerequisites
-- [QuickStart.en.md](./QuickStart.en.md) is complete
-- Normal dungeon generation already works
-- You understand the basic settings in [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md)
-- You are ready to add both door actors and room sensors
+This is not a broken route. It is a lock-free fallback. If every generated dungeon must contain locks, inspect generation issues and retry with another seed, or provide more eligible Hall/Hanare rooms. A fixed `RandomSeed` intentionally reproduces the same layout.
 
-## What MissionGraph Does
-When `Path.ProgressionPolicy = KeysAndLocks`, dungeon generation builds a progression flow like this.
+## Fastest setup
 
-- The player starts from a start room
-- A common key is found in a room along the route
-- One common key is consumed when a normal locked door is opened
-- A `Unique key` opens the final special door to the goal room
-- The player eventually reaches the goal
+### 1. Enable the progression policy
 
-In other words, MissionGraph does more than place rooms.  
-It adds **an intended order of progression** to the dungeon.
-Generation also validates the route so the goal cannot be reached by bypassing a required locked door.
+Set `Path.ProgressionPolicy = KeysAndLocks` in `UDungeonGenerateParameter`.
 
-## Fastest Setup
-Start with the minimum setup and confirm that MissionGraph is actually affecting the dungeon.
+`Path.ExtraCorridorComplexity = 0` is the simplest baseline, but it is not required. Values above zero add intersections and complexity to unlocked aisles. Locked aisles always keep intersections and merging disabled so they remain private and cannot be bypassed. In the current Details panel, set a nonzero value before switching the Policy to Keys And Locks, because the field becomes read-only afterward; Blueprint/C++ can also set it. `Path.LoopRouteDensity` remains effective only where a loop does not bypass a lock.
 
-### 1. Enable MissionGraph in `Generate parameter`
-In `UDungeonGenerateParameter`, check the following.
+`Path.StartRoomPolicy` cannot use `UseCentralPoint` or `UseMultiStart` with Keys And Locks.
 
-- `Path.ProgressionPolicy = KeysAndLocks`
-- `Path.ExtraCorridorComplexity = 0`
+### 2. Prepare door actors
 
-When you use MissionGraph, unsafe route complexity is ignored so locked-door progression cannot be bypassed.
-Loops may appear only when they do not break the key-and-door order.
-
-### 2. Prepare a Door Actor
-The door actor handles the look and behavior of locked doors.  
-Create a Blueprint door derived from `DungeonDoorBase`, then register it in `Door Parts` so generation can use it.
+Create a Blueprint derived from `ADungeonDoorBase` and add it to `Theme.Fixtures.Door Parts`. Add a separate `Unique Door Parts` entry if the final lock needs a different appearance.
 
 ![](./images/MissionGraph1.png)
 
-### 3. Prepare Key Spawning on the Room Sensor Side
-Keys and unique keys are handled on the room side using MissionGraph data.  
-If you are using a Blueprint derived from `ADungeonRoomSensorBase`, set `SpawnKeyActor` and `SpawnUniqueKeyActor` as needed.
+The base door receives `EDungeonRoomProps` and exposes helpers such as `IsKeyLockedDoor` and `IsUniqueKeyLockedDoor`. It does not implement inventory checks, opening animation, or key consumption. Implement that gameplay in the door Blueprint from the properties received by `OnInitialize`.
 
-![DungeonRoomSensor](image/DungeonRoomSensor1.png)
+### 3. Prepare key actors
+
+In the `ADungeonRoomSensorBase` Blueprint assigned to `Gameplay.DungeonRoomSensorClass`, set `SpawnKeyActor` and `SpawnUniqueKeyActor` for a quick test.
+
+![DungeonRoomSensor](./images/DungeonRoomSensor1.png)
 
 ![](./images/MissionGraph2.png)
 
-### 4. Generate the Dungeon and Check the Progression
-After generation, confirm that the following flow exists.
+These helper properties spawn the configured actors in rooms marked by the mission graph. The plugin does not implement pickup, inventory, or consumption for your key actor. Implement those rules in your gameplay Blueprints. If keys should come from a chest or defeated enemy, use the room information passed to `OnInitialize` and spawn them through your own logic instead.
 
-- The player can move through the start area
-- A key can be picked up along the route
-- That key opens a corresponding door
-- The player can eventually reach the goal
+## What is guaranteed when placement succeeds
 
-## Role of Each Piece
-MissionGraph data is mainly consumed by the following two actor types.
+- Every common key is reachable before its corresponding progression lock.
+- The unique key becomes reachable after the common-lock progression.
+- The unique lock is the final gate before the goal.
+- Locked corridors do not accept intersections or shared gates that would create a bypass.
+- Mission graph validation aborts generation if the placed key-and-lock graph is unsolvable.
 
-### `DungeonDoor`
-- Receives lock information and behaves as a door
-- Acts as the entry point that distinguishes normal doors from locked doors
+Placement supports at most 16 common locks. Key rooms must be eligible Hall or Hanare rooms without another reserved item.
 
-### `DungeonRoomSensor`
-- Handles the actors and events needed in each room
-- Can also be used to place keys and unique keys
+## Verify in Play mode
 
-## How to Read the Graph
-The diagram below is an example of a progression structure generated by MissionGraph.
+1. Check `GetLastGenerationIssues()` after generation. If `DG_GEN_KEYS_NOT_PLACED` is present, this run intentionally has no key-and-lock content.
+2. When placement succeeded, confirm that common and unique key actors spawned in the marked rooms.
+3. Confirm the door Blueprint distinguishes ordinary, common-lock, and unique-lock doors.
+4. Test the gameplay code that grants keys, blocks opening, consumes common keys, and preserves the unique-key rule.
+5. Confirm the goal cannot be reached while the required lock is closed.
 
-- Arrows are aisles
-- An arrow labeled `Lock` is a locked door
-- `Unique lock` is a door that can be opened only by the unique key in that dungeon
-- Squares are rooms
-- `Item: Key` and `Item: Unique key` show what item is placed in the room
+## Troubleshooting
 
-```mermaid
-graph TB;
-	0_18_2["Item:Unique key"]
-	15_22_1["Type:Start"]
-	9_20_1["Item:Key"]
-	27_5_1["Type:Goal"]
-	8_26_1["Item:Key"]
-	22_24_1["Item:Key"]
-	10_13_1["Item:Empty"]
-	15_15_1["Item:Empty"]
-	15_7_0["Item:Empty"]
-	20_0_1["Item:Empty"]
+- No keys or locked doors appear: inspect generation issues first. A valid layout may still use the documented lock-free fallback.
+- Doors appear but keys do not: check `Gameplay.DungeonRoomSensorClass`, `SpawnKeyActor`, and `SpawnUniqueKeyActor`.
+- Keys spawn but cannot be collected: pickup and inventory are project gameplay, not behavior supplied by the helper actor spawn.
+- A door looks correct but does not block the player: implement collision, opening, and lock checks in the `ADungeonDoorBase` Blueprint.
+- Higher corridor complexity does not affect a locked corridor: this is intentional; the value applies only to unlocked aisles there.
 
-	15_22_1<-->|"Lock"|22_24_1;
-	15_22_1<-->8_26_1;
-	8_26_1<-->9_20_1;
-	9_20_1<-->0_18_2;
-	9_20_1<-->|"Lock"|10_13_1;
-	10_13_1<-->15_15_1;
-	15_15_1<-->15_7_0;
-	15_7_0<-->|"Lock"|20_0_1;
-	20_0_1<-->|"Unique lock"|27_5_1;
-```
+## Related Pages
 
-## Verify the Result
-- Some areas are inaccessible before picking up a key
-- Picking up a common key allows one normal locked door to open, then consumes that key
-- The final `Unique key` and final door work correctly
-- Common keys are used up before the goal room is opened
-- The full progression from start to goal is valid
-
-## Common Mistakes
-- `Path.ProgressionPolicy = KeysAndLocks`, but it still feels like a normal dungeon
-  First, focus only on locked doors and key placement so the MissionGraph effect is obvious
-- `Path.ExtraCorridorComplexity` conflicts with the intended setup
-  Use `Path.ExtraCorridorComplexity = 0` as the baseline for MissionGraph
-- Doors appear, but keys do not  
-  Recheck the `DungeonRoomSensor` setup, especially `SpawnKeyActor` and `SpawnUniqueKeyActor`
-- Keys appear, but the door behavior or visuals do not match  
-  Recheck the door actor registered in `Door Parts`
-
-## Read Next
 - [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md)
 - [ADungeonRoomSensorBase.en.md](./ADungeonRoomSensorBase.en.md)
 - [FDungeonDoorActorParts.en.md](./FDungeonDoorActorParts.en.md)

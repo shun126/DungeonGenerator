@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -8,7 +8,6 @@
 #include "Parameter/Selector/DungeonPartsSelectorBase.h"
 #include "Parameter/DungeonSelectionPolicyUtility.h"
 #include "PluginInformation.h"
-#include "Core/Debug/BuildInformation.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
 #include "Core/Voxelization/Grid.h"
@@ -20,7 +19,7 @@
 #include <Net/Core/PushModel/PushModel.h>
 #include <Serialization/Archive.h>
 #include <UObject/Package.h>
-#include <unordered_set>
+#include <set>
 #if WITH_EDITOR
 #include <UObject/UnrealType.h>
 #endif
@@ -171,6 +170,43 @@ namespace
 			fixtures.UniqueDoorPartsSelectionMethod = dungeon::selection::ToLegacyPartsMethod(fixtures.UniqueDoorPartsSelectionPolicy);
 		}
 
+		/**
+		 * Duplicates one selector into the generated parameter while preserving shared selector references.
+		 * 共有されているSelector参照を維持しながら、生成Parameter内へSelectorを複製します。
+		 */
+		UDungeonPartsSelectorBase* DuplicatePartsSelector(
+			UObject* outer,
+			const UDungeonPartsSelectorBase* selector,
+			TMap<const UDungeonPartsSelectorBase*, UDungeonPartsSelectorBase*>& duplicatedSelectors)
+		{
+			if (!IsValid(selector))
+				return nullptr;
+
+			if (UDungeonPartsSelectorBase** duplicatedSelector = duplicatedSelectors.Find(selector))
+				return *duplicatedSelector;
+
+			const FName duplicateName = MakeUniqueObjectName(outer, selector->GetClass(), selector->GetFName());
+			UDungeonPartsSelectorBase* duplicatedSelector = DuplicateObject<UDungeonPartsSelectorBase>(selector, outer, duplicateName);
+			duplicatedSelectors.Add(selector, duplicatedSelector);
+			return duplicatedSelector;
+		}
+
+		/**
+		 * Replaces copied fixture-selector references with subobjects owned by the generated parameter.
+		 * CopyされたFixture Selector参照を、生成Parameterが所有するSubobjectへ置き換えます。
+		 */
+		void DuplicateFixtureSelectors(
+			UObject* outer,
+			FDungeonFixtureSettings& fixtures,
+			TMap<const UDungeonPartsSelectorBase*, UDungeonPartsSelectorBase*>& duplicatedSelectors)
+		{
+			fixtures.DungeonPartsSelector = DuplicatePartsSelector(outer, fixtures.DungeonPartsSelector, duplicatedSelectors);
+			fixtures.PillarPartsSelector = DuplicatePartsSelector(outer, fixtures.PillarPartsSelector, duplicatedSelectors);
+			fixtures.TorchPartsSelector = DuplicatePartsSelector(outer, fixtures.TorchPartsSelector, duplicatedSelectors);
+			fixtures.DoorPartsSelector = DuplicatePartsSelector(outer, fixtures.DoorPartsSelector, duplicatedSelectors);
+			fixtures.UniqueDoorPartsSelector = DuplicatePartsSelector(outer, fixtures.UniqueDoorPartsSelector, duplicatedSelectors);
+		}
+
 		const FDungeonDoorActorParts* SelectFixtureDoorParts(const FDungeonFixtureSettings& fixtures, const TArray<FDungeonDoorActorParts>& parts, const UDungeonPartsSelectorBase* selector, const EDungeonPartsSelectorTarget target, const FIntVector& gridLocation, const size_t gridIndex, const dungeon::Grid& grid, const std::shared_ptr<dungeon::Random>& random)
 		{
 			(void)fixtures;
@@ -178,11 +214,6 @@ namespace
 		}
 	}
 }
-
-#if WITH_EDITOR
-#include <Misc/FileHelper.h>
-#endif
-#include <unordered_set>
 
 UDungeonGenerateParameter::UDungeonGenerateParameter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -192,18 +223,30 @@ UDungeonGenerateParameter::UDungeonGenerateParameter(const FObjectInitializer& O
 
 UDungeonGenerateParameter* UDungeonGenerateParameter::GenerateRandomParameter(const UDungeonGenerateParameter* sourceParameter) noexcept
 {
-	const auto random = std::make_unique<dungeon::Random>();
-
 	UDungeonGenerateParameter* parameter = NewObject<UDungeonGenerateParameter>();
 	parameter->SetRandomParameter();
 
 	if (sourceParameter)
 	{
-		parameter->Structure = sourceParameter->Structure;
-		parameter->Path = sourceParameter->Path;
 		parameter->Zones = sourceParameter->Zones;
 		parameter->Gameplay = sourceParameter->Gameplay;
 		parameter->Theme = sourceParameter->Theme;
+
+		TMap<const UDungeonPartsSelectorBase*, UDungeonPartsSelectorBase*> duplicatedSelectors;
+		generateParameter::DuplicateFixtureSelectors(parameter, parameter->Theme.Fixtures, duplicatedSelectors);
+		for (FDungeonRoomRoleProfile& profile : parameter->Gameplay.RoomRoles.Roles)
+		{
+			generateParameter::DuplicateFixtureSelectors(parameter, profile.ThemeOverride.Fixtures, duplicatedSelectors);
+		}
+		for (FDungeonZoneDefinition& zone : parameter->Zones.Zones)
+		{
+			generateParameter::DuplicateFixtureSelectors(parameter, zone.ThemeOverride.Fixtures, duplicatedSelectors);
+		}
+#if WITH_EDITORONLY_DATA
+		parameter->GenerationSourceParameterAsset = IsValid(sourceParameter->GenerationSourceParameterAsset)
+			? sourceParameter->GenerationSourceParameterAsset.Get()
+			: const_cast<UDungeonGenerateParameter*>(sourceParameter);
+#endif
 	}
 
 	return parameter;
@@ -237,6 +280,32 @@ void UDungeonGenerateParameter::SetRandomParameter() noexcept
 	}
 
 	Path.CorridorCeilingHeightPolicy = static_cast<EDungeonAisleCeilingHeightPolicy>(random->Get<uint8>(static_cast<uint8>(EDungeonAisleCeilingHeightPolicy::SIZE)));
+
+	/*
+	 * 経路の傾向を決める値です。0は選択した進行ポリシーの既定値を使う意味なので、
+	 * 既定値のままの経路も試されるよう0を含む範囲から抽選します。
+	 * 負の値ほど分岐が増え、正の値ほど幹線が強調されます。
+	 */
+	Path.MainRouteBias = static_cast<float>(random->Get<int32>(-10, 11)) * 0.1f;
+	Path.LoopRouteDensity = static_cast<float>(random->Get<int32>(0, 11)) * 0.1f;
+
+	/*
+	 * 開始部屋とゴール部屋の選び方です。
+	 * KeysAndLocksは開始部屋が一意に定まる必要があるため、UseCentralPointとUseMultiStartを避けます。
+	 * 選んでも読み込み時にUseSouthernMostへ書き換えられるので、抽選しても意味がありません。
+	 */
+	if (Path.ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks)
+	{
+		Path.StartRoomPolicy = static_cast<EDungeonStartLocationPolicy>(random->Get<uint8>(static_cast<uint8>(EDungeonStartLocationPolicy::UseCentralPoint)));
+	}
+	else
+	{
+		Path.StartRoomPolicy = static_cast<EDungeonStartLocationPolicy>(random->Get<uint8>(static_cast<uint8>(EDungeonStartLocationPolicy::UseMultiStart) + 1));
+	}
+	Path.GoalRoomPolicy = static_cast<EDungeonGoalLocationPolicy>(random->Get<uint8>(static_cast<uint8>(EDungeonGoalLocationPolicy::UseCentralPoint) + 1));
+
+	// 開始部屋へPlayerStartを移すかどうかは変更しません
+	// Path.bMovePlayerStartToStartRoom = random->Get<bool>();
 }
 
 void UDungeonGenerateParameter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -283,6 +352,21 @@ void UDungeonGenerateParameter::PostLoad()
  */
 void UDungeonGenerateParameter::MigrateFromAssetVersion(const int32 assetVersion)
 {
+	if (assetVersion < FDungeonGeneratorAssetVersion::Version2_0)
+	{
+		const auto migrateFixtures = [](FDungeonFixtureSettings& fixtures)
+		{
+			for (FDungeonRandomActorParts& parts : fixtures.TorchParts)
+				parts.MigrateFromVersion1();
+		};
+		migrateFixtures(Theme.Fixtures);
+		for (FDungeonRoomRoleProfile& profile : Gameplay.RoomRoles.Roles)
+			migrateFixtures(profile.ThemeOverride.Fixtures);
+		for (FDungeonZoneDefinition& zone : Zones.Zones)
+			migrateFixtures(zone.ThemeOverride.Fixtures);
+		for (FDungeonRandomActorParts& parts : TorchParts)
+			parts.MigrateFromVersion1();
+	}
 	if (assetVersion < FDungeonGeneratorAssetVersion::Version2_0)
 	{
 		const bool bHasLegacyTopLevelData = HasLegacyTopLevelPropertyData();
@@ -458,9 +542,10 @@ void UDungeonGenerateParameter::MigrateLegacyTopLevelProperties(const bool bForc
 		Theme.Fixtures.DoorPartsSelectionMethod = DoorPartsSelectionMethod;
 	}
 
-	if (Theme.Fixtures.FrequencyOfTorchlightGeneration == EDungeonFrequencyOfGeneration::Rarely)
+	if (bForceLegacyDefaults || FrequencyOfTorchlightGeneration != EDungeonFrequencyOfGeneration::Rarely)
 	{
-		Theme.Fixtures.FrequencyOfTorchlightGeneration = FrequencyOfTorchlightGeneration;
+		Theme.Fixtures.RoomTorchFrequency = FrequencyOfTorchlightGeneration;
+		Theme.Fixtures.AisleTorchFrequency = FrequencyOfTorchlightGeneration;
 	}
 
 	if (!IsValid(Theme.Fixtures.DungeonPartsSelector) && IsValid(DungeonPartsSelector))
@@ -473,7 +558,6 @@ void UDungeonGenerateParameter::MigrateLegacyTopLevelProperties(const bool bForc
 }
 
 /*
- * Returns true when legacy top-level properties contain data that should be copied into current settings.
  * 現在の設定へコピーすべき旧トップレベルプロパティのデータがある場合にtrueを返します。
  */
 bool UDungeonGenerateParameter::HasLegacyTopLevelPropertyData() const
@@ -615,10 +699,6 @@ void UDungeonGenerateParameter::PostEditChangeProperty(FPropertyChangedEvent& Pr
 
 #if WITH_EDITOR
 
-void UDungeonGenerateParameter::Dump() const
-{
-	DumpToJson();
-}
 #endif
 
 void UDungeonGenerateParameter::SetRandomSeed(const int32 generateRandomSeed)
@@ -685,137 +765,6 @@ FIntVector UDungeonGenerateParameter::ToGrid(const FVector& location) const
 		static_cast<int32>(location.Z / GetGridSize().VerticalSize)
 	);
 }
-
-#if WITH_EDITOR
-void UDungeonGenerateParameter::DumpToJson() const
-{
-	auto boolValue = [](const bool value) -> FString
-		{
-			return value ? TEXT("true") : TEXT("false");
-		};
-
-	FString jsonString(TEXT("{\n"));
-	{
-		jsonString += TEXT(" \"Version\":\"") + FString(TEXT(DUNGEON_GENERATOR_PLUGIN_VERSION_NAME)) + TEXT("\",\n");
-		jsonString += TEXT(" \"Tag\":\"") + FString(TEXT(JENKINS_JOB_TAG)) + TEXT("\",\n");
-		jsonString += TEXT(" \"UUID\":\"") + FString(TEXT(JENKINS_UUID)) + TEXT("\",\n");
-		jsonString += TEXT(" \"License\":\"") + FString(TEXT(JENKINS_LICENSE)) + TEXT("\",\n");
-
-		jsonString += TEXT(" \"RandomSeed\":") + FString::FromInt(RandomSeed) + TEXT(",\n");
-		jsonString += TEXT(" \"GeneratedRandomSeed\":") + FString::FromInt(GeneratedRandomSeed) + TEXT(",\n");
-		jsonString += TEXT(" \"GeneratedDungeonCRC32\":") + FString::FromInt(GeneratedDungeonCRC32) + TEXT(",\n");
-		jsonString += TEXT(" \"NumberOfCandidateRooms\":") + FString::FromInt(GetNumberOfCandidateRooms()) + TEXT(",\n");
-		jsonString += TEXT(" \"RoomWidth\":{\n");
-		jsonString += TEXT("  \"Min\":") + FString::FromInt(Structure.RoomWidth.Min) + TEXT(",\n");
-		jsonString += TEXT("  \"Max\":") + FString::FromInt(Structure.RoomWidth.Max) + TEXT("\n");
-		jsonString += TEXT(" },\n");
-		jsonString += TEXT(" \"RoomDepth\":{\n");
-		jsonString += TEXT("  \"Min\":") + FString::FromInt(Structure.RoomDepth.Min) + TEXT(",\n");
-		jsonString += TEXT("  \"Max\":") + FString::FromInt(Structure.RoomDepth.Max) + TEXT("\n");
-		jsonString += TEXT(" },\n");
-		jsonString += TEXT(" \"RoomHeight\":{\n");
-		jsonString += TEXT("  \"Min\":") + FString::FromInt(Structure.RoomHeight.Min) + TEXT(",\n");
-		jsonString += TEXT("  \"Max\":") + FString::FromInt(Structure.RoomHeight.Max) + TEXT("\n");
-		jsonString += TEXT(" },\n");
-		jsonString += TEXT(" \"HorizontalRoomMargin\":") + FString::FromInt(GetHorizontalRoomMargin()) + TEXT(",\n");
-		jsonString += TEXT(" \"VerticalRoomMargin\":") + FString::FromInt(GetVerticalRoomMargin()) + TEXT(",\n");
-		jsonString += TEXT(" \"FloorMode\":\"") + UEnum::GetValueAsString(Structure.FloorMode) + TEXT("\",\n");
-		jsonString += TEXT(" \"MovePlayerStartToStartingPoint\":") + boolValue(IsMovePlayerStartToStartingPoint()) + TEXT(",\n");
-		jsonString += TEXT(" \"UseMissionGraph\":") + boolValue(IsUseMissionGraph()) + TEXT(",\n");
-		jsonString += TEXT(" \"Path.LayoutCandidateCount\":") + FString::FromInt(Path.LayoutCandidateCount) + TEXT(",\n");
-		jsonString += TEXT(" \"Path.MainRouteBias\":") + FString::SanitizeFloat(Path.MainRouteBias) + TEXT(",\n");
-		jsonString += TEXT(" \"Path.LoopRouteDensity\":") + FString::SanitizeFloat(Path.LoopRouteDensity) + TEXT(",\n");
-		jsonString += TEXT(" \"Path.ExtraCorridorComplexity\":") + FString::FromInt(Path.ExtraCorridorComplexity) + TEXT(",\n");
-		jsonString += TEXT(" \"Path.CorridorCeilingHeightPolicy\":\"") + UEnum::GetValueAsString(Path.CorridorCeilingHeightPolicy) + TEXT("\",\n");
-		jsonString += TEXT(" \"AisleComplexity\":") + FString::FromInt(GetAisleComplexity()) + TEXT(",\n");
-		jsonString += TEXT(" \"AisleCeilingHeightPolicy\":\"") + UEnum::GetValueAsString(Path.CorridorCeilingHeightPolicy) + TEXT("\",\n");
-		jsonString += TEXT(" \"Theme.HorizontalGridSize\":") + FString::SanitizeFloat(Theme.HorizontalGridSize) + TEXT(",\n");
-		jsonString += TEXT(" \"Theme.VerticalGridSize\":") + FString::SanitizeFloat(Theme.VerticalGridSize);
-		if (IsValid(Theme.DungeonRoomMeshPartsDatabase))
-		{
-			jsonString += TEXT(",\n");
-			jsonString += TEXT(" \"Theme.DungeonRoomMeshPartsDatabase\":{\n");
-			jsonString += Theme.DungeonRoomMeshPartsDatabase->DumpToJson(2) + TEXT("\n");
-			jsonString += TEXT(" }");
-		}
-		if (IsValid(Theme.DungeonAisleMeshPartsDatabase))
-		{
-			jsonString += TEXT(",\n");
-			jsonString += TEXT(" \"Theme.DungeonAisleMeshPartsDatabase\":{\n");
-			jsonString += Theme.DungeonAisleMeshPartsDatabase->DumpToJson(2) + TEXT("\n");
-			jsonString += TEXT(" }");
-		}
-		jsonString += TEXT(",\n");
-		jsonString += TEXT(" \"Theme.PillarParts\":{\n");
-		jsonString += TEXT("  \"Theme.PillarPartsSelectionMethod\":\"") + UEnum::GetValueAsString(Theme.Fixtures.PillarPartsSelectionMethod) + TEXT("\",\n");
-		jsonString += TEXT("  \"Parts\":[\n");
-		for (int32 i = 0; i < Theme.Fixtures.PillarParts.Num(); ++i)
-		{
-			if (i != 0)
-				jsonString += TEXT(",\n");
-			jsonString += TEXT("   {\n");
-			jsonString += Theme.Fixtures.PillarParts[i].DumpToJson(4) + TEXT("\n");
-			jsonString += TEXT("   }");
-		}
-		jsonString += TEXT("\n");
-		jsonString += TEXT("  ]\n");
-		jsonString += TEXT(" },\n");
-		jsonString += TEXT(" \"Theme.TorchParts\":{\n");
-		jsonString += TEXT("  \"Theme.TorchPartsSelectionMethod\":\"") + UEnum::GetValueAsString(Theme.Fixtures.TorchPartsSelectionMethod) + TEXT("\",\n");
-		jsonString += TEXT("  \"Parts\":[\n");
-		for (int32 i = 0; i < Theme.Fixtures.TorchParts.Num(); ++i)
-		{
-			if (i != 0)
-				jsonString += TEXT(",\n");
-			jsonString += TEXT("   {\n");
-			jsonString += Theme.Fixtures.TorchParts[i].DumpToJson(4) + TEXT("\n");
-			jsonString += TEXT("   }");
-		}
-		jsonString += TEXT("\n");
-		jsonString += TEXT("  ]\n");
-		jsonString += TEXT(" },\n");
-		jsonString += TEXT(" \"Theme.DoorParts\":{\n");
-		jsonString += TEXT("  \"Theme.DoorPartsSelectionMethod\":\"") + UEnum::GetValueAsString(Theme.Fixtures.DoorPartsSelectionMethod) + TEXT("\",\n");
-		jsonString += TEXT("  \"Parts\":[\n");
-		for (int32 i = 0; i < Theme.Fixtures.DoorParts.Num(); ++i)
-		{
-			if (i != 0)
-				jsonString += TEXT(",\n");
-			jsonString += TEXT("   {\n");
-			jsonString += Theme.Fixtures.DoorParts[i].DumpToJson(4) + TEXT("\n");
-			jsonString += TEXT("   }");
-		}
-		jsonString += TEXT("\n");
-		jsonString += TEXT("  ]\n");
-		jsonString += TEXT(" },\n");
-		jsonString += TEXT(" \"Theme.UniqueDoorParts\":{\n");
-		jsonString += TEXT("  \"Theme.UniqueDoorPartsSelectionMethod\":\"") + UEnum::GetValueAsString(Theme.Fixtures.UniqueDoorPartsSelectionMethod) + TEXT("\",\n");
-		jsonString += TEXT("  \"Parts\":[\n");
-		for (int32 i = 0; i < Theme.Fixtures.UniqueDoorParts.Num(); ++i)
-		{
-			if (i != 0)
-				jsonString += TEXT(",\n");
-			jsonString += TEXT("   {\n");
-			jsonString += Theme.Fixtures.UniqueDoorParts[i].DumpToJson(4) + TEXT("\n");
-			jsonString += TEXT("   }");
-		}
-		jsonString += TEXT("\n");
-		jsonString += TEXT("  ]\n");
-		jsonString += TEXT(" }");
-		jsonString += TEXT("\n");
-	}
-	jsonString += TEXT("}");
-
-	const FString fileName(GetName() + ".json");
-	const FString filePath(GetJsonDefaultDirectory() / fileName);
-	FFileHelper::SaveStringToFile(jsonString, *filePath);
-}
-
-FString UDungeonGenerateParameter::GetJsonDefaultDirectory() const
-{
-	return dungeon::GetDebugDirectory();
-}
-#endif
 
 UClass* UDungeonGenerateParameter::ResolveRoomSensorClass(const EDungeonRoomGameplayRole gameplayRole, const int32 zoneIndex) const
 {
@@ -884,6 +833,16 @@ const FDungeonFixtureSettings& UDungeonGenerateParameter::ResolveFixtureSettings
 	}
 
 	return Theme.Fixtures;
+}
+
+const FDungeonAisleSlopeBaseLightSettings& UDungeonGenerateParameter::ResolveAisleSlopeBaseLightSettings(const int32 zoneIndex) const noexcept
+{
+	if (Zones.Zones.IsValidIndex(zoneIndex) && Zones.Zones[zoneIndex].ThemeOverride.bOverrideAisleSlopeBaseLight)
+	{
+		return Zones.Zones[zoneIndex].ThemeOverride.AisleSlopeBaseLight;
+	}
+
+	return Theme.AisleSlopeBaseLight;
 }
 
 
@@ -1068,8 +1027,8 @@ const FDungeonRandomActorParts* UDungeonGenerateParameter::SelectTorchParts(cons
 			if (!IsValid(parts->ActorClass))
 				return nullptr;
 
-			const float value = random->Get<float>();
-			if (value > parts->Frequency)
+			if (parts->SpawnChance <= 0.f ||
+				(parts->SpawnChance < 100.f && random->Get<float>(100.f) >= parts->SpawnChance))
 				return nullptr;
 
 			return parts;
@@ -1092,8 +1051,8 @@ const FDungeonRandomActorParts* UDungeonGenerateParameter::SelectChandelierParts
 					if (!IsValid(parts->ActorClass))
 						return nullptr;
 
-					const float value = random->Get<float>();
-					if (value > parts->Frequency)
+					if (parts->SpawnChance <= 0.f ||
+						(parts->SpawnChance < 100.f && random->Get<float>(100.f) >= parts->SpawnChance))
 						return nullptr;
 
 					return parts;
@@ -1255,7 +1214,7 @@ void UDungeonGenerateParameter::OnEndGeneration(UDungeonRandom* synchronizedRand
 		return;
 	aisleGridMap->Each([this, synchronizedRandom, spawnActor](const TArray<FDungeonAisleGrid>& aisleGridArray)
 		{
-			std::unordered_set<int32> gridIndexes;
+			std::set<int32> gridIndexes;
 			const int32 totalGrids = aisleGridArray.Num();
 			const int32 count = totalGrids / 3;
 			for (int32 i = 0; i < count; ++i)

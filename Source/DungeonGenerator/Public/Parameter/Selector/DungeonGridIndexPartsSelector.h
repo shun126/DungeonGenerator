@@ -8,7 +8,7 @@
 #include "Parameter/Selector/DungeonPartsSelectorBase.h"
 #include "DungeonGridIndexPartsSelector.generated.h"
 
-/*
+/**
  * Grid-index parts selector.
  * グリッドインデックスでパーツを選択するセレクターです。
  */

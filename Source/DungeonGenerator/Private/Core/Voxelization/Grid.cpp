@@ -1,8 +1,6 @@
 /**
- * ボクセルなどに利用するグリッド情報のソースファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -23,6 +21,7 @@ namespace dungeon
 	}
 
 	/**
+	 * Returns whether BuildSlope.
 	 * 斜面が生成されるか判定します
 	 */
 	bool Grid::CanBuildSlope() const noexcept
@@ -39,32 +38,20 @@ namespace dungeon
 	 */
 	bool Grid::CanBuildRoof(const Grid& toUpperGrid, const bool checkNoMeshGeneration) const noexcept
 	{
+		// 屋根の生成は禁止されている
 		if (checkNoMeshGeneration && IsNoRoofMeshGeneration())
 			return false;
 
-		// 範囲外なら天井を生成
+		// 自身が範囲外なら天井は生成しない
 		if (IsKindOfSpatialType())
 			return false;
 
-		// 通路・スロープなら天井を生成
-		if (Is(Type::Aisle) || Is(Type::Stairwell) || Is(Type::UpSpace))
-		{
-
-
-			if (GetIdentifier() == toUpperGrid.GetIdentifier())
-			{
-				return false;
-			}
-
-
+		// 相手が範囲外なら天井を生成
+		if (toUpperGrid.IsKindOfSpatialType())
 			return true;
-		}
 
 		// 識別子が違うなら天井を生成
-		if (toUpperGrid.GetIdentifier() != GetIdentifier())
-			return true;
-
-		return false;
+		return GetIdentifier() != toUpperGrid.GetIdentifier();
 	}
 
 	/**

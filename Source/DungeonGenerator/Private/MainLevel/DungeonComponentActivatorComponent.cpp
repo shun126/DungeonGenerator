@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -8,6 +8,8 @@
 #include "MainLevel/DungeonMainLevelScriptActor.h"
 #include "Core/Debug/BuildInformation.h"
 #include "Core/Debug/Debug.h"
+#include "SubActor/DungeonPointLightComponent.h"
+#include "SubActor/DungeonSpotLightComponent.h"
 #include <AIController.h>
 #include <BrainComponent.h>
 #include <Components/PrimitiveComponent.h>
@@ -16,6 +18,29 @@
 
 static constexpr double DisplacementOfInitialLocation = 100;
 static constexpr double MovementDetectionDistance = 1;
+static constexpr float DungeonLightVisibilityFadeInTime = 1.0f;
+static constexpr float DungeonLightVisibilityFadeOutTime = 0.5f;
+
+namespace
+{
+	void SetDungeonLightAwareVisibility(USceneComponent* sceneComponent, const bool visible, const float fadeInTime, const float fadeOutTime)
+	{
+		if (UDungeonSpotLightComponent* dungeonSpotLightComponent = Cast<UDungeonSpotLightComponent>(sceneComponent))
+		{
+			visible ? dungeonSpotLightComponent->TurnOn(fadeInTime) : dungeonSpotLightComponent->TurnOff(fadeOutTime);
+			return;
+		}
+
+		if (UDungeonPointLightComponent* dungeonPointLightComponent = Cast<UDungeonPointLightComponent>(sceneComponent))
+		{
+			visible ? dungeonPointLightComponent->TurnOn(fadeInTime) : dungeonPointLightComponent->TurnOff(fadeOutTime);
+			return;
+		}
+
+		if (IsValid(sceneComponent))
+			sceneComponent->SetVisibility(visible);
+	}
+}
 
 UDungeonComponentActivatorComponent::UDungeonComponentActivatorComponent(const FObjectInitializer& objectInitializer)
 	: Super(objectInitializer)
@@ -92,11 +117,18 @@ void UDungeonComponentActivatorComponent::BeginPlay()
 							{
 								// 静的ライト以外なら制御対象として登録
 								if (pointLightComponent->Mobility != EComponentMobility::Type::Static)
-									mPointLightComponents.emplace_back(pointLightComponent);
+								{
+									FDungeonControlledPointAndSpotLight controlledLight;
+									controlledLight.Component = pointLightComponent;
+									controlledLight.InitialVisibility = pointLightComponent->IsVisible();
+									controlledLight.InitialCastShadows = pointLightComponent->CastShadows;
+									controlledLight.EnabledByManager = controlledLight.InitialVisibility;
+									mControlledPointAndSpotLights.emplace_back(std::move(controlledLight));
+								}
 							}
 						}
 					}
-					mPointLightComponents.shrink_to_fit();
+					mControlledPointAndSpotLights.shrink_to_fit();
 				}
 			}
 		}
@@ -165,6 +197,12 @@ void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 	// ADungeonMainLevelScriptActorではないならTick不要
 	if (const auto* levelScript = mDungeonLevelScriptActor.Get())
 	{
+		uint16 gridIdentifier;
+		if (levelScript->FindGridIdentifier(location, gridIdentifier))
+			SetGridIdentifier(gridIdentifier);
+		else
+			ResetGridIdentifier();
+
 #if WITH_EDITOR && (UE_BUILD_SHIPPING == 0)
 		if (levelScript->IsEnableLoadControl())
 		{
@@ -203,6 +241,24 @@ void UDungeonComponentActivatorComponent::TickImplement(const FVector& location)
 		}
 #endif
 	}
+}
+
+/*
+ * Restores every managed light to the visibility and shadow state recorded at BeginPlay.
+ * 全ての管理対象ライトをBeginPlay時に記録した表示状態と影生成状態へ復元します。
+ */
+void UDungeonComponentActivatorComponent::RestoreControlledPointAndSpotLightStates()
+{
+	EachControlledPointAndSpotLight([](FDungeonControlledPointAndSpotLight& controlledLight)
+		{
+			if (UPointLightComponent* pointLightComponent = controlledLight.Component.Get())
+			{
+				controlledLight.EnabledByManager = controlledLight.InitialVisibility;
+				SetDungeonLightAwareVisibility(pointLightComponent, controlledLight.InitialVisibility, 0.f, 0.f);
+				pointLightComponent->SetCastShadows(controlledLight.InitialCastShadows);
+			}
+		}
+	);
 }
 
 void UDungeonComponentActivatorComponent::CallPartitionActivate()
@@ -420,7 +476,7 @@ void UDungeonComponentActivatorComponent::SaveAndDisableVisibility(const EDungeo
 				result.first = result.second = IsValid(sceneComponent) && sceneComponent->IsVisible();
 				if (result.first)
 				{
-					sceneComponent->SetVisibility(false);
+					SetDungeonLightAwareVisibility(sceneComponent, false, DungeonLightVisibilityFadeInTime, DungeonLightVisibilityFadeOutTime);
 				}
 				else
 				{
@@ -444,7 +500,7 @@ void UDungeonComponentActivatorComponent::LoadVisibility(const EDungeonComponent
 			{
 				if (auto* sceneComponent = Cast<USceneComponent>(component))
 				{
-					sceneComponent->SetVisibility(activation);
+					SetDungeonLightAwareVisibility(sceneComponent, activation, DungeonLightVisibilityFadeInTime, DungeonLightVisibilityFadeOutTime);
 				}
 			}
 		);

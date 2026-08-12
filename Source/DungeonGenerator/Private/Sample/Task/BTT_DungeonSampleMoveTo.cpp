@@ -1,7 +1,8 @@
 /**
-* @author		Shun Moriya
-* @copyright	2023 - Shun Moriya
-*/
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
 #include "Sample/Task/BTT_DungeonSampleMoveTo.h"
 #include <AIController.h>
@@ -15,6 +16,7 @@ UBTT_DungeonSampleMoveTo::UBTT_DungeonSampleMoveTo(const FObjectInitializer& obj
 {
 	NodeName = "Move and Attack";
 	bNotifyTick = true;
+	bCreateNodeInstance = true;
 
 	/*
 	 * Accept only actor and vector targets for movement, and actor targets for attack-distance checks.
@@ -29,9 +31,6 @@ void UBTT_DungeonSampleMoveTo::InitializeFromAsset(UBehaviorTree& Asset)
 {
 	Super::InitializeFromAsset(Asset);
 
-	mMoveTime = 0;
-	mAccept = OnceAwayFromOpponent == false;
-
 #if UE_VERSION_NEWER_THAN(5, 7, 0)
 	if (AcceptableRadius.GetValue(static_cast<const UBehaviorTreeComponent*>(nullptr)) > DistanceToCancelMovement.Min)
 		AcceptableRadius = DistanceToCancelMovement.Min;
@@ -43,6 +42,10 @@ void UBTT_DungeonSampleMoveTo::InitializeFromAsset(UBehaviorTree& Asset)
 
 EBTNodeResult::Type UBTT_DungeonSampleMoveTo::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	mMoveTime = 0;
+	mAccept = OnceAwayFromOpponent == false;
+	mFinished = false;
+
 	if (Reached(OwnerComp) == true)
 	{
 		return EBTNodeResult::Type::Succeeded;
@@ -53,6 +56,7 @@ EBTNodeResult::Type UBTT_DungeonSampleMoveTo::ExecuteTask(UBehaviorTreeComponent
 
 void UBTT_DungeonSampleMoveTo::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
 {
+	mMoveTime = 0;
 	mAccept = OnceAwayFromOpponent == false;
 	mFinished = false;
 
@@ -76,7 +80,6 @@ void UBTT_DungeonSampleMoveTo::TickTask(UBehaviorTreeComponent& OwnerComp, uint8
 }
 
 /*
- * Returns true when the owner satisfies the completion distance against the move target or the optional target actor.
  * 移動対象または任意指定の対象アクターとの距離が完了条件を満たしている場合にtrueを返します。
  */
 bool UBTT_DungeonSampleMoveTo::Reached(UBehaviorTreeComponent& OwnerComp)
@@ -87,7 +90,7 @@ bool UBTT_DungeonSampleMoveTo::Reached(UBehaviorTreeComponent& OwnerComp)
 
 	const APawn* ownerPawn = ownerController->GetPawn();
 	if (ownerPawn == nullptr)
-		return true;
+		return false;
 
 	const auto& ownerPawnLocation = ownerPawn->GetActorLocation();
 
@@ -95,7 +98,7 @@ bool UBTT_DungeonSampleMoveTo::Reached(UBehaviorTreeComponent& OwnerComp)
 
 	const auto* myBlackboard = OwnerComp.GetBlackboardComponent();
 	if (myBlackboard == nullptr)
-		return true;
+		return false;
 
 	if (BlackboardKey.SelectedKeyType == UBlackboardKeyType_Object::StaticClass())
 	{

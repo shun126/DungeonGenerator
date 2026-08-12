@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -11,7 +11,7 @@
 
 namespace dungeon
 {
-	//! commonly used calculations Implementation 
+	//! commonly used calculations Implementation
 	namespace math
 	{
 		template<typename T = double>

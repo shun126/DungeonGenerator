@@ -21,6 +21,17 @@ In Unreal Editor, use the following steps.
 
 After the plugin is enabled, you can create the required assets from the `DungeonGenerator` category in the Content Browser.
 
+## Try the included samples first
+
+Dungeon Generator includes two sample maps inside the plugin. No separate demo project is required.
+
+- `Content/Maps/Demonstration.umap`
+  Start here to see standard runtime dungeon generation, gameplay, and the minimap using the included plugin content.
+- `Content/Maps/DemonstrationWithStartRoom.umap`
+  Use this sample to see how an authored start-room sub-level connects to a generated dungeon.
+
+In the Content Browser settings, enable `Show Plugin Content`, open `DungeonGenerator Content/Maps`, and double-click the map you want to try. Press Play to run the sample.
+
 ## 1. Create the required assets
 Create the following assets from the `DungeonGenerator` category in the Content Browser.
 
@@ -41,9 +52,9 @@ Open both `Mesh set database` assets and add the following parts to the first `M
 - `Floor Parts`
 - `Wall Parts`
 - `Roof Parts`
-- `Slope Parts`
+- `Slope Parts` (recommended when the layout can contain height differences)
 
-However, generation will fail if there is no floor, wall, roof or slope mesh at all.
+Floor, wall, and roof meshes are required for both the room and aisle databases. A missing slope mesh is reported as a warning rather than an error, but generated height transitions will not have the intended visible surface. Add slope meshes before using a floor mode or layout that can create vertical movement.
 
 ## 3. Assign the databases to `Generate parameter`
 Open `Generate parameter` and at minimum set the following fields.
@@ -53,7 +64,7 @@ Open `Generate parameter` and at minimum set the following fields.
 - `Theme.DungeonAisleMeshPartsDatabase`
   Aisle `Mesh set database`
 
-The following defaults are fine for an initial check.
+The following starter values are useful for an initial check.
 
 - `RandomSeed = 0`
 - `Structure.RoomCountRange = 10-10`
@@ -92,6 +103,8 @@ See [ADungeonGenerateActor.en.md](./ADungeonGenerateActor.en.md) for details.
 ## Common mistakes
 - You press the generate button and nothing appears
   Run `Verify` and make sure floor, wall, and roof meshes exist.
+- Height transitions are generated but the stairs or ramps are invisible
+  Add `Slope Parts` to the room and aisle mesh sets, then run `Verify` again.
 - The preview works but the level setup does not
   Make sure `ADungeonGenerateActor` has `DungeonGenerateParameter` assigned.
 - A sublevel is used and the size is wrong

@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -25,6 +25,7 @@ enum class EDungeonRoomItem : uint8
 
 /**
  * Number of different items to be placed in the room
+ * DungeonRoomItemSize を表します。
  */
 static constexpr uint8 DungeonRoomItemSize = static_cast<uint8>(EDungeonRoomItem::UniqueKey) + 1;
 
@@ -33,5 +34,6 @@ static constexpr uint8 DungeonRoomItemSize = static_cast<uint8>(EDungeonRoomItem
  * Same content as dungeon::Room::Parts
  * @param[in]	item	EDungeonRoomItem
  * @return EDungeonRoomItem symbol name
+ * DungeonRoomItemName を返します。
  */
 extern const FString& GetDungeonRoomItemName(const EDungeonRoomItem item);

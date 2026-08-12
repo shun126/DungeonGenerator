@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -9,6 +9,7 @@
 /**
  * Copy prohibited Mix-in
  * Be sure to inherit by private inheritance.
+ * DungeonNonCopyable を表します。
  */
 class DungeonNonCopyable
 {

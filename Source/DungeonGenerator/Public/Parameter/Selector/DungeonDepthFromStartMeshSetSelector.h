@@ -8,7 +8,7 @@
 #include "Parameter/Selector/DungeonMeshSetSelectorBase.h"
 #include "DungeonDepthFromStartMeshSetSelector.generated.h"
 
-/*
+/**
  * Depth-from-start mesh-set selector.
  * スタートからの深さでメッシュセットを選択するセレクターです。
  */

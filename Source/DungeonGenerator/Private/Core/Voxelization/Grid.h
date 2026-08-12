@@ -1,8 +1,6 @@
 /**
- * ボクセルなどに利用するグリッド情報のヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -16,12 +14,14 @@
 namespace dungeon
 {
 	/**
+	 * Represents Grid.
 	 * グリッドクラス
 	 */
 	class Grid final
 	{
 	public:
 		/**
+		 * Represents Type.
 		 * グリッド内のセルの種類
 		 */
 		enum class Type : uint8_t
@@ -41,6 +41,7 @@ namespace dungeon
 		static constexpr size_t TypeSize = static_cast<size_t>(Type::OutOfBounds) + 1;
 
 		/**
+		 * Represents Props.
 		 * グリッド内のセルにある小物
 		 */
 		enum class Props : uint8_t
@@ -52,6 +53,7 @@ namespace dungeon
 		static constexpr size_t PropsSize = static_cast<size_t>(Props::UniqueLock) + 1;
 
 		/**
+		 * Represents Grid.
 		 * コンストラクタ
 		 */
 		Grid() noexcept;
@@ -88,56 +90,67 @@ namespace dungeon
 		Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart, EDungeonRoomStructuralRole roomStructuralRole, EDungeonRoomGameplayRole roomGameplayRole, int32 zoneIndex) noexcept;
 
 		/**
+		 * Destroys the ~Grid instance.
 		 * デストラクタ
 		 */
 		~Grid() = default;
 
 		/**
+		 * Returns Direction.
 		 * グリッドの方向を取得します
 		 */
 		Direction GetDirection() const noexcept;
 
 		/**
+		 * Sets Direction.
 		 * グリッドの方向を設定します
 		 */
 		void SetDirection(const Direction direction) noexcept;
 
 		/**
+		 * Returns CatwalkDirection.
 		 * 中二階モデルの方向を取得します
 		 */
 		Direction GetCatwalkDirection() const noexcept;
 
 		/**
+		 * Sets CatwalkDirection.
 		 * 中二階モデルの方向を設定します
 		 */
 		void SetCatwalkDirection(const Direction direction) noexcept;
 
 		/**
+		 * Returns Identifier.
 		 * 識別子を取得します
 		 */
 		Identifier GetIdentifier() const noexcept;
 
 		/**
+		 * Sets Identifier.
 		 * 識別子を設定します
 		 */
 		void SetIdentifier(Identifier identifier) noexcept;
 
 		/**
+		 * Resets Identifier.
 		 * 識別子をリセット（無効化）します
 		 */
 		void ResetIdentifier() noexcept;
 
 		/**
+		 * Returns whether InvalidIdentifier.
 		 * 無効な識別子か判定します？
 		 */
 		bool IsInvalidIdentifier() const noexcept;
 
 		/**
+		 * Returns Props.
 		 * 小道具を取得します
 		 */
 		Props GetProps() const noexcept;
 
 		/**
+		 * Sets Props.
 		 * 小道具を設定します
 		 */
 		void SetProps(const Props props) noexcept;
@@ -161,7 +174,7 @@ namespace dungeon
 		EDungeonRoomStructuralRole GetRoomStructuralRole() const noexcept;
 
 		/**
-		 * Sets the gameplay role assigned to the room that owns this grid.
+		 * Sets RoomStructuralRole.
 		 * このグリッドを所有する部屋に割り当てられたゲームプレイ上の役割を設定します。
 		 */
 		void SetRoomStructuralRole(EDungeonRoomStructuralRole roomStructuralRole) noexcept;
@@ -173,7 +186,7 @@ namespace dungeon
 		EDungeonRoomGameplayRole GetRoomGameplayRole() const noexcept;
 
 		/**
-		 * Sets the gameplay role assigned to the room that owns this grid.
+		 * Sets RoomGameplayRole.
 		 * このグリッドを所有する部屋に割り当てられたゲームプレイ役割を設定します。
 		 */
 		void SetRoomGameplayRole(EDungeonRoomGameplayRole roomGameplayRole) noexcept;
@@ -185,22 +198,25 @@ namespace dungeon
 		int32 GetZoneIndex() const noexcept;
 
 		/**
-		 * Sets the zone index assigned by progress and floor conditions.
+		 * Sets ZoneIndex.
 		 * 進行度と階層条件で割り当てられたゾーン番号を設定します。
 		 */
 		void SetZoneIndex(int32 zoneIndex) noexcept;
 
 		/**
+		 * Returns Type.
 		 * グリッドの種類を取得します
 		 */
 		Type GetType() const noexcept;
 
 		/**
+		 * Sets Type.
 		 * グリッドの種類を設定します
 		 */
 		void SetType(const Type type) noexcept;
 
 		/**
+		 * Represents Is.
 		 * グリッドのタイプを判定します
 		 */
 		bool Is(const Type type) const noexcept;
@@ -245,16 +261,19 @@ namespace dungeon
 		bool IsKindOfSpatialType() const noexcept;
 
 		/**
+		 * Returns whether HorizontallyPassable.
 		 * 水平方向に通行可能なセルか判定します
 		 */
 		bool IsHorizontallyPassable() const noexcept;
 
 		/**
+		 * Creates Floor.
 		 * 床（部屋）グリッドを生成します
 		 */
 		static Grid CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, EDungeonRoomStructuralRole roomStructuralRole, EDungeonRoomGameplayRole roomGameplayRole, int32 zoneIndex) noexcept;
 
 		/**
+		 * Creates Deck.
 		 * デッキ（部屋の周辺）グリッドを生成します
 		 */
 		static Grid CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, EDungeonRoomStructuralRole roomStructuralRole, EDungeonRoomGameplayRole roomGameplayRole, int32 zoneIndex) noexcept;
@@ -324,26 +343,31 @@ namespace dungeon
 		bool IsNoRoofMeshGeneration() const noexcept;
 
 		/**
+		 * Represents NoNorthWallMeshGeneration.
 		 * 北側の壁がメッシュ生成禁止か設定します
 		 */
 		void NoNorthWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
 		/**
+		 * Represents NoSouthWallMeshGeneration.
 		 * 南側の壁がメッシュ生成禁止か設定します
 		 */
 		void NoSouthWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
 		/**
+		 * Represents NoEastWallMeshGeneration.
 		 * 東側の壁がメッシュ生成禁止か設定します
 		 */
 		void NoEastWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
 		/**
+		 * Represents NoWestWallMeshGeneration.
 		 * 西側の壁がメッシュ生成禁止か設定します
 		 */
 		void NoWestWallMeshGeneration(const bool noWallMeshGeneration) noexcept;
 
 		/**
+		 * Represents NoDoorGeneration.
 		 * ドアが生成禁止か設定します
 		 */
 		void NoDoorGeneration(const bool noDoorGeneration) noexcept;
@@ -397,6 +421,7 @@ namespace dungeon
 		bool IsNoDoorGeneration() const noexcept;
 
 		/**
+		 * Represents ergeAisle.
 		 * 通路のマージ許可を設定します
 		 */
 		void MergeAisle(const bool enable) noexcept;
@@ -408,121 +433,145 @@ namespace dungeon
 		bool CanMergeAisle() const noexcept;
 
 		/**
+		 * Represents Reserve.
 		 * 予約済みか設定します
 		 */
 		void Reserve(const bool enable) noexcept;
 
 		/**
+		 * Returns whether Reserved.
 		 * 予約済みか取得します
 		 */
 		bool IsReserved() const noexcept;
 
 		/**
+		 * Represents Catwalk.
 		 * 中二階通路か設定します
 		 */
 		void Catwalk(const bool enable) noexcept;
 
 		/**
+		 * Returns whether Catwalk.
 		 * 中二階通路か取得します
 		 */
 		bool IsCatwalk() const noexcept;
 
 		/**
+		 * Represents SubLevel.
 		 * サブレベル適用グリッドを設定します
 		 */
 		void SubLevel() noexcept;
 
 		/**
+		 * Returns whether SubLevel.
 		 * サブレベル適用グリッドか取得します
 		 */
 		bool IsSubLevel() const noexcept;
 
 		/**
+		 * Sets Floor.
 		 * 床があるか設定します
 		 */
 		void SetFloor(const bool enable) noexcept;
 
 		/**
+		 * Sets Ceiling.
 		 * 天井があるか設定します
 		 */
 		void SetCeiling(const bool enable) noexcept;
 
 		/**
+		 * Sets NorthWall.
 		 * 北側に壁があるか設定します
 		 */
 		void SetNorthWall(const bool enable) noexcept;
 
 		/**
+		 * Sets SouthWall.
 		 * 南側に壁があるか設定します
 		 */
 		void SetSouthWall(const bool enable) noexcept;
 
 		/**
+		 * Sets EastWall.
 		 * 東側に壁があるか設定します
 		 */
 		void SetEastWall(const bool enable) noexcept;
 
 		/**
+		 * Sets WestWall.
 		 * 西側に壁があるか設定します
 		 */
 		void SetWestWall(const bool enable) noexcept;
 
 		/**
+		 * Returns whether Floor.
 		 * 床があるか取得します
 		 */
 		bool HasFloor() const noexcept;
 
 		/**
+		 * Returns whether Ceiling.
 		 * 天井があるか取得します
 		 */
 		bool HasCeiling() const noexcept;
 
 		/**
+		 * Returns whether NorthWall.
 		 * 北側に壁があるか取得します
 		 */
 		bool HasNorthWall() const noexcept;
 
 		/**
+		 * Returns whether SouthWall.
 		 * 南側に壁があるか取得します
 		 */
 		bool HasSouthWall() const noexcept;
 
 		/**
+		 * Returns whether EastWall.
 		 * 東側に壁があるか取得します
 		 */
 		bool HasEastWall() const noexcept;
 
 		/**
+		 * Returns whether WestWall.
 		 * 西側に壁があるか取得します
 		 */
 		bool HasWestWall() const noexcept;
 
 		/**
+		 * Returns TypeColor.
 		 * グリッドの種類の色を取得します
 		 */
 		const FColor& GetTypeColor() const noexcept;
 
 		/**
+		 * Returns TypeColor.
 		 * グリッドの種類の色を取得します
 		 */
 		static const FColor& GetTypeColor(const Grid::Type gridType) noexcept;
 
 		/**
+		 * Returns TypeName.
 		 * グリッドの種類の名前を取得します
 		 */
 		const FString& GetTypeName() const noexcept;
 
 		/**
+		 * Returns PropsName.
 		 * グリッドの小道具の名前を取得します
 		 */
 		const FString& GetPropsName() const noexcept;
 
 		/**
+		 * Returns NoMeshGenerationName.
 		 * グリッドの生成禁止状態の名前を取得します
 		 */
 		FString GetNoMeshGenerationName() const noexcept;
 
 		/**
+		 * Returns WallName.
 		 * グリッドの壁の状態の名前を取得します
 		 */
 		FString GetWallName() const noexcept;
@@ -647,10 +696,10 @@ namespace dungeon
 
 		static constexpr uint16_t InvalidIdentifier = static_cast<uint16_t>(~0);
 		uint16_t mIdentifier = InvalidIdentifier;
+		int16_t mZoneIndex = INDEX_NONE;
 		uint8_t mDepthRatioFromStart = 0;
 		EDungeonRoomStructuralRole mRoomStructuralRole = EDungeonRoomStructuralRole::Connector;
 		EDungeonRoomGameplayRole mRoomGameplayRole = EDungeonRoomGameplayRole::None;
-		int32 mZoneIndex = INDEX_NONE;
 		Type mType = Type::Empty;
 	};
 }

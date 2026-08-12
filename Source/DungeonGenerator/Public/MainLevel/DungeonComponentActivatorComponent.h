@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -8,6 +8,7 @@
 #include "DungeonComponentActivationSaver.h"
 #include <CoreMinimal.h>
 #include <Components/PointLightComponent.h>
+#include <GameFramework/Actor.h>
 #include <Math/Box.h>
 #include <bitset>
 #include <vector>
@@ -17,6 +18,52 @@ class ADungeonMainLevelScriptActor;
 class ADungeonGenerateBase;
 class UDungeonPartition;
 class UPointLightComponent;
+
+/**
+ * Facing axis used by the managed point and spot light visibility control.
+ * 管理対象のポイントライトとスポットライトの表示制御で使用する正面軸です。
+ */
+UENUM(BlueprintType)
+enum class EDungeonManagedLightFacingAxis : uint8
+{
+	PositiveX UMETA(DisplayName = "X+", ToolTip = "Use the owner's local positive X axis as the light-facing direction."),
+	NegativeX UMETA(DisplayName = "X-", ToolTip = "Use the owner's local negative X axis as the light-facing direction."),
+	PositiveY UMETA(DisplayName = "Y+", ToolTip = "Use the owner's local positive Y axis as the light-facing direction."),
+	NegativeY UMETA(DisplayName = "Y-", ToolTip = "Use the owner's local negative Y axis as the light-facing direction."),
+	PositiveZ UMETA(DisplayName = "Z+", ToolTip = "Use the owner's local positive Z axis as the light-facing direction."),
+	NegativeZ UMETA(DisplayName = "Z-", ToolTip = "Use the owner's local negative Z axis as the light-facing direction.")
+};
+
+/**
+ * Stores the authored and runtime-managed state of a point-light-derived component.
+ * ポイントライト派生コンポーネントの作成時状態と実行時管理状態を保持します。
+ */
+struct FDungeonControlledPointAndSpotLight final
+{
+	/**
+	 * Weak reference to the managed light component.
+	 * 管理対象ライトコンポーネントへの弱参照です。
+	 */
+	TWeakObjectPtr<UPointLightComponent> Component;
+
+	/**
+	 * Visibility recorded when runtime control begins.
+	 * 実行時制御開始時に記録した表示状態です。
+	 */
+	bool InitialVisibility = true;
+
+	/**
+	 * Cast-shadow state recorded when runtime control begins.
+	 * 実行時制御開始時に記録した影生成状態です。
+	 */
+	bool InitialCastShadows = true;
+
+	/**
+	 * Last state selected by identifier and facing-angle control.
+	 * Identifierと正面角度の制御で最後に選択された状態です。
+	 */
+	bool EnabledByManager = true;
+};
 
 /**
  * Enum definition for EDungeonComponentActivateReason.
@@ -59,18 +106,39 @@ public:
 	bool IsEnableOwnerActorAiControl() const noexcept;
 	bool IsEnableComponentActivationControl() const noexcept;
 	bool IsEnableComponentVisibilityControl() const noexcept;
-	bool IsEnableLightCastShadowControl() const noexcept;
 	bool IsEnableCollisionEnableControl() const noexcept;
 
 	void SetEnableOwnerActorTickControl(const bool enable = true) noexcept;
 	void SetEnableOwnerActorAiControl(const bool enable = true) noexcept;
 	void SetEnableComponentActivationControl(const bool enable = true) noexcept;
 	void SetEnableComponentVisibilityControl(const bool enable = true) noexcept;
-	void SetEnableLightCastShadowControl(const bool enable = true) noexcept;
 	void SetEnableCollisionEnableControl(const bool enable = true) noexcept;
+	void SetManagedLightFacingAxis(EDungeonManagedLightFacingAxis facingAxis) noexcept;
+	FVector GetManagedLightFacingDirection(const AActor* ownerActor) const noexcept;
 
 	/**
-	 * Sets a fixed world location used for partition registration.
+	 * このコンポーネントが所属する生成グリッドのIdentifierを設定します。
+	 */
+	void SetGridIdentifier(uint16 identifier) noexcept;
+
+	/**
+	 * Clears the generated-grid identifier associated with this component.
+	 * このコンポーネントに関連付けられた生成グリッドのIdentifierを解除します。
+	 */
+	void ResetGridIdentifier() noexcept;
+
+	/**
+	 * このコンポーネントが有効な生成グリッドIdentifierを持つか返します。
+	 */
+	bool HasGridIdentifier() const noexcept;
+
+	/**
+	 * このコンポーネントに関連付けられた生成グリッドIdentifierを返します。
+	 */
+	uint16 GetGridIdentifier() const noexcept;
+
+	/**
+	 * Sets FixedPartitionRegistrationWorldLocation.
 	 *
 	 * パーティエーション登録に使用する固定ワールド座標を設定します。
 	 */
@@ -80,7 +148,7 @@ public:
 	 * Saves the owner actor Tick state and disables Tick for the specified reason.
 	 * 指定した理由でオーナーアクターのTick状態を保存し、Tickを無効にします。
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator", meta = (ToolTip = "Saves the owner actor Tick state and disables Tick for the specified reason."))
 	void SaveAndDisableActorTickEnable(const EDungeonComponentActivateReason activateReason);
 
 	/**
@@ -93,7 +161,7 @@ public:
 	 * Saves component activation states and disables components for the specified reason.
 	 * 指定した理由でコンポーネントのアクティブ状態を保存し、無効にします。
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator", meta = (ToolTip = "Saves component activation states and disables components for the specified reason."))
 	void SaveAndDisableComponentActivation(const EDungeonComponentActivateReason activateReason);
 
 	/**
@@ -106,7 +174,7 @@ public:
 	 * Saves collision states and disables collision for the specified reason.
 	 * 指定した理由でコリジョン状態を保存し、コリジョンを無効にします。
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator", meta = (ToolTip = "Saves collision states and disables collision for the specified reason."))
 	void SaveAndDisableCollisionEnable(const EDungeonComponentActivateReason activateReason);
 
 	/**
@@ -119,7 +187,7 @@ public:
 	 * Saves visibility states and hides components for the specified reason.
 	 * 指定した理由で表示状態を保存し、コンポーネントを非表示にします。
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator", meta = (ToolTip = "Saves visibility states and hides components for the specified reason."))
 	void SaveAndDisableVisibility(const EDungeonComponentActivateReason activateReason);
 
 	/**
@@ -132,7 +200,7 @@ public:
 	 * Saves AI logic state and stops AI logic for the specified reason.
 	 * 指定した理由でAIロジック状態を保存し、AIロジックを停止します。
 	 */
-	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator")
+	UFUNCTION(BlueprintCallable, Category = "DungeonGenerator", meta = (ToolTip = "Saves AI logic state and stops AI logic for the specified reason."))
 	void SaveAndStopAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
 
 	/**
@@ -141,8 +209,17 @@ public:
 	 */
 	void LoadAiLogic(const EDungeonComponentActivateReason activateReason, const FString& reason);
 
-	// LightCastShadow
-	void EachControlledLightCastShadow(const std::function<void(UPointLightComponent*)>& function) const;
+	/**
+	 * Visits every point or spot light managed by this component.
+	 * このコンポーネントが管理する全てのポイントライトまたはスポットライトを巡回します。
+	 */
+	void EachControlledPointAndSpotLight(const std::function<void(FDungeonControlledPointAndSpotLight&)>& function);
+
+	/**
+	 * Restores managed point and spot lights to their states recorded at BeginPlay.
+	 * 管理対象のポイントライトとスポットライトをBeginPlay時に記録した状態へ復元します。
+	 */
+	void RestoreControlledPointAndSpotLightStates();
 
 #if 0
 	// コンポーネントを更新します
@@ -160,14 +237,14 @@ protected:
 	 * 所属しているDungeonPartitionがプレイヤー周辺に近づいたら呼び出されます。
 	 * The DungeonPartition will be called when it approaches the player's vicinity.
 	 */
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (ToolTip = "Called when this component's dungeon partition enters the active range around a player."))
 	void OnPartitionActivate();
 
 	/**
 	 * 所属しているDungeonPartitionがプレイヤー周辺から離れたら呼び出されます。
 	 * It is called when the DungeonPartition to which it belongs leaves the player's vicinity.
 	 */
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (ToolTip = "Called when this component's dungeon partition leaves the active range around all players."))
 	void OnPartitionInactivate();
 
 private:
@@ -204,42 +281,42 @@ protected:
 	 * If enabled, controls the validity of the owner actor's Tick
 	 * 有効にするとオーナーアクターのTickの有効性を制御します
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "If enabled, controls the validity of the owner actor's Tick"))
 	bool EnableOwnerActorTickControl = true;
 
 	/**
 	 * If enabled, controls the effectiveness of the owner actor's AI
 	 * 有効にするとオーナーアクターのAIの有効性を制御します
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "If enabled, controls the effectiveness of the owner actor's AI"))
 	bool EnableOwnerActorAiControl = true;
 
 	/**
 	 * If enabled, controls the activation of the owner actor's components
 	 * 有効にするとオーナーアクターのコンポーネントのアクティブ性を制御します
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "If enabled, controls the activation of the owner actor's components"))
 	bool EnableComponentActivationControl = true;
 
 	/**
 	 * If enabled, controls the visibility of the owner actor's components
 	 * 有効にするとオーナーアクターのコンポーネントの表示を制御します
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "If enabled, controls the visibility of the owner actor's components"))
 	bool EnableComponentVisibilityControl = true;
 
 	/**
-	 * If enabled, controls the Cast Shadow of the owner actor's point light and spotlight
-	 * 有効にするとオーナーアクターのポイントライトとスポットライトのCast Shadowを制御します
+	 * Owner-local axis treated as the front direction for managed light angle culling.
+	 * 管理対象ライトの角度カリングで正面として扱う、オーナー Actor のローカル軸です。
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
-	bool EnableLightShadowControl = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ToolTip = "Owner-local axis used as the front direction for managed point and spot light angle culling. Use Y+ for torches, Z- for chandeliers, and Z+ for most other actors."))
+	EDungeonManagedLightFacingAxis ManagedLightFacingAxis = EDungeonManagedLightFacingAxis::PositiveZ;
 
 	/**
 	 * If enabled, controls the enable of the collision component of the owner actor
 	 * 有効にするとオーナーアクターのコリジョンコンポーネントの有効性を制御します
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "If enabled, controls the enable of the collision component of the owner actor"))
 	bool EnableCollisionEnableControl = true;
 
 private:
@@ -253,14 +330,30 @@ private:
 	DungeonComponentActivationSaver<bool> mComponentActivationSaver;
 	DungeonComponentActivationSaver<bool> mComponentVisibilitySaver;
 	DungeonComponentActivationSaver<ECollisionEnabled::Type> mComponentCollisionEnabledSaver;
-	std::vector<TWeakObjectPtr<UPointLightComponent>> mPointLightComponents;
+	/**
+	 * Point and spot lights whose authored CastShadow state was enabled at BeginPlay.
+	 * BeginPlay時にCastShadowが有効だった制御対象のポイントライトとスポットライトです。
+	 */
+	std::vector<FDungeonControlledPointAndSpotLight> mControlledPointAndSpotLights;
 
 	TWeakObjectPtr<ADungeonMainLevelScriptActor> mDungeonLevelScriptActor;
 	TWeakObjectPtr<UDungeonPartition> mLastDungeonPartition;
 	FVector mFixedPartitionRegistrationWorldLocation = FVector::ZeroVector;
 	FVector mLastLocation = FVector::ZeroVector;
 
+	/**
+	 * Identifier of the generated grid that owns this component.
+	 * このコンポーネントが所属する生成グリッドのIdentifierです。
+	 */
+	uint16 mGridIdentifier = 0;
+
 	bool bHasFixedPartitionRegistrationWorldLocation = false;
+
+	/**
+	 * Whether mGridIdentifier currently contains a valid value.
+	 * mGridIdentifierが現在有効な値を保持しているかを表します。
+	 */
+	bool bHasGridIdentifier = false;
 	bool mTickSaver = false;
 
 	friend class ADungeonMainLevelScriptActor;
@@ -288,11 +381,6 @@ inline bool UDungeonComponentActivatorComponent::IsEnableComponentVisibilityCont
 	return EnableComponentVisibilityControl;
 }
 
-inline bool UDungeonComponentActivatorComponent::IsEnableLightCastShadowControl() const noexcept
-{
-	return EnableLightShadowControl;
-}
-
 inline bool UDungeonComponentActivatorComponent::IsEnableCollisionEnableControl() const noexcept
 {
 	return EnableCollisionEnableControl;
@@ -318,14 +406,60 @@ inline void UDungeonComponentActivatorComponent::SetEnableComponentVisibilityCon
 	EnableComponentVisibilityControl = enable;
 }
 
-inline void UDungeonComponentActivatorComponent::SetEnableLightCastShadowControl(const bool enable) noexcept
-{
-	EnableLightShadowControl = enable;
-}
-
 inline void UDungeonComponentActivatorComponent::SetEnableCollisionEnableControl(const bool enable) noexcept
 {
 	EnableCollisionEnableControl = enable;
+}
+
+inline void UDungeonComponentActivatorComponent::SetManagedLightFacingAxis(const EDungeonManagedLightFacingAxis facingAxis) noexcept
+{
+	ManagedLightFacingAxis = facingAxis;
+}
+
+inline FVector UDungeonComponentActivatorComponent::GetManagedLightFacingDirection(const AActor* ownerActor) const noexcept
+{
+	if (!IsValid(ownerActor))
+		return FVector::UpVector;
+
+	switch (ManagedLightFacingAxis)
+	{
+	case EDungeonManagedLightFacingAxis::PositiveX:
+		return ownerActor->GetActorForwardVector();
+	case EDungeonManagedLightFacingAxis::NegativeX:
+		return -ownerActor->GetActorForwardVector();
+	case EDungeonManagedLightFacingAxis::PositiveY:
+		return ownerActor->GetActorRightVector();
+	case EDungeonManagedLightFacingAxis::NegativeY:
+		return -ownerActor->GetActorRightVector();
+	case EDungeonManagedLightFacingAxis::PositiveZ:
+		return ownerActor->GetActorUpVector();
+	case EDungeonManagedLightFacingAxis::NegativeZ:
+		return -ownerActor->GetActorUpVector();
+	default:
+		return ownerActor->GetActorUpVector();
+	}
+}
+
+inline void UDungeonComponentActivatorComponent::SetGridIdentifier(const uint16 identifier) noexcept
+{
+	mGridIdentifier = identifier;
+	bHasGridIdentifier = true;
+}
+
+inline void UDungeonComponentActivatorComponent::ResetGridIdentifier() noexcept
+{
+	mGridIdentifier = 0;
+	bHasGridIdentifier = false;
+}
+
+inline bool UDungeonComponentActivatorComponent::HasGridIdentifier() const noexcept
+{
+	return bHasGridIdentifier;
+}
+
+inline uint16 UDungeonComponentActivatorComponent::GetGridIdentifier() const noexcept
+{
+	return mGridIdentifier;
 }
 
 inline void UDungeonComponentActivatorComponent::SetFixedPartitionRegistrationWorldLocation(const FVector& worldLocation) noexcept
@@ -340,13 +474,13 @@ inline void UDungeonComponentActivatorComponent::ShiftFixedPartitionRegistration
 		mFixedPartitionRegistrationWorldLocation += worldOffset;
 }
 
-inline void UDungeonComponentActivatorComponent::EachControlledLightCastShadow(const std::function<void(UPointLightComponent*)>& function) const
+inline void UDungeonComponentActivatorComponent::EachControlledPointAndSpotLight(const std::function<void(FDungeonControlledPointAndSpotLight&)>& function)
 {
-	for (const auto& pointLightComponent : mPointLightComponents)
+	for (FDungeonControlledPointAndSpotLight& controlledLight : mControlledPointAndSpotLights)
 	{
-		if (auto* pointer = GetValid(pointLightComponent.Get()))
+		if (IsValid(controlledLight.Component.Get()))
 		{
-			function(pointer);
+			function(controlledLight);
 		}
 	}
 }

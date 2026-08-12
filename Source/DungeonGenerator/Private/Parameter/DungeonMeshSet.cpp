@@ -14,10 +14,6 @@
 #include "Core/Voxelization/Grid.h"
 #include <UObject/Package.h>
 
-#if WITH_EDITOR
-#include "Helper/DungeonDebugUtility.h"
-#endif
-
 namespace
 {
 	namespace meshSet
@@ -70,16 +66,6 @@ namespace
 			selector = UDungeonPartsSelectorBase::CreateFromLegacyMethod(outer, ResolveLegacyMethod(policy, method), customSelector);
 		}
 
-#if WITH_EDITOR
-		/*
-		 * Returns a stable selector class name for debug JSON output.
-		 * デバッグ JSON 出力用に安定したセレクタークラス名を返します。
-		 */
-		FString GetSelectorClassName(const UDungeonPartsSelectorBase* selector)
-		{
-			return IsValid(selector) ? selector->GetClass()->GetName() : TEXT("None");
-		}
-#endif
 	}
 }
 
@@ -191,99 +177,10 @@ FDungeonRandomActorParts* FDungeonMeshSet::SelectRandomActorParts(const FIntVect
 
 	if (random != nullptr)
 	{
-		const float value = random->Get<float>();
-		if (value > actorParts->Frequency)
+		if (actorParts->SpawnChance <= 0.f ||
+			(actorParts->SpawnChance < 100.f && random->Get<float>(100.f) >= actorParts->SpawnChance))
 			return nullptr;
 	}
 
 	return actorParts;
 }
-
-#if WITH_EDITOR
-FString FDungeonMeshSet::DumpToJson(const uint32 indent) const
-{
-	FString json;
-
-	json += dungeon::Indent(indent) + TEXT("\"FloorParts\":{\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"FloorPartsSelector\":\"") + meshSet::GetSelectorClassName(FloorPartsSelector) + TEXT("\",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"Parts\":[\n");
-	for (int32 i = 0; i < FloorParts.Num(); ++i)
-	{
-		if (i != 0)
-			json += TEXT(",\n");
-		json += dungeon::Indent(indent + 2) + TEXT("{\n");
-		json += FloorParts[i].DumpToJson(indent + 3) + TEXT("\n");
-		json += dungeon::Indent(indent + 2) + TEXT("}");
-	}
-	json += TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("]\n");
-	json += dungeon::Indent(indent) + TEXT("},\n");
-
-	json += dungeon::Indent(indent) + TEXT("\"WallParts\":{\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"WallPartsSelector\":\"") + meshSet::GetSelectorClassName(WallPartsSelector) + TEXT("\",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"Parts\":[\n");
-	for (int32 i = 0; i < WallParts.Num(); ++i)
-	{
-		if (i != 0)
-			json += TEXT(",\n");
-		json += dungeon::Indent(indent + 2) + TEXT("{\n");
-		json += WallParts[i].DumpToJson(indent + 3) + TEXT("\n");
-		json += dungeon::Indent(indent + 2) + TEXT("}");
-	}
-	json += TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("]\n");
-	json += dungeon::Indent(indent) + TEXT("},\n");
-
-	json += dungeon::Indent(indent) + TEXT("\"RoofParts\":{\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"RoofPartsSelector\":\"") + meshSet::GetSelectorClassName(RoofPartsSelector) + TEXT("\",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"Parts\":[\n");
-	for (int32 i = 0; i < RoofParts.Num(); ++i)
-	{
-		if (i != 0)
-			json += TEXT(",\n");
-		json += dungeon::Indent(indent + 2) + TEXT("{\n");
-		json += RoofParts[i].DumpToJson(indent + 3) + TEXT("\n");
-		json += dungeon::Indent(indent + 2) + TEXT("}");
-	}
-	json += TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("]\n");
-	json += dungeon::Indent(indent) + TEXT("},\n");
-
-	json += dungeon::Indent(indent) + TEXT("\"SlopeParts\":{\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"SlopePartsSelector\":\"") + meshSet::GetSelectorClassName(SlopePartsSelector) + TEXT("\",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"Parts\":[\n");
-	for (int32 i = 0; i < SlopeParts.Num(); ++i)
-	{
-		if (i != 0)
-			json += TEXT(",\n");
-		json += dungeon::Indent(indent + 2) + TEXT("{\n");
-		json += SlopeParts[i].DumpToJson(indent + 3) + TEXT("\n");
-		json += dungeon::Indent(indent + 2) + TEXT("}");
-	}
-	json += TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("]\n");
-	json += dungeon::Indent(indent) + TEXT("},\n");
-
-	json += dungeon::Indent(indent) + TEXT("\"ChandelierParts\":{\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"ChandelierPartsSelector\":\"") + meshSet::GetSelectorClassName(ChandelierPartsSelector) + TEXT("\",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"Parts\":[\n");
-	for (int32 i = 0; i < ChandelierParts.Num(); ++i)
-	{
-		if (i != 0)
-			json += TEXT(",\n");
-		json += dungeon::Indent(indent + 2) + TEXT("{\n");
-		json += ChandelierParts[i].DumpToJson(indent + 3) + TEXT("\n");
-		json += dungeon::Indent(indent + 2) + TEXT("}");
-	}
-	json += TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("],\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"MinSpacing\":") + FString::SanitizeFloat(ChandelierMinSpacing) + TEXT(",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"MinCeilingHeight\":") + FString::SanitizeFloat(ChandelierMinCeilingHeight) + TEXT(",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"Radius\":") + FString::SanitizeFloat(ChandelierRadius) + TEXT(",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"WallWeight\":") + FString::SanitizeFloat(ChandelierWallWeight) + TEXT(",\n");
-	json += dungeon::Indent(indent + 1) + TEXT("\"CombatWeight\":") + FString::SanitizeFloat(ChandelierCombatWeight) + TEXT("\n");
-	json += dungeon::Indent(indent) + TEXT("}");
-
-	return json;
-}
-#endif

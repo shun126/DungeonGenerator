@@ -55,7 +55,7 @@ Each `FDungeonRoomLocator` entry inside `Random Sublevel` can hold conditions su
 - Which structural roles are allowed (`AllowedStructuralRoles`)
 - Which gameplay roles are allowed (`AllowedGameplayRoles`)
 - Which item-room types are allowed
-- `AddingProbability`
+- `SpawnChance`
 
 `AllowedStructuralRoles` and `AllowedGameplayRoles` are only used by `Random Sublevel`. Leave either list empty to avoid filtering by that role axis. Preferred start, goal, and reservation-number sublevels keep their existing priority and do not use these filters.
 
@@ -71,6 +71,7 @@ Each `FDungeonRoomLocator` entry inside `Random Sublevel` can hold conditions su
 - If you edit a sublevel and forget to run `Build`, old size or connection information may remain.
 - `Build` temporarily loads levels for analysis, so it is safer not to target the level you are currently editing.
 - If you want to use a preloaded lobby itself as the start room, use `StartRoomSubLevelScriptActor` on `ADungeonGenerateActor` instead of this database. While that actor setting is set, this database's `StartRoom` is ignored for the start room.
+- Interior Parts do not filter by Start or Goal. Use `StartRoom` or `GoalRoom` here when either room needs a hand-authored interior and layout.
 
 ## Read Next
 - [ADungeonSubLevelScriptActor.en.md](./ADungeonSubLevelScriptActor.en.md)  

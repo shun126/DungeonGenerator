@@ -149,7 +149,7 @@ Register the generated Static Mesh assets in the room or aisle `Mesh set databas
 - Walls go in `Wall Parts`
 - Roofs go in `Roof Parts`
 - Slopes go in `Slope Parts`
-- Pillars go in a pillar setting such as `Pillar Parts` on `UDungeonGenerateParameter`
+- Pillars go in `Theme.Fixtures.Pillar Parts` on `UDungeonGenerateParameter`
 
 After registration, use `Window > DungeonGenerator`, run `Verify`, then `Generate dungeon` to confirm that floors, walls, roofs, and slopes connect cleanly.
 

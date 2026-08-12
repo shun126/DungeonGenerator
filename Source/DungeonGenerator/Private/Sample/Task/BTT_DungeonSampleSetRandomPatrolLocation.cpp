@@ -1,9 +1,11 @@
 /**
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
- *
- * Selects a random patrol location reachable from the home location and writes it to the selected blackboard key.
+ */
+
+/**
+ * @file
  * ホーム位置から到達可能なランダム巡回地点を選択し、選択されたBlackboardキーへ書き込みます。
  */
 
@@ -22,7 +24,6 @@
 namespace
 {
 	/*
-	 * Returns true when a complete synchronous path can be built from the pawn's current location to the target location.
 	 * Pawnの現在位置から目標位置まで、完全な同期経路を作成できる場合にtrueを返します。
 	 */
 	bool IsReachableFromCurrentLocation(const AAIController& controller, const ADungeonSampleCharacterBase& ownerCharacter, const FVector& targetLocation)
@@ -40,7 +41,6 @@ namespace
 	}
 
 	/*
-	 * Finds the next patrol target by sampling a random navigation point reachable from the home location.
 	 * ホーム位置から到達可能なランダムナビゲーション地点を選び、次の巡回目標にします。
 	 */
 	bool FindRandomPatrolLocation(const AAIController& controller, const ADungeonSampleCharacterBase& ownerCharacter, const float patrolRange, const bool validatePathFromCurrentLocation, FVector& nextTargetLocation)

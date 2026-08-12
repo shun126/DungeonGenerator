@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2026- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -16,7 +16,6 @@
 namespace
 {
 	/*
-	 * Returns true when the value is close enough to zero for smooth wind interpolation.
 	 * 滑らかな風の補間でゼロとみなせるほど値が小さい場合にtrueを返します。
 	 */
 	static bool IsZero(const float value)
@@ -37,7 +36,6 @@ ADungeonSampleRandomWindDirectionalSource::ADungeonSampleRandomWindDirectionalSo
 }
 
 /*
- * Returns the shortest signed angular difference in degrees from the current angle to the target angle.
  * 現在角度から目標角度までの最短の符号付き角度差（度）を返します。
  */
 static float GetRotationDegreeAngle(const float target, const float current)
@@ -55,7 +53,6 @@ static float GetRotationDegreeAngle(const float target, const float current)
 }
 
 /*
- * Selects the next random wind target values and resets the remaining time.
  * 次のランダムな風の目標値を選択し、残り時間をリセットします。
  */
 void ADungeonSampleRandomWindDirectionalSource::Change()
