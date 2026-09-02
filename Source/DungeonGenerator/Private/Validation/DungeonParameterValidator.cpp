@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -10,6 +10,7 @@
 #include "Parameter/DungeonMeshSetDatabase.h"
 
 #include <Misc/PackageName.h>
+#include <Containers/Set.h>
 
 namespace
 {
@@ -90,6 +91,23 @@ namespace
 			));
 		}
 	}
+
+	void ValidateFixtureAssets(const FDungeonFixtureSettings& fixtures, const FName parameterName, TArray<FDungeonValidationIssue>& outIssues)
+	{
+		ValidateAssetPath(FSoftObjectPath(fixtures.DungeonPartsSelector), FName(*(FString(parameterName.ToString()) + TEXT(".DungeonPartsSelector"))), outIssues);
+		for (const FDungeonRandomActorParts& torchParts : fixtures.TorchParts)
+		{
+			ValidateAssetPath(FSoftObjectPath(torchParts.ActorClass), FName(*(FString(parameterName.ToString()) + TEXT(".TorchParts.ActorClass"))), outIssues);
+		}
+		for (const FDungeonDoorActorParts& doorParts : fixtures.DoorParts)
+		{
+			ValidateAssetPath(FSoftObjectPath(doorParts.ActorClass), FName(*(FString(parameterName.ToString()) + TEXT(".DoorParts.ActorClass"))), outIssues);
+		}
+		for (const FDungeonDoorActorParts& doorParts : fixtures.UniqueDoorParts)
+		{
+			ValidateAssetPath(FSoftObjectPath(doorParts.ActorClass), FName(*(FString(parameterName.ToString()) + TEXT(".UniqueDoorParts.ActorClass"))), outIssues);
+		}
+	}
 }
 
 void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* params, TArray<FDungeonValidationIssue>& outIssues, const bool bDeepCheck)
@@ -108,29 +126,36 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		return;
 	}
 
-	if (params->GridSize <= 0.f)
+	const auto& structure = params->GetStructureSettings();
+	const auto& path = params->GetPathSettings();
+	const auto& roomRoles = params->GetRoomRoleSettings();
+	const auto& zones = params->GetZoneSettings();
+	const auto& theme = params->GetThemeSettings();
+	const auto& gameplay = params->GetGameplaySpawnSettings();
+
+	if (theme.HorizontalGridSize <= 0.f)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
 			TEXT("DG_PARAM_RANGE"),
-			NSLOCTEXT("DungeonParameterValidator", "GridSizeInvalid", "GridSize must be greater than 0."),
+			NSLOCTEXT("DungeonParameterValidator", "HorizontalGridSizeInvalid", "HorizontalGridSize must be greater than 0."),
 			NSLOCTEXT("DungeonParameterValidator", "GridSizeInvalidHint", "Set Horizontal Size to a positive value."),
-			TEXT("GridSize")
+			TEXT("Theme.HorizontalGridSize")
 		));
 	}
 
-	if (params->VerticalGridSize <= 0.f)
+	if (theme.VerticalGridSize <= 0.f)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
 			TEXT("DG_PARAM_RANGE"),
 			NSLOCTEXT("DungeonParameterValidator", "VerticalGridSizeInvalid", "VerticalGridSize must be greater than 0."),
 			NSLOCTEXT("DungeonParameterValidator", "VerticalGridSizeInvalidHint", "Set Vertical Size to a positive value."),
-			TEXT("VerticalGridSize")
+			TEXT("Theme.VerticalGridSize")
 		));
 	}
 
-	if (params->RoomWidth.Min > params->RoomWidth.Max)
+	if (structure.RoomWidth.Min > structure.RoomWidth.Max)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
@@ -141,7 +166,7 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		));
 	}
 
-	if (params->RoomDepth.Min > params->RoomDepth.Max)
+	if (structure.RoomDepth.Min > structure.RoomDepth.Max)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
@@ -152,7 +177,7 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		));
 	}
 
-	if (params->RoomHeight.Min > params->RoomHeight.Max)
+	if (structure.RoomHeight.Min > structure.RoomHeight.Max)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
@@ -163,51 +188,91 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		));
 	}
 
-	if (params->NumberOfCandidateRooms <= 0)
+	if (structure.RoomCountRange.Min < 3 || structure.RoomCountRange.Max > 100 || structure.RoomCountRange.Min > structure.RoomCountRange.Max)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
 			TEXT("DG_PARAM_RANGE"),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalid", "NumberOfCandidateRooms must be greater than 0."),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalidHint", "Set Number Of Candidate Rooms to 1 or more."),
-			TEXT("NumberOfCandidateRooms")
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalid", "Structure.RoomCountRange must stay between 3 and 100, and Min cannot be greater than Max."),
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountInvalidHint", "Set both room-count endpoints between 3 and 100, with Min less than or equal to Max."),
+			TEXT("Structure.RoomCountRange")
 		));
 	}
 
-	if (params->NumberOfCandidateRooms < 5)
+	if (structure.RoomCountRange.Max < 5)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Warning,
 			TEXT("DG_PARAM_ATTEMPTS_LOW"),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountLow", "NumberOfCandidateRooms is very low and generation may fail frequently."),
-			NSLOCTEXT("DungeonParameterValidator", "RoomCountLowHint", "Increase Number Of Candidate Rooms to improve generation success rate."),
-			TEXT("NumberOfCandidateRooms")
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountLow", "Structure.RoomCountRange is very low and generation may fail frequently."),
+			NSLOCTEXT("DungeonParameterValidator", "RoomCountLowHint", "Increase the room-count range to improve generation success rate."),
+			TEXT("Structure.RoomCountRange")
 		));
 	}
 
-	if (params->MergeRooms && params->UseMissionGraph)
+	if (params->IsUseMissionGraph() && path.ExtraCorridorComplexity > 0)
+	{
+		outIssues.Emplace(MakeIssue(
+			EDungeonValidationSeverity::Info,
+			TEXT("DG_PARAM_CONSTRAINT"),
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisle", "Path.ExtraCorridorComplexity does not apply to locked aisles while Keys And Locks progression is enabled."),
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisleHint", "A locked aisle needs its own gate and corridor so that the locked door cannot be bypassed. Every other aisle still gains intersections."),
+			TEXT("Path.ExtraCorridorComplexity")
+		));
+	}
+
+	// Path.LoopRouteDensity は Keys And Locks でも有効です。
+	// 鍵と扉の関門になる通路は LayoutGraphGenerator がループから保護するため、迂回路は発生しません。
+
+	/*
+	 * KeysAndLocksは開始部屋とゴール部屋を分断する橋へ鍵をかけるため、開始部屋が一意に
+	 * 定まらないUseMultiStartを扱えません。UseCentralPointは中央の部屋が選ばれやすく
+	 * 橋が残りにくいため、同じく対象外にしています。
+	 * ApplyPostLoadCompatibilityFixupsがアセットの読み込み時にUseSouthernMostへ書き換える
+	 * ので、利用者が気付けるよう通知します。
+	 */
+	if (params->IsUseMissionGraph() &&
+		(path.StartRoomPolicy == EDungeonStartLocationPolicy::UseCentralPoint ||
+			path.StartRoomPolicy == EDungeonStartLocationPolicy::UseMultiStart))
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Warning,
 			TEXT("DG_PARAM_CONSTRAINT"),
-			NSLOCTEXT("DungeonParameterValidator", "MergeMissionConflict", "UseMissionGraph is not effective while MergeRooms is enabled."),
-			NSLOCTEXT("DungeonParameterValidator", "MergeMissionConflictHint", "Disable MergeRooms or disable UseMissionGraph."),
-			TEXT("UseMissionGraph")
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphStartRoom", "Path.StartRoomPolicy is changed to Use Southernmost while Keys And Locks progression is enabled."),
+			NSLOCTEXT("DungeonParameterValidator", "MissionGraphStartRoomHint", "Keys And Locks locks the aisles that separate the start room from the goal room, so it needs a single start room that leaves those aisles intact. Choose another policy to keep your setting."),
+			TEXT("Path.StartRoomPolicy")
 		));
 	}
 
-	if (params->UseMissionGraph && params->AisleComplexity > 0)
+	const int32 layoutCandidateCount = params->GetLayoutCandidateCount();
+	if (layoutCandidateCount > 8)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Warning,
-			TEXT("DG_PARAM_CONSTRAINT"),
-			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisle", "AisleComplexity is ignored while UseMissionGraph is enabled."),
-			NSLOCTEXT("DungeonParameterValidator", "MissionGraphAisleHint", "Set AisleComplexity to 0 when UseMissionGraph is enabled."),
-			TEXT("AisleComplexity")
+			TEXT("DG_LAYOUT_COST"),
+			NSLOCTEXT("DungeonParameterValidator", "LayoutCandidateHigh", "LayoutCandidateCount is high and may increase runtime generation cost."),
+			NSLOCTEXT("DungeonParameterValidator", "LayoutCandidateHighHint", "Use a lower value for runtime generation, or keep high candidate counts for editor previews."),
+			TEXT("Path.LayoutCandidateCount")
 		));
 	}
 
-	if (params->DungeonRoomMeshPartsDatabase == nullptr)
+	TSet<EDungeonRoomGameplayRole> seenRoomRoles;
+	for (const FDungeonRoomRoleProfile& profile : roomRoles.Roles)
+	{
+		if (seenRoomRoles.Contains(profile.Role))
+		{
+			outIssues.Emplace(MakeIssue(
+				EDungeonValidationSeverity::Warning,
+				TEXT("DG_ROOM_ROLE_DUPLICATE"),
+				FText::Format(NSLOCTEXT("DungeonParameterValidator", "DuplicateRoomRoleProfile", "Gameplay.RoomRoles contains more than one profile for {0}. Only the first matching profile is used."), StaticEnum<EDungeonRoomGameplayRole>()->GetDisplayNameTextByValue(static_cast<int64>(profile.Role))),
+				NSLOCTEXT("DungeonParameterValidator", "DuplicateRoomRoleProfileHint", "Keep one profile per room role to avoid confusing role weights and theme overrides."),
+				TEXT("Gameplay.RoomRoles")
+			));
+		}
+		seenRoomRoles.Add(profile.Role);
+	}
+
+	if (theme.DungeonRoomMeshPartsDatabase == nullptr)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
@@ -218,7 +283,7 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		));
 	}
 
-	if (params->DungeonAisleMeshPartsDatabase == nullptr)
+	if (theme.DungeonAisleMeshPartsDatabase == nullptr)
 	{
 		outIssues.Emplace(MakeIssue(
 			EDungeonValidationSeverity::Error,
@@ -229,50 +294,75 @@ void FDungeonParameterValidator::Validate(const UDungeonGenerateParameter* param
 		));
 	}
 
-	if (params->DungeonRoomMeshPartsDatabase)
+	if (theme.DungeonRoomMeshPartsDatabase)
 	{
-		if (!HasAnyStaticMesh(params->DungeonRoomMeshPartsDatabase, 0))
+		if (!HasAnyStaticMesh(theme.DungeonRoomMeshPartsDatabase, 0))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomFloorMissing", "Room floor mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomFloorMissingHint", "Set at least one floor mesh in the room mesh database."), TEXT("DungeonRoomMeshPartsDatabase"), FSoftObjectPath(params->DungeonRoomMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomFloorMissing", "Room floor mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomFloorMissingHint", "Set at least one floor mesh in the room mesh database."), TEXT("Theme.DungeonRoomMeshPartsDatabase"), FSoftObjectPath(theme.DungeonRoomMeshPartsDatabase)));
 		}
-		if (!HasAnyStaticMesh(params->DungeonRoomMeshPartsDatabase, 1))
+		if (!HasAnyStaticMesh(theme.DungeonRoomMeshPartsDatabase, 1))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomWallMissing", "Room wall mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomWallMissingHint", "Set at least one wall mesh in the room mesh database."), TEXT("DungeonRoomMeshPartsDatabase"), FSoftObjectPath(params->DungeonRoomMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomWallMissing", "Room wall mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomWallMissingHint", "Set at least one wall mesh in the room mesh database."), TEXT("Theme.DungeonRoomMeshPartsDatabase"), FSoftObjectPath(theme.DungeonRoomMeshPartsDatabase)));
 		}
-		if (!HasAnyStaticMesh(params->DungeonRoomMeshPartsDatabase, 2))
+		if (!HasAnyStaticMesh(theme.DungeonRoomMeshPartsDatabase, 2))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomRoofMissing", "Room roof mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomRoofMissingHint", "Set at least one roof mesh in the room mesh database."), TEXT("DungeonRoomMeshPartsDatabase"), FSoftObjectPath(params->DungeonRoomMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomRoofMissing", "Room roof mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomRoofMissingHint", "Set at least one roof mesh in the room mesh database."), TEXT("Theme.DungeonRoomMeshPartsDatabase"), FSoftObjectPath(theme.DungeonRoomMeshPartsDatabase)));
 		}
-		if (!HasAnyStaticMesh(params->DungeonRoomMeshPartsDatabase, 3))
+		if (!HasAnyStaticMesh(theme.DungeonRoomMeshPartsDatabase, 3))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Warning, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomSlopeMissing", "Room slope/stairs mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomSlopeMissingHint", "Set slope mesh if your generation settings can create slopes."), TEXT("DungeonRoomMeshPartsDatabase"), FSoftObjectPath(params->DungeonRoomMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Warning, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "RoomSlopeMissing", "Room slope/stairs mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "RoomSlopeMissingHint", "Set slope mesh if your generation settings can create slopes."), TEXT("Theme.DungeonRoomMeshPartsDatabase"), FSoftObjectPath(theme.DungeonRoomMeshPartsDatabase)));
 		}
 	}
 
-	if (params->DungeonAisleMeshPartsDatabase)
+	if (theme.DungeonAisleMeshPartsDatabase)
 	{
-		if (!HasAnyStaticMesh(params->DungeonAisleMeshPartsDatabase, 0))
+		if (!HasAnyStaticMesh(theme.DungeonAisleMeshPartsDatabase, 0))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleFloorMissing", "Aisle floor mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleFloorMissingHint", "Set at least one floor mesh in the aisle mesh database."), TEXT("DungeonAisleMeshPartsDatabase"), FSoftObjectPath(params->DungeonAisleMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleFloorMissing", "Aisle floor mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleFloorMissingHint", "Set at least one floor mesh in the aisle mesh database."), TEXT("Theme.DungeonAisleMeshPartsDatabase"), FSoftObjectPath(theme.DungeonAisleMeshPartsDatabase)));
 		}
-		if (!HasAnyStaticMesh(params->DungeonAisleMeshPartsDatabase, 1))
+		if (!HasAnyStaticMesh(theme.DungeonAisleMeshPartsDatabase, 1))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleWallMissing", "Aisle wall mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleWallMissingHint", "Set at least one wall mesh in the aisle mesh database."), TEXT("DungeonAisleMeshPartsDatabase"), FSoftObjectPath(params->DungeonAisleMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleWallMissing", "Aisle wall mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleWallMissingHint", "Set at least one wall mesh in the aisle mesh database."), TEXT("Theme.DungeonAisleMeshPartsDatabase"), FSoftObjectPath(theme.DungeonAisleMeshPartsDatabase)));
 		}
-		if (!HasAnyStaticMesh(params->DungeonAisleMeshPartsDatabase, 2))
+		if (!HasAnyStaticMesh(theme.DungeonAisleMeshPartsDatabase, 2))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleRoofMissing", "Aisle roof mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleRoofMissingHint", "Set at least one roof mesh in the aisle mesh database."), TEXT("DungeonAisleMeshPartsDatabase"), FSoftObjectPath(params->DungeonAisleMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Error, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleRoofMissing", "Aisle roof mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleRoofMissingHint", "Set at least one roof mesh in the aisle mesh database."), TEXT("Theme.DungeonAisleMeshPartsDatabase"), FSoftObjectPath(theme.DungeonAisleMeshPartsDatabase)));
 		}
-		if (!HasAnyStaticMesh(params->DungeonAisleMeshPartsDatabase, 3))
+		if (!HasAnyStaticMesh(theme.DungeonAisleMeshPartsDatabase, 3))
 		{
-			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Warning, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleSlopeMissing", "Aisle slope/stairs mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleSlopeMissingHint", "Set slope mesh if your generation settings can create slopes."), TEXT("DungeonAisleMeshPartsDatabase"), FSoftObjectPath(params->DungeonAisleMeshPartsDatabase)));
+			outIssues.Emplace(MakeIssue(EDungeonValidationSeverity::Warning, TEXT("DG_MESH_MISSING"), NSLOCTEXT("DungeonParameterValidator", "AisleSlopeMissing", "Aisle slope/stairs mesh is not configured."), NSLOCTEXT("DungeonParameterValidator", "AisleSlopeMissingHint", "Set slope mesh if your generation settings can create slopes."), TEXT("Theme.DungeonAisleMeshPartsDatabase"), FSoftObjectPath(theme.DungeonAisleMeshPartsDatabase)));
 		}
 	}
 
 	if (bDeepCheck)
 	{
-		ValidateAssetPath(FSoftObjectPath(params->DungeonRoomMeshPartsDatabase), TEXT("DungeonRoomMeshPartsDatabase"), outIssues);
-		ValidateAssetPath(FSoftObjectPath(params->DungeonAisleMeshPartsDatabase), TEXT("DungeonAisleMeshPartsDatabase"), outIssues);
-		ValidateAssetPath(FSoftObjectPath(params->DungeonRoomSensorDatabase), TEXT("DungeonRoomSensorDatabase"), outIssues);
+		ValidateAssetPath(FSoftObjectPath(theme.DungeonRoomMeshPartsDatabase), TEXT("Theme.DungeonRoomMeshPartsDatabase"), outIssues);
+		ValidateAssetPath(FSoftObjectPath(theme.DungeonAisleMeshPartsDatabase), TEXT("Theme.DungeonAisleMeshPartsDatabase"), outIssues);
+		ValidateFixtureAssets(theme.Fixtures, TEXT("Theme.Fixtures"), outIssues);
+		ValidateAssetPath(FSoftObjectPath(gameplay.DungeonRoomSensorClass), TEXT("Gameplay.DungeonRoomSensorClass"), outIssues);
+		for (const FSoftObjectPath& actorPath : gameplay.SpawnActorInAisle)
+		{
+			ValidateAssetPath(actorPath, TEXT("Gameplay.SpawnActorInAisle"), outIssues);
+		}
+		for (const FDungeonRoomRoleProfile& profile : roomRoles.Roles)
+		{
+			ValidateAssetPath(FSoftObjectPath(profile.GameplayOverride.DungeonRoomSensorClass), TEXT("Gameplay.RoomRoles.GameplayOverride.DungeonRoomSensorClass"), outIssues);
+			if (profile.ThemeOverride.bOverrideFixtures)
+			{
+				ValidateFixtureAssets(profile.ThemeOverride.Fixtures, TEXT("Gameplay.RoomRoles.ThemeOverride.Fixtures"), outIssues);
+			}
+		}
+		for (const FDungeonZoneDefinition& zone : zones.Zones)
+		{
+			ValidateAssetPath(FSoftObjectPath(zone.GameplayOverride.DungeonRoomSensorClass), TEXT("Zones.GameplayOverride.DungeonRoomSensorClass"), outIssues);
+			if (zone.ThemeOverride.bOverrideFixtures)
+			{
+				ValidateFixtureAssets(zone.ThemeOverride.Fixtures, TEXT("Zones.ThemeOverride.Fixtures"), outIssues);
+			}
+			for (const FSoftObjectPath& actorPath : zone.GameplayOverride.SpawnActorInAisle)
+			{
+				ValidateAssetPath(actorPath, TEXT("Zones.GameplayOverride.SpawnActorInAisle"), outIssues);
+			}
+		}
 	}
 }

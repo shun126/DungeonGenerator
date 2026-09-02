@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -14,6 +14,7 @@ namespace dungeon
 	class Random;
 
 	/**
+	 * Represents Direction.
 	 * 方向クラス
 	 */
 	class Direction final
@@ -46,6 +47,7 @@ namespace dungeon
 		Direction(const Direction& other) noexcept;
 
 		/**
+		 * Destroys the ~Direction instance.
 		 * デストラクタ
 		 */
 		~Direction() = default;
@@ -75,31 +77,37 @@ namespace dungeon
 		Direction& operator=(const Direction& other) noexcept;
 
 		/**
+		 * Represents operator.
 		 * 一致
 		 */
 		bool operator==(const Direction& other) const noexcept;
 
 		/**
+		 * Represents noexcept.
 		 * 不一致
 		 */
 		bool operator!=(const Direction& other) const noexcept;
 
 		/**
+		 * Returns whether NorthSouth.
 		 * 方向が南北に向いているか調べます
 		 */
 		bool IsNorthSouth() const noexcept;
 
 		/**
+		 * Returns whether NorthSouth.
 		 * 方向が南北に向いているか調べます
 		 */
 		static bool IsNorthSouth(const Index index) noexcept;
 
 		/**
+		 * Represents ToDegree.
 		 * 角度を取得します
 		 */
 		float ToDegree() const noexcept;
 
 		/**
+		 * Represents ToRadian.
 		 * ラジアンを取得します
 		 */
 		float ToRadian() const noexcept;
@@ -111,6 +119,7 @@ namespace dungeon
 		Direction Inverse() const noexcept;
 
 		/**
+		 * Sets Inverse.
 		 * 方向を反対にします
 		 */
 		void SetInverse() noexcept;
@@ -129,11 +138,13 @@ namespace dungeon
 		static const FIntVector& GetVector(const Index index) noexcept;
 
 		/**
+		 * Represents Begin.
 		 * ベクター一覧の開始イテレーターを取得します
 		 */
 		static std::array<FIntVector, 4>::const_iterator Begin() noexcept;
 
 		/**
+		 * Represents End.
 		 * ベクター一覧の終了イテレーターを取得します
 		 */
 		static std::array<FIntVector, 4>::const_iterator End() noexcept;
@@ -146,6 +157,7 @@ namespace dungeon
 
 #if WITH_EDITOR
 		/**
+		 * Returns Name.
 		 * 方向名を取得します
 		 */
 		const FString& GetName() const noexcept;

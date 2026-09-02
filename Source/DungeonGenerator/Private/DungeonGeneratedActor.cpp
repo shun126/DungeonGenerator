@@ -1,8 +1,11 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
- *
+ */
+
+/**
+ * @file
  * ADungeonGeneratedActorはエディターからの静的生成時にFDungeonGenerateEditorModuleからスポーンします。
  * ADungeonGenerateActorは配置可能(Placeable)、ADungeonGeneratedActorは配置不可能(NotPlaceable)にするため、
  * 継承元であるADungeonGenerateBaseをAbstract指定して共通機能をまとめています。
@@ -34,6 +37,7 @@ bool ADungeonGeneratedActor::Generate(const UDungeonGenerateParameter* parameter
 		MovePlayerStart(startPoints);
 	}
 	EndDungeonGeneration();
+	FlushDistributedGeneration();
 
 	return generated;
 }

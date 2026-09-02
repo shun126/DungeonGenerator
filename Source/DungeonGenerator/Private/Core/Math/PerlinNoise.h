@@ -1,8 +1,6 @@
 /**
- * パーリンノイズに関するヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -16,6 +14,7 @@ namespace dungeon
 	class Random;
 
 	/**
+	 * Represents PerlinNoise.
 	 * パーリンノイズクラス
 	 */
 	class PerlinNoise final
@@ -30,6 +29,7 @@ namespace dungeon
 		void SetSeed(const std::shared_ptr<Random>& random);
 
 		/**
+		 * Represents Noise.
 		 * オクターブ無しノイズを取得する
 		 * [-1.0 ~ 1.0]
 		 */
@@ -37,6 +37,7 @@ namespace dungeon
 		float Noise(float x, float y, float z) const noexcept;
 
 		/**
+		 * Represents OctaveNoise.
 		 * オクターブ有りノイズを取得する
 		 * [-1.0 ~ 1.0]
 		 */

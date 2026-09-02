@@ -1,136 +1,71 @@
-# ミッショングラフを適用する
+# MissionGraph を適用する
 
-このページでは、**鍵を手に入れて扉を開けながら進む攻略ルート** を  
-MissionGraph でダンジョンに適用する流れを説明します。
+`Path.ProgressionPolicy = KeysAndLocks` は、スタートからゴールまでの経路へ鍵とロックの情報を配置します。生成された経路は検証され、鍵付き通路を生成形状から迂回できないようにします。
 
-MissionGraph はベータ版の機能です。  
-通常のダンジョン生成が安定してから試すと、設定の切り分けがしやすくなります。
+MissionGraph は現在 Beta 機能です。先に通常のダンジョンが安定して生成できる状態にしてください。
 
-## このページのゴール
-- MissionGraph が何を追加する機能か理解する
-- 鍵付き扉と鍵配置の基本的な流れを確認できる
-- `DungeonDoor` と `DungeonRoomSensor` の役割を理解できる
+## 重要な制限: 配置はベストエフォート
 
-## 先に知っておくこと
-- MissionGraph は、**スタートからゴールまでの攻略手順** をダンジョンに与える仕組みです
-- 鍵付き扉や鍵の配置そのものは、MissionGraph の情報をもとに各アクターが実現します
-- 最初は複雑な演出を増やさず、`鍵を取る -> 扉を開ける -> 先へ進む` の流れだけ確認するのがおすすめです
+鍵とロックは、生成レイアウトに適切な部屋とロック可能な経路がある場合だけ作られます。Unique Key を置ける有効な部屋がない場合、生成は失敗せず、鍵もロックもない到達可能なダンジョンとして完了します。このとき `ADungeonGenerateBase::GetLastGenerationIssues()` から `DG_GEN_KEYS_NOT_PLACED` 警告を取得できます。
 
-## 前提
-- [QuickStart.ja.md](./QuickStart.ja.md) が完了している
-- 通常のダンジョン生成が成功している
-- [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md) の基本設定を理解している
-- ドア用アクターと部屋センサーを追加できる状態になっている
+これは経路破損ではなく、ロックなしのフォールバックです。毎回ロックが必要なゲームでは生成 Issue を確認し、別 Seed で再生成するか、条件を満たす Hall/Hanare 部屋を増やしてください。`RandomSeed` を固定した場合は、同じレイアウトを意図的に再現します。
 
-## MissionGraph を使うと何が起こるか
-MissionGraph を有効にすると、ダンジョン生成時に次のような攻略フローが作られます。
+## 最短の設定手順
 
-- スタート部屋から探索を始める
-- 途中の部屋で鍵を見つける
-- 鍵付き扉を開けて新しいエリアへ進む
-- 必要に応じて `Unique key` で最後の扉を開ける
-- 最終的にゴールへ到達する
+### 1. 進行 Policy を有効にする
 
-つまり、MissionGraph はただ部屋を並べるだけでなく、  
-**どの順番で攻略するか** をダンジョンへ与える機能です。
+`UDungeonGenerateParameter` で `Path.ProgressionPolicy = KeysAndLocks` にします。
 
-## 最短手順
-まずは、最小構成で MissionGraph が働いていることを確認します。
+`Path.ExtraCorridorComplexity = 0` は仕組みを確認しやすい基準値ですが、必須ではありません。0 より大きい値は、ロックされていない通路へ交差や複雑さを追加します。鍵付き通路では交差と結合が常に無効になり、専用経路を保って迂回を防ぎます。現在の Details Panel では Keys And Locks へ切り替えた後にこの項目が読み取り専用になるため、0 以外を使う場合は Policy の切り替え前に設定します。Blueprint / C++ から設定することもできます。`Path.LoopRouteDensity` は、ロックを迂回しない範囲で有効です。
 
-### 1. `Generate parameter` で MissionGraph を有効にする
-`UDungeonGenerateParameter` で次の点を確認してください。
+Keys And Locks では `Path.StartRoomPolicy` に `UseCentralPoint` と `UseMultiStart` を使用できません。
 
-- `UseMissionGraph = true`
-- `MergeRooms = false`
-- `AisleComplexity = 0`
+### 2. Door Actor を用意する
 
-MissionGraph を使うときは、`MergeRooms` と通常の通路複雑化設定を一緒に使わない方が分かりやすく、安全です。
-
-### 2. ドア用アクターを用意する
-鍵付き扉の見た目や挙動は、ドア用アクターが担当します。  
-`DungeonDoorBase` を継承した Blueprint ドアを用意し、  
-`Door Parts` に登録して生成で使えるようにします。
+`ADungeonDoorBase` 派生 Blueprint を作り、`Theme.Fixtures.Door Parts` に追加します。最後のロックだけ見た目を変える場合は、`Unique Door Parts` も設定します。
 
 ![](./images/MissionGraph1.png)
 
-### 3. 部屋センサー側で鍵スポーンを用意する
-鍵や特別な鍵は、MissionGraph の情報をもとに部屋側で扱います。  
-`ADungeonRoomSensorBase` を継承した Blueprint を使う場合は、  
-必要に応じて `SpawnKeyActor` と `SpawnUniqueKeyActor` を設定してください。
+Door Base は `EDungeonRoomProps` を受け取り、`IsKeyLockedDoor` や `IsUniqueKeyLockedDoor` などの判定を公開します。インベントリ確認、開閉アニメーション、鍵の消費は実装しません。`OnInitialize` で受け取った Props を使い、Door Blueprint 側にゲームプレイ処理を実装してください。
 
-![DungeonRoomSensor](image/DungeonRoomSensor1.png)
+### 3. Key Actor を用意する
+
+`Gameplay.DungeonRoomSensorClass` に指定した `ADungeonRoomSensorBase` 派生 Blueprint で、簡単な確認用に `SpawnKeyActor` と `SpawnUniqueKeyActor` を設定します。
+
+![DungeonRoomSensor](./images/DungeonRoomSensor1.png)
 
 ![](./images/MissionGraph2.png)
 
-### 4. ダンジョンを生成して攻略順を確認する
-生成後は、次の流れが成立しているかを確認します。
+これらの Helper は、MissionGraph で印が付いた部屋に設定 Actor をスポーンします。鍵 Actor の取得、インベントリ登録、消費はプラグイン側では実装しません。ゲーム側 Blueprint に処理を実装してください。宝箱や敵撃破から鍵を渡す場合は、`OnInitialize` に渡される部屋情報を使い、独自処理でスポーンまたは付与します。
 
-- スタートから進める範囲がある
-- 途中で鍵を入手できる
-- その鍵で開けられる扉がある
-- 最後にゴールへ到達できる
+## 配置に成功した場合に保証されること
 
-## 各要素の役割
-MissionGraph の情報は、主に次の 2 種類のアクターに渡されます。
+- 各 Common Key は、対応する進行ロックより前に到達できます。
+- Unique Key は Common Lock の進行後に到達可能になります。
+- Unique Lock はゴール直前の最後のゲートになります。
+- 鍵付き通路は、迂回を作る交差や Gate 共有を行いません。
+- 配置された鍵とロックのグラフが解けない場合は、MissionGraph 検証によって生成が失敗します。
 
-### `DungeonDoor`
-- 必要な錠前情報を受け取って、扉として振る舞います
-- 通常の扉なのか、鍵付き扉なのかを区別する入口になります
+配置できる Common Lock は最大 16 個です。鍵を置く部屋は、別の予約 Item を持たない Hall または Hanare である必要があります。
 
-### `DungeonRoomSensor`
-- その部屋に必要なアクターやイベントを扱います
-- 鍵や特別な鍵を置く役割も、ここから実現できます
+## Play モードで確認する
 
-## グラフの見方
-下の図は、MissionGraph が生成した攻略構造の例です。
+1. 生成後に `GetLastGenerationIssues()` を確認します。`DG_GEN_KEYS_NOT_PLACED` があれば、その生成結果には意図的に鍵とロックがありません。
+2. 配置成功時は、Common Key と Unique Key の Actor が対象部屋にスポーンしたか確認します。
+3. Door Blueprint が通常扉、Common Lock、Unique Lock を区別できるか確認します。
+4. 鍵の取得、開閉拒否、Common Key の消費、Unique Key の規則を実装したゲーム処理をテストします。
+5. 必要なロックを閉じたままゴールへ到達できないことを確認します。
 
-- 矢印は通路です
-- `Lock` が付いた矢印は鍵付き扉です
-- `Unique lock` は、そのダンジョンで唯一の鍵だけで開く扉です
-- 四角は部屋です
-- `Item: Key` や `Item: Unique key` は、その部屋に置かれるアイテムを表します
+## トラブルシューティング
 
-```mermaid
-graph TB;
-	0_18_2["Item:Unique key"]
-	15_22_1["Type:Start"]
-	9_20_1["Item:Key"]
-	27_5_1["Type:Goal"]
-	8_26_1["Item:Key"]
-	22_24_1["Item:Key"]
-	10_13_1["Item:Empty"]
-	15_15_1["Item:Empty"]
-	15_7_0["Item:Empty"]
-	20_0_1["Item:Empty"]
+- 鍵も鍵付き扉も出ない: まず Generation Issue を確認してください。有効なレイアウトでも、説明どおりロックなしへフォールバックする場合があります。
+- 扉は出るが鍵が出ない: `Gameplay.DungeonRoomSensorClass`、`SpawnKeyActor`、`SpawnUniqueKeyActor` を確認します。
+- 鍵は出るが取得できない: 取得とインベントリ処理は、Helper の Actor スポーンには含まれないプロジェクト側のゲームプレイです。
+- 扉の見た目はあるがプレイヤーを止めない: `ADungeonDoorBase` 派生 Blueprint に Collision、開閉、ロック判定を実装します。
+- 通路複雑度を上げても鍵付き通路が変わらない: 意図した動作です。その場所では未施錠通路だけに値が適用されます。
 
-	15_22_1<-->|"Lock"|22_24_1;
-	15_22_1<-->8_26_1;
-	8_26_1<-->9_20_1;
-	9_20_1<-->0_18_2;
-	9_20_1<-->|"Lock"|10_13_1;
-	10_13_1<-->15_15_1;
-	15_15_1<-->15_7_0;
-	15_7_0<-->|"Lock"|20_0_1;
-	20_0_1<-->|"Unique lock"|27_5_1;
-```
+## 関連ページ
 
-## 確認する
-- 鍵のない状態では先へ進めない場所がある
-- 鍵を取ると対応する扉を開けられる
-- `Unique key` を使う最後の扉が機能している
-- ゴールまでの攻略順が成立している
-
-## よくある失敗
-- `UseMissionGraph` を有効にしたが、通常ダンジョンとの違いが分からない  
-  まずは鍵付き扉と鍵配置だけに絞って確認してください
-- `MergeRooms` や `AisleComplexity` の設定が競合している  
-  MissionGraph を使うときは `MergeRooms = false`、`AisleComplexity = 0` を基準にしてください
-- 扉は出るが鍵が出ない  
-  `DungeonRoomSensor` 側の設定、特に `SpawnKeyActor` / `SpawnUniqueKeyActor` を見直してください
-- 鍵は出るが扉の見た目や挙動が合わない  
-  `Door Parts` に登録しているドア用アクターを見直してください
-
-## 次に読む
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
 - [ADungeonRoomSensorBase.ja.md](./ADungeonRoomSensorBase.ja.md)
 - [FDungeonDoorActorParts.ja.md](./FDungeonDoorActorParts.ja.md)

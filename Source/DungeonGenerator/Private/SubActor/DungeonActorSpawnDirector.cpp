@@ -1,8 +1,11 @@
 /**
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
- *
+ */
+
+/**
+ * @file
  * A spawner class that spawns actors at regular intervals.
  * ADungeonActorSpawnDirector provides the ability to spawn actors in the game at specified intervals.
  * The type of actor to be spawned and the probability of its occurrence are defined by the FDungeonSpawnActorParameter structure.
@@ -35,6 +38,16 @@ ADungeonActorSpawnDirector::ADungeonActorSpawnDirector(const FObjectInitializer&
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	check(IsValid(Root));
 	SetRootComponent(Root);
+}
+
+void ADungeonActorSpawnDirector::PostLoad()
+{
+	Super::PostLoad();
+	for (FDungeonSpawnActorParameter& parameter : SpawnActorParameters)
+	{
+		if (parameter.SelectionWeight == 10 && parameter.Probability != 10)
+			parameter.SelectionWeight = parameter.Probability;
+	}
 }
 
 void ADungeonActorSpawnDirector::BeginPlay()
@@ -84,7 +97,7 @@ void ADungeonActorSpawnDirector::Tick(float DeltaSeconds)
 					// 抽選
 					const auto i = dungeon::DrawLots(mRandom, SpawnActorParameters.begin(), SpawnActorParameters.end(), [](const FDungeonSpawnActorParameter& parameter)
 						{
-							return parameter.Probability;
+							return parameter.SelectionWeight;
 						}
 					);
 

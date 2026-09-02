@@ -1,5 +1,144 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20260821-2.0.0 (100)
+
+Version 2.0 is a major redesign focused on playable progression, richer visual identity, and settings that are easier to understand and tune.
+
+> **Warning — breaking changes:** Version 2.0 does not support migration, in-place upgrades, or automatic conversion from Version 1.x. Preserve the v1.x project and plugin version, and create the v2 setup separately. v1.x Dungeon Generator assets, parameters, Blueprint integrations, C++ integrations, fixed seeds, and generated layouts are not compatibility targets.
+
+For a side-by-side feature comparison and the v2 rebuild checklist, see [Dungeon Generator v1.x and v2.0.0 Comparison](Document/tutorial/VersionComparison.en.md).
+
+### Highlights
+
+- Added five Progression Policies: `Free Exploration`, `Start To Goal`, `Keys And Locks`, `Boss Route`, and `Hub Quest`.
+- Added Gameplay Roles for `Combat`, `Treasure`, `Puzzle`, `Rest`, `Boss`, and `Secret` rooms.
+- Added Zone selection by progress and floor, with visual and Gameplay overrides.
+- Added multi-candidate layout evaluation to select a result that better matches the chosen design intent.
+- Reorganized `UDungeonGenerateParameter` into `Theme`, `Structure`, `Path`, `Zones`, and `Gameplay` groups.
+- Expanded minimap, exploration-map, runtime activation, and load-reduction systems.
+
+### v1.x to v2.0 comparison
+
+| Area | v1.x | v2.0.0 |
+| --- | --- | --- |
+| Route design | Tune individual layout values | Choose a Progression Policy, then fine-tune routes, branches, and loops |
+| Room purpose | Infer purpose in project logic | Use explicit Gameplay Roles |
+| Visual variation | Primarily shared databases | Override Mesh Sets, Interiors, Fixtures, and vegetation by Role or Zone |
+| Selection rules | Several separate selection paths | Unified Mesh Set Selector and Parts Selector workflow |
+| Parameters | Many top-level properties | Purpose-based `Theme`, `Structure`, `Path`, `Zones`, and `Gameplay` groups |
+| Runtime support | Partition-based load reduction | Detailed Actor, AI, Collision, Tick, light, and per-frame activation controls |
+
+### Breaking changes
+
+- `GetInquireInteriorTags()` and `InquireInteriorTags` were replaced without redirects by `GetProvidedContextTags()` and `ProvidedContextTags`.
+- `EDungeonInteriorPlacementAnchor`, `PlacementAnchors`, and the placement-query `Anchor` member were removed.
+- `EnableLightShadowControl`, `IsEnableLightCastShadowControl()`, and `SetEnableLightCastShadowControl()` were removed. Runtime light control now manages Point and Spot Light shadows.
+- Automatic room-center Interior Actor candidates were removed. Placement now uses enabled Placement Areas and wall-side floor candidates.
+- v1.x Dungeon Generator assets and integrations must be recreated or adapted manually for v2.0.0.
+
+### Version compatibility
+
+- Do not install v2.0.0 over a working v1.x project. Keep a restorable copy with the matching v1.x plugin.
+- Create new v2 parameter assets and configure `Theme`, `Structure`, `Path`, `Zones`, and `Gameplay`; v1.x values are not converted automatically.
+- When recreating an old `UseMissionGraph` design, use `Keys And Locks` as the closest starting Policy. For a regular route, begin with `Start To Goal`.
+- Reuse source content such as meshes only after checking its v2 compatibility. Recreate Dungeon Generator assets and references where required.
+- Rebuild Room Sensor integrations with `FDungeonGeneratedRoomInfo` and `GetGeneratedRoomInfo()` and update all renamed or removed Blueprint/C++ APIs.
+- Treat generation output as a new design. Identical fixed-seed layouts are not supported across the major versions.
+
+### Changes
+- `SetRandomParameter` now also randomizes `Path.MainRouteBias`, `Path.LoopRouteDensity`, `Path.StartRoomPolicy`, `Path.GoalRoomPolicy` and `Path.bMovePlayerStartToStartRoom`, so a random generation test covers the route shape and the endpoint selection as well. `Path.RandomSeed` is left alone.
+- Generation now fails with `DG_GEN_ROOM_ISOLATED` when the start room cannot reach every room. An aisle that could not be routed was given up, which left the room it connected unreachable while the room still appeared on the minimap. The dungeon is retried with another seed, so this is reported only when every attempt leaves a room isolated.
+- Fixed vegetation components being torn down without being removed from their owner. They were destroyed with `UnregisterComponent` followed by `ConditionalBeginDestroy` instead of `DestroyComponent`, so the generator actor, which outlives a single generation, kept referencing them after their destruction had begun.
+- Shortened the generated corridors. A branch aisle is now reconnected to the closest room that can act as its parent once the rooms have been placed, because the graph decides which rooms connect before any room has a position. Measured against a minimum spanning tree over the same rooms, the total corridor length went from 8.13 to 1.89 times the minimum in vertical layouts. Generated layouts differ from earlier versions even for the same seed.
+- A dungeon generation that fails is now retried up to three times with a different seed, so an unlucky layout no longer surfaces as a failure. The retry is skipped when `Path.RandomSeed` is set, because that value asks for one specific dungeon. Measured over 1200 generations, every failure cleared within two retries at about one percent extra cost.
+- The debug voxel image is now written when generation fails as well, and the endpoints of the aisle that could not be generated are drawn in a separate colour. A failed aisle owns no grid, so the image shows where it was meant to run.
+- Corrected the fix hint for a gate shortage. Lowering `Path.LoopRouteDensity` was listed as a remedy but does not help, because the aisles competing for a room's openings are branches rather than loops. The hint now points at the sub-level's wall openings, which measurement confirms is the remedy that works.
+- Fixed dungeon generation failing when applying the reserved Start and Goal room sizes pushed the two rooms into each other's margin. Both rooms have a fixed size, so no other room could be moved to separate them. The two rooms are now allowed to move, since only their size is fixed by the sub-level and not their location.
+- Fixed generated content surviving a regeneration when a dungeon was destroyed and then generated again, or when a generation failed after it had started spawning actors. `Dispose` skipped its whole cleanup unless the previous generation had completed successfully. Repeated generation could accumulate enough lights to crash the renderer.
+- Fixed sub-levels staying resident while the next dungeon loaded its own. An unload that was requested without waiting for it is now completed before the next generation loads anything.
+- Fixed dungeon generation failing with a gate shortage when a room could not open a second gate into the corridor of a locked aisle. The lock is written on one gate only, so the room at the other end of that aisle already reaches the corridor without crossing the lock and a second opening cannot be used as a bypass. Only the room that holds the locked gate is refused now.
+- Fixed the gate shortage report pointing at the start room's sub-level asset even when another room ran out of openings. It now names the room that actually failed.
+- Fixed dungeon generation failing with a route search error when an aisle wrapped around a room it did not connect to and sealed the room's remaining openings into a dead pocket. The route search now pays an extra cost for running along the wall of such a room, weighted by how many gates that room still needs against how many candidates it has left.
+- Fixed dungeon generation failing with a room separation error while `Keys And Locks` was enabled. Reapplying the endpoint policies to the moved rooms removed loop aisles from the layout graph after the aisle list had been built, so the aisles could no longer find their edge.
+- Fixed dungeon generation failing when the layout offered no room for the unique key. `MissionGraph` leaves such a dungeon completely unlocked by design, but `MissionGraphTester` rejected it because it requires one unique key and one unique lock. Generation now succeeds and reports the `DG_GEN_KEYS_NOT_PLACED` warning through `GetLastGenerationIssues()`.
+- Added generation failure reporting. `ADungeonGenerateBase::GetLastGenerationIssues()` returns the reason as `FDungeonValidationIssue` entries with a code, a message, a fix hint, the parameter to review, and the related sub-level asset. The editor tool lists them, shows the reason in the failure dialog, and includes them in `Copy diagnostics`.
+- Demoted the grid, aisle, room, and voxel dumps that follow a generation failure from Error to Verbose. The failure headline, its cause, and the seed remain at Error.
+- Added a warning when `Path.StartRoomPolicy` is `Use Central Point` or `Use Multi Start` while `Keys And Locks` is enabled. The value was already rewritten to `Use Southernmost` on load, but the change was silent.
+- Room-owned slope, stairwell, DownSpace, and UpSpace walls and ceilings now use their containing Room vegetation settings, database overrides, and Provided Context Tags. Passage-owned slope-family grids remain in the `Slope` area, and slope floor behavior is unchanged.
+- Fixed missing vegetation on generated Gate floors, lateral walls, and ceilings by reserving Gate grids with their containing Room vegetation job.
+- Fixed stacked Interior Actors caused by untagged recursive Interior Location spawning. Nested Parts now require explicit Context Tags, and ancestor Actor Classes are excluded from each recursive branch.
+- Removed automatic room-center Interior Actor spawning and the Placement Anchor API. Interior Actors now use wall-side floor candidates in their selected Placement Areas, while explicit Interior Location spawns and room vegetation remain available.
+- Renamed the context-tag provider API to `GetProvidedContextTags()` and `ProvidedContextTags`, making its relationship with `RequiredContextTags` explicit. The legacy `GetInquireInteriorTags()` API and `InquireInteriorTags` property were removed without redirects.
+- Fixed missing Interior Actor placement candidates in generated aisles, and added an independent opt-in `Slope` placement area for Interior Actors and vegetation. `Aisle` and `Slope` are configured as separate placement areas in v2.
+- Added configurable, shadow-free base fill Point Lights and door/stair guidance Spot Lights to `ADungeonRoomSensorBase`. Their intensity units can be selected independently from Unitless, Candelas, and Lumens; Lumens with physically based inverse-square falloff is the default.
+- Door guidance lights are now placed half a vertical grid above the door by default and are omitted when the grid directly above the door is not open room `Floor` space.
+- Minimap floor textures now include the selected floor's complete height band up to the next floor, while the highest floor extends to the top of the dungeon voxel area.
+- Minimap floor selection now changes at the same world-space elevations as the 3D floor debug planes, using Character feet and the dungeon actor's Z origin.
+- Fixed aisle purposes being overwritten to `VerticalTransition` whenever the connected rooms sat at different heights. Branch, Loop, and Shortcut information survived nowhere in a vertical layout, so layout scoring could not tell a redundant loop from the main route. `Aisle::IsVerticalTransition()` now reports floor crossing as a separate property.
+- Aisle voxel generation failures are now reported through a single path. A goal-side gate search failure previously produced no log and no error code, so a dungeon missing an aisle was returned as a successful generation.
+- Rooms whose size cannot change, such as sublevels and reserved Start and Goal rooms, now reserve the grids in front of their wall openings so that another aisle's stairway cannot consume the only place a gate could go.
+- Only locked aisles now require their own gate. Every other aisle may share one, which removes the gate exhaustion seen when Keys And Locks progression is combined with small fixed-size rooms.
+- Fixed the intersection route search preferring to create new gates instead of reusing existing ones. The priority test was inverted.
+- `Path.ExtraCorridorComplexity` now applies while Keys And Locks progression is enabled. It was silently forced to zero because lock placement shared the same flag as intersection generation. Locked aisles keep a private gate and corridor so that a locked door cannot be bypassed.
+
+### v2.0 の概要
+
+v2.0 は、**攻略して楽しい経路、場所ごとに変化する見た目、調整しやすい設定**を重視したメジャーアップデートです。
+
+- 5種類の Progression Policy、部屋の Gameplay Role、進行度や階層に応じた Zone を追加しました。
+- Role／Zone ごとにメッシュ、内装、Fixture、植生、Gameplay 設定を変更できるようにしました。
+- 複数のレイアウト候補を評価し、設計意図に合う結果を選択する仕組みを追加しました。
+- パラメータを `Theme`、`Structure`、`Path`、`Zones`、`Gameplay` に整理しました。
+- Mesh Set／Parts Selector、部屋情報 API、マップ機能、ランタイム負荷制御を拡張しました。
+
+### バージョン互換性に関する重要事項
+
+> **警告 — 破壊的変更:** Version 2.0 は Version 1.x からの移行、上書きアップグレード、自動変換をサポートしていません。v1.x のプロジェクトと対応するプラグインをそのまま保管し、v2 の設定は別環境で新しく作成してください。v1.x の Dungeon Generator アセット、パラメータ、Blueprint／C++ 連携、固定シード、生成レイアウトには互換性がありません。
+
+- 稼働中の v1.x プロジェクトへ v2.0.0 を上書き導入しないでください。対応する v1.x プラグインを含む、復元可能なコピーを保管してください。
+- v2 のパラメータアセットを新しく作成し、`Theme`、`Structure`、`Path`、`Zones`、`Gameplay` を設定してください。v1.x の値は自動変換されません。
+- 旧 `UseMissionGraph` の構成を作り直す場合は `Keys And Locks`、通常の経路は `Start To Goal` を出発点として調整してください。
+- メッシュなどの素材は、v2 との互換性を確認したものだけを再利用してください。Dungeon Generator のアセットと参照は必要に応じて作り直してください。
+- Room Sensor は `FDungeonGeneratedRoomInfo` と `GetGeneratedRoomInfo()` に合わせて再構築し、削除・改名された Blueprint／C++ API を手動で修正してください。
+- 生成結果は新しい設計として検証してください。メジャーバージョン間で同じ固定シードのレイアウトは保証されません。
+- 詳細な比較と v2 再構築の確認リストは [v1.x と v2.0.0 の比較](Document/tutorial/VersionComparison.ja.md)を参照してください。
+
+### 変更点
+- `SetRandomParameter` が `Path.MainRouteBias`、`Path.LoopRouteDensity`、`Path.StartRoomPolicy`、`Path.GoalRoomPolicy`、`Path.bMovePlayerStartToStartRoom` もランダム化するようになりました。ランダム生成のテストで経路の形と端点の選び方も試されます。`Path.RandomSeed` は変更しません。
+- 開始部屋から到達できない部屋が残る場合、`DG_GEN_ROOM_ISOLATED` として生成を失敗させるようにしました。経路を作れなかった通路を諦めた結果、その通路がつないでいた部屋へ到達できなくなり、しかもミニマップには表示される状態になっていました。別の乱数の種で作り直すため、全ての試行で孤立した場合にのみ報告されます。
+- 植生コンポーネントが所有アクターから取り除かれないまま破棄されていた問題を修正しました。`DestroyComponent` ではなく `UnregisterComponent` と `ConditionalBeginDestroy` の組み合わせで破棄していたため、1回の生成より長く生きるジェネレータアクターが、破棄を始めた後のコンポーネントを参照し続けていました。
+- 生成される通路を短くしました。どの部屋どうしをつなぐかは部屋の座標が決まる前に確定するため、部屋を配置した後で枝の通路を最も近い親へつなぎ替えるようにしました。同じ部屋配置に対する最小全域木と比べて、垂直配置での通路の総距離が最小の8.13倍から1.89倍になりました。同じシードでも以前のバージョンとは異なるレイアウトが生成されます。
+- 生成に失敗した場合、乱数の種を変えて最大3回まで作り直すようにしました。運が悪いレイアウトに当たっても失敗として表面化しなくなります。`Path.RandomSeed` を指定している場合は、特定のダンジョンを求める指定であるため再試行しません。1200回の生成で計測したところ、全ての失敗が2回以内の再試行で解消し、追加コストは約1%でした。
+- 生成に失敗した場合もデバッグ用のボクセル画像を出力するようにし、生成できなかった通路の両端を別の色で描くようにしました。失敗した通路はグリッドを持たないため、画像にはどこを結ぶはずだったかを示します。
+- 門不足の対処ヒントを修正しました。`Path.LoopRouteDensity` を下げる案を挙げていましたが効果がありません。部屋の開口部を取り合っているのはループではなく枝の通路のためです。計測で効果を確認できたサブレベルの開口部を増やす方法を案内するようにしました。
+- 予約した開始部屋とゴール部屋のサイズを適用した結果、二部屋が互いのマージンへ食い込んで生成が失敗する問題を修正しました。どちらもサイズが固定されているため、他の部屋を動かしても引き離せませんでした。サブレベルが決めているのはサイズであって位置ではないため、この二部屋の移動を許可するようにしました。
+- ダンジョンを破棄してから再生成した場合や、アクターの生成を始めた後に生成が失敗した場合に、生成物がワールドへ残る問題を修正しました。直前の生成が成功していない限り `Dispose` が後始末を丸ごと飛ばしていました。生成を繰り返すとライトが蓄積し、描画側のクラッシュに至る場合がありました。
+- 次のダンジョンがサブレベルを読み込む時点で、前のサブレベルが解放されずに残る問題を修正しました。完了を待たずに要求した解放を、次の生成が何かを読み込む前に待ち合わせるようにしました。
+- 施錠された通路の廊下へ部屋が2つ目の門を開けられず、門不足で生成が失敗する問題を修正しました。鍵は片方の門にしか書かれないため、通路の反対側の部屋は鍵を通らずに既に廊下とつながっており、2つ目の口は迂回路になりません。鍵をかけた門を持つ部屋だけを拒否するようにしました。
+- 門不足の報告が、別の部屋で開口部が尽きた場合でも開始部屋のサブレベルアセットを指していた問題を修正しました。実際に失敗した部屋を示すようになりました。
+- 接続しない部屋の外周に通路が貼り付いて、その部屋に残った開口部を袋小路に閉じ込め、経路探索のエラーで生成が失敗する問題を修正しました。経路探索がそうした部屋の壁際を通る際に追加コストを支払うようになり、コストはその部屋がまだ必要とする門の数と残りの候補数から決まります。
+- `Keys And Locks` 有効時に、部屋の分離エラーで生成が失敗する問題を修正しました。移動後の部屋へ端点ポリシーを再適用する際、通路の一覧を構築した後にレイアウトグラフからループ通路の辺を削除していたため、通路が自身の辺を逆引きできなくなっていました。
+- ユニーク鍵を置ける部屋が無いレイアウトで生成が失敗する問題を修正しました。`MissionGraph` は設計上そのダンジョンをロック無しのまま残しますが、`MissionGraphTester` がユニーク鍵とユニークロックを1組要求するため不合格にしていました。生成は成功するようになり、`GetLastGenerationIssues()` から `DG_GEN_KEYS_NOT_PLACED` の警告を取得できます。
+- 生成失敗の報告に対応しました。`ADungeonGenerateBase::GetLastGenerationIssues()` が失敗の理由をコード、メッセージ、対処のヒント、確認すべきパラメータ、関連するサブレベルアセット付きの `FDungeonValidationIssue` として返します。エディタツールは一覧へ表示し、失敗ダイアログに理由を示し、`Copy diagnostics` にも含めます。
+- 生成失敗後に出力されるグリッド、通路、部屋、ボクセルのダンプを Error から Verbose へ降格しました。失敗の見出しと原因、シード値は Error のまま残ります。
+- `Keys And Locks` 有効時に `Path.StartRoomPolicy` が `Use Central Point` または `Use Multi Start` の場合へ警告を追加しました。従来も読み込み時に `Use Southernmost` へ書き換えていましたが、通知がありませんでした。
+- Roomが所有するSlope、Stairwell、DownSpace、UpSpaceの壁と天井へ、所属RoomのVegetation設定、Database Override、Provided Context Tagsを適用するようにしました。通路所有のSlope系Gridは従来どおり`Slope`エリアを使用し、Slope床の挙動は変更していません。
+- 生成されたGateの床、横壁、天井にVegetationが生えない問題を修正し、Gateグリッドを所属するRoomのVegetation Jobへ登録するようにしました。
+- タグ未指定のInterior Location再帰スポーンによってInterior Actorが積み重なる問題を修正しました。入れ子Partsには明示的なContext Tagsが必要になり、再帰分岐の祖先Actor Classは候補から除外されます。
+- 部屋中央へのInterior Actor自動スポーンとPlacement Anchor APIを廃止しました。Interior Actorは選択したPlacement Area内の壁際床候補へ配置され、明示的なInterior Locationスポーンと部屋Vegetationは引き続き利用できます。
+- Context Tagの提供側APIを`GetProvidedContextTags()`と`ProvidedContextTags`へ改名し、`RequiredContextTags`との関係を明確にしました。旧`GetInquireInteriorTags()` APIと`InquireInteriorTags`プロパティはリダイレクトなしで削除しました。
+- 生成通路でInterior Actorの配置候補が登録されない問題を修正し、Interior Actorと植生へ独立したオプトインの`Slope`配置エリアを追加しました。v2では`Aisle`と`Slope`を別々の配置エリアとして設定します。
+- `ADungeonRoomSensorBase` に設定可能な影なしのベース補助 Point Light とドア・階段用の誘導 Spot Light を追加しました。それぞれの明るさの単位を Unitless、Candelas、Lumens から個別に選択でき、物理ベースの逆二乗減衰を使う Lumens がデフォルトです。
+- ドア用誘導光は既定でドア天面から半垂直グリッド上に配置し、ドア直上が室内の `Floor` 空間でない場合は生成しないようにしました。
+- 階層別ミニマップが、選択階層から次階層の直前までの高さ帯全体を含むようになりました。最上階はダンジョンのボクセル領域上端まで表示されます。
+- ミニマップの階層選択が3D階層デバッグ面と同じワールド高さで切り替わるようになり、Characterの足元とDungeon ActorのZ原点を使用するようになりました。
+- 接続する部屋の高さが異なるとき、通路のPurposeが`VerticalTransition`へ上書きされる問題を修正しました。垂直レイアウトではBranch、Loop、Shortcutの情報がどこにも残らず、レイアウト評価が冗長なループと本流を区別できていませんでした。階層をまたぐかどうかは`Aisle::IsVerticalTransition()`が独立した属性として返します。
+- 通路のボクセル生成の失敗報告を一元化しました。ゴール側の門検索の失敗はログもエラーコードも残さなかったため、通路が欠けたダンジョンが生成成功として返っていました。
+- サブレベルやサイズを予約した開始部屋・ゴール部屋など、サイズを変更できない部屋の門の外側のグリッドを確保するようにしました。他の通路の階段が、門を置ける唯一の場所を塞がなくなります。
+- 専用の門を必要とするのは施錠される通路だけになりました。それ以外の通路は門を共有できるため、Keys And Locksとサイズ固定の小さな部屋を組み合わせたときの門の枯渇が解消されます。
+- 交差点の経路探索が、既存の門を再利用せず新しい門を作ろうとする問題を修正しました。優先度の判定が反転していました。
+- Keys And Locks進行でも`Path.ExtraCorridorComplexity`が有効になりました。鍵の配置が交差点生成と同じフラグを共有していたため、黙って0に強制されていました。施錠される通路は鍵付き扉を迂回されないよう、専用の門と廊下を保持します。
+
 ## 20260606-1.9.2 (66)
 ### Changes
 - Fixed an issue with the plant spawn range

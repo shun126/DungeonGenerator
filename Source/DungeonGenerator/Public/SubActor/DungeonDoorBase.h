@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -50,28 +50,43 @@ public:
 	void SetRoomProps(const EDungeonRoomProps props);
 
 	/**
+	 * Is it a door with a key or a unique key?
+	 * 鍵またはユニーク鍵付きドアか？
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator", meta = (ToolTip = "Is it a door with a key or a unique key?"))
+	bool IsAnyKeyLockedDoor() const;
+
+	/**
 	 * Is locked door?
 	 * 鍵付きドアか？
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator")
-	bool IsLockedDoor() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator", meta = (ToolTip = "Is it a door with a key?"))
+	bool IsKeyLockedDoor() const;
+
+	/**
+	 * Is unique key locked door?
+	 * ユニークな鍵付きドアか？
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DungeonGenerator", meta = (ToolTip = "Is it a door with a unique key?"))
+	bool IsUniqueKeyLockedDoor() const;
 
 	/**
 	 * Function called during initialization after object creation
 	 * オブジェクト生成後に呼び出される初期化用関数
 	 */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator", meta = (CallInEditor = "true"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator", meta = (ToolTip = "Function called during initialization after object creation", CallInEditor = "true"))
 	void OnInitialize(const EDungeonRoomProps props);
 
 	/**
-	 * Finalize function called before object destruction
+	 * Finalize function called before object destrucAdditional Extent to Prohibit Placementtion
 	 * オブジェクト破棄前に呼び出される終了用関数
 	 */
-	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator", meta = (CallInEditor = "true"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "DungeonGenerator", meta = (ToolTip = "Finalize function called before object destruction", CallInEditor = "true"))
 	void OnFinalize(const bool finish);
 
 	// overrides
 	virtual uint32_t GenerateCrc32(uint32_t crc = 0xffffffffU) const noexcept override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	/**
@@ -96,12 +111,12 @@ private:
 	void InvokeInitialize(const std::shared_ptr<dungeon::Random>& random, const EDungeonRoomProps props);
 	void InvokeFinalize(const bool finish);
 
-private:
+protected:
 	/**
 	 * Types of props attached to the door
 	 * ドアに付属する小道具の種類
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, Category = "DungeonGenerator", meta = (ToolTip = "Types of props attached to the door"))
 	EDungeonRoomProps Props = EDungeonRoomProps::None;
 
 private:
@@ -128,9 +143,19 @@ inline void ADungeonDoorBase::SetRoomProps(const EDungeonRoomProps props)
 	Props = props;
 }
 
-inline bool ADungeonDoorBase::IsLockedDoor() const
+inline bool ADungeonDoorBase::IsAnyKeyLockedDoor() const
 {
 	return Props != EDungeonRoomProps::None;
+}
+
+inline bool ADungeonDoorBase::IsKeyLockedDoor() const
+{
+	return Props == EDungeonRoomProps::Lock;
+}
+
+inline bool ADungeonDoorBase::IsUniqueKeyLockedDoor() const
+{
+	return Props == EDungeonRoomProps::UniqueLock;
 }
 
 inline void ADungeonDoorBase::OnNativeInitialize(const EDungeonRoomProps props)

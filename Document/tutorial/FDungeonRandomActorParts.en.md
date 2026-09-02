@@ -1,16 +1,14 @@
 # FDungeonRandomActorParts Reference
 
-`FDungeonRandomActorParts` is the container used when you want multiple actor candidates at the same spawn point and want them to appear by probability. It inherits from `FDungeonActorPartsWithDirection`, so it keeps direction and offset data while adding `Frequency` to control how often it appears.
+`FDungeonRandomActorParts` stores an Actor candidate with direction, offset, and an easy-to-read percentage chance.
 
-## Main usage
-- Register shrine, treasure chest, or environmental-object variations that should appear only sometimes at the same location.
-- Add them to random-actor arrays in generation settings so they are drawn during generation.
+## Main property
 
-## What the UPROPERTY means
-- **Frequency (`float`, EditAnywhere/BlueprintReadWrite, 0.0 to 1.0)**  
-  Spawn probability. `1.0` means the actor appears every time, while `0.5` means a 50% chance. When multiple parts are listed, each is evaluated independently, so it is possible for more than one to appear. Lower values make an object feel rarer.
+- `Spawn Chance` (`float`, 0% to 100%): Chance that this Actor participates in one selection. `0%` never participates and `100%` always participates.
+
+Spawn Chance is not a selection weight. It decides whether this entry participates; a weighted selector decides which participating entry is preferred.
 
 ## Editing tips
-- Register multiple actors with the same role and adjust `Frequency` to create effects such as "a rare object appears only occasionally."
-- Use the base-class transform settings for rotation and position alignment. Matching the actor's forward direction makes placement feel more natural.
 
+- Use a low Spawn Chance to mix rare props into common decoration.
+- Use the inherited transform settings to align the Actor's forward direction and placement offset.

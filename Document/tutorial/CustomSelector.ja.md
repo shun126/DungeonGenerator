@@ -1,64 +1,63 @@
-# カスタムセレクタガイド
+# カスタムセレクターガイド
 
-`Custom Selector` は、既定の `Random` / `Identifier` / `Depth From Start` では足りないときに、`UDungeonPartsSelector` 派生アセットで選択ルールを差し替える仕組みです。
+セレクターは、生成時にどの見た目候補を使うか決める機能です。Version 2 では、メッシュセットを選ぶセレクターと、その中のパーツを選ぶセレクターを直接設定します。
 
-## いつ使うか
-- 部屋の周囲形状や進行度に応じて、見た目を細かく変えたい
-- 決定的な重み付き抽選で、サーバー / クライアントの結果を揃えたい
-- 既定ポリシーでは表現しづらいテーマ切り替えをしたい
+## 正しいセレクターの種類を選ぶ
 
-## 基本の流れ
-1. `UDungeonPartsSelector` 派生の Blueprint または C++ クラスを作ります。
-2. `SelectMeshSetIndex` または `SelectPartsIndex` を実装します。
-3. 使いたい場所の `Selection Policy` を `Custom Selector` に変更します。
-4. 対応する selector プロパティへ作成したアセットを割り当てます。
+- `UDungeonMeshSetDatabase` から `FDungeonMeshSet` を選ぶ場合は、`UDungeonBlueprintMeshSetSelector` 派生 Blueprint を作り、`Select Mesh Set Index` を実装します。
+- 床、壁、天井、スロープ、キャットウォーク、シャンデリア、柱、松明、扉の候補を選ぶ場合は、`UDungeonBlueprintPartsSelector` 派生 Blueprint を作り、`Select Parts Index` を実装します。
 
-## メッシュセットを独自ルールで選ぶ
-`UDungeonMeshSetDatabase` で次のように設定します。
+`UDungeonPartsSelector` は C++ で複数のセレクター型をまとめて読み込むためのヘッダーであり、Blueprint の親クラスではありません。
 
-1. `Mesh Set Selection Policy = Custom Selector`
-2. `Custom Mesh Set Selector` に `UDungeonPartsSelector` 派生アセットを割り当てる
+## セレクターを設定する場所
 
-このとき `SelectMeshSetIndex` が呼ばれ、`FMeshSetQuery` と候補数を受け取って採用する `Mesh Set` の index を返します。
+Mesh Set 全体を選ぶ場合は、`Mesh set database` の `Mesh Set Selector` に設定します。
 
-## 各パーツを独自ルールで選ぶ
-床 / 壁 / 天井 / スロープ / キャットウォーク / シャンデリアや、柱 / 燭台 / ドアなども `Custom Selector` にできます。
+`FDungeonMeshSet` 内のパーツを選ぶ場合は、対象に対応するプロパティを使います。
 
-- `FDungeonMeshSet` 側の床 / 壁 / 天井 / スロープ / キャットウォーク / シャンデリア  
-  各 `*PartsSelectionPolicy` を `Custom Selector` にし、`Custom Mesh Parts Selector` を割り当てます。
-- `UDungeonGenerateParameter` 側の柱 / 燭台 / ドアなど  
-  各 `*SelectionPolicy` を `Custom Selector` にし、`Custom Dungeon Parts Selector` を割り当てます。
+- `Floor Parts Selector`
+- `Wall Parts Selector`
+- `Roof Parts Selector`
+- `Slope Parts Selector`
+- `Catwalk Parts Selector`
+- `Chandelier Parts Selector`
 
-このとき `SelectPartsIndex` が呼ばれ、`FPartsQuery` と候補数を受け取って最終的なパーツ index を返します。
+共通 Fixture は、`UDungeonGenerateParameter` の `Theme.Fixtures.Pillar Parts Selector`、`Torch Parts Selector`、`Door Parts Selector`、`Unique Door Parts Selector` に設定します。
 
-## サンプルセレクタを使う
-サンプルとして `UDungeonSamplePartsSelector` が用意されています。
+これらはプロパティ内に保持されるインラインのセレクターオブジェクトです。空の場合は Uniform Random が自動的に割り当てられるため、別の Selection Policy を変更する必要はありません。
 
-- `FMeshSetQuery`  
-  `Mesh Set` を選ぶときの問い合わせです。
-- `FPartsQuery`  
-  個別パーツを選ぶときの問い合わせです。`NeighborMask6` や `SeedKey` を使った決定的選択の例があります。
+## 組み込みセレクター
 
-まずはこのサンプルを複製して、必要な条件を少しずつ足していくと整理しやすいです。
+Mesh Set 用には Uniform Random、Identifier、Depth From Start があります。パーツ用には Uniform Random、Grid Index、Direction があります。必要な規則を表せる場合は組み込みセレクターを使い、プロジェクト固有の条件が必要な場合だけ Blueprint セレクターを作ると管理しやすくなります。
 
-## 実装時の注意
-- selector は生成のホットパスをゲームスレッドで実行されます
-- 重い処理、非同期処理、外部参照の多い処理は避けてください
-- 非同期乱数や時刻依存の分岐は、サーバー / クライアント差分の原因になるので避けてください
-- 返す index は `0` 以上 `NumCandidates - 1` 以下に収めてください
+## Blueprint での作成手順
 
-## 旧方式との違い
-`UDungeonGenerateParameter::SelectMeshSetIndex` も残っていますが、現行構成では旧アセット互換寄りの経路です。  
-新規構成では selector asset を使う方が、どこで何を切り替えているかを整理しやすくなります。
+1. `UDungeonBlueprintMeshSetSelector` または `UDungeonBlueprintPartsSelector` 派生 Blueprint を作ります。
+2. `Select Mesh Set Index` または `Select Parts Index` をオーバーライドします。
+3. `Query` を調べ、`0` から `NumCandidates - 1` のインデックスを返します。
+4. 上記の対応するインラインセレクタープロパティで、その Blueprint セレクターを選びます。
+5. 固定 Seed を複数試し、結果が安定していることを確認します。
 
-## 次に読む
-- [UDungeonMeshSetDatabase.ja.md](./UDungeonMeshSetDatabase.ja.md)  
-  `Mesh Set` 側の選択ポリシーやシャンデリア設定をまとめて確認できます。
-- [ADungeonGenerateActor.ja.md](./ADungeonGenerateActor.ja.md)  
-  応用設定をレベル内の生成アクターへ反映する流れを確認できます。
+範囲外の値を返すと警告が出て Uniform Random にフォールバックするため、生成自体は続行できます。ただし、フォールバックを通常動作として使わず、セレクターの不具合として修正してください。
+
+## Query の値
+
+Mesh Set 選択には `FDungeonMeshSetQuery`、個別パーツ選択には `FDungeonPartsQuery` が渡されます。
+
+どちらにも `GridX`、`GridY`、`GridZ` などのダンジョン内ローカルグリッド座標と、決定的な選択に使える `SeedKey` が含まれます。Unreal のワールド座標ではありません。Parts Query には対象の種類、回転、周囲セルなども含まれるため、周辺形状に応じた規則を作れます。
+
+決定的なバリエーションが必要な場合は `Query.SeedKey` を使ってください。時刻、同期されない Random ノード、非同期処理、外部参照は避けます。セレクターは生成中に何度も呼ばれ、同じ入力から同じ結果を返す必要があります。
+
+## サンプル
+
+プラグインには `UDungeonSampleMeshSetSelector` と `UDungeonSamplePartsSelector`、Blueprint サンプルの `BP_SampleDungeonMeshSetSelector` と `BP_SampleDungeonPartsSelector` が含まれます。決定的な重み付き選択や Query を使った規則を確認し、必要な部分から少しずつ条件を追加してください。
+
+## Version 1 に関する注意
+
+実装上、非表示の旧 Policy や旧セレクターフィールドが保存データに残る場合がありますが、Version 2 で使用する設定方法ではなく、Version 1 から Version 2 への移行をサポートするものでもありません。表示されている Version 2 のセレクタープロパティを使って手動で設定を作り直してください。
 
 ## 関連ページ
+
 - [UDungeonMeshSetDatabase.ja.md](./UDungeonMeshSetDatabase.ja.md)
 - [UDungeonGenerateParameter.ja.md](./UDungeonGenerateParameter.ja.md)
 - [ADungeonGenerateActor.ja.md](./ADungeonGenerateActor.ja.md)
-

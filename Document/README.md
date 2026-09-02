@@ -17,7 +17,6 @@ This directory contains user-facing documentation for the plugin.
 - [UDungeonMeshSetDatabase](tutorial/UDungeonMeshSetDatabase.en.md)
 - [UDungeonInteriorDatabase](tutorial/UDungeonInteriorDatabase.en.md)
 - [UDungeonSubLevelDatabase](tutorial/UDungeonSubLevelDatabase.en.md)
-- [UDungeonRoomSensorDatabase](tutorial/UDungeonRoomSensorDatabase.en.md)
 - [Generate Minimap Textures](tutorial/GenerateMinimapTexture.en.md)
 - [Apply MissionGraph](tutorial/ApplyMissionGraph.en.md)
 - [Custom Selector Guide](tutorial/CustomSelector.en.md)
@@ -36,9 +35,8 @@ This directory contains user-facing documentation for the plugin.
 - [ADungeonRoomSensorBase](tutorial/ADungeonRoomSensorBase.ja.md)
 - [UDungeonGenerateParameter](tutorial/UDungeonGenerateParameter.ja.md)
 - [UDungeonMeshSetDatabase](tutorial/UDungeonMeshSetDatabase.ja.md)
-- [UDungeonInteriorDatabase](tutorial/UDungeonInteriorDatabase.ja.md)
 - [UDungeonSubLevelDatabase](tutorial/UDungeonSubLevelDatabase.ja.md)
-- [UDungeonRoomSensorDatabase](tutorial/UDungeonRoomSensorDatabase.ja.md)
+- [UDungeonInteriorDatabase](tutorial/UDungeonInteriorDatabase.ja.md)
 - [ミニマップを生成する](tutorial/GenerateMinimapTexture.ja.md)
 - [ミッショングラフを適用する](tutorial/ApplyMissionGraph.ja.md)
 - [Custom Selector Guide](tutorial/CustomSelector.ja.md)
@@ -48,3 +46,4 @@ This directory contains user-facing documentation for the plugin.
 - [FDungeonMeshParts](tutorial/FDungeonMeshParts.ja.md)
 - [FDungeonRandomActorParts](tutorial/FDungeonRandomActorParts.ja.md)
 - [FDungeonDoorActorParts](tutorial/FDungeonDoorActorParts.ja.md)
+

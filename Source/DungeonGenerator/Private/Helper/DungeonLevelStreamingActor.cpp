@@ -1,10 +1,13 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * Helper class that loads the level when the player enters the OverlapVolume
  * プレイヤーが OverlapVolume に入るときにレベルをロードするヘルパークラス
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #include "Helper/DungeonLevelStreamingActor.h"

@@ -1,10 +1,14 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * 最小スパニングツリーに関するヘッダーファイル
  *
  * @cite		https://algo-logic.info/kruskal-mst/
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #pragma once
@@ -18,6 +22,7 @@ namespace dungeon
 
 	/**
 	 * Minimum Spanning Tree Class
+	 * inimumSpanningTree を表します。
 	 */
 	class MinimumSpanningTree final
 	{
@@ -25,21 +30,25 @@ namespace dungeon
 
 	public:
 		/**
+		 * Represents inimumSpanningTree.
 		 * コンストラクタ
 		 */
 		MinimumSpanningTree(const std::shared_ptr<Random>& random, const DelaunayTriangulation3D& delaunayTriangulation, const uint8_t aisleComplexity, const StartLocationPolicy startLocationPolicy, const uint8_t startRoomCount) noexcept;
 
 		/**
+		 * Represents inimumSpanningTree.
 		 * コンストラクタ
 		 */
 		MinimumSpanningTree(const std::shared_ptr<Random>& random, const std::vector<std::shared_ptr<const Point>>& points, const uint8_t aisleComplexity, const StartLocationPolicy startLocationPolicy, const uint8_t startRoomCount) noexcept;
 
 		/**
+		 * Destroys the ~MinimumSpanningTree instance.
 		 * デストラクタ
 		 */
 		~MinimumSpanningTree() = default;
 
 		/**
+		 * Represents ForEach.
 		 * 生成した辺を更新します
 		 */
 		template<typename Function>
@@ -52,6 +61,7 @@ namespace dungeon
 		}
 
 		/**
+		 * Represents ForEach.
 		 * 生成した辺を参照します
 		 */
 		template<typename Function>
@@ -84,6 +94,7 @@ namespace dungeon
 	private:
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
+		 * Represents Verteces.
 		 * 頂点配列 クラス
 		 */
 		class Verteces final
@@ -116,6 +127,7 @@ namespace dungeon
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
+		 * Represents IndexedEdge.
 		 * 頂点インデックスを使った辺クラス
 		 */
 		class IndexedEdge final
@@ -129,22 +141,26 @@ namespace dungeon
 			 */
 			IndexedEdge(const size_t e0, const size_t e1, const double length) noexcept;
 
-			/*
+			/**
+			 * Represents IndexedEdge.
 			コピーコンストラクタ
 			*/
 			IndexedEdge(const IndexedEdge& other) noexcept;
 
-			/*
+			/**
+			 * Represents IndexedEdge.
 			ムーブコンストラクタ
 			*/
 			IndexedEdge(IndexedEdge&& other) noexcept;
 
-			/*
+			/**
+			 * Represents operator.
 			コピー代入
 			*/
 			IndexedEdge& operator=(const IndexedEdge& other) noexcept;
 
-			/*
+			/**
+			 * Represents operator.
 			ムーブ代入
 			*/
 			IndexedEdge& operator=(IndexedEdge&& other) noexcept;
@@ -156,13 +172,14 @@ namespace dungeon
 			 */
 			size_t GetEdge(const size_t index) const noexcept;
 
-			/*
+			/**
 			辺の長さを取得します
 			@return		頂点間の距離
 			*/
 			double GetLength() const noexcept;
 
-			/*
+			/**
+			 * Represents Identical.
 			同じ辺か調べます
 			*/
 			static bool Identical(const IndexedEdge& left, const IndexedEdge& right) noexcept;
@@ -174,6 +191,7 @@ namespace dungeon
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
+		 * Represents RouteNode.
 		 * ルートノード
 		 */
 		struct RouteNode final
@@ -183,6 +201,7 @@ namespace dungeon
 		};
 
 		/**
+		 * Represents Initialize.
 		 * 初期化
 		 */
 		void Initialize(const std::shared_ptr<Random>& random, const Verteces& verteces, std::vector<IndexedEdge>& edges, const uint8_t aisleComplexity, const StartLocationPolicy startLocationPolicy, const uint8_t startRoomCount) noexcept;
@@ -196,7 +215,8 @@ namespace dungeon
 		 */
 		static void Cost(std::vector<RouteNode>& result, std::vector<IndexedEdge>& edges, const size_t vertexIndex, const float cost) noexcept;
 
-		/*
+		/**
+		 * Represents RedundancyCheck.
 		重複した辺が登録されているか調べます
 		*/
 		static bool RedundancyCheck(const std::vector<IndexedEdge>& indexedEdges, const IndexedEdge& indexedEdge) noexcept;
@@ -215,6 +235,7 @@ namespace dungeon
 		std::vector<std::shared_ptr<const Point>> FindMultiStartPoints(const size_t startRoomCount) const noexcept;
 
 		/**
+		 * Represents CollectUniquePoints.
 		 * 重複しない点の一覧を取得します
 		 */
 		std::vector<std::shared_ptr<const Point>> CollectUniquePoints() const noexcept;

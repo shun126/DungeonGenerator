@@ -1,10 +1,14 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * 四面体 ヘッダーファイル
  *
  * @cite		http://tercel-sakuragaoka.blogspot.com/2011/11/c-3-delaunay.html
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #pragma once
@@ -17,6 +21,7 @@ namespace dungeon
 	class Point;
 
 	/**
+	 * Represents Tetrahedron.
 	 * 四面体クラス
 	 */
 	class Tetrahedron final
@@ -26,26 +31,31 @@ namespace dungeon
 
 	public:
 		/**
+		 * Represents Tetrahedron.
 		 * コンストラクタ
 		 */
 		Tetrahedron() = default;
 
 		/**
+		 * Represents Tetrahedron.
 		 * コンストラクタ
 		 */
 		Tetrahedron(const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1, const std::shared_ptr<const Point>& p2, const std::shared_ptr<const Point>& p3) noexcept;
 
 		/**
+		 * Destroys the ~Tetrahedron instance.
 		 * デストラクタ
 		 */
 		~Tetrahedron() = default;
 
 		/**
+		 * Returns whether CommonPoints.
 		 * 他の四面体と共有点を持つか
 		 */
 		bool HasCommonPoints(const Tetrahedron& t) const noexcept;
 
-		/*
+		/**
+		 * Returns CircumscribedSphere.
 		外接球をの中心点と半径を計算
 		*/
 		Circle GetCircumscribedSphere() const noexcept;
@@ -57,37 +67,44 @@ namespace dungeon
 		uint32_t GetHash() const noexcept;
 
 		/**
+		 * Represents operator.
 		 * 等価性の判定
 		 */
 		bool operator==(const Tetrahedron& t) const noexcept;
 
 		/**
+		 * Represents noexcept.
 		 * 等価性の判定
 		 */
 		bool operator!=(const Tetrahedron& t) const noexcept;
 
 		/**
+		 * Represents noexcept.
 		 * 等価性の判定
 		 */
 		bool operator<(const Tetrahedron& t) const noexcept;
 
 		/**
+		 * Represents operator.
 		 * 頂点を取得します
 		 */
 		const std::shared_ptr<const Point>& operator[](const size_t index) const noexcept;
 
 	private:
-		/*
+		/**
+		 * Represents dit_2.
 		二次元行列の計算
 		*/
 		static double dit_2(const double (&dit)[2][2]) noexcept;
 
-		/*
+		/**
+		 * Represents dit_3.
 		三次行列の計算
 		*/
 		static double dit_3(const double (&dit)[3][3]) noexcept;
 
-		/*
+		/**
+		 * Represents dit_4.
 		4次元の行列
 		*/
 		static double dit_4(const double (&dit)[4][4]) noexcept;

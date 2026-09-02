@@ -1,9 +1,13 @@
 /**
- * Helper function header file
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
+ */
+
+/**
+ * @file
+ * Helper function header file
+ * Crc を表します。
  */
 
 #pragma once
@@ -55,6 +59,7 @@ namespace dungeon
 	 * @param[in] size Size of text
 	 * @param[in] hash Initial hash value
 	 * @return		CRC32
+	 * Crc32FromText を生成します。
 	 */
 	static constexpr uint32_t GenerateCrc32FromText(const char* text, const size_t size, uint32_t hash = 0xffffffffU) noexcept
 	{
@@ -72,6 +77,7 @@ namespace dungeon
 	 * @param[in] size Size of data
 	 * @param[in] hash Initial hash value
 	 * @return		CRC32
+	 * Crc32FromData を生成します。
 	 */
 	static constexpr uint32_t GenerateCrc32FromData(const void* data, const size_t size, uint32_t hash = 0xffffffffU) noexcept
 	{

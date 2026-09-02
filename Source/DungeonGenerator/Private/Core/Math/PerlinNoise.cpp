@@ -1,8 +1,6 @@
 /**
- * パーリンノイズに関するソースファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -89,7 +87,7 @@ namespace dungeon
 	{
 		return MakeGrad(hash, x, y, z);
 	}
-	
+
 	float PerlinNoise::SetNoise(float x, float y, float z) const noexcept
 	{
 		const std::size_t xInt = static_cast<std::size_t>(std::floor(x * 255.f)) & 255;

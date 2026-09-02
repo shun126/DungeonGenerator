@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -39,7 +39,7 @@ struct DUNGEONGENERATOR_API FDungeonValidationIssue
 	 *
 	 * この検証問題の重大度です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation", meta = (ToolTip = "Severity of this validation issue."))
 	EDungeonValidationSeverity Severity = EDungeonValidationSeverity::Info;
 
 	/**
@@ -47,7 +47,7 @@ struct DUNGEONGENERATOR_API FDungeonValidationIssue
 	 *
 	 * 問題の種類を分類するための安定した識別子です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation", meta = (ToolTip = "Stable identifier used to classify the issue type."))
 	FName Code;
 
 	/**
@@ -55,7 +55,7 @@ struct DUNGEONGENERATOR_API FDungeonValidationIssue
 	 *
 	 * 問題内容を説明する人間向けメッセージです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation", meta = (ToolTip = "Human-readable message that explains the issue."))
 	FText Message;
 
 	/**
@@ -63,7 +63,7 @@ struct DUNGEONGENERATOR_API FDungeonValidationIssue
 	 *
 	 * 利用者に表示する修正案内です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation", meta = (ToolTip = "Suggested fix guidance shown to users."))
 	FText FixHint;
 
 	/**
@@ -71,7 +71,7 @@ struct DUNGEONGENERATOR_API FDungeonValidationIssue
 	 *
 	 * 関連するパラメータ名（該当する場合）です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation", meta = (ToolTip = "Name of the related parameter, when applicable."))
 	FName ParameterName;
 
 	/**
@@ -79,7 +79,7 @@ struct DUNGEONGENERATOR_API FDungeonValidationIssue
 	 *
 	 * この問題に関連付けられたアセット参照です。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation", meta = (ToolTip = "Asset reference associated with this issue."))
 	FSoftObjectPath RelatedAsset;
 
 	/**
@@ -87,6 +87,6 @@ struct DUNGEONGENERATOR_API FDungeonValidationIssue
 	 *
 	 * 自動修正を適用できるかどうかです。
 	 */
-	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation")
+	UPROPERTY(BlueprintReadOnly, Category = "DungeonGenerator|Validation", meta = (ToolTip = "Whether an automatic fix can be applied."))
 	bool bCanAutoFix = false;
 };

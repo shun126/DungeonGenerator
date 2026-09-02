@@ -30,18 +30,29 @@ If you only want a quick editor preview, `Window > DungeonGenerator` is faster. 
 - `GenerateDungeon`  
   Generates using the already assigned `DungeonGenerateParameter`.
 - `GenerateDungeonWithParameter`  
-  Generates using a different `DungeonGenerateParameter` passed at call time.
+  Generates using a different `DungeonGenerateParameter` passed at call time. This can also receive a temporary Parameter created in memory.
 - `DestroyDungeon`  
   Removes the generated dungeon.
+
+## Reproducing a generation failure
+In a development Editor build (`JENKINS_FOR_DEVELOP=1`), a failed `GenerateDungeonWithParameter` call in a standalone session automatically saves the supplied Parameter as a reproducible asset. This also works when the Parameter was created only in memory with `GenerateRandomParameter`. Release builds do not create failure assets.
+
+- If `GenerateRandomParameter` received a saved source asset, the failed copy is saved beside that source as `<SourceAssetName>_Failed_Seed_<Seed>`.
+- If the temporary Parameter has no saved source, a dialog asks where to save it. Cancelling the dialog discards the captured copy.
+- The actual failed seed is fixed as `RandomSeed`, so assigning the saved asset and generating again reproduces the same attempt.
+- Each failure creates a new uniquely named asset. Successful generation does not create an asset.
+
+Automatic failure saving is available only in development Editor builds and standalone sessions. Multiplayer sessions, release Editor builds, and packaged builds continue generation normally but do not create assets. When sharing a problem, send the saved Parameter together with its referenced databases and meshes, not only the seed.
 
 ## When you want to connect a lobby
 If you want to use a preloaded lobby as the start room, use `StartRoomSubLevelScriptActor`.  
 In that case, the following restrictions apply.
 
-- Set `MovePlayerStartToStartingPoint = false` in `UDungeonGenerateParameter`
-- Set `StartLocationPolicy = NoAdjustment` in `UDungeonGenerateParameter`
+- Set `Path.bMovePlayerStartToStartRoom = false` in `UDungeonGenerateParameter`
+- Set `Path.StartRoomPolicy = UseCentralPoint` in `UDungeonGenerateParameter`
 - `UseMultiStart` cannot be combined with it
 - The referenced sublevel must already be loaded and must contain `ADungeonSubLevelScriptActor`
+- `DungeonSubLevelDatabase.StartRoom` is ignored while this preloaded start room is set
 
 If you want a fixed start room without preloading a lobby, use [UDungeonSubLevelDatabase.en.md](./UDungeonSubLevelDatabase.en.md) instead.  
 See [LobbyConnection.en.md](./LobbyConnection.en.md) for the full comparison.

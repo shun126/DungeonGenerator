@@ -1,25 +1,33 @@
 /**
  * ボクセルなどに利用するグリッド情報のヘッダーファイル
  *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #pragma once
 #include "../Helper/Direction.h"
 #include "../Math/Random.h"
+#include "../Debug/Config.h"
 
 namespace dungeon
 {
 	inline Grid::Grid() noexcept
 	{
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+		static_assert(std::is_trivially_copyable_v<Grid>);
+		std::memset(this, 0, sizeof(Grid));
+#endif
 		SetType(Type::Empty);
 		SetProps(Props::None);
 		SetDirection(Direction(Direction::North));
 	}
 
 	inline Grid::Grid(const Type type) noexcept
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+		: Grid()
+#endif
 	{
 		SetType(type);
 		SetProps(Props::None);
@@ -27,6 +35,9 @@ namespace dungeon
 	}
 
 	inline Grid::Grid(const Type type, const Direction& direction) noexcept
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+		: Grid()
+#endif
 	{
 		SetType(type);
 		SetProps(Props::None);
@@ -34,30 +45,52 @@ namespace dungeon
 	}
 
 	inline Grid::Grid(const Type type, const Direction& direction, const uint16_t identifier) noexcept
-		: mIdentifier(identifier)
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+		: Grid()
+#endif
 	{
+		mIdentifier = identifier;
 		SetType(type);
 		SetProps(Props::None);
 		SetDirection(direction);
 	}
 
 	inline Grid::Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
-		: mIdentifier(identifier)
-		, mDepthRatioFromStart(depthRatioFromStart)
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+		: Grid()
+#endif
 	{
+		mIdentifier = identifier;
+		mDepthRatioFromStart = depthRatioFromStart;
 		SetType(type);
 		SetProps(Props::None);
 		SetDirection(direction);
 	}
 
-	inline Grid Grid::CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
+	inline Grid::Grid(const Type type, const Direction& direction, const uint16_t identifier, const uint8_t depthRatioFromStart, const EDungeonRoomStructuralRole roomStructuralRole, const EDungeonRoomGameplayRole roomGameplayRole, const int32 zoneIndex) noexcept
+#if defined(DEBUG_ENABLE_INFORMATION_FOR_REPLICATION)
+		: Grid()
+#endif
 	{
-		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier, depthRatioFromStart);
+		check(zoneIndex == INDEX_NONE || (0 <= zoneIndex && zoneIndex <= std::numeric_limits<int16_t>::max()));
+		mIdentifier = identifier;
+		mZoneIndex = zoneIndex;
+		mDepthRatioFromStart = depthRatioFromStart;
+		mRoomStructuralRole = roomStructuralRole;
+		mRoomGameplayRole = roomGameplayRole;
+		SetType(type);
+		SetProps(Props::None);
+		SetDirection(direction);
 	}
 
-	inline Grid Grid::CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart) noexcept
+	inline Grid Grid::CreateFloor(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, const EDungeonRoomStructuralRole roomStructuralRole, const EDungeonRoomGameplayRole roomGameplayRole, const int32 zoneIndex) noexcept
 	{
-		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier, depthRatioFromStart);
+		return Grid(Type::Floor, Direction::CreateFromRandom(random), identifier, depthRatioFromStart, roomStructuralRole, roomGameplayRole, zoneIndex);
+	}
+
+	inline Grid Grid::CreateDeck(const std::shared_ptr<Random>& random, const uint16_t identifier, const uint8_t depthRatioFromStart, const EDungeonRoomStructuralRole roomStructuralRole, const EDungeonRoomGameplayRole roomGameplayRole, const int32 zoneIndex) noexcept
+	{
+		return Grid(Type::Deck, Direction::CreateFromRandom(random), identifier, depthRatioFromStart, roomStructuralRole, roomGameplayRole, zoneIndex);
 	}
 
 	inline Grid::Type Grid::GetType() const noexcept
@@ -175,6 +208,37 @@ namespace dungeon
 	inline void Grid::SetDepthRatioFromStart(const uint8_t depthRatioFromStart) noexcept
 	{
 		mDepthRatioFromStart = depthRatioFromStart;
+	}
+
+	inline EDungeonRoomStructuralRole Grid::GetRoomStructuralRole() const noexcept
+	{
+		return mRoomStructuralRole;
+	}
+
+	inline void Grid::SetRoomStructuralRole(const EDungeonRoomStructuralRole roomStructuralRole) noexcept
+	{
+		mRoomStructuralRole = roomStructuralRole;
+	}
+
+	inline EDungeonRoomGameplayRole Grid::GetRoomGameplayRole() const noexcept
+	{
+		return mRoomGameplayRole;
+	}
+
+	inline void Grid::SetRoomGameplayRole(const EDungeonRoomGameplayRole roomGameplayRole) noexcept
+	{
+		mRoomGameplayRole = roomGameplayRole;
+	}
+
+	inline int32 Grid::GetZoneIndex() const noexcept
+	{
+		return mZoneIndex;
+	}
+
+	inline void Grid::SetZoneIndex(const int32 zoneIndex) noexcept
+	{
+		check(zoneIndex == INDEX_NONE || (0 <= zoneIndex && zoneIndex <= std::numeric_limits<int16_t>::max()));
+		mZoneIndex = zoneIndex;
 	}
 
 

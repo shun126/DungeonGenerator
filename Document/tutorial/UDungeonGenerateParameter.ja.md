@@ -1,130 +1,235 @@
 # UDungeonGenerateParameter ガイド
 
-`UDungeonGenerateParameter` は、**ダンジョン生成の中心になる設定アセット**です。  
-レイアウト、開始位置、見た目、サブレベル、センサー、内装まで、多くの設定をここから参照します。
+`UDungeonGenerateParameter` は、ダンジョン生成の中心になる設定アセットです。
+2.0 では、設定を「レイアウト」「Zone による見た目の切り替え」「部屋情報を使ったユーザー実装」に分けて考えると理解しやすくなります。
 
-## まず最初に設定する項目
-- `DungeonRoomMeshPartsDatabase`  
-  部屋用の `Mesh set database` です。未設定だと生成できません。
-- `DungeonAisleMeshPartsDatabase`  
-  通路用の `Mesh set database` です。未設定だと生成できません。
-- `GridSize` / `VerticalGridSize`  
-  メッシュやサブレベルが合わせる基準サイズです。
-- `RandomSeed`  
-  `0` なら毎回ランダム、固定値なら再現用です。
+## 主なデータグループ
+2.0 では、v1 でトップレベルに並んでいた多くの設定が、目的別のグループに分かれています。
 
-最初の確認では、まず上の 4 つだけ押さえておけば十分です。
+```mermaid
+graph TD;
+    Parameter["UDungeonGenerateParameter"] --> Theme["Theme<br/>見た目用アセットとグリッドサイズ"]
+    Parameter --> Structure["Structure<br/>部屋数、部屋サイズ、階層モード"]
+    Parameter --> Path["Path<br/>開始、ゴール、進行モデル、ループ、通路設定"]
+    Parameter --> Zones["Zones<br/>場所ごとの見た目切り替え"]
+    Parameter --> Gameplay["Gameplay<br/>部屋役割、センサー、サブレベル"]
+    Theme --> MeshDb["部屋用、通路用 Mesh Set Database"]
+    Theme --> InteriorDb["Interior Database"]
+    Gameplay --> SensorDb["Gameplay Room Sensor"]
+    Gameplay --> SubLevelDb["SubLevel Database"]
+```
 
-## レイアウトを決める項目
-- `RoomWidth` / `RoomDepth` / `RoomHeight`  
-  部屋サイズの最小 / 最大です。大きくすると広場寄り、小さくすると迷路寄りになります。
-- `NumberOfCandidateRooms`  
-  生成の試行に使う候補部屋数です。少なすぎると生成失敗しやすくなります。
-- `RoomMargin` / `VerticalRoomMargin`  
-  部屋同士の余白です。密度や上下の詰まり方を調整します。
-- `MergeRooms`  
-  隣接部屋を結合して大部屋を作りやすくします。有効にすると一部の余白設定は無効になります。
-- `ExpansionPolicy`  
-  横に広げるか、縦に広げるか、両方を許可するかを決めます。  
-  単層にしたい場合は `Flat` ではなく `ExpansionPolicy = Flat` を使うのが新しい書き方です。
-- `NumberOfCandidateFloors`  
-  多層構造を試行するための候補数です。`ExpansionPolicy = Flat` のときは使いません。
+## まず設定するもの
+- `Theme.DungeonRoomMeshPartsDatabase`
+  部屋の床、壁、天井、シャンデリアなどを決める Mesh Set Database です。
+- `Theme.DungeonAisleMeshPartsDatabase`
+  通路の床、壁、天井などを決める Mesh Set Database です。
+- `Theme.HorizontalGridSize` / `Theme.VerticalGridSize`
+  メッシュ、サブレベル、部屋配置をそろえる基準サイズです。
+- `RandomSeed`
+  `0` は毎回ランダムです。固定値にすると同じ条件で結果を確認しやすくなります。
 
-## 開始位置と進行の項目
-- `StartLocationPolicy`  
-  スタート部屋の選び方です。通常は `UseSouthernMost` か `UseCentralPoint` から始めると分かりやすいです。
-- `MovePlayerStartToStartingPoint`  
-  旧設定です。新規設定では `StartLocationPolicy` を優先してください。
-- `UseMissionGraph`  
-  鍵付きルートやミッション進行を使いたい場合に有効化します。  
-  実運用では `MergeRooms = false` かつ `AisleComplexity = 0` と合わせて使うのが安全です。
-- `AisleComplexity`  
-  通路の複雑さです。MissionGraph を使わない通常のダンジョンでは、`1` 以上で調整してください。
-- `AisleCeilingHeightPolicy`  
-  通路の天井高を `1 Grid` / `2 Grids` / `Random` で切り替えます。見た目の印象だけでなく、通路側装飾の余白にも影響します。
+## レイアウトを調整する設定
+- `Structure.RoomCountRange`
+  生成する部屋数の範囲です。生成開始時に Min 以上 Max 以下から1回だけ選び、すべてのレイアウト候補で同じ部屋数を使います。Min と Max を同じ値にすると、乱数状態を消費せずに部屋数を固定できます。
+- `Structure.RoomWidth` / `RoomDepth` / `RoomHeight`
+  部屋の大きさです。大きいほど広間寄り、小さいほど迷路寄りになります。
+- `Structure.HorizontalRoomMargin` / `VerticalRoomMargin`
+  部屋同士の間隔です。近い部屋を密集させたい場合は小さめにします。
+- `Structure.FloorMode`
+  `Free` は上下左右に広がる配置、`Flat` は同じ床高さの配置、`Vertical` は上下方向を重視した配置です。
+## Path
+`Path` には、開始・ゴールの選択、進行モデル、ループ経路、通路設定がまとまっています。
 
-`AisleCeilingHeightPolicy` の選び方:
-- `OneGrid`  
-  低い天井で圧迫感を出したいときに向いています。
-- `TwoGrids`  
-  開放感を優先したいときや、背の高い装飾を通路側で使いたいときに向いています。
-- `Random`  
-  低い通路と高い通路を混ぜて変化を出したいときに向いています。
+- `Path.StartRoomPolicy` / `Path.GoalRoomPolicy`
+  スタート部屋とゴール部屋の選び方です。
+- `Path.ProgressionPolicy`
+  通常ルート、鍵付きルート、ボスルートなど、進行モデルを選びます。
 
-通路の見た目は `DungeonAisleMeshPartsDatabase` 側の Mesh Set と合わせて調整してください。  
-シャンデリアなど天井側の演出を強くしたい場合は、[UDungeonMeshSetDatabase.ja.md](./UDungeonMeshSetDatabase.ja.md) の設定も一緒に見直すと整理しやすいです。
+  | Policy | 向いている用途 |
+  | --- | --- |
+  | `FreeExploration` | ループ、近道、寄り道部屋を含む自由探索型のダンジョン。 |
+  | `StartToGoal` | スタートからゴールまでの主経路を分かりやすく見せたいダンジョン。 |
+  | `KeysAndLocks` | レイアウトに配置できる場合は検証済みの鍵付きルート。配置できない場合はロックなしで生成に成功し、`DG_GEN_KEYS_NOT_PLACED` を報告します。 |
+  | `BossRoute` | ゴール付近のボス戦や最終遭遇に向けて盛り上げるルート。 |
+  | `HubQuest` | ハブ部屋から複数のクエスト風分岐へ進むレイアウト。 |
 
-## 部屋の雰囲気を変える項目
-- `GenerateSlopeInRoom`  
-  部屋内スロープの生成を許可します。
-- `GenerateStructuralColumn`  
-  部屋内の構造柱生成を許可します。
-- `SkylightChancePercent`  
-  部屋内にスカイライト用ボクセルを作る確率です。
+![5つの Progression Policy のイメージ](images/ProgressionPolicyStyles.png)
 
-## パーツ・フィクスチャ設定
-- `PillarPartsSelectionPolicy` / `PillarParts`
-- `TorchPartsSelectionPolicy` / `TorchParts`
-- `DoorPartsSelectionPolicy` / `DoorParts`
+画像の `S` はスタート、`G` はゴール、明るい線は代表的な進行経路を示します。`Free Exploration` はループや近道、`Start To Goal` は読み取りやすい主経路、`Keys And Locks` は Key を取得してから Lock を通る順序、`Boss Route` は終盤の Boss、`Hub Quest` は中央の Hub から広がる分岐が特徴です。この画像は各 Policy の違いを理解するための概念例であり、生成される部屋形状や装飾を固定するものではありません。
 
-ここでは、柱・燭台・ドアの候補と選択ルールを設定します。  
-現在の編集対象は `SelectionMethod` ではなく **`SelectionPolicy`** です。
+Keys And Locks の配置はベストエフォートです。Unique Key を置ける部屋がない場合は、鍵もロックもない到達可能なダンジョンを返し、`GetLastGenerationIssues()` から `DG_GEN_KEYS_NOT_PLACED` を報告します。ゲームでロックを必須にする前に [ApplyMissionGraph.ja.md](./ApplyMissionGraph.ja.md) を確認してください。
 
-- `Random`  
-  ランダムに選びます。
-- `Grid Index` / `Direction` / `Identifier` / `Depth From Start`  
-  グリッドや進行度に応じて決定的に選びます。
-- `Custom Selector`  
-  独自セレクタを使います。
+```mermaid
+graph LR;
+    subgraph FreeExploration["Free Exploration"]
+        FEStart["Start"] --> FERoomA["Room"]
+        FERoomA --> FERoomB["Room"]
+        FERoomB --> FEGoal["Goal"]
+        FERoomA --> FEBranch["Side Room"]
+        FEBranch --> FERoomB
+        FERoomB --> FELoop["Loop Room"]
+        FELoop --> FERoomA
+    end
+    subgraph StartToGoal["Start To Goal"]
+        STGStart["Start"] --> STGConnector1["Connector"]
+        STGConnector1 --> STGConnector2["Connector"]
+        STGConnector2 --> STGGoal["Goal"]
+        STGConnector1 --> STGBranch["Branch"]
+    end
+    subgraph KeysAndLocks["Keys And Locks"]
+        KLStart["Start"] --> KLKey1["Key"]
+        KLKey1 --> KLLock1["Locked Door"]
+        KLLock1 --> KLKey2["Unique Key"]
+        KLKey2 --> KLLock2["Goal Lock"]
+        KLLock2 --> KLGoal["Goal"]
+    end
+    subgraph BossRoute["Boss Route"]
+        BRStart["Start"] --> BRBuild1["Combat"]
+        BRBuild1 --> BRRest["Rest"]
+        BRRest --> BRBoss["Boss"]
+        BRBoss --> BRGoal["Goal"]
+    end
+    subgraph HubQuest["Hub Quest"]
+        HQStart["Start"] --> HQHub["Hub"]
+        HQHub --> HQCombat["Combat Branch"]
+        HQHub --> HQTreasure["Treasure Branch"]
+        HQHub --> HQPuzzle["Puzzle Branch"]
+        HQHub --> HQGoal["Goal"]
+    end
+```
 
-`Custom Selector` を使う場合は、`Custom Dungeon Parts Selector` に `UDungeonPartsSelector` 派生オブジェクトを指定します。  
-サンプル実装として `UDungeonSamplePartsSelector` が用意されています。
+  まず `Path.ProgressionPolicy` を選んでください。これは経路の型を決める主な設定です。`Path.MainRouteBias`、`Path.LoopRouteDensity`、`Path.ExtraCorridorComplexity` は、選んだスタイルの中で結果を微調整する上級者向け設定です。
+  Version 1 アセットは自動移行されません。手動で設定を作り直す場合、旧 `UseMissionGraph = true` の考え方は `KeysAndLocks`、通常のスタートからゴールへの経路は `StartToGoal` に相当します。
+- `Path.LayoutCandidateCount`
+  複数のレイアウト候補を作り、スコアが高い候補を採用するための数です。
+  値を上げると、良いレイアウトを選びやすくなりますが、その分だけ生成コストも増えます。まずは `3`、品質とコストのバランスを見るなら `4-8`、エディタで結果を確認する用途なら `9-16` を目安にしてください。
+  実装上、`1` や `2` を指定しても最低 `3` 候補として扱われます。`8` を超える値はランタイム生成では重くなりやすいため、主にエディタ確認や固定シードでの調整向きです。
+- `Path.MainRouteBias`
+  主経路の強さを調整する上級者向け設定です。`0` は選んだ進行スタイルの標準です。負の値にすると分岐部屋が増える方向に寄り、正の値にすると主経路が長くなり分岐部屋が減る方向に寄ります。
+- `Path.LoopRouteDensity`
+  ループ経路や代替経路の多さを調整する上級者向け設定です。`0` は選んだ進行スタイルの標準です。値を上げると、そのポリシーが許す範囲でループが増えます。`KeysAndLocks` 進行では、鍵付き扉を迂回できないように安全ではないループは無効化されます。`StartToGoal`、`BossRoute`、`HubQuest` では途中の部屋にループを接続できますが、ゴール部屋は1接続の終端に保たれます。`FreeExploration` ではゴール付近のループも許可されます。
+- `Path.ExtraCorridorComplexity`
+  追加の交差や通路の複雑さを許可する上級者向け設定です。`0` は最も単純な基準です。`KeysAndLocks` でも未施錠通路には値が適用されますが、鍵付き通路では迂回を作らないよう交差と結合が常に無効になります。現在の Details Panel では `KeysAndLocks` 選択後にこの項目が読み取り専用になるため、未施錠通路へ複雑さを加えたい場合は Policy を切り替える前に値を設定するか、Blueprint / C++ から設定してください。
+- `Path.CorridorCeilingHeightPolicy`
+  通路の天井高さを `1 Grid`、`2 Grids`、`Random` から選びます。見た目だけでなく、通路側に置ける装飾の余裕にも影響します。
 
-## 参照するデータベース
-- `DungeonRoomMeshPartsDatabase`  
-  部屋の床 / 壁 / 天井 / シャンデリアなどを決める DB
-- `DungeonAisleMeshPartsDatabase`  
-  通路の床 / 壁 / 天井などを決める DB
-- `DungeonInteriorDatabase`  
-  家具や植生をタグで出し分ける DB
-- `DungeonSubLevelDatabase`  
-  スタート / ゴール / 特殊部屋サブレベルを登録する DB
-- `DungeonRoomSensorDatabase`  
-  部屋侵入センサーや通路演出を登録する DB
-- `DungeonRoomSensorClass`  
-  旧設定です。新規設定では `DungeonRoomSensorDatabase` を使ってください。
+## Gameplay.RoomRoles
+`Gameplay.RoomRoles.Roles` は、分岐部屋にどの役割を割り当てやすくするかと、役割ごとの部屋メッシュ、Interior、Fixture、Room Sensor の上書きをまとめて設定します。
+分岐部屋で選べるゲームプレイ役割は `None`、`Combat`、`Treasure`、`Puzzle`、`Rest`、`Secret` です。
 
-## 検証時に見られるポイント
-エディタの `Window > DungeonGenerator` にある `Verify` は、主に次の問題を確認します。
+| Role | 主な用途 |
+| --- | --- |
+| `None` | 特別なゲームプレイ意味を持たない通常の部屋。 |
+| `Combat` | 敵遭遇や戦闘中心の部屋イベント。 |
+| `Treasure` | 報酬、戦利品、鍵、その他の取得物。`KeysAndLocks` 進行の Key / UniqueKey 部屋も `Treasure` として扱われます。 |
+| `Puzzle` | スイッチ、仕掛け、謎解き、インタラクション課題。 |
+| `Rest` | 強い遭遇の間に置く、安全または低圧の部屋。 |
+| `Boss` | 主に `BossRoute` で主経路終盤に割り当てられる大きな遭遇。 |
+| `Secret` | 隠し発見、任意報酬、秘密イベント。 |
 
-- 部屋用 / 通路用 DB が未設定
-- 部屋用 / 通路用 DB に床 / 壁 / 天井メッシュがない
-- 部屋候補数が少なすぎる
-- 参照アセットのパスが壊れている
+![Gameplay Role ごとの部屋イメージ](images/RoomGameplayRoleStyles.png)
 
-生成前に `Verify` を通しておくと、初心者が詰まりやすいポイントをかなり減らせます。
+画像は各 Role をゲーム内でどう使えるかを示す例です。`None` は特別な用途を持たない通常部屋、`Combat` は戦闘、`Treasure` は報酬や鍵、`Puzzle` は仕掛け、`Rest` は休憩、`Boss` は大きな遭遇、`Secret` は隠し要素を表します。Role を設定しただけで画像の敵、宝箱、パズルが自動配置されるわけではありません。生成された Role を Room Sensor の Blueprint 処理や Role ごとの Theme Override で利用し、実際のゲーム内容と見た目を作ります。
 
-## 迷ったときの初期設定
-- `RandomSeed = 0`
-- `NumberOfCandidateRooms = 10`
-- `ExpansionPolicy = ExpandHorizontally`
-- `StartLocationPolicy = UseSouthernMost`
-- `UseMissionGraph = false`
-- `AisleComplexity = 5`
+`Start`、`Goal`、`Hub`、`Connector`、`Branch`、`DeadEnd` はルート側で決まる構造ロールです。`BossRoute` は主経路の終盤に `Boss` ゲームプレイ役割を割り当てます。`HubQuest` は主経路序盤の部屋を構造ロール `Hub` にします。`Boss` プロファイルでは、役割ごとの部屋メッシュ、Interior、Fixture、Room Sensor を上書きできます。
 
-## 補足
-- `PluginVersion` はサポートや不具合報告時の確認用です。
-- `Flat` は旧設定です。新規構成では `ExpansionPolicy = Flat` を使ってください。
+秘密部屋を増やしたい場合は、`Secret` プロファイルの `BranchSelectionWeight` を上げます。秘密部屋だけを別の確率で指定する設定はありません。
 
-## 次に読む
-- [UDungeonMeshSetDatabase.ja.md](./UDungeonMeshSetDatabase.ja.md)  
-  見た目を変えるための Mesh Set の組み方を確認できます。
-- [UDungeonSubLevelDatabase.ja.md](./UDungeonSubLevelDatabase.ja.md)  
-  特殊部屋や開始部屋サブレベルを使いたい場合の次の設定先です。
+```mermaid
+graph TD;
+    Profiles["Gameplay.RoomRoles.Roles"] --> Weights["BranchSelectionWeight<br/>None, Combat, Treasure, Puzzle, Rest, Secret"]
+    Weights --> BranchRooms["生成された分岐部屋"]
+    BossPolicy["Path.ProgressionPolicy = BossRoute"] --> BossRoom["Boss ゲームプレイ役割<br/>主経路終盤"]
+    KeyPolicy["Path.ProgressionPolicy = KeysAndLocks<br/>配置成功時"] --> KeyRooms["Key / UniqueKey 部屋<br/>Treasure ゲームプレイ役割"]
+    BranchRooms --> GeneratedInfo["生成された部屋情報<br/>RoomGameplayRole"]
+    BossRoom --> GeneratedInfo
+    KeyRooms --> GeneratedInfo
+    GeneratedInfo --> Sensor["ADungeonRoomSensorBase<br/>Blueprint 分岐"]
+    GeneratedInfo --> RoleTheme["Gameplay.RoomRoles<br/>部屋 Mesh / Interior / Fixture / Sensor 上書き"]
+```
+
+部屋メッシュの優先順位は `Gameplay.RoomRoles` -> `Zones` -> `Theme` です。通路メッシュには役割別上書きは使われません。
+
+```mermaid
+graph TD;
+    Room["生成された部屋"] --> RoleCheck{"役割別上書きがある？"}
+    RoleCheck -->|"Yes"| RoleDb["Gameplay.RoomRoles<br/>部屋用 Mesh Set 上書き"]
+    RoleCheck -->|"No"| ZoneCheck{"一致する Zone 上書きがある？"}
+    ZoneCheck -->|"Yes"| ZoneRoomDb["Zones.ThemeOverride<br/>部屋用 Mesh Set Database"]
+    ZoneCheck -->|"No"| ThemeRoomDb["Theme.DungeonRoomMeshPartsDatabase"]
+    Aisle["生成された通路"] --> AisleZoneCheck{"一致する Zone 上書きがある？"}
+    AisleZoneCheck -->|"Yes"| ZoneAisleDb["Zones.ThemeOverride<br/>通路用 Mesh Set Database"]
+    AisleZoneCheck -->|"No"| ThemeAisleDb["Theme.DungeonAisleMeshPartsDatabase"]
+```
+
+## Zones
+`Zones` は、進行度や階層に応じて Theme を切り替えるための設定です。
+
+- `Zones[].Name`
+  Zone の名前です。生成された部屋情報にも渡されます。
+- `Zones[].ProgressRange`
+  スタートからの進行度で Zone を適用する範囲です。
+- `Zones[].FloorRange`
+  適用する階層の範囲です。
+- `Zones[].SelectionWeight`
+  同じ進行度と階層に複数の Zone が一致したときに使う相対重みです。`0` にすると、その Zone は抽選されません。
+- `Zones[].ThemeOverride`
+  その Zone だけで使う部屋用、通路用 Mesh Set Database と、通路スロープ用ベースライト設定です。`bOverrideAisleSlopeBaseLight` を有効にすると、ライト設定一式を置き換えられます。
+- `Zones[].GameplayOverride`
+  その Zone だけで使う Room Sensor クラスや通路 Actor 候補の上書きです。
+
+複数の Zone が重なる場合、`ProgressRange` と `FloorRange` の両方に一致した Zone だけが抽選対象になります。範囲が重ならない Zone は、これまで通り範囲による切り替えとして扱えます。
+
+Theme の優先順位は単純です。部屋メッシュは、該当する部屋役割の上書き、該当 Zone の上書き、`Theme` の標準 Database の順に使います。通路メッシュは Zone の上書き、または `Theme` の標準通路 Database を使います。
+
+## Gameplay
+`Gameplay` は、生成レイアウト情報を Room Sensor、役割別上書き、通路 Actor、特殊部屋サブレベルへ接続します。
+
+- `Gameplay.DungeonRoomSensorClass`
+  どの部屋にどの `ADungeonRoomSensorBase` 派生 Blueprint を使うかを決めます。
+- `Gameplay.SpawnActorInAisle`
+  生成通路内にスポーンするデフォルトの Actor Blueprint 候補です。`Zones[].GameplayOverride.SpawnActorInAisle` は、一致した Zone の通路でこの一覧を置き換えます。
+- `Gameplay.DungeonSubLevelDatabase`
+  スタート、ゴール、特殊部屋などに使うサブレベルを登録します。
+
+敵、報酬、罠、演出などのゲームプレイ配置は、プラグインの報酬カテゴリで直接決めるのではなく、`ADungeonRoomSensorBase` 側で実装します。
+`ADungeonRoomSensorBase` には、`bSecretRoom`、`bDeadEndRoom`、`bMainPathRoom`、`bLockedRouteRoom`、`ZoneName`、`DepthFromStartRatio` などの部屋情報が渡されます。
+
+簡単な確認では、`Gameplay.DungeonRoomSensorClass` から Room Sensor Blueprint を割り当て、細かい Blueprint 分岐を追加する前に `ADungeonRoomSensorBase` の `DungeonGenerator|Helper` パラメータから試すと調整しやすくなります。
+
+```mermaid
+graph TD;
+    GeneratedRoom["生成された部屋情報<br/>役割、Zone、深度、経路フラグ"] --> SensorClass["Gameplay.DungeonRoomSensorClass<br/>Role / Zone Override"]
+    SensorClass --> Sensor["ADungeonRoomSensorBase 派生 Blueprint"]
+    Sensor --> GameplayContent["敵、報酬、罠、BGM、部屋イベント"]
+    GeneratedRoom --> SubLevelDb["Gameplay.DungeonSubLevelDatabase"]
+    SubLevelDb --> SpecialRoom["開始、ゴール、優先、ランダム特殊部屋"]
+```
+
+## Theme
+Role / Zone の `ThemeOverride` では、部屋メッシュだけでなく `DungeonInteriorDatabase` と `Fixtures` も上書きできます。
+これにより、Combat、Treasure、Secret などの役割や Zone に合わせて、家具、装飾、植生、柱、たいまつ、ドアをまとめて切り替えられます。
+RoomRole の上書きは部屋にだけ使われ、通路と坂は Zone -> Theme の順に設定を使います。空の Interior / Fixture を意図的に使いたい場合は、対応する override フラグを有効にしてください。
+
+- `Theme.DungeonInteriorDatabase`
+  家具、装飾、植生などをタグで配置する Database です。
+- `Theme.Fixtures`
+  柱、松明、ドア、Unique Lock ドアなどの候補と選択ルールです。`UniqueDoorParts` は Keys And Locks 進行で作られるゴール扉やボスドア向けで、空の場合は `DoorParts` にフォールバックします。
+- `Theme.Fixtures.*PartsSelector`
+  柱、松明、ドア、Unique Lock ドアなどの候補を選ぶためのセレクターオブジェクトです。
+- `Theme.AisleSlopeBaseLight`
+  部屋の外にある通路スロープを見やすくする、影なし Point Light の設定です。各スロープの中央上方に、サーバー生成・同期対応のライトActorが1灯生成されます。解決済みのZone Overrideも、接続中および途中参加クライアントへ反映されます。`Enabled`、明るさの単位と値、色、光が届く距離、スロープ面からの高さを調整できます。部屋内のスロープは対象外で、Room Sensor の誘導光を引き続き使用します。
+
+通路スロープ用ライトは、スロープごとの専用 Actor として生成されます。各 Actor はスロープ位置のダンジョン Partition に登録され、遠距離では自動的に非表示になります。影を落とさないため、`Attenuation Radius` を大きくしすぎると壁や上下階を越えて光が漏れることがあります。まず既定値から少しずつ調整してください。
+
+植生とActorの分散生成はThemeではなく、Dungeon Generator Actorの`GenerationPerformance`で設定します。同じParameter Assetを使いながら、マップや実行環境ごとに処理予算を変更できます。詳しくは[LoadReduction.ja.md](./LoadReduction.ja.md)を参照してください。
+
+## 推奨の考え方
+最初は `Structure`、`Path`、`Theme` だけで生成を安定させます。
+その後、分岐部屋の性格や役割ごとの部屋の見た目を変えたい場合は `Gameplay.RoomRoles`、見た目を場所ごとに切り替えたい場合は `Zones`、敵や報酬などを置きたい場合は `Gameplay.DungeonRoomSensorClass` と `ADungeonRoomSensorBase` を調整してください。
 
 ## 関連ページ
-- [QuickStart.ja.md](./QuickStart.ja.md)
 - [UDungeonMeshSetDatabase.ja.md](./UDungeonMeshSetDatabase.ja.md)
 - [UDungeonSubLevelDatabase.ja.md](./UDungeonSubLevelDatabase.ja.md)
-- [UDungeonRoomSensorDatabase.ja.md](./UDungeonRoomSensorDatabase.ja.md)
-
+- [ADungeonRoomSensorBase.ja.md](./ADungeonRoomSensorBase.ja.md)

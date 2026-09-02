@@ -1,8 +1,6 @@
 /**
- * A*によるパス検索 ソースファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -157,7 +155,7 @@ namespace dungeon
 				mResult->mRoute.emplace_back(NodeType::UpSpace, current->second.mLocation + FIntVector(0, 0, 1), current->second.mDirection);
 				mResult->mRoute.emplace_back(NodeType::DownSpace, current->second.mLocation - current->second.mDirection.GetVector(), current->second.mDirection);
 				break;
-			
+
 			case NodeType::Upstairs:
 				mResult->mRoute.emplace_back(NodeType::DownSpace, current->second.mLocation + FIntVector(0, 0, -1), current->second.mDirection);
 				mResult->mRoute.emplace_back(NodeType::UpSpace, current->second.mLocation - current->second.mDirection.GetVector(), current->second.mDirection);

@@ -1,8 +1,8 @@
 /**
  * 部屋に関するヘッダーファイル
  *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -187,6 +187,10 @@ namespace dungeon
 	inline void Room::SetItem(const Item item) noexcept
 	{
 		mItem = item;
+		if (item != Item::Empty)
+		{
+			mGameplayRole = EDungeonRoomGameplayRole::Treasure;
+		}
 	}
 
 	inline uint8_t Room::GetDepthFromStart() const noexcept
@@ -209,6 +213,56 @@ namespace dungeon
 		mBranchId = branchId;
 	}
 
+	inline EDungeonRoomStructuralRole Room::GetStructuralRole() const noexcept
+	{
+		return mStructuralRole;
+	}
+
+	inline void Room::SetStructuralRole(const EDungeonRoomStructuralRole structuralRole) noexcept
+	{
+		mStructuralRole = structuralRole;
+	}
+
+	inline EDungeonRoomGameplayRole Room::GetGameplayRole() const noexcept
+	{
+		return mGameplayRole;
+	}
+
+	inline void Room::SetGameplayRole(const EDungeonRoomGameplayRole gameplayRole) noexcept
+	{
+		mGameplayRole = gameplayRole;
+	}
+
+	inline int32 Room::GetZoneIndex() const noexcept
+	{
+		return mZoneIndex;
+	}
+
+	inline void Room::SetZoneIndex(const int32 zoneIndex) noexcept
+	{
+		mZoneIndex = zoneIndex;
+	}
+
+	inline bool Room::IsMainPathRoom() const noexcept
+	{
+		return mMainPathRoom;
+	}
+
+	inline void Room::SetMainPathRoom(const bool mainPathRoom) noexcept
+	{
+		mMainPathRoom = mainPathRoom;
+	}
+
+	inline bool Room::IsLockedRouteRoom() const noexcept
+	{
+		return mLockedRouteRoom;
+	}
+
+	inline void Room::SetLockedRouteRoom(const bool lockedRouteRoom) noexcept
+	{
+		mLockedRouteRoom = lockedRouteRoom;
+	}
+
 	inline bool Room::IsValidBranchId() const noexcept
 	{
 		return mBranchId != std::numeric_limits<uint8_t>::max();
@@ -227,6 +281,11 @@ namespace dungeon
 	inline void Room::AddGateCount(const uint8_t count) noexcept
 	{
 		mNumberOfGates += count;
+	}
+
+	inline void Room::RemoveGateCount(const uint8_t count) noexcept
+	{
+		mNumberOfGates = count < mNumberOfGates ? mNumberOfGates - count : 0;
 	}
 
 	inline uint8_t Room::GetVerticalRoomMargin() const noexcept

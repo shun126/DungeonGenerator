@@ -30,18 +30,29 @@
 - `GenerateDungeon`  
   すでに割り当て済みの `DungeonGenerateParameter` を使って生成します。
 - `GenerateDungeonWithParameter`  
-  呼び出し時に別の `DungeonGenerateParameter` を渡して生成します。
+  呼び出し時に別の `DungeonGenerateParameter` を渡して生成します。メモリ上だけで作成した一時Parameterも渡せます。
 - `DestroyDungeon`  
   生成済みダンジョンを破棄します。
+
+## 生成失敗を再現する
+開発用Editorビルド（`JENKINS_FOR_DEVELOP=1`）のStandalone実行で`GenerateDungeonWithParameter`が失敗すると、渡したParameterが再現用Assetとして自動保存されます。`GenerateRandomParameter`でメモリ上だけに作成した一時Parameterにも対応しています。Releaseビルドでは失敗Assetを作成しません。
+
+- `GenerateRandomParameter`へ保存済みの作成元Assetを渡していた場合は、同じフォルダへ`<作成元Asset名>_Failed_Seed_<Seed>`として保存されます。
+- 一時Parameterに保存済みの作成元がない場合は、保存先を選ぶダイアログが表示されます。キャンセルすると取得したCopyは破棄されます。
+- 保存Assetの`RandomSeed`には実際に失敗したSeedが固定されるため、そのAssetを割り当てて再生成すると同じ試行を再現できます。
+- 失敗するたびに一意な名前の新しいAssetが作成されます。生成に成功した場合はAssetを作成しません。
+
+失敗時の自動保存は開発用EditorビルドかつStandalone専用です。Multiplayer、Release版Editor、パッケージ版では通常どおり生成しますが、Assetは作成しません。問題を共有するときはSeedだけでなく、保存したParameter Assetと参照先のDatabaseやMeshも一緒に共有してください。
 
 ## ロビーと接続したい場合
 ロード済みロビーをスタート部屋として使いたい場合は、`StartRoomSubLevelScriptActor` を利用します。  
 このときは次の制約があります。
 
-- `UDungeonGenerateParameter` 側で `MovePlayerStartToStartingPoint = false` を設定します
-- `UDungeonGenerateParameter` 側で `StartLocationPolicy = NoAdjustment` を設定します
+- `UDungeonGenerateParameter` 側で `Path.bMovePlayerStartToStartRoom = false` を設定します
+- `UDungeonGenerateParameter` 側で `Path.StartRoomPolicy = UseCentralPoint` を設定します
 - `UseMultiStart` は併用できません
 - 候補に指定できるのは、現在ロード済みの `ADungeonSubLevelScriptActor` を持つサブレベルです
+- このプリロード済みスタート部屋が設定されている間、`DungeonSubLevelDatabase.StartRoom` は開始部屋には使われません
 
 ロビーを事前ロードせず、通常のサブレベル差し替えで固定スタート部屋を使いたい場合は [UDungeonSubLevelDatabase.ja.md](./UDungeonSubLevelDatabase.ja.md) を使ってください。  
 使い分けは [LobbyConnection.ja.md](./LobbyConnection.ja.md) にまとめています。

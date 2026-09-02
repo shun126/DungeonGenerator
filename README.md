@@ -1,118 +1,180 @@
 # Dungeon Generator for Unreal Engine 5
 
 [![license](https://img.shields.io/github/license/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/blob/main/LICENSE)
-[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.7-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
+[![Unreal Engine Supported Versions](https://img.shields.io/badge/Unreal_Engine-5.1~5.8-9455CE?logo=unrealengine)](https://www.unrealengine.com/)
 [![release](https://img.shields.io/github/v/release/shun126/DungeonGenerator)](https://github.com/shun126/DungeonGenerator/releases)
 [![downloads](https://img.shields.io/github/downloads/shun126/DungeonGenerator/total)](https://github.com/shun126/DungeonGenerator/releases)
 [![stars](https://img.shields.io/github/stars/shun126/DungeonGenerator?style=social)](https://github.com/shun126/DungeonGenerator/stargazers)
+[![Discord](https://img.shields.io/discord/768025826008498216)](https://discord.com/invite/Z5JWmk4X8J)
 [![youtube](https://img.shields.io/youtube/views/1igd4pls5x8?style=social)](https://youtu.be/1igd4pls5x8)
 
-Build grid-based 3D dungeons for roguelike, action RPG, and exploration games in Unreal Engine 5.
+**Design the adventure, not just the floor plan.**
 
-Dungeon Generator creates playable dungeon layouts from a small set of parameters and mesh parts. You can preview dungeons in the editor, generate them at runtime, and integrate the system from Blueprint or C++. The open-source version is designed for developers who want to prototype procedural levels, study the generation pipeline, or build a custom dungeon system on top of a practical Unreal Engine plugin.
+Dungeon Generator creates replayable 3D dungeons for Unreal Engine 5 from your mesh parts and a designer-friendly set of parameters. Build branching routes, keys and locks, boss encounters, secrets, and rooms with distinct gameplay purposes—then preview the result in the editor or generate it at runtime.
 
-![Screenshot](Document/Screenshot.gif)
+![Dungeon Generator preview](Document/Screenshot.gif)
 
-## Why Use It?
+Try the sample maps included in the plugin, follow the [Quick Start](Document/tutorial/QuickStart.en.md), or view the production-focused [Epic/Fab version](https://fab.com/s/f5587c55bad0).
 
-- Generate tiled 3D dungeons in the editor or during gameplay
-- Start with your own floor, wall, roof, stair, and door meshes
-- Control room count, grid size, start position, and generation rules
-- Add doors, keys, and route progression with MissionGraph
-- Use Blueprint or C++ depending on your project workflow
-- Test multiplayer-oriented projects with dungeon replication support
+## Dungeon Generator 2.0
 
-Dungeon Generator is useful when you want a working dungeon structure quickly, but still need enough control to adapt it to your game's art style and rules.
+Version 2.0 is a major redesign focused on three goals: **engaging level design, lived-in visual variety, and settings that are easier to tune**.
 
-## Open-Source Version
+> **Warning — breaking changes:** Version 2 does not support migration from Version 1. Do not install v2 over a working v1 project or expect v1 Dungeon Generator assets and settings to be converted. Keep the v1 project and plugin version intact, and set up v2 separately as a new implementation.
 
-This repository provides the open-source version of Dungeon Generator under the GPL license.
+- Choose a progression style instead of assembling every route rule by hand
+- Give generated rooms clear purposes such as combat, treasure, rest, boss, and secret
+- Change visuals and gameplay by depth, floor, Zone, or room Role
+- Evaluate multiple layout candidates and keep the result that best matches your design intent
+- Organize settings into `Theme`, `Structure`, `Path`, `Zones`, and `Gameplay`
+- Connect generated room information to Blueprint or C++ gameplay systems
+- Scale to larger runtime dungeons with detailed activation and load controls
 
-It is a good fit if you want to:
+For a complete feature comparison and guidance on rebuilding a v1 design in v2, see [v1.x and v2.0.0 Comparison](Document/tutorial/VersionComparison.en.md). For release details, see the [CHANGELOG](CHANGELOG.md).
 
-- Try procedural dungeon generation in Unreal Engine 5
-- Learn how a grid-based 3D dungeon generator is built
-- Prototype roguelike, hack-and-slash, dungeon crawler, or exploration mechanics
-- Customize the plugin source for your own project
+## Shape How the Dungeon Plays
 
-For the fastest path, start with the tutorial index:
+Start with `Path.ProgressionPolicy` and choose the structure that fits your game:
 
-[Dungeon Generator Tutorial](Document/tutorial/README.en.md)
+| Progression Policy | Player experience | Good fit for |
+| --- | --- | --- |
+| `Free Exploration` | Loops, shortcuts, and optional side rooms | Roguelites, exploration, collection |
+| `Start To Goal` | A readable main route with controlled branches | Dungeon crawlers and guided progression |
+| `Keys And Locks` | Keys unlock a route that cannot be bypassed | Escape games and staged progression |
+| `Boss Route` | Encounters and rest build toward a final boss | Action RPGs and boss-focused runs |
+| `Hub Quest` | An early hub leads to several objective branches | Quest and objective-based layouts |
 
-## Quick Start
+![Progression Policy styles](Document/tutorial/images/ProgressionPolicyStyles.png)
 
-1. Install the plugin in your Unreal Engine project.
-2. Enable the plugin content.
-3. Open the demonstration map from the plugin content.
-4. Run the project or preview generation from the editor.
-5. Create a `DungeonGenerateParameter` asset and adjust the grid size, room count, and mesh databases.
+## Turn Rooms into Gameplay
 
-For a beginner-friendly walkthrough, read:
+Gameplay Roles describe why a room exists: `Combat`, `Treasure`, `Puzzle`, `Rest`, `Boss`, or `Secret`. Use those Roles from Room Sensors, Blueprint, or C++ to place enemies and rewards, trigger events, change decoration, or control pacing.
 
-[QuickStart.en.md](Document/tutorial/QuickStart.en.md)
+Roles provide design intent rather than forcing one game system. You decide what “Treasure” or “Boss” means in your project.
 
-## Main Features
+![Room Gameplay Role styles](Document/tutorial/images/RoomGameplayRoleStyles.png)
 
-- Procedural 3D dungeon generation for Unreal Engine 5
-- Editor generation and runtime generation
-- Blueprint and C++ access
-- Custom mesh parts for floors, walls, roofs, slopes, pillars, doors, and actors
-- MissionGraph support for doors, keys, and progression routes
-- Dungeon replication support
-- Demo content and tutorial documentation
+## Build a Dungeon That Feels Lived In
 
-## Using Your Own Meshes
+Dungeon Generator is built around reusable mesh parts and data assets, so one generation system can support many visual themes.
 
-Dungeon Generator is built around reusable mesh parts. You prepare meshes for floors, walls, roofs, slopes, and other dungeon pieces, then register them in mesh databases.
+- Use your own floors, walls, roofs, slopes, pillars, doors, and Actors
+- Vary Mesh Sets, Interiors, Fixtures, and vegetation by room Role or Zone
+- Create hand-authored special rooms with sub-levels
+- Combine procedural structure with authored furniture and decoration points
+- Use selectors in Blueprint or C++ when random selection is not enough
 
-Start here if you want to replace the sample visuals with your own assets:
+Some of the advanced visual-production features above are exclusive to the Epic/Fab version, as described below.
 
-[PrepareMeshParts.en.md](Document/tutorial/PrepareMeshParts.en.md)
+## What You Can Build
+
+- Editor previews and runtime-generated dungeons
+- Single-floor and multi-floor 3D layouts
+- Loops, branches, secret rooms, locked routes, and boss routes
+- Room-driven combat, rewards, puzzles, rest areas, and events
+- Minimap and exploration-map experiences
+- Multiplayer-oriented projects with dungeon replication support
+- Custom generation and selection rules through Blueprint or C++
+
+Dungeon Generator is a strong fit for roguelikes, action RPGs, dungeon crawlers, exploration games, and prototypes that need replayable spaces without giving up control over pacing or identity.
 
 ## Epic/Fab Version
 
-The [Epic/Fab version](https://fab.com/s/f5587c55bad0) includes additional production-focused features for teams that need more advanced level-building workflows.
+The [Epic/Fab version](https://fab.com/s/f5587c55bad0) is intended for production teams and creators who want the complete level-building workflow under the Epic license.
 
-Additional features include:
+It adds:
 
-- Sub-levels as dungeon rooms
-- Mini-map generation
-- Interior decoration
-- Foliage decoration
-- Mesh Set and Custom Mesh Selection
-- StaticMesh Fit Tool
+- Sub-levels used as authored dungeon rooms
+- Minimap generation and map-support features
+- Interior and foliage decoration
+- Mesh Set and custom mesh selection
+- StaticMesh Fit Tool for adapting meshes to the dungeon grid
 
-Important: The StaticMesh Fit Tool is supported only in the Epic/Fab version. [![](Document/Fab_Epic_Games.gif)](https://fab.com/s/f5587c55bad0)
+[![View Dungeon Generator on Fab](Document/Fab_Epic_Games.gif)](https://fab.com/s/f5587c55bad0)
 
-If you need these features or a license other than GPL, please consider the [Epic/Fab version](https://fab.com/s/f5587c55bad0).
+The StaticMesh Fit Tool is available only in the Epic/Fab version. If GPL is not suitable for your project, or you need the production-focused feature set, choose the [Epic/Fab version](https://fab.com/s/f5587c55bad0).
 
-Please visit our website for full feature list: [https://happy-game-dev.undo.jp/](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/index.html)
+See the [product website](https://happy-game-dev.undo.jp/plugins/DungeonGenerator/index.html) for the full feature list.
+
+## Open-Source Version
+
+This repository provides the GPL-licensed open-source version. It is a good fit when you want to:
+
+- Evaluate procedural dungeon generation in Unreal Engine 5
+- Learn how a grid-based 3D dungeon generator is implemented
+- Prototype gameplay before choosing a production workflow
+- Study or customize the plugin source under the GPL
+
+Plugin developers can explore the source to see how layout generation, voxel data, room metadata, runtime generation, and Unreal Engine integration work together.
+
+## Quick Start
+
+1. Install and enable the plugin in your Unreal Engine project.
+2. Enable plugin content in the Content Browser.
+3. Open `Content/Maps/Demonstration` for the standard runtime-generation sample, or `Content/Maps/DemonstrationWithStartRoom` for the authored start-room sample.
+4. Run the map or preview a dungeon from the editor.
+5. Create a `DungeonGenerateParameter` asset and adjust its Structure, Path, and database references.
+
+The [beginner-friendly Quick Start](Document/tutorial/QuickStart.en.md) explains each step. To use your own art, continue with [Preparing Mesh Parts](Document/tutorial/PrepareMeshParts.en.md).
+
+## Included Sample Maps
+
+The samples are part of the plugin content, so no separate demo project is required.
+
+- `Content/Maps/Demonstration.umap` — standard dungeon generation, gameplay, minimap, and plugin-content example
+- `Content/Maps/DemonstrationWithStartRoom.umap` — connects an authored start-room sub-level to the generated dungeon
+
+If the `Content/Maps` folder is hidden, open the Content Browser settings and enable `Show Plugin Content`.
+
+## Multiplayer
+
+The server picks the seed and every peer builds the dungeon from it; only the seed and a checksum
+are replicated. Two things follow from that.
+
+**Use a saved Parameter Asset.** The parameter is replicated as an object reference, so it needs a
+path that exists on every peer. A parameter created at runtime, including the result of
+`GenerateRandomParameter`, has no such path, arrives at the client as null, and leaves that client
+without a dungeon. The server reports `DG_NET_PARAMETER_NOT_REPLICABLE` when this happens.
+
+**Build the server and the clients for the same platform.** Generation is only reproducible when
+every peer runs the same plugin version, with the same Parameter Asset, built with the same
+compiler. A Windows client with a Linux dedicated server is not verified for 2.0. When a client
+does build a different dungeon, the checksum catches it, the dungeon is discarded and the
+generation is failed rather than letting that player explore a world nobody else can see.
+
+Handle both cases from `OnGenerationFailure`, then read the reason:
+
+```cpp
+for (const FDungeonValidationIssue& issue : DungeonGenerateActor->GetLastGenerationIssues())
+{
+    // DG_NET_CRC_MISMATCH or DG_NET_PARAMETER_NOT_REPLICABLE means this client cannot join
+    // the dungeon the others are in. Leave the session instead of continuing.
+    UE_LOG(LogTemp, Error, TEXT("%s: %s"), *issue.Code.ToString(), *issue.Message.ToString());
+}
+```
+
+The plugin does not recover on its own, because it cannot. Retrying with another seed would
+guarantee a different dungeon, retrying with the same seed repeats the same result, and asking the
+server for a new one punishes every other player. Returning the player to a menu or reconnecting
+is the game's decision. A client that fails once is not stuck for good: the next revision the
+server publishes is applied normally.
+
+## Documentation
+
+- [Tutorial index](Document/tutorial/README.en.md)
+- [Quick Start](Document/tutorial/QuickStart.en.md)
+- [v1.x and v2.0.0 Comparison](Document/tutorial/VersionComparison.en.md)
+- [Preparing Mesh Parts](Document/tutorial/PrepareMeshParts.en.md)
+- [Questions and support](https://github.com/shun126/DungeonGenerator/discussions)
+- [Discord community](https://discord.com/invite/Z5JWmk4X8J)
 
 ## Requirements
 
-- Unreal Engine 5.1 to 5.7
-- Visual Studio 2022
-
-## Demo Project
-
-The demo project shows a first-person exploration setup using Dungeon Generator:
-
-[DungeonGenerator Demo](https://github.com/shun126/UE5-DungeonGeneratorDemo)
+- Unreal Engine 5.1 to 5.8
+- Visual Studio 2022 when building the plugin from source
 
 ## License
 
 The open-source version is distributed under the GNU General Public License v3.0 or later.
 
-The Epic/Fab version is released under the Epic license. If GPL does not fit your project, use the Epic/Fab version instead.
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=shun126%2FDungeonGenerator&type=timeline&legend=bottom-right">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=shun126/DungeonGenerator&type=timeline&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=shun126/DungeonGenerator&type=timeline&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=shun126/DungeonGenerator&type=timeline&legend=top-left" />
- </picture>
-</a>
-
-If this project helps your Unreal Engine development, please consider giving it a star⭐.
+The Epic/Fab version is released under the Epic license. If GPL does not fit your project, use the [Epic/Fab version](https://fab.com/s/f5587c55bad0).

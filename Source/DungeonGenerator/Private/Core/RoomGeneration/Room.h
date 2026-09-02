@@ -1,14 +1,13 @@
 /**
- * 部屋に関するヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #pragma once
 #include "../Helper/Identifier.h"
 #include "../Math/Point.h"
+#include "Parameter/DungeonLayoutTypes.h"
 #include <Math/IntRect.h>
 #include <Math/IntVector.h>
 #include <string>
@@ -53,26 +52,31 @@ namespace dungeon
 
 	public:
 		/**
+		 * Represents Room.
 		 * コンストラクタ
 		 */
 		Room(const GenerateParameter& parameter, const FIntVector& location) noexcept;
 
 		/**
+		 * Represents Room.
 		 * コンストラクタ
 		 */
 		Room(const FIntVector& location, const FIntVector& size) noexcept;
 
 		/**
+		 * Represents Room.
 		 * コピーコンストラクタ
 		 */
 		Room(const Room& other) noexcept;
 
 		/**
+		 * Destroys the ~Room instance.
 		 * デストラクタ
 		 */
 		~Room() = default;
 
 		/**
+		 * Represents operator.
 		 * コピー代入
 		 */
 		Room& operator=(const Room& other) noexcept;
@@ -180,16 +184,19 @@ namespace dungeon
 		int32_t GetBottom() const noexcept;
 
 		/**
+		 * Returns Rect.
 		 * 矩形を取得します
 		 */
 		FIntRect GetRect() const noexcept;
 
 		/**
+		 * Returns Foreground.
 		 * 立方体の手前の座標（軸の大きい方）を取得します
 		 */
 		int32_t GetForeground() const noexcept;
 
 		/**
+		 * Returns ackground.
 		 * 立方体の奥の座標（軸の小さい方）を取得します
 		 */
 		int32_t GetBackground() const noexcept;
@@ -207,11 +214,13 @@ namespace dungeon
 		FVector GetExtent() const noexcept;
 
 		/**
+		 * Returns in.
 		 * 矩形の最小位置を取得します
 		 */
 		FVector GetMin() const noexcept;
 
 		/**
+		 * Returns ax.
 		 * 矩形の最大位置を取得します
 		 */
 		FVector GetMax() const noexcept;
@@ -268,21 +277,25 @@ namespace dungeon
 		bool Contain(const FIntVector& location) const noexcept;
 
 		/**
+		 * Returns Parts.
 		 * 部屋のパーツを取得します
 		 */
 		Parts GetParts() const noexcept;
 
 		/**
+		 * Sets Parts.
 		 * 部屋のパーツを設定します
 		 */
 		void SetParts(const Parts parts) noexcept;
 
 		/**
+		 * Returns Item.
 		 * 部屋のアイテムを取得します
 		 */
 		Item GetItem() const noexcept;
 
 		/**
+		 * Sets Item.
 		 * 部屋のアイテムを設定します
 		 */
 		void SetItem(const Item item) noexcept;
@@ -299,32 +312,43 @@ namespace dungeon
 		 */
 		void SetDepthFromStart(const uint8_t depthFromStart) noexcept;
 
-		/*
+		/**
+		 * Returns ranchId.
 		通路識別子を取得します
 		*/
 		uint8_t GetBranchId() const noexcept;
 
-		/*
+		/**
+		 * Sets ranchId.
 		通路識別子を設定します
 		*/
 		void SetBranchId(const uint8_t branchId) noexcept;
 
-		/*
+		/**
+		 * Returns whether ValidBranchId.
 		有効な通路識別子か調べます
 		*/
 		bool IsValidBranchId() const noexcept;
 
-		/*
+		/**
+		 * Returns GateCount.
 		部屋に生成する門の数を取得します
 		*/
 		uint8_t GetGateCount() const noexcept;
 
 		void ResetGateCount() noexcept;
 
-		/*
+		/**
+		 * Adds GateCount.
 		部屋に生成する門の数を加算します
 		*/
 		void AddGateCount(const uint8_t count) noexcept;
+
+		/**
+		 * Removes GateCount.
+		部屋に生成する門の数を減算します（下限は0）
+		*/
+		void RemoveGateCount(const uint8_t count) noexcept;
 
 
 
@@ -355,31 +379,36 @@ namespace dungeon
 		std::string GetName() const noexcept;
 
 		/**
+		 * Returns PartsName.
 		 * 部屋のパーツの名称します
 		 */
 		const std::string_view& GetPartsName() const noexcept;
 
 		/**
+		 * Returns ItemName.
 		 * 部屋のアイテムの名称します
 		 */
 		const std::string_view& GetItemName() const noexcept;
 
 
 
-		/*
+		/**
 		Get the size of the mesh generation prohibited area
+		 * DataSize を返します。
 		*/
 		FIntVector GetDataSize() const noexcept;
 
-		/*
+		/**
 		Set the size of the mesh generation prohibited area
+		 * DataSize を設定します。
 		*/
 		void SetDataSize(const uint32_t dataWidth, const uint32_t dataDepth, const uint32_t dataHeight);
 
-		/*
+		/**
 		Get mesh generation prohibited area
 		@param[out]		min		Minimum Position
 		@param[out]		max		Maximum position
+		 * DataBounds を返します。
 		*/
 		void GetDataBounds(FIntVector& min, FIntVector& max) const noexcept;
 
@@ -387,6 +416,64 @@ namespace dungeon
 		uint32_t GetReservationNumber() const noexcept;
 		void SetReservationNumber(const uint32_t reservationNumber) noexcept;
 		void ResetReservationNumber() noexcept;
+
+		/**
+		 * Gets the gameplay archetype assigned by the intent layout.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を取得します。
+		 */
+		EDungeonRoomStructuralRole GetStructuralRole() const noexcept;
+
+		/**
+		 * Sets StructuralRole.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を設定します。
+		 */
+		void SetStructuralRole(EDungeonRoomStructuralRole structuralRole) noexcept;
+
+		/**
+		 * Gets the gameplay role assigned by the intent layout.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を取得します。
+		 */
+		EDungeonRoomGameplayRole GetGameplayRole() const noexcept;
+
+		/**
+		 * Sets GameplayRole.
+		 * 意図レイアウトで割り当てられたゲームプレイ上の部屋役割を設定します。
+		 */
+		void SetGameplayRole(EDungeonRoomGameplayRole gameplayRole) noexcept;
+
+		/**
+		 * Gets the zone index assigned by progress and floor conditions.
+		 * 進行度と階層条件で割り当てられたゾーン番号を取得します。
+		 */
+		int32 GetZoneIndex() const noexcept;
+
+		/**
+		 * Sets ZoneIndex.
+		 * 進行度と階層条件で割り当てられたゾーン番号を設定します。
+		 */
+		void SetZoneIndex(int32 zoneIndex) noexcept;
+
+		/**
+		 * この部屋が主経路に属する場合はtrueを返します。
+		 */
+		bool IsMainPathRoom() const noexcept;
+
+		/**
+		 * Sets ainPathRoom.
+		 * この部屋が主経路に属するかを設定します。
+		 */
+		void SetMainPathRoom(bool mainPathRoom) noexcept;
+
+		/**
+		 * この部屋が鍵付き経路に接続している場合はtrueを返します。
+		 */
+		bool IsLockedRouteRoom() const noexcept;
+
+		/**
+		 * Sets LockedRouteRoom.
+		 * この部屋が鍵付き経路に接続しているかを設定します。
+		 */
+		void SetLockedRouteRoom(bool lockedRouteRoom) noexcept;
 
 
 	private:
@@ -413,6 +500,11 @@ namespace dungeon
 		uint8_t mNumberOfGates = 0;
 		uint8_t mHorizontalRoomMargin = 0;
 		uint8_t mVerticalRoomMargin = 0;
+		EDungeonRoomStructuralRole mStructuralRole = EDungeonRoomStructuralRole::Connector;
+		EDungeonRoomGameplayRole mGameplayRole = EDungeonRoomGameplayRole::None;
+		int32 mZoneIndex = INDEX_NONE;
+		bool mMainPathRoom = false;
+		bool mLockedRouteRoom = false;
 	};
 }
 

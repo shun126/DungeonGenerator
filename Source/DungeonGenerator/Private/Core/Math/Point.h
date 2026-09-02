@@ -1,8 +1,6 @@
 /**
- * 点に関するヘッダーファイル
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -26,6 +24,7 @@ namespace dungeon
 
 	public:
 		/**
+		 * Represents Point.
 		 * コンストラクタ
 		 */
 		Point() noexcept;
@@ -64,6 +63,7 @@ namespace dungeon
 		Point(Point&& other) noexcept;
 
 		/**
+		 * Destroys the ~Point instance.
 		 * デストラクタ
 		 */
 		~Point() = default;
@@ -88,6 +88,7 @@ namespace dungeon
 		bool operator==(const Point& other) const noexcept;
 
 		/**
+		 * Resets ByRoomGroundCenter.
 		 * オーナーの部屋の中心にリセットします
 		 */
 		void ResetByRoomGroundCenter() noexcept;
@@ -109,11 +110,13 @@ namespace dungeon
 		static double DistSquared(const Point& v0, const Point& v1) noexcept;
 
 		/**
+		 * Returns OwnerRoom.
 		 * 所属する部屋オブジェクトを取得します
 		 */
 		const std::shared_ptr<Room>& GetOwnerRoom() const noexcept;
 
 		/**
+		 * Sets OwnerRoom.
 		 * 所属する部屋オブジェクトを取得します
 		 */
 		void SetOwnerRoom(const std::shared_ptr<Room>& room) noexcept;

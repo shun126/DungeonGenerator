@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -47,4 +47,5 @@ private:
 
 	// friend class
 	friend class FDungeonGenerateEditorModule;
+	friend class FDungeonRepeatedGenerationRegressionTest;
 };

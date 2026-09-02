@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -12,6 +12,7 @@
 namespace dungeon
 {
 	/**
+	 * Represents InputIterator.
 	 * 重み付き抽選
 	 */
 	template <class InputIterator, class Predicate>

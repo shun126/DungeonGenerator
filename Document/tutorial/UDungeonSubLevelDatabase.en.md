@@ -12,6 +12,22 @@ Use it to manage start rooms, goal rooms, rooms that must appear, or random hidd
 Levels registered in this database should be created as sublevels whose parent class is `ADungeonSubLevelScriptActor`.  
 Because `Build` reads size and grid information from those levels, **running `Build` after edits is required**.
 
+```mermaid
+graph TD;
+    SubLevel["Hand-authored sublevel"] --> ScriptActor["ADungeonSubLevelScriptActor<br/>grid size, width, depth, height"]
+    ScriptActor --> Build["Run Build on UDungeonSubLevelDatabase"]
+    Build --> Database["UDungeonSubLevelDatabase"]
+    Database --> Start["StartRoom"]
+    Database --> Goal["GoalRoom"]
+    Database --> Preferred["Preferred Sublevel"]
+    Database --> Random["Random Sublevel"]
+    Parameter["UDungeonGenerateParameter.Gameplay"] --> Database
+    Start --> Dungeon["Generated dungeon"]
+    Goal --> Dungeon
+    Preferred --> Dungeon
+    Random --> Dungeon
+```
+
 ## Main properties
 - `GridSize` / `VerticalGridSize`  
   Display-only values. The actual values are copied from `ADungeonSubLevelScriptActor` inside each sublevel.
@@ -36,21 +52,26 @@ Each `FDungeonRoomLocator` entry inside `Random Sublevel` can hold conditions su
 
 - Width / depth / height conditions
 - Which room types are allowed
+- Which structural roles are allowed (`AllowedStructuralRoles`)
+- Which gameplay roles are allowed (`AllowedGameplayRoles`)
 - Which item-room types are allowed
-- `AddingProbability`
+- `SpawnChance`
+
+`AllowedStructuralRoles` and `AllowedGameplayRoles` are only used by `Random Sublevel`. Leave either list empty to avoid filtering by that role axis. Preferred start, goal, and reservation-number sublevels keep their existing priority and do not use these filters.
 
 ## Typical flow
 1. Create a level for the special room and set its parent class to `ADungeonSubLevelScriptActor`.
 2. Configure `GridSize`, `VerticalGridSize`, `Width`, `Depth`, and `Height` on the sublevel side.
 3. Register the level in `StartRoom`, `GoalRoom`, `Preferred Sublevel`, or `Random Sublevel`.
 4. Run `Build`.
-5. Assign this asset to `DungeonSubLevelDatabase` in `UDungeonGenerateParameter`.
+5. Assign this asset to `Gameplay.DungeonSubLevelDatabase` in `UDungeonGenerateParameter`.
 
 ## Editing tips
 - The main `UDungeonGenerateParameter` grid size and the sublevel grid size must always match.
 - If you edit a sublevel and forget to run `Build`, old size or connection information may remain.
 - `Build` temporarily loads levels for analysis, so it is safer not to target the level you are currently editing.
-- If you want to use a preloaded lobby itself as the start room, use `StartRoomSubLevelScriptActor` on `ADungeonGenerateActor` instead of this database.
+- If you want to use a preloaded lobby itself as the start room, use `StartRoomSubLevelScriptActor` on `ADungeonGenerateActor` instead of this database. While that actor setting is set, this database's `StartRoom` is ignored for the start room.
+- Interior Parts do not filter by Start or Goal. Use `StartRoom` or `GoalRoom` here when either room needs a hand-authored interior and layout.
 
 ## Read Next
 - [ADungeonSubLevelScriptActor.en.md](./ADungeonSubLevelScriptActor.en.md)  
@@ -63,4 +84,3 @@ Each `FDungeonRoomLocator` entry inside `Random Sublevel` can hold conditions su
 - [LobbyConnection.en.md](./LobbyConnection.en.md)
 - [ADungeonGenerateActor.en.md](./ADungeonGenerateActor.en.md)
 - [UDungeonGenerateParameter.en.md](./UDungeonGenerateParameter.en.md)
-

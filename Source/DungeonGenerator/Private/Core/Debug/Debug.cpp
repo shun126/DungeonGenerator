@@ -1,23 +1,22 @@
 /**
- * Debug function source files
- *
- * To prevent conflicts with other Windows macros,
- * do not include this file from the header.
- *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #include "Debug.h"
 #include <GenericPlatform/GenericPlatformFile.h>
 #include <HAL/PlatformFileManager.h>
+#include <Misc/DateTime.h>
 #include <Misc/Paths.h>
 #include <algorithm>
+#include <cstdarg>
+#include <vector>
 
 // log macro
-#if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING > 0
+#if defined(DUNGEON_GENERATOR_PLATFORM_UNREAL_ENGINE)
 DEFINE_LOG_CATEGORY(DungeonGeneratorLogger);
+DEFINE_LOG_CATEGORY(DungeonGeneratorMeasure);
 #else
 #define NOMINMAX
 #include <windows.h>
@@ -25,12 +24,76 @@ DEFINE_LOG_CATEGORY(DungeonGeneratorLogger);
 
 namespace dungeon
 {
-#if UE_BUILD_DEBUG + UE_BUILD_DEVELOPMENT + UE_BUILD_TEST + UE_BUILD_SHIPPING == 0
+	namespace
+	{
+		thread_local int32_t GMeasureIndentDepth = 0;
+
+#if defined(DUNGEON_GENERATOR_PLATFORM_UNREAL_ENGINE)
+		void OutputMeasureMessage(const FString& message)
+		{
+			const FString indent = FString::ChrN(static_cast<int32>(GMeasureIndentDepth), TEXT('-'));
+			UE_LOG(DungeonGeneratorMeasure, Log, TEXT("%s%s"), *indent, *message);
+		}
+#else
+		void OutputMeasureWithArgumentList(const char* format, va_list arguments)
+		{
+			va_list countArguments;
+			va_copy(countArguments, arguments);
+			const int32_t requiredLength = std::vsnprintf(nullptr, 0, format, countArguments);
+			va_end(countArguments);
+
+			if (requiredLength < 0)
+				return;
+
+			std::vector<char> message(static_cast<size_t>(requiredLength) + 1);
+			std::vsnprintf(message.data(), message.size(), format, arguments);
+			const std::string indent(static_cast<size_t>(GMeasureIndentDepth), '-');
 #if defined(_WINDOWS) && (defined(_DEBUG) || defined(DEBUG))
+			OutputDebugStringWithArgument("%s%s", indent.c_str(), message.data());
+#else
+			std::printf("%s%s", indent.c_str(), message.data());
+#endif
+		}
+#endif
+	}
+
+	FDungeonMeasureScope::FDungeonMeasureScope() noexcept
+	{
+		++GMeasureIndentDepth;
+	}
+
+	FDungeonMeasureScope::~FDungeonMeasureScope() noexcept
+	{
+		if (GMeasureIndentDepth > 0)
+			--GMeasureIndentDepth;
+	}
+
+	int32_t FDungeonMeasureScope::GetDepth() noexcept
+	{
+		return GMeasureIndentDepth;
+	}
+
+#if defined(DUNGEON_GENERATOR_PLATFORM_UNREAL_ENGINE)
+	extern void OutputMeasure(const FString& message)
+	{
+		OutputMeasureMessage(message);
+	}
+#else
+	extern void OutputMeasure(const char* format, ...)
+	{
+		va_list arguments;
+		va_start(arguments, format);
+		OutputMeasureWithArgumentList(format, arguments);
+		va_end(arguments);
+	}
+#endif
+
+#if defined(DUNGEON_GENERATOR_PLATFORM_WINDOWS)
 	/**
 	 * Output to VisualStudio output window
 	 * Assumed to be included only from source files,
 	 * so static functions are fine.
+	 * OutputDebugStringWithArgument を表します。
 	 */
 	extern void OutputDebugStringWithArgument(const char* pszFormat, ...)
 	{
@@ -46,12 +109,11 @@ namespace dungeon
 		::OutputDebugStringA(pszBuf);
 	}
 #endif
-#endif
 
 	extern const FString& GetBaseDirectoryName()
 	{
 		static const FString Name = BaseDirectoryName;
-		return Name;		
+		return Name;
 	}
 
 	extern const FString& GetDebugDirectory()
@@ -92,6 +154,42 @@ namespace dungeon
 			for (const FString& foundFile : foundFiles)
 				platformFile.DeleteFile(*foundFile);
 		}
+	}
+
+	extern const FString& GetArtifactDirectory()
+	{
+		static const auto Path = FPaths::ProjectSavedDir() + BaseDirectoryName + TEXT("/") + ArtifactDirectoryName;
+		return Path;
+	}
+
+	extern void CreateArtifactDirectory()
+	{
+		/*
+		 * 成果物は生成の経歴なので、デバッグディレクトリと違い既存のファイルを削除しません。
+		 */
+		IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
+		const FString& directoryPath = GetArtifactDirectory();
+		if (!platformFile.DirectoryExists(*directoryPath))
+		{
+			platformFile.CreateDirectoryTree(*directoryPath);
+		}
+	}
+
+	extern std::string CreateArtifactBasePath(const uint32_t randomSeed)
+	{
+		CreateArtifactDirectory();
+
+		// 同じ秒に複数回生成してもファイル名が重複しないよう、ミリ秒まで含めます
+		const FDateTime now = FDateTime::Now();
+		const FString name = FString::Printf(TEXT("%04d%02d%02d_%02d%02d%02d%03d_%u"),
+			now.GetYear(), now.GetMonth(), now.GetDay(),
+			now.GetHour(), now.GetMinute(), now.GetSecond(), now.GetMillisecond(),
+			randomSeed
+		);
+
+		const std::string directoryName = TCHAR_TO_ANSI(*GetArtifactDirectory());
+		const std::string fileName = TCHAR_TO_ANSI(*name);
+		return directoryName + "/" + fileName;
 	}
 
 	namespace bmp

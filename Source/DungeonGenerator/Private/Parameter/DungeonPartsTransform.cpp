@@ -1,15 +1,11 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #include "Parameter/DungeonPartsTransform.h"
 #include "Core/Helper/Direction.h"
-
-#if WITH_EDITOR
-#include "Helper/DungeonDebugUtility.h"
-#endif
 
 namespace
 {
@@ -82,35 +78,3 @@ FTransform FDungeonPartsTransform::CalculateWorldTransform(const std::shared_ptr
 {
 	return CalculateWorldTransform(random, position, direction.ToDegree(), placementDirection);
 }
-
-#if WITH_EDITOR
-FString FDungeonPartsTransform::DumpToJson(const uint32 indent) const
-{
-	FString json;
-	json = dungeon::Indent(indent) + TEXT("\"RelativeTransform\":{\n");
-
-	json += dungeon::Indent(indent + 1) + TEXT("\"Location\":{\n");
-	const FVector& location = RelativeTransform.GetLocation();
-	json += dungeon::Indent(indent + 2) + TEXT("\"X\":") + FString::SanitizeFloat(location.X) + TEXT(",\n");
-	json += dungeon::Indent(indent + 2) + TEXT("\"Y\":") + FString::SanitizeFloat(location.Y) + TEXT(",\n");
-	json += dungeon::Indent(indent + 2) + TEXT("\"Z\":") + FString::SanitizeFloat(location.Z) + TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("},\n");
-
-	json += dungeon::Indent(indent + 1) + TEXT("\"Rotator\":{\n");
-	const FRotator& rotator = RelativeTransform.Rotator();
-	json += dungeon::Indent(indent + 2) + TEXT(" \"Pitch\":") + FString::SanitizeFloat(rotator.Pitch) + TEXT(",\n");
-	json += dungeon::Indent(indent + 2) + TEXT(" \"Roll\":") + FString::SanitizeFloat(rotator.Roll) + TEXT(",\n");
-	json += dungeon::Indent(indent + 2) + TEXT(" \"Yaw\":") + FString::SanitizeFloat(rotator.Yaw) + TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("},\n");
-
-	json += dungeon::Indent(indent + 1) + TEXT("\"Scale\":{\n");
-	const FVector& scale = RelativeTransform.GetScale3D();
-	json += dungeon::Indent(indent + 2) + TEXT(" \"X\":") + FString::SanitizeFloat(scale.X) + TEXT(",\n");
-	json += dungeon::Indent(indent + 2) + TEXT(" \"Y\":") + FString::SanitizeFloat(scale.Y) + TEXT(",\n");
-	json += dungeon::Indent(indent + 2) + TEXT(" \"Z\":") + FString::SanitizeFloat(scale.Z) + TEXT("\n");
-	json += dungeon::Indent(indent + 1) + TEXT("}\n");
-
-	json += dungeon::Indent(indent) + TEXT("}");
-	return json;
-}
-#endif

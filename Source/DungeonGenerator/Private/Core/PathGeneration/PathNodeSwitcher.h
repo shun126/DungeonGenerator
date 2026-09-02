@@ -1,11 +1,14 @@
-/*
-パス検索ノードの予約・使用中切り替え
-主に階段の空間に進入させない為に使用しています。
+/**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
 
-@author		Shun Moriya
-@copyright	2023- Shun Moriya
-All Rights Reserved.
-*/
+/**
+ * @file
+ * Tracks reserved and occupied path-search nodes, primarily to prevent routes from entering staircase clearance cells.
+ * パス検索ノードの予約状態と使用状態を管理し、主に階段用の空間へ経路が進入することを防ぎます。
+ */
 
 #pragma once
 #include <algorithm>
@@ -20,14 +23,16 @@ All Rights Reserved.
 
 namespace dungeon
 {
-	/*
+	/**
+	 * Represents PathNodeSwitcher.
 	パス検索ノードの予約・使用中切り替えクラス
 	主に階段の空間に進入させない為に使用しています。
 	*/
 	class PathNodeSwitcher final
 	{
 	public:
-		/*
+		/**
+		 * Represents Node.
 		パス検索ノードの予約・使用中ノードクラス
 		主に階段の空間に進入させない為に使用しています。
 		*/
@@ -83,17 +88,20 @@ namespace dungeon
 		};
 
 	public:
-		/*
+		/**
+		 * Represents PathNodeSwitcher.
 		コンストラクタ
 		*/
 		PathNodeSwitcher() = default;
 
-		/*
+		/**
+		 * Destroys the ~PathNodeSwitcher instance.
 		デストラクタ
 		*/
 		~PathNodeSwitcher() = default;
 
-		/*
+		/**
+		 * Represents Reserve.
 		ノードの予約
 		*/
 		void Reserve(const uint64_t parentHash, const Node& node)
@@ -101,7 +109,8 @@ namespace dungeon
 			mReserved[parentHash] = node;
 		}
 
-		/*
+		/**
+		 * Represents Use.
 		予約したノードを使用中に変更します
 		*/
 		void Use(const uint64_t parentHash)
@@ -118,7 +127,8 @@ namespace dungeon
 			}
 		}
 
-		/*
+		/**
+		 * Represents Revert.
 		使用中のノードを予約中に変更します
 		*/
 		void Revert(const uint64_t parentHash)
@@ -135,7 +145,8 @@ namespace dungeon
 			}
 		}
 
-		/*
+		/**
+		 * Returns whether Using.
 		キーが使用中か調べます
 		*/
 		bool IsUsing(const uint64_t key) const
@@ -151,7 +162,8 @@ namespace dungeon
 #endif
 		}
 
-		/*
+		/**
+		 * Represents Clear.
 		ノードを全てクリアします
 		*/
 		void Clear()

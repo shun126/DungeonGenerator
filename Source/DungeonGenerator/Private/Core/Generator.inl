@@ -1,18 +1,38 @@
 /**
  * ダンジョン生成ヘッダーファイル
  *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
-#pragma once 
+#pragma once
 
 namespace dungeon
 {
 	inline Generator::Error Generator::GetLastError() const noexcept
 	{
 		return mLastError;
+	}
+
+	inline uint8_t Generator::GetWarningFlags() const noexcept
+	{
+		return mWarningFlags;
+	}
+
+	inline Room::Parts Generator::GetLastErrorRoomParts() const noexcept
+	{
+		return mLastErrorRoomParts;
+	}
+
+	inline const FDungeonLayoutMetrics& Generator::GetLastLayoutMetrics() const noexcept
+	{
+		return mLastLayoutMetrics;
+	}
+
+	inline const FDungeonLayoutScore& Generator::GetLastLayoutScore() const noexcept
+	{
+		return mLastLayoutScore;
 	}
 
 	inline void Generator::OnQueryParts(const std::function<void(QueryPartsType&)>& function) noexcept
@@ -55,8 +75,4 @@ namespace dungeon
 		mOnPreGenerateVoxel = function;
 	}
 
-	inline void Generator::PostGenerateVoxel(const std::function<void(const std::shared_ptr<Voxel>&)>& function) noexcept
-	{
-		mOnPostGenerateVoxel = function;
-	}
 }

@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -17,17 +17,11 @@ struct DUNGEONGENERATOR_API FDungeonDoorActorParts : public FDungeonPartsTransfo
 {
 	GENERATED_BODY()
 
-#if WITH_EDITOR
-public:
-	// Debug
-	virtual FString DumpToJson(const uint32 indent) const override;
-#endif
-
 public:
 	/**
 	 * Class of actor to spawn
 	 * スポーンするアクターのクラス
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (AllowedClasses = "/Script/DungeonGenerator.DungeonDoorBase"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DungeonGenerator", meta = (ToolTip = "Class of actor to spawn", AllowedClasses = "/Script/DungeonGenerator.DungeonDoorBase"))
 	TObjectPtr<UClass> ActorClass = nullptr;
 };

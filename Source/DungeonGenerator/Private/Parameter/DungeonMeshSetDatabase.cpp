@@ -1,31 +1,69 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #include "Parameter/DungeonMeshSetDatabase.h"
-#include "Parameter/DungeonPartsSelector.h"
+#include "Parameter/Selector/DungeonMeshSetSelectorBase.h"
 #include "Parameter/DungeonSelectionPolicyUtility.h"
 #include "Core/Debug/Debug.h"
 #include "Core/Math/Random.h"
+#include <Serialization/Archive.h>
 #if WITH_EDITOR
 #include <UObject/UnrealType.h>
 #endif
 #include <cmath>
-
-#if WITH_EDITOR
-#include "Helper/DungeonDebugUtility.h"
-#endif
 
 UDungeonMeshSetDatabase::UDungeonMeshSetDatabase(const FObjectInitializer& objectInitializer)
 	: Super(objectInitializer)
 {
 }
 
+void UDungeonMeshSetDatabase::Serialize(FArchive& Ar)
+{
+	Ar.UsingCustomVersion(FDungeonGeneratorAssetVersion::GUID);
+	Super::Serialize(Ar);
+
+	if (Ar.IsLoading())
+	{
+		LoadedAssetVersion = FDungeonGeneratorAssetVersion::Get(Ar);
+	}
+}
+
 void UDungeonMeshSetDatabase::PostLoad()
 {
 	Super::PostLoad();
+	MigrateFromAssetVersion(LoadedAssetVersion);
+	ApplyPostLoadCompatibilityFixups();
+#if WITH_EDITOR
+	FDungeonAssetMigrationDelegates::RequestMigration(this, LoadedAssetVersion);
+#endif
+}
+
+/*
+ * Runs migration steps that depend on the asset format version saved in the uasset.
+ * uassetに保存されたアセット形式バージョンに依存する移行処理を実行します。
+ */
+void UDungeonMeshSetDatabase::MigrateFromAssetVersion(const int32 assetVersion)
+{
+	if (assetVersion < FDungeonGeneratorAssetVersion::Version2_0 || !bSelectionPolicyMigrated)
+	{
+		MigrateSelectionPolicies();
+	}
+	if (assetVersion < FDungeonGeneratorAssetVersion::Version2_0)
+	{
+		for (FDungeonMeshSet& meshSet : Parts)
+			meshSet.MigrateSpawnChancesFromVersion1();
+	}
+}
+
+/*
+ * Applies compatibility fixups that are still required after version-specific migration.
+ * バージョン別移行後も必要な互換補正を適用します。
+ */
+void UDungeonMeshSetDatabase::ApplyPostLoadCompatibilityFixups()
+{
 	MigrateSelectionPolicies();
 }
 
@@ -44,9 +82,10 @@ void UDungeonMeshSetDatabase::PostEditChangeProperty(FPropertyChangedEvent& Prop
 
 void UDungeonMeshSetDatabase::MigrateSelectionPolicies()
 {
-	if (!bSelectionPolicyMigrated)
+	if (!IsValid(MeshSetSelector))
 	{
-		SelectionPolicy = dungeon::selection::ToPolicy(SelectionMethod);
+		const EDungeonMeshSetSelectionMethod legacyMethod = SelectionMethod != EDungeonMeshSetSelectionMethod::Random ? SelectionMethod : dungeon::selection::ToLegacyMeshSetMethod(SelectionPolicy);
+		MeshSetSelector = UDungeonMeshSetSelectorBase::CreateFromLegacyMethod(this, legacyMethod, DungeonPartsSelector);
 	}
 
 	SelectionPolicy = dungeon::selection::SanitizeMeshSetPolicy(SelectionPolicy);
@@ -55,7 +94,7 @@ void UDungeonMeshSetDatabase::MigrateSelectionPolicies()
 
 	for (FDungeonMeshSet& meshSet : Parts)
 	{
-		meshSet.MigrateSelectionPolicies();
+		meshSet.MigrateSelectionPolicies(this);
 	}
 }
 
@@ -65,52 +104,23 @@ const FDungeonMeshSet* UDungeonMeshSetDatabase::AtImplement(const size_t index) 
 	return (size > 0) ? &Parts[index % size] : nullptr;
 }
 
-const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random, const FMeshSetQuery& query) const
+const FDungeonMeshSet* UDungeonMeshSetDatabase::SelectImplement(const uint16_t identifier, const uint8_t depthRatioFromStart, const std::shared_ptr<dungeon::Random>& random, const FDungeonMeshSetQuery& query) const
 {
+	(void)identifier;
+	(void)depthRatioFromStart;
+
 	const int32 size = Parts.Num();
 	if (size <= 0)
 		return nullptr;
 
-	switch (dungeon::selection::SanitizeMeshSetPolicy(SelectionPolicy))
+	if (IsValid(MeshSetSelector))
 	{
-	case EDungeonSelectionPolicy::Random:
-		if (random != nullptr)
-			return &Parts[random->Get<uint32_t>(size)];
-	case EDungeonSelectionPolicy::GridIndex:
-	case EDungeonSelectionPolicy::Direction:
-		return &Parts[0];
-
-	case EDungeonSelectionPolicy::Identifier:
-		return &Parts[identifier % size];
-
-	case EDungeonSelectionPolicy::DepthFromStart:
-	{
-		const float ratio = static_cast<float>(depthRatioFromStart) / 255.f;
-		const float index = static_cast<float>(size - 1) * ratio;
-		return &Parts[static_cast<size_t>(std::round(index))];
+		const int32 index = MeshSetSelector->SelectMeshSetIndexNative(query, random, size);
+		if (0 <= index && index < size)
+			return &Parts[index];
 	}
 
-
-	default:
-		DUNGEON_GENERATOR_ERROR(TEXT("Set the correct SelectionPolicy"));
-		return nullptr;
-	}
+	if (random != nullptr)
+		return &Parts[random->Get<uint32_t>(size)];
+	return &Parts[0];
 }
-
-#if WITH_EDITOR
-FString UDungeonMeshSetDatabase::DumpToJson(const uint32 indent) const
-{
-	FString json = dungeon::Indent(indent) + TEXT("\"Parts\":[\n");
-	for (int32 i = 0; i < Parts.Num(); ++i)
-	{
-		if (i != 0)
-			json += TEXT(",");
-		json += dungeon::Indent(indent + 1) + TEXT("{\n");
-		json += Parts[i].DumpToJson(indent + 2);
-		json += TEXT("\n");
-		json += dungeon::Indent(indent + 1) + TEXT("}\n");
-	}
-	json += dungeon::Indent(indent) + TEXT("]");
-	return json;
-}
-#endif

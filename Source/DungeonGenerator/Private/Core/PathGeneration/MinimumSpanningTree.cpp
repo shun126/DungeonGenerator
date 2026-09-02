@@ -1,10 +1,14 @@
 /**
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
+ * All Rights Reserved.
+ */
+
+/**
+ * @file
  * 最小スパニングツリーに関するソースファイル
  *
  * @cite		https://algo-logic.info/kruskal-mst/
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
- * All Rights Reserved.
  */
 
 #include "MinimumSpanningTree.h"
@@ -295,9 +299,9 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 			for (const auto& e : mEdges)
 			{
 				DUNGEON_GENERATOR_LOG(TEXT("MinimumSpanningTree: out: %d %d-%d (%f)"),
-					e.GetIdentifier().Get(),
-					e.GetPoint(0)->GetOwnerRoom()->GetIdentifier().Get(),
-					e.GetPoint(1)->GetOwnerRoom()->GetIdentifier().Get(),
+					static_cast<uint16_t>(e.GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(0)->GetOwnerRoom()->GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(1)->GetOwnerRoom()->GetIdentifier()),
 					e.GetLength()
 				);
 			}
@@ -335,9 +339,9 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 			for (const auto& e : mEdges)
 			{
 				DUNGEON_GENERATOR_LOG(TEXT("MinimumSpanningTree: mix: %d %d-%d (%f)"),
-					e.GetIdentifier().Get(),
-					e.GetPoint(0)->GetOwnerRoom()->GetIdentifier().Get(),
-					e.GetPoint(1)->GetOwnerRoom()->GetIdentifier().Get(),
+					static_cast<uint16_t>(e.GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(0)->GetOwnerRoom()->GetIdentifier()),
+					static_cast<uint16_t>(e.GetPoint(1)->GetOwnerRoom()->GetIdentifier()),
 					e.GetLength()
 				);
 			}
@@ -540,17 +544,23 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 			return result;
 		}
 
-		//if (startLocationPolicy == StartLocationPolicy::UseSouthernMost)
+		if (startLocationPolicy == StartLocationPolicy::UseSouthernMost ||
+			startLocationPolicy == StartLocationPolicy::UseNorthernMost ||
+			startLocationPolicy == StartLocationPolicy::UseEasternMost ||
+			startLocationPolicy == StartLocationPolicy::UseWesternMost)
 		{
 			/*
-			 * 全ての辺の中央の位置と
-			 * Yが最も大きい点をを求める
+			 * Find the requested horizontal edge and keep the opposite axis close to the center.
+			 * 指定された水平端を探し、反対軸は中央に近い点を選びます。
 			 */
 			std::shared_ptr<Point> center = std::make_shared<Point>(0.f, 0.f, 0.f);
-			std::shared_ptr<const Point> bottom = nullptr;
+			std::shared_ptr<const Point> edgePoint = nullptr;
 			size_t count = 0;
 			{
-				float maxY = std::numeric_limits<float>::lowest();
+				float edgeValue = (startLocationPolicy == StartLocationPolicy::UseNorthernMost ||
+					startLocationPolicy == StartLocationPolicy::UseWesternMost)
+					? std::numeric_limits<float>::max()
+					: std::numeric_limits<float>::lowest();
 				for (const auto& edge : mEdges)
 				{
 					*center += static_cast<FVector>(*edge.GetPoint(0));
@@ -559,16 +569,26 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 
 					for (size_t i = 0; i < 2; ++i)
 					{
-						if (maxY < edge.GetPoint(i)->Y)
+						const float candidateValue =
+							(startLocationPolicy == StartLocationPolicy::UseEasternMost ||
+								startLocationPolicy == StartLocationPolicy::UseWesternMost)
+							? edge.GetPoint(i)->X
+							: edge.GetPoint(i)->Y;
+						const bool bUseCandidate =
+							(startLocationPolicy == StartLocationPolicy::UseNorthernMost ||
+								startLocationPolicy == StartLocationPolicy::UseWesternMost)
+							? edgeValue > candidateValue
+							: edgeValue < candidateValue;
+						if (bUseCandidate)
 						{
-							maxY = edge.GetPoint(i)->Y;
-							bottom = edge.GetPoint(i);
+							edgeValue = candidateValue;
+							edgePoint = edge.GetPoint(i);
 						}
 					}
 				}
 			}
 
-			if (bottom == nullptr)
+			if (edgePoint == nullptr)
 			{
 				return nullptr;
 			}
@@ -579,10 +599,16 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 			}
 
 			/*
-			 * 最もYが大きく、最も中央にある点を探す
+			 * Find the point nearest to the requested horizontal endpoint.
+			 * 指定された水平端に最も近い点を探します。
 			 */
 			{
-				const Point candidateStartPoint(center->X, bottom->Y, bottom->Z);
+				const bool bUseHorizontalX = startLocationPolicy == StartLocationPolicy::UseEasternMost ||
+					startLocationPolicy == StartLocationPolicy::UseWesternMost;
+				const Point candidateStartPoint(
+					bUseHorizontalX ? edgePoint->X : center->X,
+					bUseHorizontalX ? center->Y : edgePoint->Y,
+					edgePoint->Z);
 				std::shared_ptr<const Point> resultPoint = nullptr;
 				double min = std::numeric_limits<double>::max();
 				for (const auto& edge : mEdges)
@@ -600,6 +626,8 @@ void MinimumSpanningTree::Initialize(const std::shared_ptr<Random>& random, cons
 				return resultPoint;
 			}
 		}
+
+		return nullptr;
 	}
 
 	std::vector<std::shared_ptr<const Point>> MinimumSpanningTree::FindMultiStartPoints(const size_t startRoomCount) const noexcept

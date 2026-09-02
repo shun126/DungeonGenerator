@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -10,8 +10,8 @@
 UDungeonRoomSensorDatabaseFactory::UDungeonRoomSensorDatabaseFactory()
 {
 	SupportedClass = UDungeonRoomSensorDatabase::StaticClass();
-	bCreateNew = true;
-	bEditAfterNew = true;
+	bCreateNew = false;
+	bEditAfterNew = false;
 }
 
 UObject* UDungeonRoomSensorDatabaseFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)

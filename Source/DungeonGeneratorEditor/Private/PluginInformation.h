@@ -9,11 +9,11 @@ All Rights Reserved.
 #if !defined(DUNGEON_GENERATOR_PLUGIN_INFORMATION_DETECTED)
 #define DUNGEON_GENERATOR_PLUGIN_INFORMATION_DETECTED
 #define DUNGEON_GENERATOR_PLUGIN_FILE_VERSION 3
-#define DUNGEON_GENERATOR_PLUGIN_VERSION 66
-#define DUNGEON_GENERATOR_PLUGIN_VERSION_NAME "1.9.2"
+#define DUNGEON_GENERATOR_PLUGIN_VERSION 100
+#define DUNGEON_GENERATOR_PLUGIN_VERSION_NAME "2.0.0"
 #define DUNGEON_GENERATOR_PLUGIN_FRIENDLY_NAME "Dungeon Generator"
 #define DUNGEON_GENERATOR_PLUGIN_DESCRIPTION "Procedural 3d dungeon generator plugin. Easy generation of levels, mini-maps and missions."
-#define DUNGEON_GENERATOR_PLUGIN_DOCS_URL "https://github.com/shun126/UE5-DungeonGeneratorDemo/wiki"
+#define DUNGEON_GENERATOR_PLUGIN_DOCS_URL "https://github.com/shun126/DungeonGenerator/wiki"
 #define DUNGEON_GENERATOR_PLUGIN_SUPPORT_URL "https://github.com/shun126/DungeonGenerator/discussions"
 #define DUNGEON_GENERATOR_PLUGIN_BETA_VERSION true
 #endif

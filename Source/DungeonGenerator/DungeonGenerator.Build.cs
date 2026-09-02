@@ -27,13 +27,20 @@ public class DungeonGenerator : ModuleRules
 			});
 		*/
 
-		PrivateDependencyModuleNames.AddRange(
+		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"Core",
 				"CoreUObject",
 				"Engine",
 				"AIModule",
+			}
+		);
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"GameplayTasks",
 				"NavigationSystem",
 				"NetCore",
 				"SlateCore",
@@ -45,8 +52,11 @@ public class DungeonGenerator : ModuleRules
 		{
 			PrivateDependencyModuleNames.AddRange(
 				new string[] {
+					"AssetRegistry",
+					"AssetTools",
+					"ContentBrowser",
+					"Slate",
 					"UnrealEd",
-					"JsonUtilities",
 				});
 		}
 

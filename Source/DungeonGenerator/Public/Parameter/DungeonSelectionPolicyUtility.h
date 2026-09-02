@@ -1,3 +1,9 @@
+/**
+ * @author      Shun Moriya
+ * @copyright   2026- Shun Moriya
+ * All Rights Reserved.
+ */
+
 #pragma once
 
 #include "Parameter/DungeonMeshSetSelectionMethod.h"
@@ -18,6 +24,8 @@ namespace selection
 			return EDungeonSelectionPolicy::Identifier;
 		case EDungeonMeshSetSelectionMethod::DepthFromStart:
 			return EDungeonSelectionPolicy::DepthFromStart;
+		case EDungeonMeshSetSelectionMethod::Custom:
+			return EDungeonSelectionPolicy::CustomSelector;
 		default:
 			return EDungeonSelectionPolicy::Random;
 		}
@@ -33,6 +41,8 @@ namespace selection
 			return EDungeonSelectionPolicy::GridIndex;
 		case EDungeonPartsSelectionMethod::Direction:
 			return EDungeonSelectionPolicy::Direction;
+		case EDungeonPartsSelectionMethod::Custom:
+			return EDungeonSelectionPolicy::CustomSelector;
 		default:
 			return EDungeonSelectionPolicy::Random;
 		}
@@ -46,6 +56,8 @@ namespace selection
 			return EDungeonMeshSetSelectionMethod::Identifier;
 		case EDungeonSelectionPolicy::DepthFromStart:
 			return EDungeonMeshSetSelectionMethod::DepthFromStart;
+		case EDungeonSelectionPolicy::CustomSelector:
+			return EDungeonMeshSetSelectionMethod::Custom;
 		case EDungeonSelectionPolicy::Random:
 		case EDungeonSelectionPolicy::GridIndex:
 		case EDungeonSelectionPolicy::Direction:
@@ -62,6 +74,8 @@ namespace selection
 			return EDungeonPartsSelectionMethod::GridIndex;
 		case EDungeonSelectionPolicy::Direction:
 			return EDungeonPartsSelectionMethod::Direction;
+		case EDungeonSelectionPolicy::CustomSelector:
+			return EDungeonPartsSelectionMethod::Custom;
 		case EDungeonSelectionPolicy::Random:
 		case EDungeonSelectionPolicy::Identifier:
 		case EDungeonSelectionPolicy::DepthFromStart:
@@ -77,6 +91,7 @@ namespace selection
 		case EDungeonSelectionPolicy::Random:
 		case EDungeonSelectionPolicy::Identifier:
 		case EDungeonSelectionPolicy::DepthFromStart:
+		case EDungeonSelectionPolicy::CustomSelector:
 			return true;
 		default:
 			return false;
@@ -92,6 +107,7 @@ namespace selection
 		case EDungeonSelectionPolicy::Direction:
 		case EDungeonSelectionPolicy::Identifier:
 		case EDungeonSelectionPolicy::DepthFromStart:
+		case EDungeonSelectionPolicy::CustomSelector:
 			return true;
 		default:
 			return false;

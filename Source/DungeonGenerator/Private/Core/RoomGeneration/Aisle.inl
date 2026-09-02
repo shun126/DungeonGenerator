@@ -1,20 +1,22 @@
 /**
  * 通路に関するヘッダーファイル
  *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
 #pragma once
 #include "../Math/Point.h"
+#include "Room.h"
 #include <fstream>
 
 namespace dungeon
 {
-	inline Aisle::Aisle(const bool main, const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1) noexcept
+	inline Aisle::Aisle(const bool main, const std::shared_ptr<const Point>& p0, const std::shared_ptr<const Point>& p1, const EDungeonAislePurpose purpose) noexcept
 		: mIdentifier(Identifier::Type::Aisle)
 		, mMain(main)
+		, mPurpose(purpose)
 	{
 		mPoints[0] = p0;
 		mPoints[1] = p1;
@@ -26,6 +28,7 @@ namespace dungeon
 		, mLength(other.mLength)
 		, mIdentifier(other.mIdentifier)
 		, mMain(other.mMain)
+		, mPurpose(other.mPurpose)
 		, mHeight(other.mHeight)
 		, mLocked(other.mLocked)
 		, mUniqueLocked(other.mUniqueLocked)
@@ -37,6 +40,7 @@ namespace dungeon
 		, mLength(std::move(other.mLength))
 		, mIdentifier(std::move(other.mIdentifier))
 		, mMain(std::move(other.mMain))
+		, mPurpose(std::move(other.mPurpose))
 		, mHeight(std::move(other.mHeight))
 		, mLocked(std::move(other.mLocked))
 		, mUniqueLocked(std::move(other.mUniqueLocked))
@@ -49,6 +53,7 @@ namespace dungeon
 		mLength = other.mLength;
 		mIdentifier = other.mIdentifier;
 		mMain = other.mMain;
+		mPurpose = other.mPurpose;
 		mHeight = other.mHeight;
 		mLocked = other.mLocked;
 		mUniqueLocked = other.mUniqueLocked;
@@ -61,6 +66,7 @@ namespace dungeon
 		mLength = std::move(other.mLength);
 		mIdentifier = std::move(other.mIdentifier);
 		mMain = std::move(other.mMain);
+		mPurpose = std::move(other.mPurpose);
 		mHeight = std::move(other.mHeight);
 		mLocked = std::move(other.mLocked);
 		mUniqueLocked = std::move(other.mUniqueLocked);
@@ -87,9 +93,49 @@ namespace dungeon
 		return mIdentifier;
 	}
 
+	inline int32 Aisle::GetZoneIndex() const noexcept
+	{
+		const std::shared_ptr<Room>& firstRoom = mPoints[0]->GetOwnerRoom();
+		const std::shared_ptr<Room>& secondRoom = mPoints[1]->GetOwnerRoom();
+		const bool useSecondRoomZone = firstRoom->GetDepthFromStart() < secondRoom->GetDepthFromStart()
+			|| (firstRoom->GetDepthFromStart() == secondRoom->GetDepthFromStart()
+				&& static_cast<uint16_t>(firstRoom->GetIdentifier()) < static_cast<uint16_t>(secondRoom->GetIdentifier()));
+		return useSecondRoomZone ? secondRoom->GetZoneIndex() : firstRoom->GetZoneIndex();
+	}
+
 	inline bool Aisle::IsMain() const noexcept
 	{
 		return mMain;
+	}
+
+	inline void Aisle::SetMain(const bool main) noexcept
+	{
+		mMain = main;
+	}
+
+	inline EDungeonAislePurpose Aisle::GetPurpose() const noexcept
+	{
+		return mPurpose;
+	}
+
+	inline bool Aisle::IsVerticalTransition() const noexcept
+	{
+		const std::shared_ptr<const Point>& point0 = GetPoint(0);
+		const std::shared_ptr<const Point>& point1 = GetPoint(1);
+		if (point0 == nullptr || point1 == nullptr)
+			return false;
+
+		const std::shared_ptr<Room>& room0 = point0->GetOwnerRoom();
+		const std::shared_ptr<Room>& room1 = point1->GetOwnerRoom();
+		if (room0 == nullptr || room1 == nullptr)
+			return false;
+
+		return room0->GetZ() != room1->GetZ();
+	}
+
+	inline void Aisle::SetPurpose(const EDungeonAislePurpose purpose) noexcept
+	{
+		mPurpose = purpose;
 	}
 
 	inline bool Aisle::IsLocked() const noexcept

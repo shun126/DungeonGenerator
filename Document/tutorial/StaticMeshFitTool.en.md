@@ -9,7 +9,7 @@ Use it before registering your own floors, walls, roofs, slopes, and pillars in 
 - Register the generated meshes in a `Mesh set database`
 
 ## What the tool does
-The StaticMesh Fit tool checks the Bounds of selected Static Mesh assets against the `Grid Size` and `Vertical Grid Size` from a `DungeonGenerateParameter`.
+The StaticMesh Fit tool checks the Bounds of selected Static Mesh assets against `Theme.HorizontalGridSize` and `Theme.VerticalGridSize` from a `DungeonGenerateParameter`. In the tool UI, these are shown as `Horizontal Grid Size` / `Grid Size` and `Vertical Grid Size`.
 
 The tool does not modify the original Static Mesh assets.  
 When you run `Generate Fitted Meshes`, it creates new Static Mesh assets in the selected output folder.
@@ -46,7 +46,7 @@ The dialog contains the following settings.
 
 ### `DungeonGenerateParameter`
 Select the `DungeonGenerateParameter` used as the grid reference.  
-Its `Grid Size` and `Vertical Grid Size` become the fit targets.
+Its `Theme.HorizontalGridSize` (`Horizontal Grid Size` / `Grid Size` in the UI) and `Theme.VerticalGridSize` (`Vertical Grid Size`) become the fit targets.
 
 ### `Output Directory`
 The Content Browser folder where generated Static Mesh assets are saved.  
@@ -149,7 +149,7 @@ Register the generated Static Mesh assets in the room or aisle `Mesh set databas
 - Walls go in `Wall Parts`
 - Roofs go in `Roof Parts`
 - Slopes go in `Slope Parts`
-- Pillars go in a pillar setting such as `Pillar Parts` on `UDungeonGenerateParameter`
+- Pillars go in `Theme.Fixtures.Pillar Parts` on `UDungeonGenerateParameter`
 
 After registration, use `Window > DungeonGenerator`, run `Verify`, then `Generate dungeon` to confirm that floors, walls, roofs, and slopes connect cleanly.
 

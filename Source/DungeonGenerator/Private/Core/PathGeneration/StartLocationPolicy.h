@@ -1,8 +1,6 @@
 /**
- * ダンジョンの開始位置に関する定義
- *
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -12,14 +10,15 @@
 namespace dungeon
 {
 	/**
-	 * Dungeon start location policy
-	 *
-	 * スタート位置の種類
-	 * EDungeonStartLocationPolicyと同じ意味にして下さい
+	 * Defines how start and goal endpoint rooms are selected.
+	 * 開始部屋とゴール部屋をどの基準で選ぶかを定義します。
+	 * EDungeonStartLocationPolicyと同じ順番にして下さい
 	 */
 	enum class StartLocationPolicy : uint8_t
 	{
-		NoAdjustment,
+		UseNorthernMost,
+		UseEasternMost,
+		UseWesternMost,
 		UseSouthernMost,
 		UseHighestPoint,
 		UseLowestPoint,

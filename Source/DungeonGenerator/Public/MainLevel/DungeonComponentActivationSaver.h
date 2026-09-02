@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -20,11 +20,13 @@ class DungeonComponentActivationSaver final
 {
 public:
 	/**
+	 * Represents DungeonComponentActivationSaver.
 	 * コンストラクタ
 	 */
 	DungeonComponentActivationSaver() = default;
 
 	/**
+	 * Destroys the ~DungeonComponentActivationSaver instance.
 	 * デストラクタ
 	 */
 	~DungeonComponentActivationSaver() = default;
@@ -33,18 +35,21 @@ public:
 	 * Records the activity of components owned by the actor
 	 * @param[in]	actor
 	 * @param[in]	function
+	 * Stash を表します。
 	 */
 	void Stash(const AActor* actor, const std::function<std::pair<bool, T>(UActorComponent*)>& function);
 
 	/**
 	 * Restore the activity of recorded components
 	 * @param[in]	function
+	 * Pop を表します。
 	 */
 	void Pop(const std::function<void(UActorComponent*, const T)>& function);
 
 	/**
 	 * No records?
 	 * @return		Returns true if nothing is recorded.
+	 * Empty かどうかを返します。
 	 */
 	bool IsEmpty() const;
 
@@ -59,9 +64,10 @@ inline void DungeonComponentActivationSaver<T>::Stash(const AActor* actor, const
 
 	if (IsValid(actor))
 	{
-		/*
+		/**
 		Note: GetComponents can also retrieve components below the child level,
 		so there is no need to recurse.
+		 * for を表します。
 		*/
 		for (UActorComponent* component : actor->GetComponents())
 		{

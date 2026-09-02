@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -43,13 +43,15 @@
  * - 通信失敗時はエディタ動作に影響を与えません
  */
 UCLASS(config=Editor, defaultconfig, meta=(DisplayName="Online Notices"))
-class DUNGEONGENERATOREDITOR_API UPluginNoticeSettings : public UDeveloperSettings
+class DUNGEONGENERATOREDITOR_API UDungeonPluginNoticeSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UPluginNoticeSettings();
+	/** Constructs settings with safe notice-fetch defaults. 安全な通知取得の既定値で設定を構築します。 */
+	UDungeonPluginNoticeSettings();
 
+	/** Returns the Project Settings category containing these options. これらの項目を表示するProject Settingsカテゴリを返します。 */
 	virtual FName GetCategoryName() const override;
 
 	/**
@@ -57,7 +59,7 @@ public:
 	 *
 	 * 設定したURLからプラグイン通知を取得して表示するかを切り替えます。
 	 */
-	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
+	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ToolTip="Download and display DungeonGenerator notices from the configured URL. Disable this to prevent notice HTTP requests."))
 	bool bEnableOnlineNotices;
 
 	/**
@@ -65,7 +67,7 @@ public:
 	 *
 	 * オンライン通知データを取得するエンドポイントURLです。
 	 */
-	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
+	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ToolTip="HTTPS endpoint that provides DungeonGenerator notice data."))
 	FString NoticesUrl;
 
 	/**
@@ -73,7 +75,7 @@ public:
 	 *
 	 * オンライン通知を再取得する間隔（時間）です。
 	 */
-	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ClampMin="1", UIMin="1"))
+	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ClampMin="1", UIMin="1", ToolTip="Minimum number of hours between online notice refresh requests."))
 	int32 FetchIntervalHours;
 
 	/**
@@ -81,7 +83,7 @@ public:
 	 *
 	 * 通知取得時のHTTPタイムアウト秒数です。
 	 */
-	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ClampMin="1", UIMin="1"))
+	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ClampMin="1", UIMin="1", ToolTip="Maximum number of seconds to wait for an online notice HTTP response."))
 	int32 HttpTimeoutSeconds;
 
 	/**
@@ -89,7 +91,7 @@ public:
 	 *
 	 * 既読・非表示状態を全体共有ではなくユーザー単位で保持します。
 	 */
-	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
+	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ToolTip="Store read and dismissed notice state per editor user instead of in shared project settings."))
 	bool bPerUserState;
 
 	/**
@@ -97,7 +99,7 @@ public:
 	 *
 	 * 通知URLと同一ドメインのリンクのみ開けるよう制限します。
 	 */
-	UPROPERTY(Config, EditAnywhere, Category="Online Notices")
+	UPROPERTY(Config, EditAnywhere, Category="Online Notices", meta=(ToolTip="Allow notice links only when their host matches the configured notice endpoint host."))
 	bool bRestrictLinksToSameDomain;
 };
 

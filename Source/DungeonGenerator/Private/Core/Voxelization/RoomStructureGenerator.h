@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -16,6 +16,7 @@ namespace dungeon
 	class Voxel;
 
 	/**
+	 * Represents RoomStructureGenerator.
 	 * 部屋の中に構造物を生成できるか調査・生成します
 	 */
 	class RoomStructureGenerator final : NonCopyable

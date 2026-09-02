@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -17,17 +17,11 @@ struct DUNGEONGENERATOR_API FDungeonMeshParts : public FDungeonPartsTransform
 {
 	GENERATED_BODY()
 
-#if WITH_EDITOR
-public:
-	// Debug
-	virtual FString DumpToJson(const uint32 indent) const override;
-#endif
-
 public:
 	/**
 	 * Class of static mesh to spawn
 	 * スポーンするスタティックメッシュ
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DungeonGenerator", meta = (ToolTip = "Class of static mesh to spawn"))
 	TObjectPtr<UStaticMesh> StaticMesh = nullptr;
 };

@@ -47,9 +47,10 @@ subgraph Core System
 GenerateRooms(部屋の生成)
 InitializeRooms(部屋の分離)
 ExtractionAisles(通路の生成)
-AdjustedStartAndGoalSubLevel(開始部屋と終了部屋のサブレベルを配置する隙間を調整)
+AdjustReservedSubLevels(常時ロードするサブレベルを通常部屋へ割り当て)
 AdjustRoomSize(部屋の大きさを調整)
 SeparateRooms(部屋の分離)
+FinalizeEndpointLayout(開始部屋と終了部屋を確定して登録サイズを適用)
 ExpandSpace(全ての部屋が収まるように全体の空間を拡張)
 AdjustPoints(部屋の中心情報を同期)
 MarkBranchIdAndDepthFromStart(部屋と通路のブランチIDと深さを生成)
@@ -63,11 +64,12 @@ end
 
 GenerateRooms --> InitializeRooms
 InitializeRooms --> ExtractionAisles
-ExtractionAisles --> AdjustedStartAndGoalSubLevel
-AdjustedStartAndGoalSubLevel --> AdjustRoomSize
+ExtractionAisles --> AdjustReservedSubLevels
+AdjustReservedSubLevels --> AdjustRoomSize
 AdjustRoomSize --> SeparateRooms
 SeparateRooms -->|分離失敗| ExtractionAisles
-SeparateRooms -->|分離成功| ExpandSpace
+SeparateRooms -->|分離成功| FinalizeEndpointLayout
+FinalizeEndpointLayout --> ExpandSpace
 ExpandSpace --> AdjustPoints
 AdjustPoints --> MarkBranchIdAndDepthFromStart
 MarkBranchIdAndDepthFromStart --> DetectFloorHeightAndDepthFromStart

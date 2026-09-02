@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023 - Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -21,6 +21,11 @@
 #define MEASURE_TIME_START(OBJECT_NAME) dungeon::Stopwatch OBJECT_NAME;
 
 /**
+ * @brief ログのインデントを深くします。スコープから抜けると元のインデントに戻します。
+ */
+#define MEASURE_TIME_SCOPE() DUNGEON_GENERATOR_MEASURE_SCOPE()
+
+/**
  * @brief 前回の LAP からの経過時間を計測し、ログに出力するマクロ。
  *
  * dungeon::Stopwatch::Lap() により区間時間を取得し、
@@ -29,7 +34,7 @@
  * @param OBJECT_NAME MEASURE_TIME_START で生成した Stopwatch オブジェクトの変数名。
  * @param SECTION_NAME ログに表示する区間名（const TCHAR*）。
  */
-#define MEASURE_TIME_LAP(OBJECT_NAME, SECTION_NAME) DUNGEON_GENERATOR_LOG(TEXT("%s: %lf seconds"), SECTION_NAME, OBJECT_NAME.Lap())
+#define MEASURE_TIME_LAP(OBJECT_NAME, SECTION_NAME) DUNGEON_GENERATOR_MEASURE(TEXT("%s: %lf seconds"), SECTION_NAME, OBJECT_NAME.Lap())
 
  /**
   * @brief 前回の LAP からの経過時間を計測し、変数に加算するマクロ。
@@ -41,6 +46,7 @@
 
 #else
 #define MEASURE_TIME_START(OBJECT_NAME) ((void)0)
+#define MEASURE_TIME_SCOPE() ((void)0)
 #define MEASURE_TIME_LAP(OBJECT_NAME, SECTION_NAME) ((void)0)
 #define MEASURE_TIME_ADD(OBJECT_NAME, VARIABLE) ((void)0)
 #endif

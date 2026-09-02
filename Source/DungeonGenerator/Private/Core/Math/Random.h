@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -23,33 +23,39 @@ namespace dungeon
 
 		/**
 		 * copy constructor
+		 * Random を表します。
 		 */
 		explicit Random(const Random& other);
 
 		/**
 		 * move constructor
+		 * Random を表します。
 		 */
 		explicit Random(Random&& other) noexcept;
 
 		/**
 		 * copy assignment
+		 * operator を表します。
 		 */
 		Random& operator = (const Random& other);
 
 		/**
 		 * move assignment
+		 * operator を表します。
 		 */
 		Random& operator = (Random&& other) noexcept;
 
 		/**
 		 * Set the random number seed
 		 * @param[in]	seed	Random number seeds
+		 * Seed を設定します。
 		 */
 		void SetSeed(const uint32_t seed);
 
 		/**
 		 * @return	-1 or 1
 		 * T must be a signed type.
+		 * Sign を返します。
 		 */
 		template <typename T>
 		T GetSign();
@@ -58,6 +64,7 @@ namespace dungeon
 		 * Get a random number
 		 * @return		Returns the range [type_min,type_max) if T is an integer,
 		 * or [0,1] with equal probability if T is a real number.
+		 * Get を表します。
 		 */
 		template <typename T>
 		T Get();
@@ -67,6 +74,7 @@ namespace dungeon
 		 * @param[in]	to	Upper value
 		 * @return		Returns the range [0,to) if T is an integer,
 		 * or [0,to] with equal probability if T is a real number.
+		 * Get を表します。
 		 */
 		template <typename T>
 		T Get(const T to);
@@ -77,6 +85,7 @@ namespace dungeon
 		 * @param[in]	to		Upper value
 		 * @return		Returns the range [from,to) if T is an integer,
 		 * or [from,to] with equal probability if T is a real number.
+		 * Get を表します。
 		 */
 		template <typename T>
 		T Get(const T from, const T to);
@@ -87,6 +96,7 @@ namespace dungeon
 		 * @param[out]	y		Random number seeds
 		 * @param[out]	z		Random number seeds
 		 * @param[out]	w		Random number seeds
+		 * Seeds を返します。
 		 */
 		void GetSeeds(uint32_t& x, uint32_t& y, uint32_t& z, uint32_t& w) const noexcept;
 
@@ -94,12 +104,14 @@ namespace dungeon
 		/**
 		 * Get a random number of type uint32_t
 		 * @return		Returns a range of [0,std::numeric_limits<int32_t>::max)
+		 * U32 を返します。
 		 */
 		uint32_t GetU32();
 
 		/**
 		 * Get a random number of type uint64_t
 		 * @return		Returns a range of [0,std::numeric_limits<int64_t>::max)
+		 * U64 を返します。
 		 */
 		uint64_t GetU64();
 

@@ -1,8 +1,8 @@
 /**
  * ダンジョン生成パラメータに関するヘッダーファイル
  *
- * @author		Shun Moriya
- * @copyright	2023- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2023- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -16,6 +16,17 @@ namespace dungeon
 	inline GenerateParameter::GenerateParameter()
 		: mRandom(std::make_shared<Random>())
 	{
+	}
+
+	inline uint32_t GenerateParameter::GetGeneratedRandomSeed() const noexcept
+	{
+		return mGeneratedRandomSeed;
+	}
+
+	inline void GenerateParameter::SetGeneratedRandomSeed(const uint32_t seed) noexcept
+	{
+		mGeneratedRandomSeed = seed;
+		mRandom->SetSeed(seed);
 	}
 
 	inline ExpansionPolicy GenerateParameter::GetExpansionPolicy() const noexcept
@@ -48,19 +59,27 @@ namespace dungeon
 		mStartRoomCount = std::max<uint8_t>(count, 1);
 	}
 
-	inline uint8_t GenerateParameter::GetNumberOfCandidateFloors() const noexcept
+	inline EDungeonGoalLocationPolicy GenerateParameter::GetGoalLocationPolicy() const noexcept
 	{
-		return mNumberOfCandidateFloors;
+		return mGoalLocationPolicy;
 	}
 
-	inline void GenerateParameter::SetNumberOfCandidateFloors(const uint8_t count) noexcept
+	inline void GenerateParameter::SetGoalLocationPolicy(const EDungeonGoalLocationPolicy goalLocationPolicy) noexcept
 	{
-		mNumberOfCandidateFloors = count;
+		mGoalLocationPolicy = goalLocationPolicy;
 	}
 
 	inline uint8_t GenerateParameter::GetNumberOfCandidateRooms() const noexcept
 	{
 		return mNumberOfCandidateRooms;
+	}
+
+	inline void GenerateParameter::SetNumberOfCandidateRooms(const FInt32Interval& range) noexcept
+	{
+		const int32 minimum = std::clamp(range.Min, 3, 255);
+		const int32 maximum = std::clamp(range.Max, minimum, 255);
+		const int32 selectedRoomCount = minimum == maximum ? minimum : mRandom->Get<int32>(minimum, maximum + 1);
+		SetNumberOfCandidateRooms(static_cast<uint8_t>(selectedRoomCount));
 	}
 
 	inline void GenerateParameter::SetNumberOfCandidateRooms(const uint8_t count) noexcept
@@ -148,16 +167,6 @@ namespace dungeon
 		mVerticalRoomMargin = margin;
 	}
 
-	inline bool GenerateParameter::IsMergeRooms() const noexcept
-	{
-		return mMergeRooms;
-	}
-
-	inline void GenerateParameter::SetMergeRooms(const bool mergeRooms) noexcept
-	{
-		mMergeRooms = mergeRooms;
-	}
-
 	inline std::shared_ptr<Random> GenerateParameter::GetRandom() noexcept
 	{
 		return mRandom;
@@ -210,17 +219,66 @@ namespace dungeon
 
 	inline bool GenerateParameter::UseMissionGraph() const noexcept
 	{
-		return GetAisleComplexity() <= 0;
+		return mUseMissionGraph;
 	}
 
 	inline void GenerateParameter::SetMissionGraph(const bool use) noexcept
 	{
 		mUseMissionGraph = use;
+		if (use)
+		{
+			mPathSettings.ProgressionPolicy = EDungeonProgressionPolicy::KeysAndLocks;
+		}
+		else if (mPathSettings.ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks)
+		{
+			mPathSettings.ProgressionPolicy = EDungeonProgressionPolicy::StartToGoal;
+		}
+	}
+
+	inline const FDungeonPathSettings& GenerateParameter::GetPathSettings() const noexcept
+	{
+		return mPathSettings;
+	}
+
+	inline void GenerateParameter::SetPathSettings(const FDungeonPathSettings& settings) noexcept
+	{
+		mPathSettings = settings;
+		mUseMissionGraph = settings.ProgressionPolicy == EDungeonProgressionPolicy::KeysAndLocks;
+	}
+
+	inline const FDungeonRoomRoleSettings& GenerateParameter::GetRoomRoleSettings() const noexcept
+	{
+		return mRoomRoleSettings;
+	}
+
+	inline void GenerateParameter::SetRoomRoleSettings(const FDungeonRoomRoleSettings& settings) noexcept
+	{
+		mRoomRoleSettings = settings;
+	}
+
+	inline const FDungeonZoneSettings& GenerateParameter::GetZoneSettings() const noexcept
+	{
+		return mZoneSettings;
+	}
+
+	inline void GenerateParameter::SetZoneSettings(const FDungeonZoneSettings& settings) noexcept
+	{
+		mZoneSettings = settings;
+	}
+
+	inline int32 GenerateParameter::GetLayoutCandidateCount() const noexcept
+	{
+		return mLayoutCandidateCount;
+	}
+
+	inline void GenerateParameter::SetLayoutCandidateCount(const int32 candidateCount) noexcept
+	{
+		mLayoutCandidateCount = std::clamp(candidateCount, 3, 16);
 	}
 
 	inline uint8_t GenerateParameter::GetAisleComplexity() const noexcept
 	{
-		return mUseMissionGraph == false ? mAisleComplexity : 0;
+		return mAisleComplexity;
 	}
 
 	inline void GenerateParameter::SetAisleComplexity(const uint8_t complexity) noexcept
@@ -286,6 +344,26 @@ namespace dungeon
 	inline const FIntVector& GenerateParameter::GetGoalRoomSize() const noexcept
 	{
 		return mGoalRoomSize;
+	}
+
+	inline uint8_t GenerateParameter::GetStartRoomGateCapacity() const noexcept
+	{
+		return mStartRoomGateCapacity;
+	}
+
+	inline void GenerateParameter::SetStartRoomGateCapacity(const uint8_t capacity) noexcept
+	{
+		mStartRoomGateCapacity = capacity;
+	}
+
+	inline uint8_t GenerateParameter::GetGoalRoomGateCapacity() const noexcept
+	{
+		return mGoalRoomGateCapacity;
+	}
+
+	inline void GenerateParameter::SetGoalRoomGateCapacity(const uint8_t capacity) noexcept
+	{
+		mGoalRoomGateCapacity = capacity;
 	}
 
 	inline void GenerateParameter::SetGoalRoomSize(const FIntVector& size) noexcept

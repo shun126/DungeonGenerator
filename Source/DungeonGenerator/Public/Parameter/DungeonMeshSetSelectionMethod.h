@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2025- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2025- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -18,4 +18,5 @@ enum class EDungeonMeshSetSelectionMethod : uint8
 	Random UMETA(DisplayName = "Random", ToolTip = "Select mesh sets randomly."),
 	Identifier UMETA(DisplayName = "Identifier", ToolTip = "Select mesh sets based on grid identifier rules."),
 	DepthFromStart UMETA(DisplayName = "Depth From Start", ToolTip = "Select mesh sets based on distance from the start."),
+	Custom UMETA(DisplayName = "Custom (Scriptable)", ToolTip = "Calls BlueprintNativeEvent for every selection. This is intended for advanced users and may be slow on large dungeon generation."),
 };

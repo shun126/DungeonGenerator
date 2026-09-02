@@ -18,15 +18,15 @@
 ### 手順
 1. ロビー側レベルに `ADungeonSubLevelScriptActor` を配置します。
 2. `ADungeonGenerateActor` の `StartRoomSubLevelScriptActor` にそのアクターを割り当てます。
-3. `UDungeonGenerateParameter` で `MovePlayerStartToStartingPoint = false` を設定します。
-4. `UDungeonGenerateParameter` で `StartLocationPolicy = NoAdjustment` を設定します。
+3. `UDungeonGenerateParameter` で `Path.bMovePlayerStartToStartRoom = false` を設定します。
+4. `UDungeonGenerateParameter` で `Path.StartRoomPolicy = UseCentralPoint` を設定します。
 5. `UseMultiStart` は使わず、通常の 1 開始地点で生成します。
 
 ### 現行実装で重要な注意
 - `UseMultiStart` は未対応で、指定するとエラーになります
-- エディタでは `DungeonSubLevelDatabase.StartRoom` 未設定でも一時メタデータで動作します
-- パッケージ版では `DungeonSubLevelDatabase.StartRoom` のメタデータが必要です
-- `DungeonSubLevelDatabase.StartRoom` を設定している場合は、グリッドサイズ、部屋サイズ、レベルアセットがロビー側サブレベルと一致している必要があります
+- 選択したプリロード済みスタート部屋のメタデータは `ADungeonGenerateActor` に保存されます
+- `StartRoomSubLevelScriptActor` が設定されている間、`Gameplay.DungeonSubLevelDatabase.StartRoom` は開始部屋には使われません
+- `Gameplay.DungeonSubLevelDatabase.StartRoom` が別レベルを指していても、警告を表示して生成は続行します
 
 ## 方法 B: スタート部屋サブレベルを生成側から差し込む
 `UDungeonSubLevelDatabase` の `StartRoom` を使って、開始部屋を通常の生成フローに含めます。
@@ -41,7 +41,7 @@
 2. グリッドサイズと部屋サイズを `UDungeonGenerateParameter` に合わせます。
 3. [UDungeonSubLevelDatabase.ja.md](./UDungeonSubLevelDatabase.ja.md) の `StartRoom` にそのサブレベルを登録します。
 4. `Build` を実行してメタデータを更新します。
-5. `UDungeonGenerateParameter` の `DungeonSubLevelDatabase` にそのアセットを割り当てます。
+5. `UDungeonGenerateParameter` の `Gameplay.DungeonSubLevelDatabase` にそのアセットを割り当てます。
 
 ## どちらを選ぶか
 - 既存ロビーにそのまま繋ぎたい  

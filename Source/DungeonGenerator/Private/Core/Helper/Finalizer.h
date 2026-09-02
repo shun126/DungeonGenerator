@@ -1,6 +1,6 @@
 /**
- * @author		Shun Moriya
- * @copyright	2024- Shun Moriya
+ * @author      Shun Moriya
+ * @copyright   2024- Shun Moriya
  * All Rights Reserved.
  */
 
@@ -27,6 +27,7 @@ namespace dungeon
 	{
 	public:
 		/**
+		 * Represents Finalizer.
 		 * コンストラクタ
 		 */
 		explicit Finalizer(const std::function<void()>& function)
@@ -35,6 +36,7 @@ namespace dungeon
 		}
 
 		/**
+		 * Destroys the ~Finalizer instance.
 		 * デストラクタ
 		 */
 		~Finalizer()
