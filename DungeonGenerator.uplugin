@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 100,
-	"VersionName": "2.0.0",
+	"Version": 101,
+	"VersionName": "2.0.1",
 	"FriendlyName": "Dungeon Generator",
 	"Description": "Procedural 3d dungeon generator plugin. Easy generation of levels, mini-maps and missions.",
 	"Category": "Procedural Systems",

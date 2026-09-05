@@ -323,7 +323,13 @@ ADungeonGenerateBase::ADungeonGenerateBase(const FObjectInitializer& initializer
 
 void ADungeonGenerateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Dispose(false);
+	/*
+	 * ワールドごと破棄される場合、生成物の個別解放はエンジンのワールド破棄処理と重複するだけで
+	 * 無駄な負荷になるため省略します(エディタ終了やPIE終了の遅延要因になっていました)。
+	 */
+	const UWorld* world = GetWorld();
+	if (!IsValid(world) || !world->bIsTearingDown)
+		Dispose(false);
 
 	// Calling the parent class
 	Super::EndPlay(EndPlayReason);

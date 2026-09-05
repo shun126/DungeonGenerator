@@ -1,5 +1,13 @@
 # Change Log - Procedural 3D Dungeon Generator Plug-in
 
+## 20260907-v2.0.1 (101)
+### Changes
+* Switch the method for clearing the dungeon depending on the reason the game ends
+* Fixed some bugs
+### 変更点
+* ゲーム終了の理由によってダンジョン破棄方法を切り替え
+* いくつかの不具合を修正
+
 ## 20260821-2.0.0 (100)
 
 Version 2.0 is a major redesign focused on playable progression, richer visual identity, and settings that are easier to understand and tune.
